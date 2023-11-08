@@ -3,6 +3,10 @@
 This NFT Explorer dapp is set up to be created using the create-web3-dapp npx package.
 ![image](https://user-images.githubusercontent.com/72762629/235919616-ba92fb9e-c171-4d7f-a928-862c80009075.png)
 
+## Setup
+
+1. Copy `.env.local.example` as `.env.local` (git ignored) and fill in the values
+
 ## Resources
 Please refer to CW3D's documentation and the following useful links for an in depth explanation of how to work with projects bootstrapped with CW3D:
 
@@ -53,7 +57,7 @@ The project supports all the major EVM chains:
 To get started with this boilerplate, you'll need to have the following software installed on your local machine:
 
 - [Node.js](https://nodejs.org/)
-- [Yarn](https://yarnpkg.com/)
+- [NPM](https://www.npmjs.com/)
 - [Git](https://git-scm.com/)
 
 ### Installation
@@ -77,7 +81,7 @@ Navigate to the[docs](https://docs.alchemy.com/docs/create-web3-dapp) to learn m
 
 1. Inside the project folder, start the local development server:
    ```
-   yarn run dev
+   npm run dev
    ```
 2. Open your browser and navigate to [`http://localhost:3000/`](http://localhost:3000/) to view the dApp in action.
 

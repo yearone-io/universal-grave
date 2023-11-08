@@ -30,9 +30,11 @@ const { chains, provider } = configureChains(
 	],
 	[publicProvider({ apiKey: process.env.ALCHEMY_API_KEY }), publicProvider()]
 );
+const projectId = process.env.RAINBOWKIT_PROJECT_ID;
 
 const { connectors } = getDefaultWallets({
 	appName: "My Alchemy DApp",
+	projectId,
 	chains,
 });
 
