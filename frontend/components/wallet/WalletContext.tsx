@@ -11,10 +11,10 @@ const defaultImplementation: WalletContextType = {
   account: null,
   isLoadingAccount: true,
   connect: async () => {
-    // Default connect implementation (could also throw an error)
+    // Default connect implementation 
   },
   disconnect: () => {
-    // Default disconnect implementation (could also throw an error)
+    // Default disconnect implementation
   },
 };
 
