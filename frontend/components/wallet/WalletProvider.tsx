@@ -24,6 +24,7 @@ interface Props {
 export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
+  const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
   useEffect(() => {
@@ -33,6 +34,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
       if (storedAccount) {
         setAccount(storedAccount);
       }
+      setIsLoadingAccount(false)
     }
   }, []);
 
@@ -74,7 +76,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   // Render the context provider, passing down the account state and control functions to children.
   return (
-    <WalletContext.Provider value={{ account, connect, disconnect }}>
+    <WalletContext.Provider value={{ account, connect, disconnect, isLoadingAccount }}>
       {children}
     </WalletContext.Provider>
   );

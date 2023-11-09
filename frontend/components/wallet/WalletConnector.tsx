@@ -18,19 +18,25 @@ const WalletConnector: React.FC = () => {
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }  
-  const { account, connect, disconnect } = walletContext;
+  const { account, connect, disconnect, isLoadingAccount } = walletContext;
 
+  const displayTruncatedAddress = (address: string) => {
+    return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
+  }
+
+  const displayConnectButton = () => {
+    if (isLoadingAccount) {
+      return <button disabled>Loading...</button>;
+    } else if (!account) {
+      return <button onClick={connect}>Connect Wallet</button>;
+    } else {
+      return <button onClick={disconnect}>{displayTruncatedAddress(account)}</button>;
+    }
+  }
 
   return (
     <div>
-      {account ? (
-        <>
-          <p>Connected with: {account}</p>
-          <button onClick={disconnect}>Disconnect Wallet</button>
-        </>
-      ) : (
-        <button onClick={connect}>Connect Wallet</button>
-      )}
+      {displayConnectButton()}
     </div>
   );
 };

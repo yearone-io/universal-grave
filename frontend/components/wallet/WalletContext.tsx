@@ -4,10 +4,12 @@ interface WalletContextType {
   account: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  isLoadingAccount: boolean;
 }
 
 const defaultImplementation: WalletContextType = {
   account: null,
+  isLoadingAccount: true,
   connect: async () => {
     // Default connect implementation (could also throw an error)
   },
