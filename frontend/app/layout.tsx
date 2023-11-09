@@ -21,7 +21,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">    
-      {/* <ChakraBaseProvider theme={theme}> */}
+      <ChakraBaseProvider theme={theme}>
         <WalletProvider>
           <body>
             <div style={{ display: "flex", flexDirection: "column", minHeight: "105vh" }}>
@@ -31,7 +31,7 @@ export default function RootLayout({
             </div>
           </body>
         </WalletProvider>
-      {/* </ChakraBaseProvider> */}
+      </ChakraBaseProvider>
     </html>
   );
 }
