@@ -2,6 +2,8 @@
 import Navbar from "@/components/instructionsComponent/navigation/navbar";
 import Footer from "@/components/instructionsComponent/navigation/footer";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
+import { ChakraBaseProvider, extendBaseTheme } from '@chakra-ui/react'
+import { theme as chakraTheme } from "@chakra-ui/theme"
 
 
 export default function RootLayout({
@@ -9,8 +11,17 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { Button } = chakraTheme.components
+
+  const theme = extendBaseTheme({
+    components: {
+      Button,
+    },
+  })
+
   return (
-    <html lang="en">
+    <html lang="en">    
+      {/* <ChakraBaseProvider theme={theme}> */}
         <WalletProvider>
           <body>
             <div style={{ display: "flex", flexDirection: "column", minHeight: "105vh" }}>
@@ -20,6 +31,7 @@ export default function RootLayout({
             </div>
           </body>
         </WalletProvider>
+      {/* </ChakraBaseProvider> */}
     </html>
   );
 }
