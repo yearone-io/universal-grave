@@ -14,9 +14,7 @@ export default function RootLayout({
       <WalletProvider>
         <body>
           <div style={{ display: "flex", flexDirection: "column", minHeight: "105vh" }}>
-            <Navbar />
             <div style={{flexGrow: 1}}>{children}</div>
-            <Footer />
           </div>
         </body>
       </WalletProvider>
