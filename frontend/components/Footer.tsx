@@ -9,6 +9,7 @@ import {
   VisuallyHidden,
   useColorMode,
   Flex,
+  Image,
 } from "@chakra-ui/react";
 import { FaInstagram, FaTwitter, FaMoon, FaSun } from "react-icons/fa";
 import Link from "next/link";
@@ -49,6 +50,8 @@ const SocialButton = ({
 export default function SmallWithLogoLeft() {
   const { toggleColorMode } = useColorMode();
   const colorModeIcon = useColorModeValue(FaMoon, FaSun);
+  const logoPath = '/images/logo-1.png'
+
   return (
     <Box
       bg={useColorModeValue("light.gray.100", "dark.purple.500")}
@@ -69,7 +72,7 @@ export default function SmallWithLogoLeft() {
         align={{ base: "center", md: "center" }}
       >
         <Flex gap="7px" justifyContent="center" alignItems="center">
-          LOGO
+          <Image src={logoPath} alt="Universal-Grave-logo" width={'40px'}/>
         </Flex>
         <Flex gap="7px" justifyContent="center" alignItems="center">
           © 2023 Universal Grave. All rights reserved

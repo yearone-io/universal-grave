@@ -1,18 +1,19 @@
 import {
   Flex,
-  HStack,
   useColorModeValue,
   Container,
+  Image,
 } from "@chakra-ui/react";
 import React from "react";
-import { useRouter } from "next/router";
 import WalletConnector from "./wallet/WalletConnector";
+
+
 
 export default function Header() {
   const bgColor = useColorModeValue("light.green.brand", "dark.purple.300");
   const color = useColorModeValue("light.black", "dark.black");
-
-
+  const logoPath = '/images/logo-1.png'
+  
   return (
     <Flex
       zIndex="1"
@@ -34,7 +35,7 @@ export default function Header() {
         alignItems={"center"}
       >
         <Flex ml={2} alignItems={"center"} justifyContent={"center"}>
-          LOGO
+          <Image src={logoPath} alt="Universal-Grave-logo" width={'70px'}/>
         </Flex>
         <Flex justifyContent={"flex-end"}>
           <WalletConnector />
