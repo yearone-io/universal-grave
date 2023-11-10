@@ -1,6 +1,7 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
+import { useToast } from '@chakra-ui/react';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -25,6 +26,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
+  const toast = useToast()
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
   useEffect(() => {
@@ -53,13 +55,29 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         // Update state and localStorage with the first account address.
         setAccount(accounts[0]);
         localStorage.setItem('connectedAccount', accounts[0]);
-      } catch (error) {
+      } catch (error: any) {
         // Log any connection errors.
-        console.error('Connection error', error);
+        const message = error && error.error && error.error.message ? error.error.message : 'An unknown error occurred';
+        console.log(`Connection error: ${message}`);
+        toast({
+          title: `Connection error: ${message}`,
+          status: 'error',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        })
       }
     } else {
       // Inform the user if the LUKSO wallet extension is not installed.
-      console.log('Please install the LUKSO Universal Profile Extension to use this app.');
+      const message = 'Please install the LUKSO Universal Profile Extension to use this app.';
+      console.log(message);
+      toast({
+        title: `${message}`,
+        status: 'info',
+        duration: 9000,
+        position: 'bottom-left',
+        isClosable: true,
+      })
     }
   };
 

@@ -9,12 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chakra-ui/react": "^2.8.1",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
     "@types/node": "20.2.5",
     "@types/react": "18.2.9",
     "@types/react-dom": "18.2.4",
     "encoding": "^0.1.13",
     "eslint": "8.42.0",
     "eslint-config-next": "13.4.4",
+    "framer-motion": "^10.16.4",
     "fs": "^0.0.1-security",
     "lokijs": "^1.5.12",
     "next": "13.4.4",
