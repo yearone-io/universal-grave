@@ -38,7 +38,7 @@ export default function RootLayout({
         <ChakraProvider theme={theme} >
           <div style={{ display: "flex", flexDirection: "column", minHeight: "105vh" }}>
             <Header />
-            <div style={{flexGrow: 1}}>{children}</div>
+            <div style={{flexGrow: 0.9}}>{children}</div>
             <Footer />
           </div>
           </ChakraProvider>
