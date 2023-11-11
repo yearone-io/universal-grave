@@ -6,6 +6,7 @@ declare global {
 }
 import React, { useContext } from 'react';
 import { WalletContext } from './WalletContext';
+import { Button } from '@chakra-ui/react';
 
 /**
  * The WalletConnector component allows users to connect or disconnect their LUKSO wallets.
@@ -28,9 +29,9 @@ const WalletConnector: React.FC = () => {
     if (isLoadingAccount) {
       return <button disabled>Loading...</button>;
     } else if (!account) {
-      return <button onClick={connect}>Connect Wallet</button>;
+      return <Button onClick={connect}>Connect Wallet</Button>;
     } else {
-      return <button onClick={disconnect}>{displayTruncatedAddress(account)}</button>;
+      return <Button onClick={disconnect}>{displayTruncatedAddress(account)}</Button>;
     }
   }
 
