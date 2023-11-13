@@ -1,9 +1,11 @@
 'use client'
 import { Container, Flex, Stack, Image, Box } from "@chakra-ui/react";
 import "./globals.css";
+import JoinGraveBtn from "@/components/JoinGraveBtn";
 
 export default function Home() {
   const logoPath = '/images/logo-full.png'
+  
   return (
     <Container
         as={Stack}
@@ -18,6 +20,9 @@ export default function Home() {
         width={"100%"}>
           <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'}/>
         </Flex>
+        <Box>
+          <JoinGraveBtn />
+        </Box>
       </Container>
   );
 }
