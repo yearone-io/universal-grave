@@ -4,9 +4,11 @@ import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProf
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button } from '@chakra-ui/react';
+import { constants } from '@/app/constants';
 
 
 // TODO: Display reset button only if the user has already joined the grave
+// TODO: display the Receiver address if the UP has that already set
 
 const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -16,20 +18,24 @@ const JoinGraveBtn: React.FC = () => {
     if (!walletContext) {
         throw new Error('WalletConnector must be used within a WalletProvider.');
     }
-    const { account } = walletContext;
+    const { address, account } = walletContext;
 
     const updateURD = async (newURDAddress: string) => {
-        const web3 = new Web3('https://rpc.testnet.lukso.network');
+        const web3 = new Web3(constants.RPC_TESTNET_ENDPOINT_URL);
         const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
-        const universalProfileAddress = '0x...'; // Replace with your address
-        const privateKey = '0x...'; // Replace with your private key
+        const universalProfileAddress = address;
 
-        const EOA = web3.eth.accounts.wallet.add(privateKey);
+        // setup  EOA
+        const BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY = '0x...'; // Replace with your private key        
+        const EOA = web3.eth.accounts.wallet.add(BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY);
+
+        // create an instance of the Universal Profile
         const universalProfile = new web3.eth.Contract(
             UniversalProfile.abi,
             universalProfileAddress,
         );
 
+        // execute the executeCalldata on the Key Manager
         await universalProfile.methods
             .setData(URD_DATA_KEY, newURDAddress)
             .send({
@@ -43,8 +49,7 @@ const JoinGraveBtn: React.FC = () => {
         setError(null);
 
         try {
-            const universalProfileURDAddress = '0x...'; // Replace with your new URD address
-            await updateURD(universalProfileURDAddress);
+            await updateURD(constants.universalProfileURDAddress);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -57,7 +62,7 @@ const JoinGraveBtn: React.FC = () => {
         setError(null);
 
         try {
-            await updateURD('0x0000000000000000000000000000000000000000'); // TODO test if this is how it is reseted
+            await updateURD('0x0000000000000000000000000000000000000000'); // TODO test if this is how it is resetted
         } catch (err) {
             setError(err.message);
         } finally {
