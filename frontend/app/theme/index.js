@@ -6,8 +6,8 @@ import { Text } from "./components/text";
 import { Link } from "./components/link";
 
 const config = {
-  initialColorMode: "system",
-  useSystemColorMode: true,
+  initialColorMode: "dark",
+  useSystemColorMode: false,
 };
 
 const overrides = extendTheme({

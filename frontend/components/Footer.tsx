@@ -50,7 +50,7 @@ const SocialButton = ({
 export default function SmallWithLogoLeft() {
   const { toggleColorMode } = useColorMode();
   const colorModeIcon = useColorModeValue(FaMoon, FaSun);
-  const logoPath = '/images/logo-1.png'
+  const logoPath = '/images/logo-text.png'
 
   return (
     <Box

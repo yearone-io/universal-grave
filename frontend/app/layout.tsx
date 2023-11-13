@@ -30,7 +30,7 @@ export default function RootLayout({
           <meta property="og:type" content="website" />
           <meta
             property="og:image"
-            content={`./images/logo-1.png`}
+            content={`./images/logo-text.png`}
           />
           <meta name="twitter:card" content="summary"></meta>
         </Head>

@@ -12,7 +12,7 @@ import WalletConnector from "./wallet/WalletConnector";
 export default function Header() {
   const bgColor = useColorModeValue("light.green.brand", "dark.purple.300");
   const color = useColorModeValue("light.black", "dark.black");
-  const logoPath = '/images/logo-1.png'
+  const logoPath = '/images/logo-text.png'
   
   return (
     <Flex
