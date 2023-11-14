@@ -27,7 +27,6 @@ const JoinGraveBtn: React.FC = () => {
         // Request account access on component mount
         if (window.lukso && account) {
             fetchProfile(account).then((profileData) => {
-                debugger;
                 if (profileData) {
                     const URDGroup = profileData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
                     if (URDGroup) {
@@ -38,7 +37,7 @@ const JoinGraveBtn: React.FC = () => {
                 console.error(error)
             }) 
         }
-    }, [account, window]);
+    }, [account]);
 
 
     const fetchProfile = async (address: string) =>  {  
@@ -50,7 +49,6 @@ const JoinGraveBtn: React.FC = () => {
             return await profile.fetchData();
         } catch (error) {
             console.log(error);
-            debugger;
             return console.log('This is not an ERC725 Contract');
         }
     }
@@ -69,6 +67,7 @@ const JoinGraveBtn: React.FC = () => {
             UniversalProfile.abi,
             universalProfileAddress as string,
         );
+        setError(null);
         try {
             await universalProfile.methods
                 .setData(URD_DATA_KEY, newURDAddress)
@@ -77,20 +76,17 @@ const JoinGraveBtn: React.FC = () => {
                     gasLimit: 600_000,
                 });
         } catch (err) {
+            debugger;
             console.error("Error sending transaction: ", err);
-            throw err;
+            setError(err.error.message)
         }
     };
 
     const handleClick = async () => {
         setLoading(true);
-        setError(null);
-
         try {
             // await updateURD(constants.universalProfileURDAddress);
             await updateURD('0x803d128561abCCF05308f87F46EfE414f3aCa6A7'); /// todo test
-        } catch (err) {
-            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -98,12 +94,8 @@ const JoinGraveBtn: React.FC = () => {
 
     const handleReset = async () => {
         setLoading(true);
-        setError(null);
-
         try {
             await updateURD('0x0000000000000000000000000000000000000000'); // TODO test if this is how it is resetted
-        } catch (err) {
-            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -115,6 +107,9 @@ const JoinGraveBtn: React.FC = () => {
 
     return (
         <div>
+            {URD &&  
+              <Box>URD address: {URD}</Box>
+            }
             <Button onClick={handleClick} disabled={loading}>
                 {loading ? 'Processing...' : 'Join the Grave'}
             </Button>
@@ -123,9 +118,7 @@ const JoinGraveBtn: React.FC = () => {
                 {loading ? 'Processing...' : 'Leave the Grave'} 
             </Button>
             {error && <p>Error: {error}</p>}
-            {URD &&  
-            <Box>URD address: {URD}</Box>
-            }
+
         </div>
     );
 };
