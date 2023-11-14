@@ -1,10 +1,11 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import Web3 from 'web3';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button } from '@chakra-ui/react';
-import { constants } from '@/app/constants';
+import { ERC725 } from '@erc725/erc725.js';
+import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 
 
 // TODO: Display reset button only if the user has already joined the grave
@@ -15,33 +16,70 @@ const JoinGraveBtn: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const walletContext = useContext(WalletContext);
 
+    
     if (!walletContext) {
         throw new Error('WalletConnector must be used within a WalletProvider.');
     }
-    const { address, account } = walletContext;
+    const { account } = walletContext;
+
+
+    useEffect(() => {
+        // Request account access on component mount
+        if (window.lukso && account) {
+            fetchProfile(account).then((profileData) => {
+                debugger;
+                // todo check if the delegate is already set
+                }
+            ).catch((error) => {
+                console.error(error)
+            }) 
+        }
+    }, [account, window]);
+
+
+    const fetchProfile = async (address: string) =>  {  
+        const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
+        const provider =  window.lukso;
+        const config = { ipfsGateway: IPFS_GATEWAY };
+        try {
+            const profile = new ERC725(lsp3ProfileSchema, address, provider, config);
+            return await profile.fetchData();
+        } catch (error) {
+            console.log(error);
+            debugger;
+            return console.log('This is not an ERC725 Contract');
+        }
+    }
 
     const updateURD = async (newURDAddress: string) => {
-        const web3 = new Web3(constants.RPC_TESTNET_ENDPOINT_URL);
+        if (!window.lukso) {
+            console.error('UP wallet is not connected');
+        }
+
+        const web3 = new Web3(window.lukso);
         const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
-        const universalProfileAddress = address;
+        const universalProfileAddress = account;
 
         // setup  EOA
-        const BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY = '0x...'; // Replace with your private key        
-        const EOA = web3.eth.accounts.wallet.add(BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY);
-
+        // const BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY = '0x...'; // Replace with your private key        
+        // const EOA = web3.eth.accounts.wallet.add(BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY);
+        debugger;
         // create an instance of the Universal Profile
         const universalProfile = new web3.eth.Contract(
             UniversalProfile.abi,
-            universalProfileAddress,
+            universalProfileAddress as string,
         );
-
-        // execute the executeCalldata on the Key Manager
-        await universalProfile.methods
-            .setData(URD_DATA_KEY, newURDAddress)
-            .send({
-                from: EOA.address,
-                gasLimit: 600_000,
-            });
+        try {
+            await universalProfile.methods
+                .setData(URD_DATA_KEY, newURDAddress)
+                .send({
+                    from: account, // The connected account
+                    gasLimit: 600_000,
+                });
+        } catch (err) {
+            console.error("Error sending transaction: ", err);
+            throw err;
+        }
     };
 
     const handleClick = async () => {
@@ -49,7 +87,8 @@ const JoinGraveBtn: React.FC = () => {
         setError(null);
 
         try {
-            await updateURD(constants.universalProfileURDAddress);
+            // await updateURD(constants.universalProfileURDAddress);
+            await updateURD('0x803d128561abCCF05308f87F46EfE414f3aCa6A7'); /// todo test
         } catch (err) {
             setError(err.message);
         } finally {
