@@ -3,7 +3,7 @@ import Web3 from 'web3';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Button } from '@chakra-ui/react';
+import { Box, Button } from '@chakra-ui/react';
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 
@@ -15,7 +15,7 @@ const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const walletContext = useContext(WalletContext);
-
+    const [URD, setURD] = useState<string | null>(null);
     
     if (!walletContext) {
         throw new Error('WalletConnector must be used within a WalletProvider.');
@@ -28,9 +28,13 @@ const JoinGraveBtn: React.FC = () => {
         if (window.lukso && account) {
             fetchProfile(account).then((profileData) => {
                 debugger;
-                // todo check if the delegate is already set
+                if (profileData) {
+                    const URDGroup = profileData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+                    if (URDGroup) {
+                        setURD(URDGroup.value as string);
+                    }
                 }
-            ).catch((error) => {
+            }).catch((error) => {
                 console.error(error)
             }) 
         }
@@ -60,10 +64,6 @@ const JoinGraveBtn: React.FC = () => {
         const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
         const universalProfileAddress = account;
 
-        // setup  EOA
-        // const BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY = '0x...'; // Replace with your private key        
-        // const EOA = web3.eth.accounts.wallet.add(BROWSER_EXTENSION_CONTROLLER_PRIVATE_KEY);
-        debugger;
         // create an instance of the Universal Profile
         const universalProfile = new web3.eth.Contract(
             UniversalProfile.abi,
@@ -118,10 +118,14 @@ const JoinGraveBtn: React.FC = () => {
             <Button onClick={handleClick} disabled={loading}>
                 {loading ? 'Processing...' : 'Join the Grave'}
             </Button>
+    
             <Button onClick={handleReset} disabled={loading} colorScheme="red">
                 {loading ? 'Processing...' : 'Leave the Grave'} 
             </Button>
             {error && <p>Error: {error}</p>}
+            {URD &&  
+            <Box>URD address: {URD}</Box>
+            }
         </div>
     );
 };
