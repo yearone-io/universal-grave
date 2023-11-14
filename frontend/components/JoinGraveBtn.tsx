@@ -57,7 +57,7 @@ const JoinGraveBtn: React.FC = () => {
         if (!window.lukso) {
             console.error('UP wallet is not connected');
         }
-
+        setError(null);
         const web3 = new Web3(window.lukso);
         const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
         const universalProfileAddress = account;
@@ -67,16 +67,14 @@ const JoinGraveBtn: React.FC = () => {
             UniversalProfile.abi,
             universalProfileAddress as string,
         );
-        setError(null);
         try {
             await universalProfile.methods
                 .setData(URD_DATA_KEY, newURDAddress)
                 .send({
                     from: account, // The connected account
                     gasLimit: 600_000,
-                });
+                })
         } catch (err) {
-            debugger;
             console.error("Error sending transaction: ", err);
             setError(err.error.message)
         }
