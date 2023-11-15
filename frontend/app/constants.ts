@@ -3,5 +3,4 @@ export const constants = {
     RPC_TESTNET_ENDPOINT_URL : 'https://rpc.testnet.lukso.network',
      IPFS_GATEWAY: 'https://api.universalprofile.cloud/ipfs',
     ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
-
 }
