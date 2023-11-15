@@ -1,15 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react';
-import Web3 from 'web3';
+// import Web3 from 'web3';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Box, Button } from '@chakra-ui/react';
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
+import { ethers } from 'ethers';
 
 
-// TODO: Display reset button only if the user has already joined the grave
-// TODO: display the Receiver address if the UP has that already set
+// TODO: update UI after update
+// TODO: add custom address
+// todo: investigate what permission we need
 
 const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -28,6 +30,7 @@ const JoinGraveBtn: React.FC = () => {
         if (window.lukso && account) {
             fetchProfile(account).then((profileData) => {
                 if (profileData) {
+                    console.dir(profileData)
                     const URDGroup = profileData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
                     if (URDGroup) {
                         setURD(URDGroup.value as string);
@@ -52,33 +55,40 @@ const JoinGraveBtn: React.FC = () => {
             return console.log('This is not an ERC725 Contract');
         }
     }
-
+   
     const updateURD = async (newURDAddress: string) => {
         if (!window.lukso) {
             console.error('UP wallet is not connected');
+            return;
         }
-        setError(null);
-        const web3 = new Web3(window.lukso);
-        const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
-        const universalProfileAddress = account;
-
-        // create an instance of the Universal Profile
-        const universalProfile = new web3.eth.Contract(
-            UniversalProfile.abi,
-            universalProfileAddress as string,
-        );
+    
+        // Use ethers to create a provider
         try {
-            await universalProfile.methods
-                .setData(URD_DATA_KEY, newURDAddress)
-                .send({
-                    from: account, // The connected account
-                    gasLimit: 600_000,
-                })
+           const provider =  new ethers.providers.Web3Provider(window.lukso);
+            const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
+    
+            // Create a signer
+            const signer = provider.getSigner();
+            const account = await signer.getAddress();
+
+            // Create a new instance of the Universal Profile contract
+            const up = new ethers.Contract(
+                account as string,
+                UniversalProfile.abi,
+                provider
+            );
+    
+            const transaction = await up.connect(signer).setData(
+                URD_DATA_KEY, 
+                newURDAddress
+            );
+            await transaction.wait();
         } catch (err) {
-            console.error("Error sending transaction: ", err);
-            setError(err.error.message)
+            console.error("Error: ", err);
+            setError(err.message)            
         }
     };
+    
 
     const handleClick = async () => {
         setLoading(true);
@@ -93,7 +103,7 @@ const JoinGraveBtn: React.FC = () => {
     const handleReset = async () => {
         setLoading(true);
         try {
-            await updateURD('0x0000000000000000000000000000000000000000'); // TODO test if this is how it is resetted
+            await updateURD('0x0000000000000000000000000000000000000000');
         } finally {
             setLoading(false);
         }
