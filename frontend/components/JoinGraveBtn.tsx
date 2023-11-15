@@ -143,9 +143,9 @@ const JoinGraveBtn: React.FC = () => {
                 <Button onClick={handleReset} disabled={loading} colorScheme="red">
                     {loading ? 'Processing...' : 'Leave the Grave'} 
                 </Button>:           
-            <Button onClick={handleClick} disabled={loading}>
-               {loading ? 'Processing...' : 'Join the Grave'}
-            </Button>
+                <Button onClick={handleClick} disabled={loading}>
+                {loading ? 'Processing...' : 'Join the Grave'}
+                </Button>
             }
             <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation".</Box>
         </div>
