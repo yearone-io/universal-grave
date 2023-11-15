@@ -41,6 +41,7 @@ const JoinGraveBtn: React.FC = () => {
             if (UPData) {
                 const URDGroup = UPData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
                 if (URDGroup) {
+                    console.log('URD: ', URDGroup.value)
                     setURD(URDGroup.value as string);
                 }
             }
@@ -111,16 +112,15 @@ const JoinGraveBtn: React.FC = () => {
 
     return (
         <div>
-            {URD &&  
-              <Box>URD address: {URD}</Box>
-            }
+            {URD === constants.universalProfileURDAddress ?     
+                <Button onClick={handleReset} disabled={loading} colorScheme="red">
+                    {loading ? 'Processing...' : 'Leave the Grave'} 
+                </Button>:           
             <Button onClick={handleClick} disabled={loading}>
-                {loading ? 'Processing...' : 'Join the Grave'}
+               {loading ? 'Processing...' : 'Join the Grave'}
             </Button>
-    
-            <Button onClick={handleReset} disabled={loading} colorScheme="red">
-                {loading ? 'Processing...' : 'Leave the Grave'} 
-            </Button>
+            }
+            <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation"</Box>
             {error && <p>Error: {error}</p>}
 
         </div>
