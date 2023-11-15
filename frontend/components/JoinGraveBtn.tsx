@@ -51,8 +51,10 @@ const JoinGraveBtn: React.FC = () => {
     }
    
     const updateURD = async (newURDAddress: string) => {
+        setError(null);
         if (!window.lukso) {
             console.error('UP wallet is not connected');
+            setError('UP wallet is not connected');
             return;
         }
     
