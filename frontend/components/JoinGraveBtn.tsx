@@ -7,10 +7,9 @@ import { Box, Button } from '@chakra-ui/react';
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import { ethers } from 'ethers';
+import { constants } from '@/app/constants';
 
 
-// TODO: update UI after update
-// TODO: add custom address
 // todo: investigate what permission we need
 
 const JoinGraveBtn: React.FC = () => {
@@ -28,28 +27,23 @@ const JoinGraveBtn: React.FC = () => {
     useEffect(() => {
         // Request account access on component mount
         if (window.lukso && account) {
-            fetchProfile(account).then((profileData) => {
-                if (profileData) {
-                    console.dir(profileData)
-                    const URDGroup = profileData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-                    if (URDGroup) {
-                        setURD(URDGroup.value as string);
-                    }
-                }
-            }).catch((error) => {
-                console.error(error)
-            }) 
+            fetchProfile(account);
         }
     }, [account]);
 
 
     const fetchProfile = async (address: string) =>  {  
-        const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
         const provider =  window.lukso;
-        const config = { ipfsGateway: IPFS_GATEWAY };
+        const config = { ipfsGateway: constants.IPFS_GATEWAY };
         try {
             const profile = new ERC725(lsp3ProfileSchema, address, provider, config);
-            return await profile.fetchData();
+            const UPData = await profile.fetchData();
+            if (UPData) {
+                const URDGroup = UPData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+                if (URDGroup) {
+                    setURD(URDGroup.value as string);
+                }
+            }
         } catch (error) {
             console.log(error);
             return console.log('This is not an ERC725 Contract');
@@ -83,9 +77,10 @@ const JoinGraveBtn: React.FC = () => {
                 newURDAddress
             );
             await transaction.wait();
+            fetchProfile(account);
         } catch (err) {
             console.error("Error: ", err);
-            setError(err.message)            
+            setError('Error: ' + err.message + '. Make sure your permissions are set correctly.');            
         }
     };
     
@@ -93,8 +88,7 @@ const JoinGraveBtn: React.FC = () => {
     const handleClick = async () => {
         setLoading(true);
         try {
-            // await updateURD(constants.universalProfileURDAddress);
-            await updateURD('0x803d128561abCCF05308f87F46EfE414f3aCa6A7'); /// todo test
+            await updateURD(constants.universalProfileURDAddress);
         } finally {
             setLoading(false);
         }
@@ -103,7 +97,7 @@ const JoinGraveBtn: React.FC = () => {
     const handleReset = async () => {
         setLoading(true);
         try {
-            await updateURD('0x0000000000000000000000000000000000000000');
+            await updateURD(constants.ZERO_ADDRESS);
         } finally {
             setLoading(false);
         }
