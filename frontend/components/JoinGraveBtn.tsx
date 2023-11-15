@@ -83,7 +83,7 @@ const JoinGraveBtn: React.FC = () => {
             fetchProfile(account);
         } catch (err) {
             console.error("Error: ", err);
-            setError('Error: ' + err.message + '. Make sure your permissions are set correctly.');            
+            setError('Error: ' + err.message );            
         }
     };
     
@@ -120,9 +120,8 @@ const JoinGraveBtn: React.FC = () => {
                {loading ? 'Processing...' : 'Join the Grave'}
             </Button>
             }
-            <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation"</Box>
             {error && <p>Error: {error}</p>}
-
+            <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation"</Box>
         </div>
     );
 };
