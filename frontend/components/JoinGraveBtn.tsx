@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Box, Button } from '@chakra-ui/react';
+import { Box, Button, useToast } from '@chakra-ui/react';
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import { ethers } from 'ethers';
@@ -14,10 +14,10 @@ import { constants } from '@/app/constants';
 
 const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const walletContext = useContext(WalletContext);
     const [URD, setURD] = useState<string | null>(null);
-    
+    const toast = useToast()
+
     if (!walletContext) {
         throw new Error('WalletConnector must be used within a WalletProvider.');
     }
@@ -52,10 +52,14 @@ const JoinGraveBtn: React.FC = () => {
     }
    
     const updateURD = async (newURDAddress: string) => {
-        setError(null);
         if (!window.lukso) {
-            console.error('UP wallet is not connected');
-            setError('UP wallet is not connected');
+            toast({
+                title: `UP wallet is not connected.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
             return;
         }
     
@@ -82,8 +86,14 @@ const JoinGraveBtn: React.FC = () => {
             await transaction.wait();
             fetchProfile(account);
         } catch (err) {
-            console.error("Error: ", err);
-            setError('Error: ' + err.message );            
+            console.error("Error: ", err);      
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
         }
     };
     
@@ -120,8 +130,7 @@ const JoinGraveBtn: React.FC = () => {
                {loading ? 'Processing...' : 'Join the Grave'}
             </Button>
             }
-            {error && <p>Error: {error}</p>}
-            <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation"</Box>
+            <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation".</Box>
         </div>
     );
 };
