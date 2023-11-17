@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Box, Button, useToast } from '@chakra-ui/react';
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, useToast } from '@chakra-ui/react';
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import { ethers } from 'ethers';
@@ -32,6 +32,7 @@ const JoinGraveBtn: React.FC = () => {
     const walletContext = useContext(WalletContext);
     const [universalRDUp, setUniversalRDUp] = useState<string | null>(null);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
+    const [URDLsp8, setURDLsp8] = useState<string | null>(null);
     const toast = useToast()
     
     // Checking if the walletContext is available
@@ -230,25 +231,49 @@ const JoinGraveBtn: React.FC = () => {
         }
     };
 
+    const renderAccordeonDetails = () => {
+        return (
+            <Accordion  allowMultiple>
+                <AccordionItem>
+                    <h2>
+                    <AccordionButton>
+                        <Box as="span" flex='1' textAlign='left'>
+                            Details
+                        </Box>
+                        <AccordionIcon />
+                    </AccordionButton>
+                    </h2>
+                    <AccordionPanel pb={4}>
+                        <Box>URD: {universalRDUp}</Box>
+                        <Box>LSP7 URD: {URDLsp7}</Box>
+                        <Box>LSP8 URD: {URDLsp8}</Box>
+                        <Box>LSP7 vault: </Box>
+                        <Box>LSP8 vault: </Box>
+                    </AccordionPanel>
+                </AccordionItem>
+            </Accordion>
+        )
+    }
+
     if (!account) {
         return <></>;
     }
 
     return (
         <div>
-            <Box>Current URD: {universalRDUp}</Box>
-                <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
-                    {loading ? 'Processing...' : 'Update permissions'} 
-                </Button>             {/* {URD === constants.universalProfileURDAddress ?     // change to query the subkey */}
-                <Button onClick={handleReset} disabled={loading} colorScheme="red">
-                    {loading ? 'Processing...' : 'Leave the Grave'} 
-                </Button> 
-                {/* :            */}
-                <Button onClick={handleClick} disabled={loading}>
+            <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
+                {loading ? 'Processing...' : 'Update permissions'} 
+            </Button>             {/* {URD === constants.universalProfileURDAddress ?     // change to query the subkey */}
+            <Button onClick={handleReset} disabled={loading} colorScheme="red">
+                {loading ? 'Processing...' : 'Leave the Grave'} 
+            </Button> 
+            {/* :            */}
+            <Button onClick={handleClick} disabled={loading}>
                 {loading ? 'Processing...' : 'Join the Grave'}
-                </Button>
+            </Button>
             {/* } */}
-            <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation".</Box>
+            {renderAccordeonDetails()}
+            
         </div>
     );
 };
