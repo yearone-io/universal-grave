@@ -7,7 +7,6 @@ import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
-import { zeroAddress } from 'viem';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -77,6 +76,60 @@ const JoinGraveBtn: React.FC = () => {
         } catch (error) {
             console.log(error);
             return console.log('This is not an ERC725 Contract');
+        }
+    }
+
+
+    const updatePermissions = async () => {
+       if (!window.lukso) {
+            toast({
+                title: `UP wallet is not connected.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
+            return;
+        }
+    
+        try {
+            // Creating a provider and signer using ethers
+            const provider =  new ethers.providers.Web3Provider(window.lukso);        
+            const dataKeys = [
+                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP7_URD.slice(2),
+                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP8_URD.slice(2),
+            ];
+
+            // Calculate the correct permission (SUPER_CALL + REENTRANCY) // todo DO WE NEED MORE ???
+            const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+            const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+
+            const signer = provider.getSigner();
+            const account = await signer.getAddress();
+
+            // Interacting with the Universal Profile contract
+            const UP = new ethers.Contract(
+                account as string,
+                UniversalProfile.abi,
+                provider
+            );
+
+            const dataValues = [
+                permHex,
+                permHex
+            ];
+        
+            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+            await setDataBatchTx.wait();
+        } catch (err) {
+            console.error("Error: ", err);      
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+            })
         }
     }
     
@@ -265,7 +318,9 @@ const JoinGraveBtn: React.FC = () => {
     return (
         <div>
             <Box>Current URD: {universalRDUp}</Box>
-            {/* {URD === constants.universalProfileURDAddress ?     // change to query the subkey */}
+                <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
+                    {loading ? 'Processing...' : 'Update permissions'} 
+                </Button>             {/* {URD === constants.universalProfileURDAddress ?     // change to query the subkey */}
                 <Button onClick={handleReset} disabled={loading} colorScheme="red">
                     {loading ? 'Processing...' : 'Leave the Grave'} 
                 </Button> 
