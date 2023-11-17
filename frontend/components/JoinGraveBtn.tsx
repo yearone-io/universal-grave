@@ -192,6 +192,7 @@ const JoinGraveBtn: React.FC = () => {
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
 
+            // TODO if it is joining the grave, create Vaults for LSP7 and LSP8
 
             fetchProfile(account);
         } catch (err) {
@@ -205,7 +206,6 @@ const JoinGraveBtn: React.FC = () => {
               })
         }
     }
-
     
     // Event handler for the join button
     const handleClick = async () => {
