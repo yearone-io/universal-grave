@@ -3,32 +3,32 @@ import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProf
 import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, useToast } from '@chakra-ui/react';
-import { ERC725 } from '@erc725/erc725.js';
-import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
- * It enables users to interact with Universal Profiles (UPs) by either joining or leaving a "Grave".
- * "Joining the Grave" and "Leaving the Grave" are metaphorical actions that represent updating the
- * Universal Receiver Delegate (URD) of a user's profile to a specific state or resetting it.
+ * It enables users to interact with Universal Profiles (UPs) by managing the Universal Receiver Delegate (URD)
+ * for LSP7 and LSP8 tokens.
  *
  * Key Features:
- * 1. Fetching Profile Data: Retrieves the current state of the user's UP, specifically the URD,
- *    using ERC725.js and a provided blockchain address.
- * 2. Updating LSP7 and LSP8 URD: Allows users to update their LSP7/LSP8 URDs to either join or leave the Grave.
- *    This is done by sending a transaction to the blockchain using ethers.js.
- * 3. Wallet Integration: Utilizes a WalletContext to access the user's blockchain account and ensure
- *    that a wallet is connected before performing any actions.
- * 4. User Feedback: Provides feedback to the user via a toast notification system from Chakra UI,
- *    especially in cases of errors or successful updates.
+ * 1. Profile Data Fetching: Retrieves the current URD state for both LSP7 and LSP8 tokens, allowing users to
+ *    understand their current interaction status with the Grave.
+ * 2. URD Updating: Facilitates the process of joining or leaving the Grave by updating the sub URD for LSP7 and
+ *    LSP8.
+ * 3. Wallet Integration: Utilizes WalletContext to ensure that a user's blockchain account is connected before
+ *    any actions are performed, enhancing security and user experience.
+ * 4. User Feedback: Offers real-time feedback via a toast notification system from Chakra UI, informing users
+ *    about the status of their actions, including errors and successful updates.
+ * 5. Permission Management: Allows users to update permissions related to their UPs, ensuring the necessary
+ *    access rights are set for interacting with URDs.
  *
+ * Additional functionalities and improvements are planned for future versions, including batch calls for data retrieval
+ * and conditional permission updating during URD modifications.
  */
 const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const walletContext = useContext(WalletContext);
-    const [universalRDUp, setUniversalRDUp] = useState<string | null>(null);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
     const toast = useToast()
@@ -47,9 +47,6 @@ const JoinGraveBtn: React.FC = () => {
         }
     }, [account]);
 
-    // Current TODOS:
-    // Get Batch data: URD, LSP7 delegate, LS8 delegate, LP7 vault, LSP8 vault
-
     // TODOS after V1:
     // 0 - Add a batch call on page load to get URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
     // 1- include permissions in the updateSubURD batch call, done in a conditional way.
@@ -57,54 +54,40 @@ const JoinGraveBtn: React.FC = () => {
 
     // Function to fetch Universal Profile data
     const fetchProfile = async (address: string) =>  {  
-        const provider =  window.lukso;
-        const config = { ipfsGateway: constants.IPFS_GATEWAY };
+        const provider =  new ethers.providers.Web3Provider(window.lukso);        
         try {
-
-            //GET URD
-            const profile = new ERC725(lsp3ProfileSchema, address, provider, config);
-            const urdData = await profile.fetchData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-            setUniversalRDUp(urdData.value as string);
-
-            // GET LSP7 and LSP8 URD
-
-            // GET LSP7 and LSP8 vaults
-
-            // TODO, do a batch call for all the data
-
-            // const UP = new ethers.Contract(
-            //     account as string,
-            //     UniversalProfile.abi,
-            //     provider
-            // );
-            // const signer = provider.getSigner();
+            //1- GET LSP7 and LSP8 URD
+            const UP = new ethers.Contract(
+                account as string,
+                UniversalProfile.abi,
+                provider
+            );
+            const signer = provider.getSigner();
     
-            // // const UPData = await UP.connect(signer).getDataBatch([
-            // //     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-            // //     // ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP7_URD.slice(2),
-            // //     // ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP8_URD.slice(2),
-            // // ]);
-            // const UPData = await UP.connect(signer).fetchData();
-            // await UPData.wait();
-            // if (UPData) {
-            //     debugger;
-            //     const URDGroup = UPData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-            //     if (URDGroup) {
-            //         console.log('UniversalRDUp: ', URDGroup.value)
-            //         setUniversalRDUp(URDGroup.value as string);
-            //     }
-            // }
+            const UPData = await UP.connect(signer).getDataBatch([
+                ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+                    LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
+                    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+                    LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40)
+            ]);
 
-            // todo get the sub URD for LSP7 and LSP8, and the permissions
-
-            // todo: batch call to get URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions ?
+            if (UPData && UPData.length === 2) {
+                setURDLsp7(UPData[0]);
+                setURDLsp8(UPData[1]);
+            }
+            // TODO GET VAULTS
 
         } catch (error) {
-            console.log(error);
-            return console.log('This is not an ERC725 Contract');
+            return console.error(error);
         }
     }
 
+    /**
+     * Function to update the permissions for the UP if needed.
+     * Ideally this would be done as part of batch call on setDataBatch, as long as
+     * it is done in a conditional way if the required permissions are not set (planned for the future).
+     * 
+     */
     const updatePermissions = async () => {
        if (!window.lukso) {
             toast({
@@ -159,11 +142,7 @@ const JoinGraveBtn: React.FC = () => {
     }
     
     /**
-     *  Function to update the sub URD for LSP7 and LSP8. 
-     * 
-     * @param lsp7NewDeletegate 
-     * @param lsp8NewDelegate 
-     * @returns 
+     *  Function to update the sub URD for LSP7 and LSP8 to the new delegates.
      */
     const updateSubURD = async (lsp7NewDeletegate: string, lsp8NewDelegate: string) => {
         if (!window.lukso) {
@@ -264,11 +243,10 @@ const JoinGraveBtn: React.FC = () => {
                     </AccordionButton>
                     </h2>
                     <AccordionPanel pb={4}>
-                        <Box>URD: {universalRDUp}</Box>
                         <Box>LSP7 URD: {URDLsp7}</Box>
                         <Box>LSP8 URD: {URDLsp8}</Box>
-                        <Box>LSP7 vault: </Box>
-                        <Box>LSP8 vault: </Box>
+                        <Box>LSP7 grave vault: </Box>
+                        <Box>LSP8 grave vault: </Box>
                     </AccordionPanel>
                 </AccordionItem>
             </Accordion>
@@ -283,15 +261,16 @@ const JoinGraveBtn: React.FC = () => {
         <div>
             <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
                 {loading ? 'Processing...' : 'Update permissions'} 
-            </Button>             {/* {URD === constants.universalProfileURDAddress ?     // change to query the subkey */}
-            <Button onClick={handleReset} disabled={loading} colorScheme="red">
-                {loading ? 'Processing...' : 'Leave the Grave'} 
-            </Button> 
-            {/* :            */}
-            <Button onClick={handleClick} disabled={loading}>
-                {loading ? 'Processing...' : 'Join the Grave'}
-            </Button>
-            {/* } */}
+            </Button>             
+            {URDLsp7 === constants.LSP7_URD && URDLsp8 === constants.LSP8_URD ?
+                <Button onClick={handleReset} disabled={loading} colorScheme="red">
+                    {loading ? 'Processing...' : 'Leave the Grave'} 
+                </Button> 
+                :
+                <Button onClick={handleClick} disabled={loading}>
+                    {loading ? 'Processing...' : 'Join the Grave'}
+                </Button>
+            }
             {renderAccordeonDetails()}
             
         </div>
