@@ -50,7 +50,8 @@ const JoinGraveBtn: React.FC = () => {
     }, [account]);
 
 
-    // 1- TODO find a way to also get the sub delegate for LSP7 and LSP8
+    // 1- TODO find a way to the sub delegate for LSP7 and LSP8
+    // 1-a TODO find a way to get the current permissions of LS7 and LSP8 delegates
     // 2- Find a way to set permissions conditionally a) get permissios, b) set the ones missing
 
     // Function to fetch Universal Profile data
@@ -68,13 +69,24 @@ const JoinGraveBtn: React.FC = () => {
                     setUniversalRDUp(URDGroup.value as string);
                 }
             }
+
+            // todo get the sub URD for LSP7 and LSP8, and the permissions
+
+            // todo: batch call to get URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions ?
+
         } catch (error) {
             console.log(error);
             return console.log('This is not an ERC725 Contract');
         }
     }
     
-
+    /**
+     *  Function to update the sub URD for LSP7 and LSP8. 
+     * 
+     * @param lsp7NewDeletegate 
+     * @param lsp8NewDelegate 
+     * @returns 
+     */
     const updateSubURD = async (lsp7NewDeletegate: string, lsp8NewDelegate: string) => {
         if (!window.lukso) {
             toast({
@@ -89,6 +101,8 @@ const JoinGraveBtn: React.FC = () => {
 
         try {
             const provider =  new ethers.providers.Web3Provider(window.lukso);
+            
+            // LSP7
             const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                 LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
 
