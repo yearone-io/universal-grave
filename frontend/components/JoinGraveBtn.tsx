@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
+import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Box, Button, useToast } from '@chakra-ui/react';
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
+import { zeroAddress } from 'viem';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -30,7 +31,8 @@ import { constants } from '@/app/constants';
 const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const walletContext = useContext(WalletContext);
-    const [URD, setURD] = useState<string | null>(null);
+    const [universalRDUp, setUniversalRDUp] = useState<string | null>(null);
+    const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const toast = useToast()
     
     // Checking if the walletContext is available
@@ -47,6 +49,10 @@ const JoinGraveBtn: React.FC = () => {
         }
     }, [account]);
 
+
+    // 1- TODO find a way to also get the sub delegate for LSP7 and LSP8
+    // 2- Find a way to set permissions conditionally a) get permissios, b) set the ones missing
+
     // Function to fetch Universal Profile data
     const fetchProfile = async (address: string) =>  {  
         const provider =  window.lukso;
@@ -55,10 +61,11 @@ const JoinGraveBtn: React.FC = () => {
             const profile = new ERC725(lsp3ProfileSchema, address, provider, config);
             const UPData = await profile.fetchData();
             if (UPData) {
+                debugger;
                 const URDGroup = UPData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
                 if (URDGroup) {
-                    console.log('URD: ', URDGroup.value)
-                    setURD(URDGroup.value as string);
+                    console.log('UniversalRDUp: ', URDGroup.value)
+                    setUniversalRDUp(URDGroup.value as string);
                 }
             }
         } catch (error) {
@@ -67,8 +74,8 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
     
-    // Function to update URD
-    const updateURD = async (newURDAddress: string) => {
+
+    const updateSubURD = async (lsp7NewDeletegate: string, lsp8NewDelegate: string) => {
         if (!window.lukso) {
             toast({
                 title: `UP wallet is not connected.`,
@@ -79,27 +86,42 @@ const JoinGraveBtn: React.FC = () => {
               })
             return;
         }
-    
+
         try {
-            // Creating a provider and signer using ethers
             const provider =  new ethers.providers.Web3Provider(window.lukso);
-            const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
+            const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+                LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
+
+            // LSP8
+            const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+            LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+            
+            const dataKeys = [
+                LSP7URDdataKey,
+                LSP8URDdataKey,
+            ];
+
             const signer = provider.getSigner();
             const account = await signer.getAddress();
 
             // Interacting with the Universal Profile contract
-            const up = new ethers.Contract(
+            const UP = new ethers.Contract(
                 account as string,
                 UniversalProfile.abi,
                 provider
             );
-    
-            // Sending transaction to update URD
-            const transaction = await up.connect(signer).setData(
-                URD_DATA_KEY, 
-                newURDAddress
-            );
-            await transaction.wait();
+
+            const dataValues = [
+                lsp7NewDeletegate,
+                lsp8NewDelegate,
+            ];
+        
+            // execute the tx
+            //const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
+            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+            await setDataBatchTx.wait();
+
+
             fetchProfile(account);
         } catch (err) {
             console.error("Error: ", err);      
@@ -111,23 +133,112 @@ const JoinGraveBtn: React.FC = () => {
                 isClosable: true,
               })
         }
-    };
+    }
+
+    
+    // // Function to update URD
+    // // TODO update naming to be a sub delegate
+    // const updateSubURDs = async () => {
+    //     if (!window.lukso) {
+    //         toast({
+    //             title: `UP wallet is not connected.`,
+    //             status: 'error',
+    //             position: 'bottom-left',
+    //             duration: 9000,
+    //             isClosable: true,
+    //           })
+    //         return;
+    //     }
+    
+    //     try {
+    //         // Creating a provider and signer using ethers
+    //         const provider =  new ethers.providers.Web3Provider(window.lukso);
+    //         // const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
+    //         // LSP7
+    //         const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+    //             LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
+
+    //         // LSP8
+    //         const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+    //         LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+            
+    //         const dataKeys = [
+    //             LSP7URDdataKey,
+    //             LSP8URDdataKey,
+    //             ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP7_URD.slice(2),
+    //             ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP8_URD.slice(2),
+    //         ];
+
+    //         // Calculate the correct permission (SUPER_CALL + REENTRANCY) // todo DO WE NEED MORE ???
+    //         const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+    //         const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+
+
+    //         const signer = provider.getSigner();
+    //         const account = await signer.getAddress();
+
+    //         // Interacting with the Universal Profile contract
+    //         const UP = new ethers.Contract(
+    //             account as string,
+    //             UniversalProfile.abi,
+    //             provider
+    //         );
+    //         debugger;
+    
+    //         // // Sending transaction to update URD
+    //         // const transaction = await up.connect(signer).setData(
+    //         //     URD_DATA_KEY, 
+    //         //     newURDAddress
+    //         // );
+    //         // await transaction.wait();
+    //         const dataValues = [
+    //             constants.LSP7_URD,
+    //             constants.LSP8_URD,,
+    //             permHex,
+    //             permHex
+    //         ];
+        
+    //         console.log('keys: ', dataKeys);
+    //         console.log('values: ', dataValues);
+        
+    //         // execute the tx
+    //         //const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
+    //         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+    //         await setDataBatchTx.wait();
+
+
+    //         fetchProfile(account);
+    //     } catch (err) {
+    //         console.error("Error: ", err);      
+    //         toast({
+    //             title: 'Error: ' + err.message,
+    //             status: 'error',
+    //             position: 'bottom-left',
+    //             duration: 9000,
+    //             isClosable: true,
+    //           })
+    //     }
+    // };
     
     // Event handler for the join button
     const handleClick = async () => {
         setLoading(true);
         try {
-            await updateURD(constants.universalProfileURDAddress);
+            await updateSubURD(constants.LSP7_URD, constants.LSP8_URD);
         } finally {
             setLoading(false);
         }
     };
 
-    // Event handler for the reset button
+
+    /**
+     * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
+     * This way no more assets are redirected but the UP still has access to the Grave vault.
+     */
     const handleReset = async () => {
         setLoading(true);
         try {
-            await updateURD(constants.ZERO_ADDRESS);
+            await updateSubURD(constants.ZERO_ADDRESS, constants.ZERO_ADDRESS);
         } finally {
             setLoading(false);
         }
@@ -139,14 +250,16 @@ const JoinGraveBtn: React.FC = () => {
 
     return (
         <div>
-            {URD === constants.universalProfileURDAddress ?     
+            <Box>Current URD: {universalRDUp}</Box>
+            {/* {URD === constants.universalProfileURDAddress ?     // change to query the subkey */}
                 <Button onClick={handleReset} disabled={loading} colorScheme="red">
                     {loading ? 'Processing...' : 'Leave the Grave'} 
-                </Button>:           
+                </Button> 
+                {/* :            */}
                 <Button onClick={handleClick} disabled={loading}>
                 {loading ? 'Processing...' : 'Join the Grave'}
                 </Button>
-            }
+            {/* } */}
             <Box>Note: Make sure your UP Browser Extension has enabled "Edit notifications & automation".</Box>
         </div>
     );
