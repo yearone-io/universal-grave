@@ -47,10 +47,10 @@ const JoinGraveBtn: React.FC = () => {
         }
     }, [account]);
 
-    // 1- TODO find a way to the sub delegate for LSP7 and LSP8
-    // 1-a TODO find a way to get the current permissions of LS7 and LSP8 delegates
+    // Current TODOS:
+    // Get Batch data: URD, LSP7 delegate, LS8 delegate, LP7 vault, LSP8 vault
 
-    // TODOS:
+    // TODOS after V1:
     // 0 - Add a batch call on page load to get URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
     // 1- include permissions in the updateSubURD batch call, done in a conditional way.
     //    If any of the required permissions are not set, set them. If they are set, do not set them.
@@ -60,16 +60,40 @@ const JoinGraveBtn: React.FC = () => {
         const provider =  window.lukso;
         const config = { ipfsGateway: constants.IPFS_GATEWAY };
         try {
+
+            //GET URD
             const profile = new ERC725(lsp3ProfileSchema, address, provider, config);
-            const UPData = await profile.fetchData();
-            if (UPData) {
-                debugger;
-                const URDGroup = UPData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-                if (URDGroup) {
-                    console.log('UniversalRDUp: ', URDGroup.value)
-                    setUniversalRDUp(URDGroup.value as string);
-                }
-            }
+            const urdData = await profile.fetchData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+            setUniversalRDUp(urdData.value as string);
+
+            // GET LSP7 and LSP8 URD
+
+            // GET LSP7 and LSP8 vaults
+
+            // TODO, do a batch call for all the data
+
+            // const UP = new ethers.Contract(
+            //     account as string,
+            //     UniversalProfile.abi,
+            //     provider
+            // );
+            // const signer = provider.getSigner();
+    
+            // // const UPData = await UP.connect(signer).getDataBatch([
+            // //     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+            // //     // ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP7_URD.slice(2),
+            // //     // ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP8_URD.slice(2),
+            // // ]);
+            // const UPData = await UP.connect(signer).fetchData();
+            // await UPData.wait();
+            // if (UPData) {
+            //     debugger;
+            //     const URDGroup = UPData.find((group) => group.key === ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+            //     if (URDGroup) {
+            //         console.log('UniversalRDUp: ', URDGroup.value)
+            //         setUniversalRDUp(URDGroup.value as string);
+            //     }
+            // }
 
             // todo get the sub URD for LSP7 and LSP8, and the permissions
 
@@ -101,7 +125,7 @@ const JoinGraveBtn: React.FC = () => {
                 ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP8_URD.slice(2),
             ];
 
-            // Calculate the correct permission (SUPER_CALL + REENTRANCY) // todo DO WE NEED MORE ???
+            // Calculate the correct permission (SUPER_CALL + REENTRANCY)
             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
             const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
@@ -213,7 +237,6 @@ const JoinGraveBtn: React.FC = () => {
             setLoading(false);
         }
     };
-
 
     /**
      * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
