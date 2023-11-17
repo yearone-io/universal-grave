@@ -51,7 +51,10 @@ const JoinGraveBtn: React.FC = () => {
 
     // 1- TODO find a way to the sub delegate for LSP7 and LSP8
     // 1-a TODO find a way to get the current permissions of LS7 and LSP8 delegates
-    // 2- Find a way to set permissions conditionally a) get permissios, b) set the ones missing
+
+    // TODOS:
+    // 1- include permissions in the updateSubURD function, done in a conditional way.
+    //    If any of the required permissions are not set, set them. If they are set, do not set them.
 
     // Function to fetch Universal Profile data
     const fetchProfile = async (address: string) =>  {  
@@ -202,90 +205,6 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
-    
-    // // Function to update URD
-    // // TODO update naming to be a sub delegate
-    // const updateSubURDs = async () => {
-    //     if (!window.lukso) {
-    //         toast({
-    //             title: `UP wallet is not connected.`,
-    //             status: 'error',
-    //             position: 'bottom-left',
-    //             duration: 9000,
-    //             isClosable: true,
-    //           })
-    //         return;
-    //     }
-    
-    //     try {
-    //         // Creating a provider and signer using ethers
-    //         const provider =  new ethers.providers.Web3Provider(window.lukso);
-    //         // const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
-    //         // LSP7
-    //         const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-    //             LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-    //         // LSP8
-    //         const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-    //         LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-            
-    //         const dataKeys = [
-    //             LSP7URDdataKey,
-    //             LSP8URDdataKey,
-    //             ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP7_URD.slice(2),
-    //             ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.LSP8_URD.slice(2),
-    //         ];
-
-    //         // Calculate the correct permission (SUPER_CALL + REENTRANCY) // todo DO WE NEED MORE ???
-    //         const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
-    //         const permHex = '0x' + permInt.toString(16).padStart(64, '0');
-
-
-    //         const signer = provider.getSigner();
-    //         const account = await signer.getAddress();
-
-    //         // Interacting with the Universal Profile contract
-    //         const UP = new ethers.Contract(
-    //             account as string,
-    //             UniversalProfile.abi,
-    //             provider
-    //         );
-    //         debugger;
-    
-    //         // // Sending transaction to update URD
-    //         // const transaction = await up.connect(signer).setData(
-    //         //     URD_DATA_KEY, 
-    //         //     newURDAddress
-    //         // );
-    //         // await transaction.wait();
-    //         const dataValues = [
-    //             constants.LSP7_URD,
-    //             constants.LSP8_URD,,
-    //             permHex,
-    //             permHex
-    //         ];
-        
-    //         console.log('keys: ', dataKeys);
-    //         console.log('values: ', dataValues);
-        
-    //         // execute the tx
-    //         //const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
-    //         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-    //         await setDataBatchTx.wait();
-
-
-    //         fetchProfile(account);
-    //     } catch (err) {
-    //         console.error("Error: ", err);      
-    //         toast({
-    //             title: 'Error: ' + err.message,
-    //             status: 'error',
-    //             position: 'bottom-left',
-    //             duration: 9000,
-    //             isClosable: true,
-    //           })
-    //     }
-    // };
     
     // Event handler for the join button
     const handleClick = async () => {
