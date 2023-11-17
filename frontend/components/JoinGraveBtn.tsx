@@ -17,15 +17,13 @@ import { constants } from '@/app/constants';
  * Key Features:
  * 1. Fetching Profile Data: Retrieves the current state of the user's UP, specifically the URD,
  *    using ERC725.js and a provided blockchain address.
- * 2. Updating URD: Allows users to update their URD to either join or leave the Grave.
+ * 2. Updating LSP7 and LSP8 URD: Allows users to update their LSP7/LSP8 URDs to either join or leave the Grave.
  *    This is done by sending a transaction to the blockchain using ethers.js.
  * 3. Wallet Integration: Utilizes a WalletContext to access the user's blockchain account and ensure
  *    that a wallet is connected before performing any actions.
  * 4. User Feedback: Provides feedback to the user via a toast notification system from Chakra UI,
  *    especially in cases of errors or successful updates.
  *
- * Note: This component requires the UP Browser Extension to be configured with "Edit notifications & automation"
- * for full functionality.
  */
 const JoinGraveBtn: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -49,12 +47,12 @@ const JoinGraveBtn: React.FC = () => {
         }
     }, [account]);
 
-
     // 1- TODO find a way to the sub delegate for LSP7 and LSP8
     // 1-a TODO find a way to get the current permissions of LS7 and LSP8 delegates
 
     // TODOS:
-    // 1- include permissions in the updateSubURD function, done in a conditional way.
+    // 0 - Add a batch call on page load to get URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
+    // 1- include permissions in the updateSubURD batch call, done in a conditional way.
     //    If any of the required permissions are not set, set them. If they are set, do not set them.
 
     // Function to fetch Universal Profile data
@@ -82,7 +80,6 @@ const JoinGraveBtn: React.FC = () => {
             return console.log('This is not an ERC725 Contract');
         }
     }
-
 
     const updatePermissions = async () => {
        if (!window.lukso) {
