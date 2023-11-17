@@ -75,7 +75,7 @@ const JoinGraveBtn: React.FC = () => {
                 setURDLsp7(UPData[0]);
                 setURDLsp8(UPData[1]);
             }
-            // TODO GET VAULTS
+        // TODO GET VAULTS (LSP10.LSP10Vaults[])
 
         } catch (error) {
             return console.error(error);
