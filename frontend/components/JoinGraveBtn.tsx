@@ -5,6 +5,7 @@ import { WalletContext } from './wallet/WalletContext';
 import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -31,6 +32,7 @@ const JoinGraveBtn: React.FC = () => {
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
+    const [graveVault, setGraveVault] = useState<string | null>(null);
     const toast = useToast()
     
     // Checking if the walletContext is available
@@ -38,7 +40,6 @@ const JoinGraveBtn: React.FC = () => {
         throw new Error('WalletConnector must be used within a WalletProvider.');
     }
     const { account } = walletContext;
-
 
     useEffect(() => {
         // Request account access on component mount
@@ -143,6 +144,7 @@ const JoinGraveBtn: React.FC = () => {
     
     /**
      *  Function to update the sub URD for LSP7 and LSP8 to the new delegates.
+     * 
      */
     const updateSubURD = async (lsp7NewDeletegate: string, lsp8NewDelegate: string) => {
         if (!window.lukso) {
@@ -188,11 +190,21 @@ const JoinGraveBtn: React.FC = () => {
             ];
         
             // execute the tx
-            //const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
 
-            // TODO if it is joining the grave, create Vaults for LSP7 and LSP8
+            // if joining the grave, create vaults (if there is no a grave vault yet)
+            if (lsp7NewDeletegate === constants.LSP7_URD && lsp8NewDelegate === constants.LSP8_URD
+                && !graveVault
+                ) {
+                // create an factory for the LSP9Vault contract
+                let vaultFactory = new ethers.ContractFactory(
+                    LSP9Vault.abi,
+                    LSP9Vault.bytecode,
+                );
+                const myVault = await vaultFactory.connect(signer).deploy(account);
+                setGraveVault(myVault.address);
+            }
 
             fetchProfile(account);
         } catch (err) {
@@ -245,8 +257,7 @@ const JoinGraveBtn: React.FC = () => {
                     <AccordionPanel pb={4}>
                         <Box>LSP7 URD: {URDLsp7}</Box>
                         <Box>LSP8 URD: {URDLsp8}</Box>
-                        <Box>LSP7 grave vault: </Box>
-                        <Box>LSP8 grave vault: </Box>
+                        <Box>Grave Vault: {graveVault}</Box>
                     </AccordionPanel>
                 </AccordionItem>
             </Accordion>
@@ -268,7 +279,7 @@ const JoinGraveBtn: React.FC = () => {
                 </Button> 
                 :
                 <Button onClick={handleClick} disabled={loading}>
-                    {loading ? 'Processing...' : 'Join the Grave'}
+                    {loading ? 'Processing...' : 'Join the Grave (2 tranx)'}
                 </Button>
             }
             {renderAccordeonDetails()}
