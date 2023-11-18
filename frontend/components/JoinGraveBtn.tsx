@@ -210,7 +210,8 @@ const JoinGraveBtn: React.FC = () => {
         
             // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
             //       The UP should still have access to the vault, but no more assets should be redirected.
-            //       Future idea, create a second vault incase something wrong happens with the first one and have multiple using LSP10
+            //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
+            //       Something wrong like renouncing ownership.
             
             fetchProfile(account);
         } catch (err) {
@@ -280,7 +281,7 @@ const JoinGraveBtn: React.FC = () => {
                     LSP9Vault.bytecode,
                 );
                 const myVault = await vaultFactory.connect(signer).deploy(account);
-                setGraveVault(myVault.address);
+                setGraveVault(myVault.address); // TODO remove, fetch profile should do it
 
                 // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
                 // Note: remember to update ABIs if the delegate contracts change
