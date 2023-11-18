@@ -57,15 +57,16 @@ const JoinGraveBtn: React.FC = () => {
 
     // Function to fetch Universal Profile data
     const fetchProfile = async (address: string) =>  {  
-        const provider =  new ethers.providers.Web3Provider(window.lukso);        
+        const provider =  new ethers.providers.Web3Provider(window.lukso);  
+        const signer = provider.getSigner();    
+      
+        //1- GET LSP7 and LSP8 URD
         try {
-            //1- GET LSP7 and LSP8 URD
             const UP = new ethers.Contract(
                 account as string,
                 UniversalProfile.abi,
                 provider
             );
-            const signer = provider.getSigner();    
             const UPData = await UP.connect(signer).getDataBatch([
                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                     LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
@@ -77,24 +78,28 @@ const JoinGraveBtn: React.FC = () => {
                 setURDLsp7(UPData[0]);
                 setURDLsp8(UPData[1]);
             }
-            // 2 - Get Grave Vault from UP (LSP10)
-            // TODO 
-
-            // 3 -  get grave vault from Grave delegate
-            const graveDelegate = new ethers.Contract(
-                constants.UNIVERSAL_GRAVE_DELEGATE,
-                UniversalGraveDelegateAbi,
-                provider
-            );
-            const vaultFromGraveDelegate = await graveDelegate.connect(signer).getGrave();
-            setGraveVault(vaultFromGraveDelegate);
-
-            // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
-            //    to avoid issues related to renouncing ownership of the vault
-            // TODO
-        } catch (error) {
-            return console.error(error);
+        } catch (err) {
+            return err;
         }
+        // 2 - Get Grave Vault from UP (LSP10)
+        // TODO 
+        try {
+        // 3 -  get grave vault from Grave delegate
+        const graveDelegate = new ethers.Contract(
+            constants.UNIVERSAL_GRAVE_DELEGATE,
+            UniversalGraveDelegateAbi,
+            provider
+        );
+        const vaultFromGraveDelegate = await graveDelegate.connect(signer).getGrave();
+        setGraveVault(vaultFromGraveDelegate);
+        } catch (err) {
+            return err;
+        }
+
+        // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
+        //    to avoid issues related to renouncing ownership of the vault
+        // TODO
+
     }
 
     /**
@@ -203,15 +208,9 @@ const JoinGraveBtn: React.FC = () => {
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
         
-            // if leave the grave, reset the vault address stored in the grave delegate
-            // Note: remember to update ABIs if the delegate contracts change
-            const graveDelegate = new ethers.Contract(
-                constants.UNIVERSAL_GRAVE_DELEGATE,
-                UniversalGraveDelegateAbi,
-                provider
-            );
-            // TODO: there is a difference between 0x and '0x0000000000000000000000000000000000000000', make sure smart contracts are aware
-            await graveDelegate.connect(signer).setGrave('0x0000000000000000000000000000000000000000');
+            // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
+            //       The UP should still have access to the vault, but no more assets should be redirected.
+            //       Future idea, create a second vault incase something wrong happens with the first one and have multiple using LSP10
             
             fetchProfile(account);
         } catch (err) {
