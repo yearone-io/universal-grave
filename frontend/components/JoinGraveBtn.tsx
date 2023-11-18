@@ -83,6 +83,7 @@ const JoinGraveBtn: React.FC = () => {
         }
         // 2 - Get Grave Vault from UP (LSP10)
         // TODO 
+
         try {
         // 3 -  get grave vault from Grave delegate
         const graveDelegate = new ethers.Contract(
@@ -90,7 +91,7 @@ const JoinGraveBtn: React.FC = () => {
             UniversalGraveDelegateAbi,
             provider
         );
-        const vaultFromGraveDelegate = await graveDelegate.connect(signer).getGrave();
+        const vaultFromGraveDelegate = await graveDelegate.connect(signer).graveVaults(address);
         setGraveVault(vaultFromGraveDelegate);
         } catch (err) {
             return err;
