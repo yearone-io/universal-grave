@@ -6,6 +6,9 @@ import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPane
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import LSP7GraveDelegateAbi from '@/app/abis/LSP7GraveDelegateAbi.json';
+import LSP8GraveDelegateAbi from '@/app/abis/LSP8GraveDelegateAbi.json';
+
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -64,19 +67,25 @@ const JoinGraveBtn: React.FC = () => {
                 provider
             );
             const signer = provider.getSigner();
+            debugger;
     
             const UPData = await UP.connect(signer).getDataBatch([
                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                     LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
-                    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-                    LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40)
+                ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+                    LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
+                // ERC725YDataKeys.LSP10['LSP10Vaults[]']
             ]);
-
+            debugger;
             if (UPData && UPData.length === 2) {
                 setURDLsp7(UPData[0]);
                 setURDLsp8(UPData[1]);
             }
-        // TODO GET VAULTS (LSP10.LSP10Vaults[])
+            // 2 - Get Grave Vault
+
+        // todo get grave vault from Grave delegate
+
+        // todo verified the owner is the UP by checking ownership or querying LSP10.LSP10Vaults[] 
 
         } catch (error) {
             return console.error(error);
@@ -142,11 +151,7 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
     
-    /**
-     *  Function to update the sub URD for LSP7 and LSP8 to the new delegates.
-     * 
-     */
-    const updateSubURD = async (lsp7NewDeletegate: string, lsp8NewDelegate: string) => {
+    const leaveTheGrave = async () => {
         if (!window.lukso) {
             toast({
                 title: `UP wallet is not connected.`,
@@ -154,11 +159,12 @@ const JoinGraveBtn: React.FC = () => {
                 position: 'bottom-left',
                 duration: 9000,
                 isClosable: true,
-              })
+                })
             return;
         }
-
+    
         try {
+            // TODO: refactor/break down in small functions
             const provider =  new ethers.providers.Web3Provider(window.lukso);
             
             // LSP7
@@ -185,8 +191,86 @@ const JoinGraveBtn: React.FC = () => {
             );
 
             const dataValues = [
-                lsp7NewDeletegate,
-                lsp8NewDelegate,
+                constants.ZERO_ADDRESS,
+                constants.ZERO_ADDRESS,
+            ];
+        
+            // execute the tx
+            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+            await setDataBatchTx.wait();
+        
+            // if leave the grave, reset the vault address stored in the grave delegate
+            // Note: remember to update ABIs if the delegate contracts change
+            const lsp7GraveDelegate = new ethers.Contract(
+                constants.LSP7_URD,
+                LSP7GraveDelegateAbi,
+                provider
+            );
+            // TODO: there is a difference between 0x and '0x0000000000000000000000000000000000000000', make sure smart contracts are aware
+            await lsp7GraveDelegate.connect(signer).setGrave('0x0000000000000000000000000000000000000000');
+
+            const lsp8GraveDelegate = new ethers.Contract(
+                constants.LSP8_URD,
+                LSP8GraveDelegateAbi,
+                provider
+            );
+            await lsp8GraveDelegate.connect(signer).setGrave('0x0000000000000000000000000000000000000000');
+            
+            fetchProfile(account);
+        } catch (err) {
+            console.error("Error: ", err);      
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+                })
+        }
+    }
+
+    const joinTheGrave = async () => {
+        if (!window.lukso) {
+            toast({
+                title: `UP wallet is not connected.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
+            return;
+        }
+
+        try {
+            // TODO: refactor/break down in small functions
+            const provider =  new ethers.providers.Web3Provider(window.lukso);
+            
+            // LSP7
+            const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+                LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
+
+            // LSP8
+            const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+            LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+            
+            const dataKeys = [
+                LSP7URDdataKey,
+                LSP8URDdataKey,
+            ];
+
+            const signer = provider.getSigner();
+            const account = await signer.getAddress();
+
+            // Interacting with the Universal Profile contract
+            const UP = new ethers.Contract(
+                account as string,
+                UniversalProfile.abi,
+                provider
+            );
+
+            const dataValues = [
+                constants.LSP7_URD,
+                constants.LSP8_URD
             ];
         
             // execute the tx
@@ -194,9 +278,7 @@ const JoinGraveBtn: React.FC = () => {
             await setDataBatchTx.wait();
 
             // if joining the grave, create vaults (if there is no a grave vault yet)
-            if (lsp7NewDeletegate === constants.LSP7_URD && lsp8NewDelegate === constants.LSP8_URD
-                && !graveVault
-                ) {
+            if (!graveVault) {
                 // create an factory for the LSP9Vault contract
                 let vaultFactory = new ethers.ContractFactory(
                     LSP9Vault.abi,
@@ -204,6 +286,22 @@ const JoinGraveBtn: React.FC = () => {
                 );
                 const myVault = await vaultFactory.connect(signer).deploy(account);
                 setGraveVault(myVault.address);
+
+                // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+                // Note: remember to update ABIs if the delegate contracts change
+                const lsp7GraveDelegate = new ethers.Contract(
+                    constants.LSP7_URD,
+                    LSP7GraveDelegateAbi,
+                    provider
+                );
+                await lsp7GraveDelegate.connect(signer).setGrave(myVault.address);
+
+                const lsp8GraveDelegate = new ethers.Contract(
+                    constants.LSP8_URD,
+                    LSP8GraveDelegateAbi,
+                    provider
+                );
+                await lsp8GraveDelegate.connect(signer).setGrave(myVault.address);
             }
 
             fetchProfile(account);
@@ -223,7 +321,7 @@ const JoinGraveBtn: React.FC = () => {
     const handleClick = async () => {
         setLoading(true);
         try {
-            await updateSubURD(constants.LSP7_URD, constants.LSP8_URD);
+            await joinTheGrave();
         } finally {
             setLoading(false);
         }
@@ -236,7 +334,7 @@ const JoinGraveBtn: React.FC = () => {
     const handleReset = async () => {
         setLoading(true);
         try {
-            await updateSubURD(constants.ZERO_ADDRESS, constants.ZERO_ADDRESS);
+            await leaveTheGrave();
         } finally {
             setLoading(false);
         }
@@ -279,7 +377,7 @@ const JoinGraveBtn: React.FC = () => {
                 </Button> 
                 :
                 <Button onClick={handleClick} disabled={loading}>
-                    {loading ? 'Processing...' : 'Join the Grave (2 tranx)'}
+                    {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
                 </Button>
             }
             {renderAccordeonDetails()}
