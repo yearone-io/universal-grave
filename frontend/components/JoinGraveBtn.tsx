@@ -282,7 +282,6 @@ const JoinGraveBtn: React.FC = () => {
                     LSP9Vault.bytecode,
                 );
                 const myVault = await vaultFactory.connect(signer).deploy(account);
-                setGraveVault(myVault.address); // TODO remove, fetch profile should do it
 
                 // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
                 // Note: remember to update ABIs if the delegate contracts change
