@@ -239,7 +239,6 @@ const JoinGraveBtn: React.FC = () => {
 
         try {
             // TODO: refactor/break down in small functions
-            debugger;
             const provider =  new ethers.providers.Web3Provider(window.lukso);
             
             // LSP7
@@ -257,7 +256,6 @@ const JoinGraveBtn: React.FC = () => {
 
             const signer = provider.getSigner();
             const account = await signer.getAddress();
-            debugger
             // Interacting with the Universal Profile contract
             const UP = new ethers.Contract(
                 account as string,
