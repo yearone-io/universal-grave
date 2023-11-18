@@ -118,17 +118,16 @@ const JoinGraveBtn: React.FC = () => {
         try {
             // Creating a provider and signer using ethers
             const provider =  new ethers.providers.Web3Provider(window.lukso);        
+            const signer = provider.getSigner();
+            const account = await signer.getAddress();
             const dataKeys = [
                 ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_DELEGATE.slice(2),
-                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_DELEGATE.slice(2),
-            ];
+            ]; // todo (critical) add premissions of the UP Browser Extension
 
             // Calculate the correct permission (SUPER_CALL + REENTRANCY)
             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
             const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
-            const signer = provider.getSigner();
-            const account = await signer.getAddress();
 
             // Interacting with the Universal Profile contract
             const UP = new ethers.Contract(
@@ -241,6 +240,7 @@ const JoinGraveBtn: React.FC = () => {
 
         try {
             // TODO: refactor/break down in small functions
+            debugger;
             const provider =  new ethers.providers.Web3Provider(window.lukso);
             
             // LSP7
@@ -258,7 +258,7 @@ const JoinGraveBtn: React.FC = () => {
 
             const signer = provider.getSigner();
             const account = await signer.getAddress();
-
+            debugger
             // Interacting with the Universal Profile contract
             const UP = new ethers.Contract(
                 account as string,
