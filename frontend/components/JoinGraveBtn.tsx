@@ -221,7 +221,7 @@ const JoinGraveBtn: React.FC = () => {
             //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
             //       Something wrong like renouncing ownership.
             
-            fetchProfile(account);
+            fetchProfile();
         } catch (err) {
             console.error("Error: ", err);      
             toast({
@@ -300,7 +300,7 @@ const JoinGraveBtn: React.FC = () => {
                 await graveForwarder.connect(signer).setGrave(myVault.address);
             }
 
-            fetchProfile(account);
+            fetchProfile();
         } catch (err) {
             console.error("Error: ", err);      
             toast({
