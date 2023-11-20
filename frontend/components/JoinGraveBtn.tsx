@@ -23,7 +23,7 @@ import UniversalGraveDelegateAbi from '@/app/abis/UniversalGraveDelegateAbi.json
  *    any actions are performed, enhancing security and user experience.
  * 4. User Feedback: Offers real-time feedback via a toast notification system from Chakra UI, informing users
  *    about the status of their actions, including errors and successful updates.
- * 5. Permission Management: Allows users to update permissions related to their UPs, ensuring the necessary
+ * 5. Permission Management: Allows users to update permissions related to their UPs and Browser extension controller, ensuring the necessary
  *    access rights are set for interacting with URDs.
  *
  * Additional functionalities and improvements are planned for future versions, including batch calls for data retrieval
@@ -52,8 +52,8 @@ const JoinGraveBtn: React.FC = () => {
 
     // TODOS after V1:
     // 0 - Add a batch call or wrapper contract so  on page load it gets URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
-    // 1- include permissions in the updateSubURD batch call, done in a conditional way.
-    //    If any of the required permissions are not set, set them. If they are set, do not set them.
+    // 1 - Improve permission handling
+    // 2 - Verifying owners of vaults
 
     // Function to fetch Universal Profile data
     const fetchProfile = async () =>  {  
@@ -103,6 +103,9 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
+    /**
+     *  Function to get the grave vault from the grave forwarder contract and set it in the state.
+     */
     const getGraveForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
             const graveForwarder = new ethers.Contract(
@@ -125,9 +128,8 @@ const JoinGraveBtn: React.FC = () => {
     }
 
     /**
-     * Function to update the permissions for the UP if needed.
-     * Ideally this would be done as part of batch call on setDataBatch, as long as
-     * it is done in a conditional way if the required permissions are not set (planned for the future).
+     * Function to update the permissions if needed.
+     * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
      * 
      */
     const updatePermissions = async () => {
@@ -143,7 +145,6 @@ const JoinGraveBtn: React.FC = () => {
         }
     
         try {
-            
             // Creating a provider and signer using ethers
             const provider =  new ethers.providers.Web3Provider(window.lukso);        
             const signer = provider.getSigner();
@@ -164,7 +165,6 @@ const JoinGraveBtn: React.FC = () => {
 
 
             // Interacting with the Universal Profile contract
-  
             const dataValues = [
                 permHex,
                 permHex
@@ -184,6 +184,9 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
+    /**
+     *  Function to set the delegates for LSP7 and LSP8 to the Grave Forwarder and create a vault if needed.
+     */
     const joinTheGrave = async () => {
         if (!window.lukso) {
             toast({
@@ -204,7 +207,9 @@ const JoinGraveBtn: React.FC = () => {
         fetchProfile();
     }
     
-    
+    /**
+     * Function to reset the delegates for LSP7 and LSP8.
+     */
     const leaveTheGrave = async () => {
         if (!window.lukso) {
             toast({
@@ -225,6 +230,9 @@ const JoinGraveBtn: React.FC = () => {
         fetchProfile();
     }
 
+    /**
+     * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
+    */
     const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string) => {
         try {
             const provider =  new ethers.providers.Web3Provider(window.lukso);
@@ -271,6 +279,9 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
+    /**
+     * Function to create a vault for the UP so the assets can be redirected to it.
+     */
     const createVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
             // create an factory for the LSP9Vault contract
