@@ -267,9 +267,22 @@ const JoinGraveBtn: React.FC = () => {
         }
         const provider =  new ethers.providers.Web3Provider(window.lukso);
         const signer = provider.getSigner();
-        await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER);
-        if (graveVault === constants.ZERO_ADDRESS) {
-            await createVault(provider, signer);
+        // todo if revert, don't continue
+        try {
+            await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER);
+            if (graveVault === constants.ZERO_ADDRESS) {
+                await createVault(provider, signer);
+            }
+        } catch (err) {
+            console.error("Error: ", err);      
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+            })
+            return err
         }
         fetchProfile();
     }
@@ -288,52 +301,12 @@ const JoinGraveBtn: React.FC = () => {
                 })
             return;
         }
-
-        await setLSPDelegates('0x', '0x');
-            // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
-        //       The UP should still have access to the vault, but no more assets should be redirected.
-        //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
-        //       Something wrong like renouncing ownership.
-        fetchProfile();
-    }
-
-    /**
-     * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
-    */
-    const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string) => {
         try {
-            const provider =  new ethers.providers.Web3Provider(window.lukso);
-            
-            // LSP7
-            const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-                LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-            // LSP8
-            const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-            LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-            
-            const dataKeys = [
-                LSP7URDdataKey,
-                LSP8URDdataKey,
-            ];
-
-            const signer = provider.getSigner();
-            const account = await signer.getAddress();
-            // Interacting with the Universal Profile contract
-            const UP = new ethers.Contract(
-                account as string,
-                UniversalProfile.abi,
-                provider
-            );
-
-            const dataValues = [
-                lsp7DelegateAddress,
-                lsp8DelegateAddress
-            ];
-        
-            // execute the tx
-            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-            await setDataBatchTx.wait();
+            await setLSPDelegates('0x', '0x');
+                // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
+            //       The UP should still have access to the vault, but no more assets should be redirected.
+            //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
+            //       Something wrong like renouncing ownership.
         } catch (err) {
             console.error("Error: ", err);      
             toast({
@@ -343,39 +316,68 @@ const JoinGraveBtn: React.FC = () => {
                 duration: 9000,
                 isClosable: true,
             })
+            return err
         }
+        fetchProfile();
+    }
+
+    /**
+     * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
+    */
+    const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string) => {
+        const provider =  new ethers.providers.Web3Provider(window.lukso);
+        
+        // LSP7
+        const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+            LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
+
+        // LSP8
+        const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+        
+        const dataKeys = [
+            LSP7URDdataKey,
+            LSP8URDdataKey,
+        ];
+
+        const signer = provider.getSigner();
+        const account = await signer.getAddress();
+        // Interacting with the Universal Profile contract
+        const UP = new ethers.Contract(
+            account as string,
+            UniversalProfile.abi,
+            provider
+        );
+
+        const dataValues = [
+            lsp7DelegateAddress,
+            lsp8DelegateAddress
+        ];
+    
+        // execute the tx
+        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+        return await setDataBatchTx.wait();
     }
 
     /**
      * Function to create a vault for the UP so the assets can be redirected to it.
      */
     const createVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
-        try {
-            // create an factory for the LSP9Vault contract
-            let vaultFactory = new ethers.ContractFactory(
-                LSP9Vault.abi,
-                LSP9Vault.bytecode,
-            );
-            const myVault = await vaultFactory.connect(signer).deploy(account);
+        // create an factory for the LSP9Vault contract
+        let vaultFactory = new ethers.ContractFactory(
+            LSP9Vault.abi,
+            LSP9Vault.bytecode,
+        );
+        const myVault = await vaultFactory.connect(signer).deploy(account);
 
-            // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-            // Note: remember to update ABIs if the delegate contracts change
-            const graveForwarder = new ethers.Contract(
-                constants.UNIVERSAL_GRAVE_FORWARDER,
-                LSP1GraveForwaderAbi,
-                provider
-            );
-            await graveForwarder.connect(signer).setGrave(myVault.address);
-        } catch (err) {
-            console.error("Error: ", err);      
-            toast({
-                title: 'Error: ' + err.message,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-              })
-        }
+        // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+        // Note: remember to update ABIs if the delegate contracts change
+        const graveForwarder = new ethers.Contract(
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+            LSP1GraveForwaderAbi,
+            provider
+        );
+        await graveForwarder.connect(signer).setGrave(myVault.address);
     }
 
     // Event handler for the join button
@@ -453,7 +455,6 @@ const JoinGraveBtn: React.FC = () => {
             )
         }
     }
-
 
     const displayTruncatedAddress = (address: string) => {
         return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
