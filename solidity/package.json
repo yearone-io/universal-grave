@@ -7,22 +7,19 @@
 		"deploy-testnet": "npx hardhat run ./scripts/MyContract_deploy.js --network ETH_GOERLI",
 		"deploy": "npx hardhat run ./scripts/MyContract_deploy.js --network ETH_MAINNET",
 		"node": "npx hardhat node",
+		"test": "npx hardhat test",
 		"deploy-local": "npx hardhat run ./scripts/MyContract_deploy.js --network localhost"
 	},
 	"dependencies": {
+		"@erc725/erc725.js": "^0.21.2",
 		"@lukso/lsp-smart-contracts": "^0.12.1",
-		"@openzeppelin/contracts": "^4.7.3",
-		"dotenv": "^16.0.2"
+		"@openzeppelin/contracts": "^4.9.3",
+		"dotenv": "^16.3.1",
+		"hardhat": "^2.19.1",
+		"prettier": "^3.1.0"
 	},
 	"devDependencies": {
-		"@nomicfoundation/hardhat-toolbox": "^1.0.2",
-		"@types/chai": "^4.3.10",
-		"@types/mocha": "^10.0.4",
-		"@types/node": "^20.9.0",
-		"chai": "^4.3.10",
-		"hardhat": "^2.10.1",
-		"ts-node": "^10.9.1",
-		"typechain": "^8.3.2",
-		"typescript": "^5.2.2"
+		"@nomicfoundation/hardhat-toolbox": "^4.0.0",
+		"@nomicfoundation/hardhat-verify": "^2.0.1"
 	}
 }
