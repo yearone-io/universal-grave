@@ -75,6 +75,8 @@ const JoinGraveBtn: React.FC = () => {
                 // ERC725YDataKeys.LSP10['LSP10Vaults[]']
             ]);
             if (UPData && UPData.length === 2) {
+                // todo verify that the values are the same that the hardcoded ones, if not,
+                // treat it as they haven't joined? and the values need to be overwritten?
                 setURDLsp7(UPData[0]);
                 setURDLsp8(UPData[1]);
             }
@@ -85,14 +87,14 @@ const JoinGraveBtn: React.FC = () => {
         // TODO 
 
         try {
-        // 3 -  get grave vault from Grave delegate
-        const graveDelegate = new ethers.Contract(
-            constants.UNIVERSAL_GRAVE_DELEGATE,
-            UniversalGraveDelegateAbi,
-            provider
-        );
-        const vaultFromGraveDelegate = await graveDelegate.connect(signer).graveVaults(address);
-        setGraveVault(vaultFromGraveDelegate);
+            // 3 -  get grave vault from Grave delegate
+            const graveDelegate = new ethers.Contract(
+                constants.UNIVERSAL_GRAVE_DELEGATE,
+                UniversalGraveDelegateAbi,
+                provider
+            );
+            const vaultFromGraveDelegate = await graveDelegate.connect(signer).graveVaults(address);
+            setGraveVault(vaultFromGraveDelegate);
         } catch (err) {
             return err;
         }
@@ -134,6 +136,7 @@ const JoinGraveBtn: React.FC = () => {
             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
             const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
+            // Signer is the browser extension controller?? 90% sure
 
             // Interacting with the Universal Profile contract
             const UP = new ethers.Contract(
@@ -201,8 +204,8 @@ const JoinGraveBtn: React.FC = () => {
             );
 
             const dataValues = [
-                constants.ZERO_ADDRESS, // todo check if we can use '0x0000000000000000000000000000000000000000' instead
-                constants.ZERO_ADDRESS,
+                '0x',
+                '0x',
             ];
         
             // execute the tx
