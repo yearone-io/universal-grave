@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, useToast } from '@chakra-ui/react';
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Tooltip, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
@@ -34,6 +34,7 @@ const JoinGraveBtn: React.FC = () => {
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
+    const [browserExtensionControllerAddress, setBrowserExtensionControllerAddress] = useState<string>('');
     const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
     const toast = useToast()
     
@@ -78,17 +79,30 @@ const JoinGraveBtn: React.FC = () => {
                 UniversalProfile.abi,
                 provider
             );
+            const hexNumber = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 16);
+
             const UPData = await UP.connect(signer).getDataBatch([
                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                     LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                     LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
+                    ERC725YDataKeys.LSP6['AddressPermissions[]'].index + hexNumber.slice(2),
             ]);
-            if (UPData && UPData.length === 2) {
+            if (UPData) {
                 // Set the URD for LSP7 and LSP8 to what is returned from the UP. 
                 // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
                 setURDLsp7(UPData[0]);
                 setURDLsp8(UPData[1]);
+                if (UPData.length === 3 && window.lukso.isUniversalProfileExtension) {
+                    // sanity check we get the Browser Extension controller address
+                    // NOTE: Based on conversations with the Lukso Dev team, currently there is no way to specificly find
+                    //       the address of the Browser Extension controller. 
+                    //       We found that for most current cases where isUniversalProfileExtension the address of the Browser Extension
+                    //       is in position [1]. Since this is not reliable we ask in the UI to check and confirm. This is a temporary solution only
+                    //       for facilitating the setting up permissions for the Hackathon.
+                    //       https://discord.com/channels/359064931246538762/585786253992132609/1176203068866580521
+                    setBrowserExtensionControllerAddress(UPData[2]);
+                }
             }
         } catch (err) {
             console.error(err);
@@ -131,7 +145,7 @@ const JoinGraveBtn: React.FC = () => {
      * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
      * 
      */
-    const updatePermissions = async () => {
+    const updatePermissionsOfUp = async () => {
        if (!window.lukso) {
             toast({
                 title: `UP wallet is not connected.`,
@@ -156,7 +170,7 @@ const JoinGraveBtn: React.FC = () => {
 
             const dataKeys = [
                 ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
-            ]; // todo (critical) add premissions of the UP Browser Extension
+            ];
 
             // Calculate the correct permission (SUPER_CALL + REENTRANCY)
             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
@@ -166,7 +180,6 @@ const JoinGraveBtn: React.FC = () => {
             // Interacting with the Universal Profile contract
             const dataValues = [
                 permHex,
-                permHex
             ];
         
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
@@ -183,6 +196,61 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
+    /**
+     * Function to update the permissions if needed.
+     * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
+     * 
+     */
+    const updatePermissionsOfBEC = async () => {
+        if (!window.lukso) {
+             toast({
+                 title: `UP wallet is not connected.`,
+                 status: 'error',
+                 position: 'bottom-left',
+                 duration: 9000,
+                 isClosable: true,
+               })
+             return;
+         }
+     
+         try {
+             // Creating a provider and signer using ethers
+             const provider =  new ethers.providers.Web3Provider(window.lukso);        
+             const signer = provider.getSigner();
+             const account = await signer.getAddress();
+             const UP = new ethers.Contract(
+                 account as string,
+                 UniversalProfile.abi,
+                 provider
+             );
+ 
+             const dataKeys = [
+                 ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
+             ]; 
+             // Calculate the correct permission (SUPER_CALL + REENTRANCY)
+             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+             const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+ 
+ 
+             // Interacting with the Universal Profile contract
+             const dataValues = [
+                 permHex,
+             ];
+         
+             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+             await setDataBatchTx.wait();
+         } catch (err) {
+             console.error("Error: ", err);      
+             toast({
+                 title: 'Error: ' + err.message,
+                 status: 'error',
+                 position: 'bottom-left',
+                 duration: 9000,
+                 isClosable: true,
+             })
+         }
+     }
+    
     /**
      *  Function to set the delegates for LSP7 and LSP8 to the Grave Forwarder and create a vault if needed.
      */
@@ -355,15 +423,54 @@ const JoinGraveBtn: React.FC = () => {
         )
     }
 
+    const displayPermissionBECText = () => {
+        if (loading) {
+            return 'Processing...';
+        } else {
+           return (                   
+             <Tooltip label='Make sure this is your Browser Extension Controller. If not set permittions from UP Extension'>
+                <Box display='flex'>
+                    Update permissions 
+                        <Box fontWeight='800'>{displayTruncatedAddress(browserExtensionControllerAddress)}
+                            (check in UP)
+                        </Box>
+                </Box>  
+            </Tooltip>
+            )
+        }
+    }
+
+    const displayPermissionUPText = () => {
+        if (loading) {
+            return 'Processing...';
+        } else {
+           return (                   
+             <Tooltip label='In case of an issue set permittions from UP Extension'>
+                <Box display='flex'>
+                    Update permissions of UP
+                </Box>  
+            </Tooltip>
+            )
+        }
+    }
+
+
+    const displayTruncatedAddress = (address: string) => {
+        return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
+    }
+
     if (!account) {
         return <></>;
     }
 
     return (
         <div>
-            <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
-                {loading ? 'Processing...' : 'Update permissions'} 
-            </Button>             
+            <Button onClick={updatePermissionsOfUp} disabled={loading} colorScheme="red">
+                {displayPermissionUPText()} 
+            </Button>  
+            <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red">
+                {displayPermissionBECText()}
+            </Button>      
             {URDLsp7 === constants.UNIVERSAL_GRAVE_FORWARDER && URDLsp8 === constants.UNIVERSAL_GRAVE_FORWARDER ?
                 <Button onClick={handleReset} disabled={loading} colorScheme="red">
                     {loading ? 'Processing...' : 'Leave the Grave'} 
