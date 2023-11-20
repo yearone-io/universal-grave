@@ -167,72 +167,6 @@ const JoinGraveBtn: React.FC = () => {
             })
         }
     }
-    
-    const leaveTheGrave = async () => {
-        if (!window.lukso) {
-            toast({
-                title: `UP wallet is not connected.`,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-                })
-            return;
-        }
-    
-        try {
-            // TODO: refactor/break down in small functions
-            const provider =  new ethers.providers.Web3Provider(window.lukso);
-            
-            // LSP7
-            const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-                LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-            // LSP8
-            const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-            LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-            
-            const dataKeys = [
-                LSP7URDdataKey,
-                LSP8URDdataKey,
-            ];
-
-            const signer = provider.getSigner();
-            const account = await signer.getAddress();
-
-            // Interacting with the Universal Profile contract
-            const UP = new ethers.Contract(
-                account as string,
-                UniversalProfile.abi,
-                provider
-            );
-
-            const dataValues = [
-                '0x',
-                '0x',
-            ];
-        
-            // execute the tx
-            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-            await setDataBatchTx.wait();
-        
-            // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
-            //       The UP should still have access to the vault, but no more assets should be redirected.
-            //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
-            //       Something wrong like renouncing ownership.
-            
-            fetchProfile();
-        } catch (err) {
-            console.error("Error: ", err);      
-            toast({
-                title: 'Error: ' + err.message,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-                })
-        }
-    }
 
     const joinTheGrave = async () => {
         if (!window.lukso) {
@@ -245,9 +179,38 @@ const JoinGraveBtn: React.FC = () => {
               })
             return;
         }
+        const provider =  new ethers.providers.Web3Provider(window.lukso);
+        const signer = provider.getSigner();
+        await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER);
+        if (graveVault === constants.ZERO_ADDRESS) {
+            await createVault(provider, signer);
+        }
+        fetchProfile();
+    }
+    
+    
+    const leaveTheGrave = async () => {
+        if (!window.lukso) {
+            toast({
+                title: `UP wallet is not connected.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+                })
+            return;
+        }
 
+        await setLSPDelegates('0x', '0x');
+            // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
+        //       The UP should still have access to the vault, but no more assets should be redirected.
+        //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
+        //       Something wrong like renouncing ownership.
+        fetchProfile();
+    }
+
+    const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string) => {
         try {
-            // TODO: refactor/break down in small functions
             const provider =  new ethers.providers.Web3Provider(window.lukso);
             
             // LSP7
@@ -273,34 +236,42 @@ const JoinGraveBtn: React.FC = () => {
             );
 
             const dataValues = [
-                constants.UNIVERSAL_GRAVE_FORWARDER,
-                constants.UNIVERSAL_GRAVE_FORWARDER
+                lsp7DelegateAddress,
+                lsp8DelegateAddress
             ];
         
             // execute the tx
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
+        } catch (err) {
+            console.error("Error: ", err);      
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+            })
+        }
+    }
 
-            // if joining the grave, create vaults (if there is no a grave vault yet)
-            if (graveVault === constants.ZERO_ADDRESS) {
-                // create an factory for the LSP9Vault contract
-                let vaultFactory = new ethers.ContractFactory(
-                    LSP9Vault.abi,
-                    LSP9Vault.bytecode,
-                );
-                const myVault = await vaultFactory.connect(signer).deploy(account);
+    const createVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
+        try {
+            // create an factory for the LSP9Vault contract
+            let vaultFactory = new ethers.ContractFactory(
+                LSP9Vault.abi,
+                LSP9Vault.bytecode,
+            );
+            const myVault = await vaultFactory.connect(signer).deploy(account);
 
-                // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-                // Note: remember to update ABIs if the delegate contracts change
-                const graveForwarder = new ethers.Contract(
-                    constants.UNIVERSAL_GRAVE_FORWARDER,
-                    UniversalGraveDelegateAbi,
-                    provider
-                );
-                await graveForwarder.connect(signer).setGrave(myVault.address);
-            }
-
-            fetchProfile();
+            // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+            // Note: remember to update ABIs if the delegate contracts change
+            const graveForwarder = new ethers.Contract(
+                constants.UNIVERSAL_GRAVE_FORWARDER,
+                UniversalGraveDelegateAbi,
+                provider
+            );
+            await graveForwarder.connect(signer).setGrave(myVault.address);
         } catch (err) {
             console.error("Error: ", err);      
             toast({
@@ -312,7 +283,7 @@ const JoinGraveBtn: React.FC = () => {
               })
         }
     }
-    
+
     // Event handler for the join button
     const handleClick = async () => {
         setLoading(true);
