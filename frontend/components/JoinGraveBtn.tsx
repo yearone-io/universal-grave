@@ -6,7 +6,7 @@ import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPane
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import UniversalGraveDelegateAbi from '@/app/abis/UniversalGraveDelegateAbi.json';
+import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 
 
 /**
@@ -93,7 +93,7 @@ const JoinGraveBtn: React.FC = () => {
         } catch (err) {
             console.error(err);
             toast({
-                title: `Error fetcjing UP data.`,
+                title: `Error fetching UP data.`,
                 status: 'error',
                 position: 'bottom-left',
                 duration: 9000,
@@ -109,7 +109,7 @@ const JoinGraveBtn: React.FC = () => {
         try {
             const graveForwarder = new ethers.Contract(
                 constants.UNIVERSAL_GRAVE_FORWARDER,
-                UniversalGraveDelegateAbi,
+                LSP1GraveForwaderAbi,
                 provider
             );
             const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(account);
@@ -294,7 +294,7 @@ const JoinGraveBtn: React.FC = () => {
             // Note: remember to update ABIs if the delegate contracts change
             const graveForwarder = new ethers.Contract(
                 constants.UNIVERSAL_GRAVE_FORWARDER,
-                UniversalGraveDelegateAbi,
+                LSP1GraveForwaderAbi,
                 provider
             );
             await graveForwarder.connect(signer).setGrave(myVault.address);
