@@ -46,7 +46,7 @@ const JoinGraveBtn: React.FC = () => {
     useEffect(() => {
         // Request account access on component mount
         if (window.lukso && account) {
-            fetchProfile(account);
+            fetchProfile();
         }
     }, [account]);
 
@@ -56,11 +56,22 @@ const JoinGraveBtn: React.FC = () => {
     //    If any of the required permissions are not set, set them. If they are set, do not set them.
 
     // Function to fetch Universal Profile data
-    const fetchProfile = async (address: string) =>  {  
+    const fetchProfile = async () =>  {  
         const provider =  new ethers.providers.Web3Provider(window.lukso);  
         const signer = provider.getSigner();    
-      
+        
         //1- GET LSP7 and LSP8 URD
+        await getUPData(provider, signer);
+
+        // 2 - get grave vault from UP
+        await getGraveForwarder(provider, signer);
+
+        // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
+        //    to avoid issues related to renouncing ownership of the vault
+        // TODO for future versions: check if the vault is owned by the UP
+    }
+
+    const getUPData = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
             const UP = new ethers.Contract(
                 account as string,
@@ -82,25 +93,20 @@ const JoinGraveBtn: React.FC = () => {
         } catch (err) {
             return err;
         }
-        // 2 - Get Grave Vault from UP (LSP10)
-        // TODO for future versions: get the vault address from the LSP10Vaults[] array
+    }
 
+    const getGraveForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
-            // 3 -  get grave vault from Grave delegate
             const graveForwarder = new ethers.Contract(
                 constants.UNIVERSAL_GRAVE_FORWARDER,
                 UniversalGraveDelegateAbi,
                 provider
             );
-            const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(address);
+            const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(account);
             setGraveVault(vaultFromGraveDelegate);
         } catch (err) {
             return err;
         }
-
-        // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
-        //    to avoid issues related to renouncing ownership of the vault
-        // TODO for future versions: check if the vault is owned by the UP
     }
 
     /**
