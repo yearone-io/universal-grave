@@ -34,7 +34,7 @@ const JoinGraveBtn: React.FC = () => {
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
-    const [graveVault, setGraveVault] = useState<string | null>(null);
+    const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
     const toast = useToast()
     
     // Checking if the walletContext is available
@@ -72,11 +72,10 @@ const JoinGraveBtn: React.FC = () => {
                     LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                     LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
-                // ERC725YDataKeys.LSP10['LSP10Vaults[]']
             ]);
             if (UPData && UPData.length === 2) {
-                // todo verify that the values are the same that the hardcoded ones, if not,
-                // treat it as they haven't joined? and the values need to be overwritten?
+                // Set the URD for LSP7 and LSP8 to what is returned from the UP. 
+                // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
                 setURDLsp7(UPData[0]);
                 setURDLsp8(UPData[1]);
             }
@@ -84,16 +83,16 @@ const JoinGraveBtn: React.FC = () => {
             return err;
         }
         // 2 - Get Grave Vault from UP (LSP10)
-        // TODO 
+        // TODO for future versions: get the vault address from the LSP10Vaults[] array
 
         try {
             // 3 -  get grave vault from Grave delegate
-            const graveDelegate = new ethers.Contract(
-                constants.UNIVERSAL_GRAVE_DELEGATE,
+            const graveForwarder = new ethers.Contract(
+                constants.UNIVERSAL_GRAVE_FORWARDER,
                 UniversalGraveDelegateAbi,
                 provider
             );
-            const vaultFromGraveDelegate = await graveDelegate.connect(signer).graveVaults(address);
+            const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(address);
             setGraveVault(vaultFromGraveDelegate);
         } catch (err) {
             return err;
@@ -101,8 +100,7 @@ const JoinGraveBtn: React.FC = () => {
 
         // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
         //    to avoid issues related to renouncing ownership of the vault
-        // TODO
-
+        // TODO for future versions: check if the vault is owned by the UP
     }
 
     /**
@@ -129,7 +127,7 @@ const JoinGraveBtn: React.FC = () => {
             const signer = provider.getSigner();
             const account = await signer.getAddress();
             const dataKeys = [
-                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_DELEGATE.slice(2),
+                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
             ]; // todo (critical) add premissions of the UP Browser Extension
 
             // Calculate the correct permission (SUPER_CALL + REENTRANCY)
@@ -269,8 +267,8 @@ const JoinGraveBtn: React.FC = () => {
             );
 
             const dataValues = [
-                constants.UNIVERSAL_GRAVE_DELEGATE,
-                constants.UNIVERSAL_GRAVE_DELEGATE
+                constants.UNIVERSAL_GRAVE_FORWARDER,
+                constants.UNIVERSAL_GRAVE_FORWARDER
             ];
         
             // execute the tx
@@ -278,7 +276,7 @@ const JoinGraveBtn: React.FC = () => {
             await setDataBatchTx.wait();
 
             // if joining the grave, create vaults (if there is no a grave vault yet)
-            if (!graveVault) {
+            if (graveVault === constants.ZERO_ADDRESS) {
                 // create an factory for the LSP9Vault contract
                 let vaultFactory = new ethers.ContractFactory(
                     LSP9Vault.abi,
@@ -288,12 +286,12 @@ const JoinGraveBtn: React.FC = () => {
 
                 // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
                 // Note: remember to update ABIs if the delegate contracts change
-                const graveDelegate = new ethers.Contract(
-                    constants.UNIVERSAL_GRAVE_DELEGATE,
+                const graveForwarder = new ethers.Contract(
+                    constants.UNIVERSAL_GRAVE_FORWARDER,
                     UniversalGraveDelegateAbi,
                     provider
                 );
-                await graveDelegate.connect(signer).setGrave(myVault.address);
+                await graveForwarder.connect(signer).setGrave(myVault.address);
             }
 
             fetchProfile(account);
@@ -363,7 +361,7 @@ const JoinGraveBtn: React.FC = () => {
             <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
                 {loading ? 'Processing...' : 'Update permissions'} 
             </Button>             
-            {URDLsp7 === constants.UNIVERSAL_GRAVE_DELEGATE && URDLsp8 === constants.UNIVERSAL_GRAVE_DELEGATE ?
+            {URDLsp7 === constants.UNIVERSAL_GRAVE_FORWARDER && URDLsp8 === constants.UNIVERSAL_GRAVE_FORWARDER ?
                 <Button onClick={handleReset} disabled={loading} colorScheme="red">
                     {loading ? 'Processing...' : 'Leave the Grave'} 
                 </Button> 
