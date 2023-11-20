@@ -7,6 +7,8 @@ import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
+import {ERC725JSONSchemaKeyType} from "@erc725/erc725.js";
+import {encodeKey} from "@erc725/erc725.js/build/main/src/lib/utils";
 
 
 /**
@@ -154,23 +156,47 @@ const JoinGraveBtn: React.FC = () => {
                 provider
             );
 
-            const dataKeys = [
-                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
-            ]; // todo (critical) add premissions of the UP Browser Extension
 
-            // Calculate the correct permission (SUPER_CALL + REENTRANCY)
-            const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
-            const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+            const thirdPartyAddress = '0xfE8B18DF428bCF40f08FFB5eBf444eB1e66fFEf1';
+            const allowedCallsDataKey = // constructing the data key of allowed addresses
+                ERC725YDataKeys.LSP6['AddressPermissions:AllowedCalls'] +
+                thirdPartyAddress.substring(2); // of the 3rd party
 
+            const allowedCallsSchema = {
+                name: 'AddressPermissions:AllowedCalls:<address>',
+                key: '0x4b80742de2bf393a64c70000<address>',
+                keyType: 'MappingWithGrouping' as ERC725JSONSchemaKeyType,
+                valueType: '(bytes4,address,bytes4)[CompactBytesArray]',
+                valueContent: '(Bytes4,Address,Bytes4)',
+            };
 
-            // Interacting with the Universal Profile contract
-            const dataValues = [
-                permHex,
-                permHex
-            ];
-        
-            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-            await setDataBatchTx.wait();
+            const allowedCallsDataValue = encodeKey(allowedCallsSchema, [
+                '0xffffffff',
+                graveVault,
+                '0xffffffff',
+            ]);
+
+            await UP
+                .connect(signer)
+                .setData(allowedCallsDataKey, allowedCallsDataValue);
+            //
+            // const dataKeys = [
+            //     ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
+            // ]; // todo (critical) add premissions of the UP Browser Extension
+            //
+            // // Calculate the correct permission (SUPER_CALL + REENTRANCY)
+            // const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+            // const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+            //
+            //
+            // // Interacting with the Universal Profile contract
+            // const dataValues = [
+            //     permHex,
+            //     permHex
+            // ];
+            //
+            // const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+            // await setDataBatchTx.wait();
         } catch (err) {
             console.error("Error: ", err);      
             toast({
