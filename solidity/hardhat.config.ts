@@ -1,50 +1,39 @@
-require('@nomicfoundation/hardhat-toolbox');
-require('dotenv').config()
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-verify";
+import "@nomicfoundation/hardhat-toolbox";
+import * as dotenv from 'dotenv';
 
-module.exports = {
-    solidity: {
-        version: "0.8.17",
-        settings: {
-            optimizer: {
-                enabled: true
-            }
-        }
-    },
-    allowUnlimitedContractSize: true,
+// load env vars
+dotenv.config();
+
+const config: HardhatUserConfig = {
+    solidity: "0.8.17",
+    // public LUKSO Testnet
     networks: {
-        hardhat: {
-            accounts: {
-                mnemonic: process.env.DEV_MNEMONIC
-            }
-        },
-        luksoTestnet: {
-            url: "https://rpc.testnet.lukso.network",
-            chainId: 4201,
-            accounts: process.env.PRIVATE_KEY ? [`${process.env.PRIVATE_KEY}`] : [] // your private key here
-        },
-        ETH_MAINNET: {
-            accounts: process.env.PRIVATE_KEY ? [`${process.env.PRIVATE_KEY}`] : [],
-            url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-        },
-        ETH_GOERLI: {
-            accounts: process.env.PRIVATE_KEY ? [`${process.env.PRIVATE_KEY}`] : [],
-            url: `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-        }
+      luksoTestnet: {
+        url: "https://rpc.testnet.lukso.network",
+        chainId: 4201,
+        accounts: [process.env.EOA_PRIVATE_KEY as string] // your private key here
+      },
+    },
+    sourcify: {
+      enabled: false,
     },
     etherscan: {
-        apiKey: `${process.env.ETHERSCAN_API_KEY}`,
-        customChains: [
-            {
-                network: "luksoTestnet",
-                chainId: 4201,
-                urls: {
-                    apiURL: "https://api.explorer.execution.testnet.lukso.network/api",
-                    browserURL: "https://explorer.execution.testnet.lukso.network"
-                }
-            }
-        ]
+      // no API is required to verify contracts
+      // via the Blockscout instance of LUKSO Testnet
+      apiKey: "no-api-key-needed",
+      customChains: [
+        {
+          network: "luksoTestnet",
+          chainId: 4201,
+          urls: {
+            apiURL: "https://api.explorer.execution.testnet.lukso.network/api",
+            browserURL: "https://explorer.execution.testnet.lukso.network",
+          },
+        },
+      ],
     },
-    paths: {
-        artifacts: '../frontend/artifacts'
-    }
-}
+  };
+  
+  export default config;
