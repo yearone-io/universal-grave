@@ -73,3 +73,7 @@ yarn.lock
 
 templates/evm/core/pages/api
 typechain-types/
+
+# Hardhat files
+cache
+artifacts
