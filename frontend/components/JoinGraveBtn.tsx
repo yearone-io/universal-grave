@@ -73,6 +73,7 @@ const JoinGraveBtn: React.FC = () => {
 
     const getUPData = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
+            debugger;
             const UP = new ethers.Contract(
                 account as string,
                 UniversalProfile.abi,
@@ -91,7 +92,14 @@ const JoinGraveBtn: React.FC = () => {
                 setURDLsp8(UPData[1]);
             }
         } catch (err) {
-            return err;
+            console.error(err);
+            toast({
+                title: `Error fetcjing UP data.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
         }
     }
 
@@ -105,7 +113,14 @@ const JoinGraveBtn: React.FC = () => {
             const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(account);
             setGraveVault(vaultFromGraveDelegate);
         } catch (err) {
-            return err;
+            console.error("Error: ", err);
+            toast({
+                title: `Error in Grave Forwarder.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
         }
     }
 
@@ -128,10 +143,17 @@ const JoinGraveBtn: React.FC = () => {
         }
     
         try {
+            
             // Creating a provider and signer using ethers
             const provider =  new ethers.providers.Web3Provider(window.lukso);        
             const signer = provider.getSigner();
             const account = await signer.getAddress();
+            const UP = new ethers.Contract(
+                account as string,
+                UniversalProfile.abi,
+                provider
+            );
+
             const dataKeys = [
                 ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
             ]; // todo (critical) add premissions of the UP Browser Extension
@@ -140,15 +162,9 @@ const JoinGraveBtn: React.FC = () => {
             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
             const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
-            // Signer is the browser extension controller?? 90% sure
 
             // Interacting with the Universal Profile contract
-            const UP = new ethers.Contract(
-                account as string,
-                UniversalProfile.abi,
-                provider
-            );
-
+  
             const dataValues = [
                 permHex,
                 permHex
