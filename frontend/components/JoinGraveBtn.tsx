@@ -73,7 +73,6 @@ const JoinGraveBtn: React.FC = () => {
 
     const getUPData = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
-            debugger;
             const UP = new ethers.Contract(
                 account as string,
                 UniversalProfile.abi,
