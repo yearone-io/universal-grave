@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
-
+import { InfoIcon } from '@chakra-ui/icons'
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -145,62 +145,6 @@ const JoinGraveBtn: React.FC = () => {
      * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
      * 
      */
-    // const updatePermissionsOfUp = async () => {
-    //    if (!window.lukso) {
-    //         toast({
-    //             title: `UP wallet is not connected.`,
-    //             status: 'error',
-    //             position: 'bottom-left',
-    //             duration: 9000,
-    //             isClosable: true,
-    //           })
-    //         return;
-    //     }
-    
-    //     try {
-    //         // Creating a provider and signer using ethers
-    //         const provider =  new ethers.providers.Web3Provider(window.lukso);        
-    //         const signer = provider.getSigner();
-    //         const account = await signer.getAddress();
-    //         const UP = new ethers.Contract(
-    //             account as string,
-    //             UniversalProfile.abi,
-    //             provider
-    //         );
-
-    //         const dataKeys = [
-    //             ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
-    //         ];
-
-    //         // Calculate the correct permission (SUPER_CALL + REENTRANCY)
-    //         const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
-    //         const permHex = '0x' + permInt.toString(16).padStart(64, '0');
-
-
-    //         // Interacting with the Universal Profile contract
-    //         const dataValues = [
-    //             permHex,
-    //         ];
-        
-    //         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-    //         await setDataBatchTx.wait();
-    //     } catch (err) {
-    //         console.error("Error: ", err);      
-    //         toast({
-    //             title: 'Error: ' + err.message,
-    //             status: 'error',
-    //             position: 'bottom-left',
-    //             duration: 9000,
-    //             isClosable: true,
-    //         })
-    //     }
-    // }
-
-    /**
-     * Function to update the permissions if needed.
-     * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
-     * 
-     */
     const updatePermissionsOfBEC = async () => {
         if (!window.lukso) {
              toast({
@@ -238,8 +182,6 @@ const JoinGraveBtn: React.FC = () => {
                 parseInt(PERMISSIONS.SUPER_CALL, 16) ^
                 parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
                 parseInt(PERMISSIONS.DEPLOY, 16) ^
-                parseInt(PERMISSIONS.REENTRANCY, 16) ^
-                parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
                 parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
                 parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
              const permHex = '0x' + permInt.toString(16).padStart(64, '0');
@@ -443,26 +385,16 @@ const JoinGraveBtn: React.FC = () => {
             return 'Processing...';
         } else {
            return (                   
-             <Tooltip label='Make sure this is your Browser Extension Controller. If not set permittions from UP Extension'>
-                <Box display='flex'>
-                    Update permissions 
-                        <Box fontWeight='800'>{displayTruncatedAddress(browserExtensionControllerAddress)}
-                            (check in UP)
-                        </Box>
-                </Box>  
-            </Tooltip>
-            )
-        }
-    }
-
-    const displayPermissionUPText = () => {
-        if (loading) {
-            return 'Processing...';
-        } else {
-           return (                   
-             <Tooltip label='In case of an issue set permittions from UP Extension'>
-                <Box display='flex'>
-                    Update permissions of UP
+             <Tooltip label='Make sure this is your Browser Extension Controller. If not, set permittions from UP Extension'>
+                <Box display='flex' alignItems='center'>
+                    <Box>
+                        Update permissions 
+                    </ Box>
+                    <Box fontSize='14px' fontWeight='800' ml='2px' mr='3px'>({displayTruncatedAddress(browserExtensionControllerAddress)})
+                    </Box>
+                    <Box mb='3px'>  
+                        <InfoIcon />
+                    </Box>
                 </Box>  
             </Tooltip>
             )
@@ -479,18 +411,15 @@ const JoinGraveBtn: React.FC = () => {
 
     return (
         <div>
-            {/* <Button onClick={updatePermissionsOfUp} disabled={loading} colorScheme="red">
-                {displayPermissionUPText()} 
-            </Button>   */}
-            <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red">
+            <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
                 {displayPermissionBECText()}
             </Button>      
             {URDLsp7 === constants.UNIVERSAL_GRAVE_FORWARDER && URDLsp8 === constants.UNIVERSAL_GRAVE_FORWARDER ?
-                <Button onClick={handleReset} disabled={loading} colorScheme="red">
+                <Button onClick={handleReset} disabled={loading} mb='10px'>
                     {loading ? 'Processing...' : 'Leave the Grave'} 
                 </Button> 
                 :
-                <Button onClick={handleClick} disabled={loading}>
+                <Button onClick={handleClick} disabled={loading} mb='10px'>
                     {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
                 </Button>
             }
