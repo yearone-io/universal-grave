@@ -12,6 +12,7 @@
 	},
 	"dependencies": {
 		"@erc725/erc725.js": "^0.21.2",
+		"@lukso/lsp-factory.js": "^3.2.1",
 		"@lukso/lsp-smart-contracts": "^0.12.1",
 		"@openzeppelin/contracts": "^4.9.3",
 		"dotenv": "^16.3.1",
