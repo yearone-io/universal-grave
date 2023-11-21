@@ -221,12 +221,11 @@ const JoinGraveBtn: React.FC = () => {
         }
         const provider =  new ethers.providers.Web3Provider(window.lukso);
         const signer = provider.getSigner();
-        // todo if revert, don't continue
         try {
             await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER);
-            // if (graveVault === constants.ZERO_ADDRESS) {
+            if (graveVault === constants.ZERO_ADDRESS) {
                 await createVault(provider, signer);
-            // }
+            }
         } catch (err) {
             console.error("Error: ", err);      
             toast({
