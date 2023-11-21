@@ -145,56 +145,56 @@ const JoinGraveBtn: React.FC = () => {
      * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
      * 
      */
-    const updatePermissionsOfUp = async () => {
-       if (!window.lukso) {
-            toast({
-                title: `UP wallet is not connected.`,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-              })
-            return;
-        }
+    // const updatePermissionsOfUp = async () => {
+    //    if (!window.lukso) {
+    //         toast({
+    //             title: `UP wallet is not connected.`,
+    //             status: 'error',
+    //             position: 'bottom-left',
+    //             duration: 9000,
+    //             isClosable: true,
+    //           })
+    //         return;
+    //     }
     
-        try {
-            // Creating a provider and signer using ethers
-            const provider =  new ethers.providers.Web3Provider(window.lukso);        
-            const signer = provider.getSigner();
-            const account = await signer.getAddress();
-            const UP = new ethers.Contract(
-                account as string,
-                UniversalProfile.abi,
-                provider
-            );
+    //     try {
+    //         // Creating a provider and signer using ethers
+    //         const provider =  new ethers.providers.Web3Provider(window.lukso);        
+    //         const signer = provider.getSigner();
+    //         const account = await signer.getAddress();
+    //         const UP = new ethers.Contract(
+    //             account as string,
+    //             UniversalProfile.abi,
+    //             provider
+    //         );
 
-            const dataKeys = [
-                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
-            ];
+    //         const dataKeys = [
+    //             ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
+    //         ];
 
-            // Calculate the correct permission (SUPER_CALL + REENTRANCY)
-            const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
-            const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+    //         // Calculate the correct permission (SUPER_CALL + REENTRANCY)
+    //         const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+    //         const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
 
-            // Interacting with the Universal Profile contract
-            const dataValues = [
-                permHex,
-            ];
+    //         // Interacting with the Universal Profile contract
+    //         const dataValues = [
+    //             permHex,
+    //         ];
         
-            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-            await setDataBatchTx.wait();
-        } catch (err) {
-            console.error("Error: ", err);      
-            toast({
-                title: 'Error: ' + err.message,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-            })
-        }
-    }
+    //         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+    //         await setDataBatchTx.wait();
+    //     } catch (err) {
+    //         console.error("Error: ", err);      
+    //         toast({
+    //             title: 'Error: ' + err.message,
+    //             status: 'error',
+    //             position: 'bottom-left',
+    //             duration: 9000,
+    //             isClosable: true,
+    //         })
+    //     }
+    // }
 
     /**
      * Function to update the permissions if needed.
@@ -227,10 +227,22 @@ const JoinGraveBtn: React.FC = () => {
              const dataKeys = [
                  ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
              ]; 
-             // Calculate the correct permission (SUPER_CALL + REENTRANCY)
-             const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+
+             const permInt = parseInt(PERMISSIONS.SIGN, 16) ^ 
+                parseInt(PERMISSIONS.ENCRYPT, 16) ^
+                parseInt(PERMISSIONS.DECRYPT, 16) ^
+                parseInt(PERMISSIONS.SETDATA, 16) ^
+                parseInt(PERMISSIONS.CHANGEOWNER, 16) ^
+                parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
+                parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
+                parseInt(PERMISSIONS.SUPER_CALL, 16) ^
+                parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
+                parseInt(PERMISSIONS.DEPLOY, 16) ^
+                parseInt(PERMISSIONS.REENTRANCY, 16) ^
+                parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
+                parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
+                parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
              const permHex = '0x' + permInt.toString(16).padStart(64, '0');
- 
  
              // Interacting with the Universal Profile contract
              const dataValues = [
@@ -270,9 +282,9 @@ const JoinGraveBtn: React.FC = () => {
         // todo if revert, don't continue
         try {
             await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER);
-            if (graveVault === constants.ZERO_ADDRESS) {
+            // if (graveVault === constants.ZERO_ADDRESS) {
                 await createVault(provider, signer);
-            }
+            // }
         } catch (err) {
             console.error("Error: ", err);      
             toast({
@@ -467,9 +479,9 @@ const JoinGraveBtn: React.FC = () => {
 
     return (
         <div>
-            <Button onClick={updatePermissionsOfUp} disabled={loading} colorScheme="red">
+            {/* <Button onClick={updatePermissionsOfUp} disabled={loading} colorScheme="red">
                 {displayPermissionUPText()} 
-            </Button>  
+            </Button>   */}
             <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red">
                 {displayPermissionBECText()}
             </Button>      
