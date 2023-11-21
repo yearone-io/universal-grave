@@ -95,7 +95,7 @@ async function main() {
         ).interface.encodeFunctionData("setGrave", [graveVaultAddress]) // Encoding the setGrave function call
     };
     // Now, execute this transaction through the UP, effectively having the signer act on behalf of the UP
-    const setVaultTx = await UP.connect(signer).execute(
+    await UP.connect(signer).execute(
         OPERATION_TYPES.CALL, // Assuming CALL is the correct operation type for executing a transaction
         graveForwarderInteraction.to,
         0, // Value sent with the transaction, set to 0 if not sending any ether
