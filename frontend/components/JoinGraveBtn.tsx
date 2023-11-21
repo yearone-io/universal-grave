@@ -368,8 +368,8 @@ const JoinGraveBtn: React.FC = () => {
             LSP9Vault.abi,
             LSP9Vault.bytecode,
         );
-        const myVault = await vaultFactory.connect(signer).deploy(account);
-
+        const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
+        const vaultReceipt = await vaultTransaction.deployTransaction.wait();
         // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
         // Note: remember to update ABIs if the delegate contracts change
         const graveForwarder = new ethers.Contract(
@@ -377,7 +377,8 @@ const JoinGraveBtn: React.FC = () => {
             LSP1GraveForwaderAbi,
             provider
         );
-        await graveForwarder.connect(signer).setGrave(myVault.address);
+        return await graveForwarder.connect(signer).setGrave(vaultReceipt.contractAddress);
+
     }
 
     // Event handler for the join button
