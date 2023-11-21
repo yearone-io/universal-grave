@@ -3,14 +3,13 @@ import * as dotenv from 'dotenv';
 import { LSPFactory } from '@lukso/lsp-factory.js';
 import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP7Mintable from '@lukso/lsp-smart-contracts/artifacts/LSP7Mintable.json';
 
 
 // load env vars
 dotenv.config();
 
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY, RECEIVER_UP_ADDR } = process.env;
+const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
 
 async function main() {
     const lspFactory = new LSPFactory('https://rpc.testnet.lukso.network/', {
