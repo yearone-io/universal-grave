@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
-import {ERC725JSONSchemaKeyType} from "@erc725/erc725.js";
+import {ERC725JSONSchema, ERC725JSONSchemaKeyType} from "@erc725/erc725.js";
 import {encodeKey} from "@erc725/erc725.js/build/main/src/lib/utils";
 
 
@@ -156,16 +156,15 @@ const JoinGraveBtn: React.FC = () => {
                 provider
             );
 
-
-            const thirdPartyAddress = '0xfE8B18DF428bCF40f08FFB5eBf444eB1e66fFEf1';
+            const thirdPartyAddress = '0xc1adb4f443225041b96489fec08aca0d922a807d';
             const allowedCallsDataKey = // constructing the data key of allowed addresses
                 ERC725YDataKeys.LSP6['AddressPermissions:AllowedCalls'] +
                 thirdPartyAddress.substring(2); // of the 3rd party
 
-            const allowedCallsSchema = {
+            const allowedCallsSchema : ERC725JSONSchema = {
                 name: 'AddressPermissions:AllowedCalls:<address>',
                 key: '0x4b80742de2bf393a64c70000<address>',
-                keyType: 'MappingWithGrouping' as ERC725JSONSchemaKeyType,
+                keyType: 'MappingWithGrouping',
                 valueType: '(bytes4,address,bytes4)[CompactBytesArray]',
                 valueContent: '(Bytes4,Address,Bytes4)',
             };
@@ -178,7 +177,7 @@ const JoinGraveBtn: React.FC = () => {
 
             await UP
                 .connect(signer)
-                .setData(allowedCallsDataKey, allowedCallsDataValue);
+                .setData(allowedCallsDataKey, allowedCallsDataValue, {gasLimit: 400_000});
             //
             // const dataKeys = [
             //     ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),
