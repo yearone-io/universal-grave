@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
-import { InfoIcon } from '@chakra-ui/icons'
+import { FaInfoCircle } from "react-icons/fa";
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -391,8 +391,8 @@ const JoinGraveBtn: React.FC = () => {
                     </ Box>
                     <Box fontSize='14px' fontWeight='800' ml='2px' mr='3px'>({displayTruncatedAddress(browserExtensionControllerAddress)})
                     </Box>
-                    <Box mb='3px'>  
-                        <InfoIcon />
+                    <Box >
+                        <FaInfoCircle />
                     </Box>
                 </Box>  
             </Tooltip>
