@@ -247,7 +247,11 @@ const JoinGraveBtn: React.FC = () => {
             const dataKeys = [
                 LSP7URDdataKey,
                 LSP8URDdataKey,
+                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2)
             ];
+            // Calculate the correct permission (SUPER_CALL + REENTRANCY)
+            const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+            const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
             const signer = provider.getSigner();
             const account = await signer.getAddress();
@@ -260,7 +264,8 @@ const JoinGraveBtn: React.FC = () => {
 
             const dataValues = [
                 lsp7DelegateAddress,
-                lsp8DelegateAddress
+                lsp8DelegateAddress,
+                permHex
             ];
         
             // execute the tx
