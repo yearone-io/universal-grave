@@ -3,7 +3,9 @@ import { Container, Flex, Stack, Image, Box, Text, useColorModeValue, Button, Ic
 import "./globals.css";
 import JoinGraveBtn from "@/components/JoinGraveBtn";
 import { useState } from "react";
-import { FaMapMarkerAlt, FaPlus } from "react-icons/fa";
+import { BsActivity } from "react-icons/bs";
+import { BsArrow90DegRight } from "react-icons/bs";
+import { RiAuctionLine } from "react-icons/ri";
 
 export default function Home() {
   const logoPath = '/images/logo-full.png'
@@ -129,7 +131,7 @@ export default function Home() {
                 justifyContent={"center"}
               >
                 <Icon
-                  as={FaMapMarkerAlt}
+                  as={BsArrow90DegRight}
                   color={customColor}
                   boxSize={14}
                 />
@@ -173,7 +175,7 @@ export default function Home() {
                 alignItems={"flex-start"}
                 justifyContent={"center"}
               >
-                <Icon as={FaPlus} color={customColor} boxSize={14} />
+                <Icon as={BsActivity} color={customColor} boxSize={14} />
                 <Flex
                   gap={{ base: 4, sm: 5, lg: 6 }}
                   flexDirection={"column"}
@@ -214,7 +216,7 @@ export default function Home() {
                 alignItems={"flex-start"}
                 justifyContent={"center"}
               >
-                <Icon as={FaPlus} color={customColor} boxSize={14} />
+                <Icon as={RiAuctionLine} color={customColor} boxSize={14} />
                 <Flex
                   gap={{ base: 4, sm: 5, lg: 6 }}
                   flexDirection={"column"}
