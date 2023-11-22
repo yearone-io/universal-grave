@@ -11,7 +11,7 @@ import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
 dotenv.config();
 
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY, RECEIVER_UP_ADDR } = process.env;
+const { EOA_PRIVATE_KEY, UP_ADDR, CONTROLLER_PUBLIC_KEY, RECEIVER_UP_ADDR } = process.env;
 
 async function main() {
     const lspFactory = new LSPFactory('https://rpc.testnet.lukso.network/', {
@@ -55,7 +55,6 @@ async function main() {
     console.log('✅ Grave Vault deployed', graveVaultAddress);
 
     // Deploy Token, Send to Vault, then withdraw to UP
-    const graveAddress = '0x0';
     console.log('⏳ Deploying Token');
 
     // create an instance of the token contract
@@ -71,31 +70,33 @@ async function main() {
       false,           // isNonDivisible = TRUE, means NOT divisible, decimals = 0)
     );
 
-    // mint 100 tokens to the vault address
-    const LSP7TokenContract = new ethers.Contract(tokenDeployTx.target as string, LSP7Mintable.abi, provider);
-    const mintTx = await LSP7TokenContract.connect(signer).mint(graveVaultAddress, 69);
-    console.log('✅ Token minted to vault', mintTx.hash);
+    // mint 69 tokens to the vault address
+    const tokenAddress = tokenDeployTx.target as string;
+    console.log('✅ Token deployed. Address:', tokenAddress);
+    const LSP7TokenContract = new ethers.Contract(tokenAddress, LSP7Mintable.abi, provider);
+    const mintTx = await LSP7TokenContract.connect(signer).mint(graveVaultAddress, 69, 0, "0x", { gasLimit: 400_000 });
+    console.log('✅ Token minted to vault. Tx:', mintTx.hash);
 
     // transfer from grave vault to elsewhere
-    console.log('⏳ Transferring token from vault to UP');
-    const graveContract = new ethers.Contract(graveAddress, LSP9Vault.abi, provider);
-
-    const tokenTransferInteraction = {
-        to: tokenDeployTx.target, // Address of the graveForwarder contract
-        data: new ethers.Contract(
-            tokenDeployTx.target as string,
-            LSP7Mintable.abi,
-            provider // signer to encode tx
-        ).interface.encodeFunctionData("transfer", [graveVaultAddress, RECEIVER_UP_ADDR, 69, 0, ""]) // Encoding the setGrave function call
+    console.log('⏳ Transferring token from Vault to UP');
+    const transferPayloadTx = {
+        to: tokenAddress, // Address of the graveForwarder contract
+        data: LSP7TokenContract.interface.encodeFunctionData("transfer", [graveVaultAddress, RECEIVER_UP_ADDR, 69, 0, "0x"]) // Encoding the setGrave function call
     };
 
-    const transferTx = await graveContract.connect(signer).execute(
-        OPERATION_TYPES.CALL, // Assuming CALL is the correct operation type for executing a transaction
-        tokenTransferInteraction.to,
-        0, // Value sent with the transaction, set to 0 if not sending any ether
-        tokenTransferInteraction.data
+    const LSP9VaultContract = new ethers.Contract(graveVaultAddress, LSP9Vault.abi, provider);
+    const executeVaultPayload = LSP9VaultContract.interface.encodeFunctionData('execute',
+        [OPERATION_TYPES.CALL, tokenAddress, 0, transferPayloadTx.data],
     );
-    console.log('✅ Token transferred from vault to UP', transferTx.hash);
+
+    const executeVaultPaylodTx = await UP.connect(signer).execute(
+        OPERATION_TYPES.CALL, // 
+        graveVaultAddress,
+        0, // Value sent with the transaction, set to 0 if not sending any ether
+        executeVaultPayload,
+        { gasLimit: 400_000 }
+    );
+    console.log('✅ Token transferred from vault to UP', executeVaultPaylodTx.hash);
 }
 
 
