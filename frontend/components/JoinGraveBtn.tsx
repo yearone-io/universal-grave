@@ -284,11 +284,6 @@ const JoinGraveBtn: React.FC = () => {
         fetchProfile();
     }
 
-    const decodeLength = (hexString: string) => {
-        const bigIntValue = BigInt(hexString);
-        return Number(bigIntValue.toString(16));
-    };
-
     /**
      * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
     */
@@ -303,11 +298,10 @@ const JoinGraveBtn: React.FC = () => {
             provider
         );
 
-        debugger;
         const erc725 = new ERC725(
             LSP6Schema,
             account,
-            'https://rpc.testnet.lukso.network',
+            constants.LUKSO_TESTNET_RPC_URL,
             {}
         );        
 
@@ -335,15 +329,17 @@ const JoinGraveBtn: React.FC = () => {
         // if Joining the vault set permissions and add the controller to the list of controllers
         // if Leaving the vault remove permissions and remove the controller from the list of controllers
         let permissions = '';
-        // For sanity check we always filter out the Grave Forwarder from the list of controllers
-        let formattedControllers = allControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
+        let formattedControllers = [] as string[];
 
         if (isJoiningVault) {
             permissions = erc725.encodePermissions({
                 SUPER_CALL: true,
                 REENTRANCY: true,
             });
-            //todo  check if the controller is already in the list of controllers
+            // 1 - remove the forwarder from the list of controllers for sanity check
+            formattedControllers = allControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
+
+            // 2- add the forwarder to the list of controllers
             formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
         } else {
             // remove permissions if leaving the Grave and reducing the number of controllers
@@ -351,7 +347,8 @@ const JoinGraveBtn: React.FC = () => {
                 SUPER_CALL: false,
                 REENTRANCY: false,
             });
-
+            // 1 - remove the forwarder from the list of controllers
+            formattedControllers = allControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
         }
 
         const data = erc725.encodeData([
