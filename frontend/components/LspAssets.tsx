@@ -18,29 +18,27 @@ export default function LspAssets({address}: { address?: string }) {
     const {account} = walletContext;
 
     useEffect(() => {
-        if (window.lukso && account && address) {
+        if (window.lukso && account && address && lsp7Assets.length === 0) {
             const erc725js = new ERC725(lsp3ProfileSchema as ERC725JSONSchema[], address, 'https://rpc.testnet.lukso.gateway.fm',
                 {
                     ipfsGateway: 'https://api.universalprofile.cloud/ipfs',
                 },
             );
+            let fetchedLsp7Assets: TokenInfo[] = [];
             erc725js.fetchData('LSP5ReceivedAssets[]')
                 .then(receivedAssetsDataKey => {
-                    console.log(receivedAssetsDataKey.value);
-                    let fetchedLsp7Assets: TokenInfo[] = [];
                     (receivedAssetsDataKey.value as string[]).map(async assetAddress => {
-                        //get balance of each assetAddress
-                        console.log("assetAddress", assetAddress);
-                        const value1 = await detectLSP(assetAddress, LSPType.LSP7DigitalAsset, true);
-                        console.log("value1", value1);
+                        const value1 = await detectLSP(assetAddress, LSPType.LSP7DigitalAsset);
                         if (value1) {
+                            console.log("xxx", value1);
+
                             fetchedLsp7Assets.push(value1);
                         }
                     });
-
-                }).then(value => {
                     setLoading(false);
-            })
+                }).then(value => {
+                setLsp7VaultAsset(fetchedLsp7Assets)
+            });
         }
     }, [account, address]);
 
