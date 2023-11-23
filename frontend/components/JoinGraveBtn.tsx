@@ -65,7 +65,7 @@ const JoinGraveBtn: React.FC = () => {
         await getUPData(provider, signer);
 
         // 2 - get grave vault from UP
-        await getGraveForwarder(provider, signer);
+        await getGraveVault(provider, signer);
 
         // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
         //    to avoid issues related to renouncing ownership of the vault
@@ -119,7 +119,7 @@ const JoinGraveBtn: React.FC = () => {
     /**
      *  Function to get the grave vault from the grave forwarder contract and set it in the state.
      */
-    const getGraveForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
+    const getGraveVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
             const graveForwarder = new ethers.Contract(
                 constants.UNIVERSAL_GRAVE_FORWARDER,
