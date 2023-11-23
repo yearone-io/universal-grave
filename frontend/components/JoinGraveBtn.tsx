@@ -142,10 +142,10 @@ const JoinGraveBtn: React.FC = () => {
               })
             return;
         }
-    
+
         try {
             // Creating a provider and signer using ethers
-            const provider =  new ethers.providers.Web3Provider(window.lukso);        
+            const provider =  new ethers.providers.Web3Provider(window.lukso);
             const signer = provider.getSigner();
             const account = await signer.getAddress();
             const UP = new ethers.Contract(
@@ -168,11 +168,11 @@ const JoinGraveBtn: React.FC = () => {
                 permHex,
                 permHex
             ];
-        
+
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
         } catch (err) {
-            console.error("Error: ", err);      
+            console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
                 status: 'error',
@@ -182,7 +182,73 @@ const JoinGraveBtn: React.FC = () => {
             })
         }
     }
+const updateDelegateVault = async () => {
+        if (!window.lukso) {
+             toast({
+                 title: `UP wallet is not connected.`,
+                 status: 'error',
+                 position: 'bottom-left',
+                 duration: 9000,
+                 isClosable: true,
+               })
+             return;
+         }
 
+         try {
+             // Creating a provider and signer using ethers
+             const provider =  new ethers.providers.Web3Provider(window.lukso);
+             const signer = provider.getSigner();
+             const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
+             // Interacting with the Universal Profile contract
+
+             const UP = new ethers.Contract(
+                 account as string,
+                 UniversalProfile.abi,
+                 provider
+             );
+             // create an instance of the LSP9Vault
+             const vault = new ethers.Contract(graveVault, LSP9Vault.abi);
+             // encode setData Calldata on the Vault
+             let vaultURDAddress = "0xBc7b3980614215c8090dF310661685Cc393B601A";
+             const setDataCalldata = await vault.methods
+                 .setData(
+                     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+                     vaultURDAddress,
+                 )
+                 .encodeABI(); // Any other information can be stored here
+
+             // execute the `setDataCalldata` that updates the Vault data
+             await UP.connect(signer).execute(
+                 0, // OPERATION CALL
+                 graveVault,
+                 0, // value to transfer
+                 setDataCalldata,
+             );
+
+
+
+             // const up = new ethers.Contract(
+             //     graveVault,
+             //     LSP9Vault.abi,
+             //     provider
+             // );
+             // // Sending transaction to update URD
+             // const transaction = await up.connect(signer).setData(
+             //     URD_DATA_KEY,
+             //     "0xBc7b3980614215c8090dF310661685Cc393B601A"
+             // );
+             // await transaction.wait();
+         } catch (err) {
+             console.error("Error: ", err);
+             toast({
+                 title: 'Error: ' + err.message,
+                 status: 'error',
+                 position: 'bottom-left',
+                 duration: 9000,
+                 isClosable: true,
+             })
+         }
+     }
     /**
      *  Function to set the delegates for LSP7 and LSP8 to the Grave Forwarder and create a vault if needed.
      */
@@ -235,7 +301,7 @@ const JoinGraveBtn: React.FC = () => {
     const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string) => {
         try {
             const provider =  new ethers.providers.Web3Provider(window.lukso);
-            
+
             // LSP7
             const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                 LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
@@ -243,7 +309,7 @@ const JoinGraveBtn: React.FC = () => {
             // LSP8
             const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
             LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-            
+
             const dataKeys = [
                 LSP7URDdataKey,
                 LSP8URDdataKey,
@@ -262,12 +328,12 @@ const JoinGraveBtn: React.FC = () => {
                 lsp7DelegateAddress,
                 lsp8DelegateAddress
             ];
-        
+
             // execute the tx
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
         } catch (err) {
-            console.error("Error: ", err);      
+            console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
                 status: 'error',
@@ -299,7 +365,7 @@ const JoinGraveBtn: React.FC = () => {
             );
             await graveForwarder.connect(signer).setGrave(vaultReceipt.contractAddress);
         } catch (err) {
-            console.error("Error: ", err);      
+            console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
                 status: 'error',
@@ -362,8 +428,10 @@ const JoinGraveBtn: React.FC = () => {
     return (
         <div>
             <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
-                {loading ? 'Processing...' : 'Update permissions'} 
-            </Button>             
+                {loading ? 'Processing...' : 'Update permissions'}
+            </Button>             <Button onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
+                Update Delegate Vault
+            </Button>
             {URDLsp7 === constants.UNIVERSAL_GRAVE_FORWARDER && URDLsp8 === constants.UNIVERSAL_GRAVE_FORWARDER ?
                 <Button onClick={handleReset} disabled={loading} colorScheme="red">
                     {loading ? 'Processing...' : 'Leave the Grave'} 

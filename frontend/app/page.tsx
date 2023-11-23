@@ -6,6 +6,7 @@ import { useState } from "react";
 import { BsActivity } from "react-icons/bs";
 import { BsArrow90DegRight } from "react-icons/bs";
 import { RiAuctionLine } from "react-icons/ri";
+import VaultAssets from "@/components/VaultAssets";
 
 export default function Home() {
   const logoPath = '/images/logo-full.png'
@@ -38,7 +39,7 @@ export default function Home() {
         spacing={4}
         justify={{ base: "center", md: "space-between" }}
         align={{ base: "center", md: "center" }}
-      > 
+      >
       {renderLandingPage ?
         <Box id='landing-section'>
         <Flex
@@ -354,7 +355,7 @@ export default function Home() {
                 </Flex>
             </Flex>
           </Box>
-        </Box> 
+        </Box>
         :
         <Box id='grave-section'>
             <Flex gap="7px" justifyContent="center" alignItems="center"
@@ -363,7 +364,8 @@ export default function Home() {
             </Flex>
             <Box>
               <JoinGraveBtn />
-            </Box>
+            <VaultAssets vaultAddress={"0x61a4C102f9731E43EA9D06B0Fe0c02b4777aA016"} />
+        </Box>
           </Box>
       }
       </Container>
