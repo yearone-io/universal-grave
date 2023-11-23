@@ -30,8 +30,6 @@ export default function LspAssets({address}: { address?: string }) {
                     (receivedAssetsDataKey.value as string[]).map(async assetAddress => {
                         const value1 = await detectLSP(assetAddress, LSPType.LSP7DigitalAsset);
                         if (value1) {
-                            console.log("xxx", value1);
-
                             fetchedLsp7Assets.push(value1);
                         }
                     });
@@ -50,7 +48,7 @@ export default function LspAssets({address}: { address?: string }) {
             <h1>LSP7 Assets</h1>
             <ul>
                 {lsp7Assets.map((asset, index) => (
-                    <li key={index}>{asset.address} - {asset.balance}</li>
+                    <li key={index}>{asset.name} - {asset.address} - {asset.balance}</li>
                 ))}
             </ul>
 
