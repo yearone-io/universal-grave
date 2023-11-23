@@ -8,6 +8,8 @@ import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 import { FaInfoCircle } from "react-icons/fa";
+import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
+import LSP6 from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -59,7 +61,14 @@ const JoinGraveBtn: React.FC = () => {
     // Function to fetch Universal Profile data
     const fetchProfile = async () =>  {  
         const provider =  new ethers.providers.Web3Provider(window.lukso);  
-        const signer = provider.getSigner();    
+        const signer = provider.getSigner();
+        const RPC_URL = 'https://rpc.testnet.lukso.network';
+        const config = {
+            ipfsGateway: 'https://2eff.lukso.dev/ipfs/',
+        };
+        const myErc725 = new ERC725(LSP6 as ERC725JSONSchema[], "0xebBc46a66E1C96b68157895dFF74ef9Af4eD502b", RPC_URL, config)
+        const permissionsResult = await myErc725.getData();
+        console.log('permissionsResult', permissionsResult);
         
         //1- GET LSP7 and LSP8 URD
         await getUPData(provider, signer);

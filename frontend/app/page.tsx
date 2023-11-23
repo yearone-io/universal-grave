@@ -12,7 +12,7 @@ export default function Home() {
   const grave2Path = '/images/grave2.jpg'
   const lsp7Path = '/images/lsp7.png'
   const lsp8Path = '/images/lsp8.png'
-  const [renderLandingPage, setRenderLandingPage] = useState<boolean>(true);
+  const [renderLandingPage, setRenderLandingPage] = useState<boolean>(false);
   const subheadingColor = useColorModeValue("light.black", "dark.white");
   const customBg = useColorModeValue("light.green.brand", "dark.white");
   const panelBgColor = useColorModeValue("light.white", "dark.purple.200");
