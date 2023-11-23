@@ -8,6 +8,8 @@ import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 import { FaInfoCircle } from "react-icons/fa";
+import { ERC725 } from '@erc725/erc725.js';
+import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert { type: 'json' };
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -289,12 +291,23 @@ const JoinGraveBtn: React.FC = () => {
         const provider =  new ethers.providers.Web3Provider(window.lukso);
         const signer = provider.getSigner();
         const account = await signer.getAddress();
+        // Interacting with the Universal Profile contract
+        const UP = new ethers.Contract(
+            account as string,
+            UniversalProfile.abi,
+            provider
+        );
+        const erc725 = new ERC725(
+            LSP6Schema,
+            account,
+            provider,
+        );
 
-        // LSP7
+        // LSP7 data key to set the forwarder as the delegate
         const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
             LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-        // LSP8
+        // LSP8 data key to set the forwarder as the delegate
         const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
         
@@ -308,28 +321,64 @@ const JoinGraveBtn: React.FC = () => {
             lsp8DelegateAddress,
         ];
 
-        // Add permissions if joining the Grave
-        if (isJoiningVault) {
-            // Calculate the correct permission (SUPER_CALL + REENTRANCY)
-            const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
-            const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
-            dataKeys.push(
-                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),            
-            );
-            dataValues.push(
-                permHex  
-            );
+        // get length of controllers to add/remove the new controller
+        const lengthControllers = await UP.connect(signer).getDataBatch([
+            ERC725YDataKeys.LSP6['AddressPermissions[]'].length,
+        ]);
+        // get all controllers to add/remove the new controller
+        let controllersQuery = [];
+        for (let i = 0; i < lengthControllers.length; i++) {
+            controllersQuery.push(
+                ERC725YDataKeys.LSP6['AddressPermissions[]'].index + ethers.utils.hexZeroPad(ethers.utils.hexlify(i), 16).slice(2)
+            );  
         }
-
-        // Interacting with the Universal Profile contract
-        const UP = new ethers.Contract(
-            account as string,
-            UniversalProfile.abi,
-            provider
+        const getAllControllers = await UP.connect(signer).getDataBatch(
+            controllersQuery
         );
 
-    
+        const a = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 16).slice(2)
+        const b = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 16).slice(2)
+        debugger;
+
+        let permissions = '';
+        let controllers = [];
+
+        // if Joining the vault set permissions and add the controller to the list of controllers
+        // if Leaving the vault remove permissions and remove the controller from the list of controllers
+        if (isJoiningVault) {
+            permissions = erc725.encodePermissions({
+                SUPER_CALL: true,
+                REENTRANCY: true,
+            });
+
+            controllers = [...getAllControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
+        } else {
+            // remove permissions if leaving the Grave and reducing the number of controllers
+            permissions = erc725.encodePermissions({
+                SUPER_CALL: false,
+                REENTRANCY: false,
+            });
+            controllers = getAllControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
+        }
+
+        const data = erc725.encodeData([
+            // the permission of the beneficiary address
+            {
+              keyName: 'AddressPermissions:Permissions:<address>',
+              dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+              value: permissions,
+            },
+            // the new list controllers addresses (= addresses with permissions set on the UP)
+            // + or -  1 in the `AddressPermissions[]` array length
+            {
+              keyName: 'AddressPermissions[]',
+              value: controllers,
+            },
+        ]);
+        dataKeys = [...dataKeys, ...data.keys];
+        dataValues = [...dataValues, ...data.values];
+
         // execute the tx
         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
         return await setDataBatchTx.wait();
