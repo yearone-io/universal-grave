@@ -182,7 +182,8 @@ const JoinGraveBtn: React.FC = () => {
             })
         }
     }
-const updateDelegateVault = async () => {
+
+    const updateDelegateVault = async () => {
         if (!window.lukso) {
              toast({
                  title: `UP wallet is not connected.`,
