@@ -93,8 +93,8 @@ const JoinGraveBtn: React.FC = () => {
             if (UPData) {
                 // Set the URD for LSP7 and LSP8 to what is returned from the UP. 
                 // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
-                setURDLsp7(UPData[0]);
-                setURDLsp8(UPData[1]);
+                setURDLsp7(getChecksumAddress(UPData[0]));
+                setURDLsp8(getChecksumAddress(UPData[1]));
                 if (UPData.length === 3 && window.lukso.isUniversalProfileExtension) {
                     // sanity check we get the Browser Extension controller address
                     // NOTE: Based on conversations with the Lukso Dev team, currently there is no way to specificly find
@@ -103,7 +103,7 @@ const JoinGraveBtn: React.FC = () => {
                     //       is in position [1]. Since this is not reliable we ask in the UI to check and confirm. This is a temporary solution only
                     //       for facilitating the setting up permissions for the Hackathon.
                     //       https://discord.com/channels/359064931246538762/585786253992132609/1176203068866580521
-                    setBrowserExtensionControllerAddress(UPData[2]);
+                    setBrowserExtensionControllerAddress(getChecksumAddress(UPData[2]) as string);
                 }
             }
         } catch (err) {
@@ -338,7 +338,7 @@ const JoinGraveBtn: React.FC = () => {
             // 1 - remove the forwarder from the list of controllers for sanity check
             // Note: check sum case address to avoid issues with case sensitivity
             formattedControllers = allControllers.filter((controller: any) => {
-               return isValidAddress(controller) &&  ethers.utils.getAddress(controller) !== constants.UNIVERSAL_GRAVE_FORWARDER
+               return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
             });
             
             // 2- add the forwarder to the list of controllers
@@ -352,7 +352,7 @@ const JoinGraveBtn: React.FC = () => {
             // 1 - remove the forwarder from the list of controllers.
             // Note: check sum case address to avoid issues with case sensitivity
             formattedControllers = allControllers.filter((controller: any) => {
-                return isValidAddress(controller) && ethers.utils.getAddress(controller) !== constants.UNIVERSAL_GRAVE_FORWARDER
+                return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
             });
         }
         const data = erc725.encodeData([
@@ -474,14 +474,24 @@ const JoinGraveBtn: React.FC = () => {
         return address && address.length === 42 && address.startsWith('0x');
     }
 
+    // Custom function to safely get checksum address
+    const getChecksumAddress = (address: string | null) =>{
+        // Check if the address is valid
+        if (!address || !ethers.utils.isAddress(address)) {
+            // Handle invalid address
+            return address;
+        }
+
+        // Convert to checksum address
+        return ethers.utils.getAddress(address);
+    }
+
+
     const displayJoinLeaveButtons = () => {
         // Note: check sum case address to avoid issues with case sensitivity
-        if (URDLsp7 &&
-            URDLsp7 !== '0x' &&
-            ethers.utils.getAddress(URDLsp7) === ethers.utils.getAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
-            URDLsp8 && 
-            URDLsp8 !== '0x' &&
-            ethers.utils.getAddress(URDLsp8) === ethers.utils.getAddress(constants.UNIVERSAL_GRAVE_FORWARDER)) {
+        
+        if (getChecksumAddress(URDLsp7) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
+            getChecksumAddress(URDLsp8) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)) {
             return (
                 <Button onClick={handleReset} disabled={loading} mb='10px'>
                     {loading ? 'Processing...' : 'Leave the Grave'}
