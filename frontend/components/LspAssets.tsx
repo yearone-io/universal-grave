@@ -5,7 +5,7 @@ import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.jso
 import {detectLSP, LSPType, TokenInfo} from "@/utils/tokenUtils";
 
 export default function LspAssets({address}: { address?: string }) {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const walletContext = useContext(WalletContext);
     const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[]>([]);
     const [lps8Assets, setLsp8VaultAssets] = useState<string[]>([]);
@@ -38,7 +38,9 @@ export default function LspAssets({address}: { address?: string }) {
                         }
                     });
 
-                })
+                }).then(value => {
+                    setLoading(false);
+            })
         }
     }, [account, address]);
 

@@ -226,19 +226,6 @@ const JoinGraveBtn: React.FC = () => {
                  setDataCalldata,
              );
 
-
-
-             // const up = new ethers.Contract(
-             //     graveVault,
-             //     LSP9Vault.abi,
-             //     provider
-             // );
-             // // Sending transaction to update URD
-             // const transaction = await up.connect(signer).setData(
-             //     URD_DATA_KEY,
-             //     "0xBc7b3980614215c8090dF310661685Cc393B601A"
-             // );
-             // await transaction.wait();
          } catch (err) {
              console.error("Error: ", err);
              toast({
@@ -430,7 +417,8 @@ const JoinGraveBtn: React.FC = () => {
         <div>
             <Button onClick={updatePermissions} disabled={loading} colorScheme="red">
                 {loading ? 'Processing...' : 'Update permissions'}
-            </Button>             <Button onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
+            </Button>
+            <Button onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
                 Update Delegate Vault
             </Button>
             {URDLsp7 === constants.UNIVERSAL_GRAVE_FORWARDER && URDLsp8 === constants.UNIVERSAL_GRAVE_FORWARDER ?

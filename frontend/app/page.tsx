@@ -6,7 +6,6 @@ import {RiAuctionLine} from "react-icons/ri";
 import Link from "next/link";
 
 export default function Home() {
-    const logoPath = '/images/logo-full.png'
     const grave2Path = '/images/grave2.jpg'
     const lsp7Path = '/images/lsp7.png'
     const lsp8Path = '/images/lsp8.png'

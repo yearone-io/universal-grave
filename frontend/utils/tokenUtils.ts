@@ -48,7 +48,6 @@ const lspTypeOptions: Record<
     },
 }
 
-
 export type TokenInfo = {
     type: LSPType
     address?: string
@@ -58,7 +57,6 @@ export type TokenInfo = {
     balance?: number
     label?: string
 }
-
 
 export const detectLSP = async (
     contractAddress: string,
