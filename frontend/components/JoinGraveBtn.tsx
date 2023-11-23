@@ -222,7 +222,7 @@ const JoinGraveBtn: React.FC = () => {
         const provider =  new ethers.providers.Web3Provider(window.lukso);
         const signer = provider.getSigner();
         try {
-            await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER);
+            await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER, true);
             if (graveVault === constants.ZERO_ADDRESS) {
                 await createVault(provider, signer);
             }
@@ -255,7 +255,7 @@ const JoinGraveBtn: React.FC = () => {
             return;
         }
         try {
-            await setLSPDelegates('0x', '0x');
+            await setLSPDelegates('0x', '0x', false);
                 // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
             //       The UP should still have access to the vault, but no more assets should be redirected.
             //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
@@ -277,9 +277,11 @@ const JoinGraveBtn: React.FC = () => {
     /**
      * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
     */
-    const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string) => {
+    const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string, isJoiningVault: boolean) => {
         const provider =  new ethers.providers.Web3Provider(window.lukso);
-        
+        const signer = provider.getSigner();
+        const account = await signer.getAddress();
+
         // LSP7
         const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
             LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
@@ -288,13 +290,30 @@ const JoinGraveBtn: React.FC = () => {
         const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
         
-        const dataKeys = [
+        let dataKeys = [
             LSP7URDdataKey,
             LSP8URDdataKey,
         ];
 
-        const signer = provider.getSigner();
-        const account = await signer.getAddress();
+        let dataValues = [
+            lsp7DelegateAddress,
+            lsp8DelegateAddress,
+        ];
+
+        // Add permissions if joining the Grave
+        if (isJoiningVault) {
+            // Calculate the correct permission (SUPER_CALL + REENTRANCY)
+            const permInt = parseInt(PERMISSIONS.SUPER_CALL, 16) ^ parseInt(PERMISSIONS.REENTRANCY, 16);
+            const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+
+            dataKeys.push(
+                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + constants.UNIVERSAL_GRAVE_FORWARDER.slice(2),            
+            );
+            dataValues.push(
+                permHex  
+            );
+        }
+
         // Interacting with the Universal Profile contract
         const UP = new ethers.Contract(
             account as string,
@@ -302,10 +321,6 @@ const JoinGraveBtn: React.FC = () => {
             provider
         );
 
-        const dataValues = [
-            lsp7DelegateAddress,
-            lsp8DelegateAddress
-        ];
     
         // execute the tx
         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
