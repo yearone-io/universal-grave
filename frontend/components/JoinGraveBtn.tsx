@@ -301,8 +301,7 @@ const JoinGraveBtn: React.FC = () => {
         const erc725 = new ERC725(
             LSP6Schema,
             account,
-            constants.LUKSO_TESTNET_RPC_URL,
-            {}
+            window.lukso,
         );        
 
         // LSP7 data key to set the forwarder as the delegate
@@ -337,8 +336,11 @@ const JoinGraveBtn: React.FC = () => {
                 REENTRANCY: true,
             });
             // 1 - remove the forwarder from the list of controllers for sanity check
-            formattedControllers = allControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
-
+            // Note: check sum case address to avoid issues with case sensitivity
+            formattedControllers = allControllers.filter((controller: any) => {
+               return isValidAddress(controller) &&  ethers.utils.getAddress(controller) !== constants.UNIVERSAL_GRAVE_FORWARDER
+            });
+            
             // 2- add the forwarder to the list of controllers
             formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
         } else {
@@ -347,10 +349,12 @@ const JoinGraveBtn: React.FC = () => {
                 SUPER_CALL: false,
                 REENTRANCY: false,
             });
-            // 1 - remove the forwarder from the list of controllers
-            formattedControllers = allControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
+            // 1 - remove the forwarder from the list of controllers.
+            // Note: check sum case address to avoid issues with case sensitivity
+            formattedControllers = allControllers.filter((controller: any) => {
+                return isValidAddress(controller) && ethers.utils.getAddress(controller) !== constants.UNIVERSAL_GRAVE_FORWARDER
+            });
         }
-
         const data = erc725.encodeData([
             // the permission of the beneficiary address
             {
@@ -464,6 +468,34 @@ const JoinGraveBtn: React.FC = () => {
         return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
     }
 
+    // Function to check if the address is valid. "0x" is not a valid address.
+    // This is mainly used to run ethers.utils.getAddress() without throwing an error.
+    const isValidAddress = (address: string | null) => {
+        return address && address.length === 42 && address.startsWith('0x');
+    }
+
+    const displayJoinLeaveButtons = () => {
+        // Note: check sum case address to avoid issues with case sensitivity
+        if (URDLsp7 &&
+            URDLsp7 !== '0x' &&
+            ethers.utils.getAddress(URDLsp7) === ethers.utils.getAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
+            URDLsp8 && 
+            URDLsp8 !== '0x' &&
+            ethers.utils.getAddress(URDLsp8) === ethers.utils.getAddress(constants.UNIVERSAL_GRAVE_FORWARDER)) {
+            return (
+                <Button onClick={handleReset} disabled={loading} mb='10px'>
+                    {loading ? 'Processing...' : 'Leave the Grave'}
+                </Button>
+            )
+        } else {
+            return (
+                <Button onClick={handleClick} disabled={loading} mb='10px'>
+                    {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
+                </Button>
+            )
+        }
+    }
+
     if (!account) {
         return <></>;
     }
@@ -473,15 +505,7 @@ const JoinGraveBtn: React.FC = () => {
             <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
                 {displayPermissionBECText()}
             </Button>      
-            {URDLsp7 === constants.UNIVERSAL_GRAVE_FORWARDER && URDLsp8 === constants.UNIVERSAL_GRAVE_FORWARDER ?
-                <Button onClick={handleReset} disabled={loading} mb='10px'>
-                    {loading ? 'Processing...' : 'Leave the Grave'} 
-                </Button> 
-                :
-                <Button onClick={handleClick} disabled={loading} mb='10px'>
-                    {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
-                </Button>
-            }
+            {displayJoinLeaveButtons()}
             {renderAccordeonDetails()}
             
         </div>
