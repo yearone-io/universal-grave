@@ -28,9 +28,9 @@ export default function LspAssets({address}: { address?: string }) {
             erc725js.fetchData('LSP5ReceivedAssets[]')
                 .then(receivedAssetsDataKey => {
                     (receivedAssetsDataKey.value as string[]).map(async assetAddress => {
-                        const value1 = await detectLSP(assetAddress, LSPType.LSP7DigitalAsset);
-                        if (value1) {
-                            fetchedLsp7Assets.push(value1);
+                        const tokenInfo = await detectLSP(assetAddress, address, LSPType.LSP7DigitalAsset);
+                        if (tokenInfo) {
+                            fetchedLsp7Assets.push(tokenInfo);
                         }
                     });
                     setLoading(false);

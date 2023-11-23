@@ -1,10 +1,11 @@
-import {ERC725JSONSchema} from "@erc725/erc725.js";
+import ERC725, {ERC725JSONSchema} from "@erc725/erc725.js";
 import {INTERFACE_IDS} from "@lukso/lsp-smart-contracts";
 import lsp4Schema from "@erc725/erc725.js/schemas/LSP4DigitalAsset.json";
-import {ethers} from "ethers";
+import {BigNumber, ethers} from "ethers";
 import {eip165ABI} from "@/abis/eip165ABI";
 import {erc20ABI} from "@/abis/erc20ABI";
-import BN from "bn.js";
+import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
+import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json'
 
 export enum LSPType {
     LSP7DigitalAsset = 'LSP7DigitalAsset',
@@ -60,6 +61,7 @@ export type TokenInfo = {
 
 export const detectLSP = async (
     contractAddress: string,
+    addressToCheck: string,
     lspType: Exclude<LSPType, LSPType.Unknown>,
     owned = false
 ): Promise<TokenInfo | undefined> => {
@@ -72,8 +74,7 @@ export const detectLSP = async (
         return undefined
     }
 
-    const provider =  new ethers.providers.Web3Provider(window.lukso);
-    const signer = provider.getSigner();
+    const provider = new ethers.providers.Web3Provider(window.lukso);
 
     // EIP-165 detection
     const contract = new ethers.Contract(contractAddress, eip165ABI.concat(erc20ABI) as any, provider)
@@ -95,21 +96,46 @@ export const detectLSP = async (
         let balance = owned ? 1 : 0
         try {
             currentDecimals = await contract.decimals();
-
+            console.log("currentDecimals", currentDecimals);
             if (currentDecimals !== '0') {
                 const _balance = await contract
-                    .balanceOf(signer.getAddress())
-                    .catch((e) => {
+                    .balanceOf(addressToCheck)
+                    .catch((e: any) => {
                         console.error("error getting balance", e);
                         return undefined;
                     })
-                balance = 0;
+                console.log("balance", _balance);
+                balance = BigNumber.from(_balance).toNumber();
             }
         } catch (err) {
-            console.error(contractAddress, lspType, err, 'no balance')
+            console.error(err)
         }
         // ERC725 detection
+        const erc725js = new ERC725(
+            (lsp3ProfileSchema).concat(lsp4Schema, lsp9Schema) as ERC725JSONSchema[], contractAddress, 'https://rpc.testnet.lukso.gateway.fm',
+            {
+                ipfsGateway: 'https://api.universalprofile.cloud/ipfs',
+            },
+        );
 
+        let [{value: name}, {value: symbol}] = await erc725js.fetchData([
+            'LSP4TokenName',
+            'LSP4TokenSymbol',
+        ])
+        if (typeof name !== 'string') {
+            try {
+                name = (await contract.name().call()) as string
+            } catch (err) {
+                name = '<undef>'
+            }
+        }
+        if (typeof symbol !== 'string') {
+            try {
+                symbol = (await contract.symbol().call()) as string
+            } catch (err) {
+                symbol = '<undef>'
+            }
+        }
         let shortType: string = lspType
         switch (shortType) {
             case LSPType.LSP7DigitalAsset:
@@ -121,8 +147,8 @@ export const detectLSP = async (
         }
         return {
             type: lspType,
-            name: "foobar",
-            symbol: "sym",
+            name,
+            symbol,
             address: contractAddress,
             balance,
             decimals: currentDecimals,
