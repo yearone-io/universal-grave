@@ -36,8 +36,10 @@ export default function Header() {
         justifyContent={"space-between"}
         alignItems={"center"}
       >
-        <Flex ml={2} alignItems={"center"} justifyContent={"center"}>
-          <Image src={logoPath} alt="Universal-Grave-logo" width={'70px'}/>
+        <Flex ml={2} alignItems={"center"} justifyContent={"center"}>          
+          <Image cursor='pointer' onClick={() => {
+            window.location.href = '/'
+           }} src={logoPath} alt="Universal-Grave-logo" width={'70px'}/>
           <Image src={testnetPath} alt="Universal-Grave-logo" width={'70px'}/>
         </Flex>
         <Flex justifyContent={"flex-end"}>
