@@ -302,11 +302,14 @@ const JoinGraveBtn: React.FC = () => {
             UniversalProfile.abi,
             provider
         );
+
+        debugger;
         const erc725 = new ERC725(
             LSP6Schema,
             account,
-            provider,
-        );
+            'https://rpc.testnet.lukso.network',
+            {}
+        );        
 
         // LSP7 data key to set the forwarder as the delegate
         const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
@@ -325,41 +328,30 @@ const JoinGraveBtn: React.FC = () => {
             lsp7DelegateAddress,
             lsp8DelegateAddress,
         ];
-
-        // get length of controllers to add/remove the new controller
-        const lengthControllers = await UP.connect(signer).getDataBatch([
-            ERC725YDataKeys.LSP6['AddressPermissions[]'].length,
-        ]);
-        const lengthControllersDecoded = decodeLength(lengthControllers[0]);
-        // get all controllers to add/remove the new controller
-        let controllersQuery = [];
-        for (let i = 0; i < lengthControllersDecoded; i++) {
-            controllersQuery.push(
-                ERC725YDataKeys.LSP6['AddressPermissions[]'].index + ethers.utils.hexZeroPad(ethers.utils.hexlify(i), 16).slice(2)
-            );  
-        }
-        const getAllControllers = await UP.connect(signer).getDataBatch(
-            controllersQuery
-        );
-
+        
+        const permissionsResult = await erc725.getData();
+        const allControllers = permissionsResult[0].value as string[];
+        
         // if Joining the vault set permissions and add the controller to the list of controllers
         // if Leaving the vault remove permissions and remove the controller from the list of controllers
         let permissions = '';
-        let controllers = [];
+        // For sanity check we always filter out the Grave Forwarder from the list of controllers
+        let formattedControllers = allControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
+
         if (isJoiningVault) {
             permissions = erc725.encodePermissions({
                 SUPER_CALL: true,
                 REENTRANCY: true,
             });
-
-            controllers = [...getAllControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
+            //todo  check if the controller is already in the list of controllers
+            formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
         } else {
             // remove permissions if leaving the Grave and reducing the number of controllers
             permissions = erc725.encodePermissions({
                 SUPER_CALL: false,
                 REENTRANCY: false,
             });
-            controllers = getAllControllers.filter((controller: any) => controller !== constants.UNIVERSAL_GRAVE_FORWARDER);
+
         }
 
         const data = erc725.encodeData([
@@ -373,7 +365,7 @@ const JoinGraveBtn: React.FC = () => {
             // + or -  1 in the `AddressPermissions[]` array length
             {
               keyName: 'AddressPermissions[]',
-              value: controllers,
+              value: formattedControllers,
             },
         ]);
         dataKeys = [...dataKeys, ...data.keys];
@@ -403,7 +395,6 @@ const JoinGraveBtn: React.FC = () => {
             provider
         );
         return await graveForwarder.connect(signer).setGrave(vaultReceipt.contractAddress);
-
     }
 
     // Event handler for the join button
