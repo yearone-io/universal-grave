@@ -88,7 +88,7 @@ const JoinGraveBtn: React.FC = () => {
                     LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
                     LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
-                    ERC725YDataKeys.LSP6['AddressPermissions[]'].index + hexNumber.slice(2),
+                ERC725YDataKeys.LSP6['AddressPermissions[]'].index + hexNumber.slice(2),
             ]);
             if (UPData) {
                 // Set the URD for LSP7 and LSP8 to what is returned from the UP. 
