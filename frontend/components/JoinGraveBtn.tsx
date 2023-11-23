@@ -173,17 +173,25 @@ const JoinGraveBtn: React.FC = () => {
              ]; 
 
              const permInt = parseInt(PERMISSIONS.SIGN, 16) ^ 
-                parseInt(PERMISSIONS.ENCRYPT, 16) ^
-                parseInt(PERMISSIONS.DECRYPT, 16) ^
-                parseInt(PERMISSIONS.SETDATA, 16) ^
-                parseInt(PERMISSIONS.CHANGEOWNER, 16) ^
-                parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
-                parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
-                parseInt(PERMISSIONS.SUPER_CALL, 16) ^
-                parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
-                parseInt(PERMISSIONS.DEPLOY, 16) ^
-                parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
-                parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
+               //Default + required ones
+               parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
+               parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
+               parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
+               parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
+               parseInt(PERMISSIONS.SUPER_CALL, 16) ^
+               parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
+               parseInt(PERMISSIONS.CALL, 16) ^
+               parseInt(PERMISSIONS.STATICCALL, 16) ^
+               parseInt(PERMISSIONS.DEPLOY, 16) ^
+               parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
+               parseInt(PERMISSIONS.SETDATA, 16) ^
+               parseInt(PERMISSIONS.ENCRYPT, 16) ^
+               parseInt(PERMISSIONS.DECRYPT, 16) ^
+               parseInt(PERMISSIONS.SIGN, 16) ^
+               parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
+               parseInt(PERMISSIONS.CHANGEOWNER, 16) ^
+               parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
+               parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
              const permHex = '0x' + permInt.toString(16).padStart(64, '0');
  
              // Interacting with the Universal Profile contract
