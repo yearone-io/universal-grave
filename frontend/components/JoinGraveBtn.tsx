@@ -284,6 +284,11 @@ const JoinGraveBtn: React.FC = () => {
         fetchProfile();
     }
 
+    const decodeLength = (hexString: string) => {
+        const bigIntValue = BigInt(hexString);
+        return Number(bigIntValue.toString(16));
+    };
+
     /**
      * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
     */
@@ -321,14 +326,14 @@ const JoinGraveBtn: React.FC = () => {
             lsp8DelegateAddress,
         ];
 
-
         // get length of controllers to add/remove the new controller
         const lengthControllers = await UP.connect(signer).getDataBatch([
             ERC725YDataKeys.LSP6['AddressPermissions[]'].length,
         ]);
+        const lengthControllersDecoded = decodeLength(lengthControllers[0]);
         // get all controllers to add/remove the new controller
         let controllersQuery = [];
-        for (let i = 0; i < lengthControllers.length; i++) {
+        for (let i = 0; i < lengthControllersDecoded; i++) {
             controllersQuery.push(
                 ERC725YDataKeys.LSP6['AddressPermissions[]'].index + ethers.utils.hexZeroPad(ethers.utils.hexlify(i), 16).slice(2)
             );  
@@ -337,15 +342,10 @@ const JoinGraveBtn: React.FC = () => {
             controllersQuery
         );
 
-        const a = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 16).slice(2)
-        const b = ethers.utils.hexZeroPad(ethers.utils.hexlify(1), 16).slice(2)
-        debugger;
-
-        let permissions = '';
-        let controllers = [];
-
         // if Joining the vault set permissions and add the controller to the list of controllers
         // if Leaving the vault remove permissions and remove the controller from the list of controllers
+        let permissions = '';
+        let controllers = [];
         if (isJoiningVault) {
             permissions = erc725.encodePermissions({
                 SUPER_CALL: true,
