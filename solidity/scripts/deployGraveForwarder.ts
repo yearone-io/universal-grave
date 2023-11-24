@@ -4,6 +4,7 @@ import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalPro
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { OPERATION_TYPES, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import LSP7Mintable from '@lukso/lsp-smart-contracts/artifacts/LSP7Mintable.json';
 
 
 // load env vars
@@ -95,14 +96,73 @@ async function main() {
         ).interface.encodeFunctionData("setGrave", [graveVaultAddress]) // Encoding the setGrave function call
     };
     // Now, execute this transaction through the UP, effectively having the signer act on behalf of the UP
-    const setVaultTx = await UP.connect(signer).execute(
+    await UP.connect(signer).execute(
         OPERATION_TYPES.CALL, // Assuming CALL is the correct operation type for executing a transaction
         graveForwarderInteraction.to,
         0, // Value sent with the transaction, set to 0 if not sending any ether
         graveForwarderInteraction.data
     );
-
     console.log('✅ Grave Vault on LSP1 Grave Forwarder attached to UP Profile', graveVaultAddress);
+
+    // Deploy Token, Send to Vault, then withdraw to UP
+    console.log('⏳ Deploying Token');
+
+    // create an instance of the token contract
+    const lsp7Factory = new ethers.ContractFactory(
+        LSP7Mintable.abi,
+        LSP7Mintable.bytecode,
+    );
+
+    const tokenDeployTx = await lsp7Factory.connect(signer).deploy(
+      'Grave Token', // token name
+      'GRV1',          // token symbol
+      signer.address,   // new owner, who will mint later
+      false,           // isNonDivisible = TRUE, means NOT divisible, decimals = 0)
+    );
+
+    // mint 69 tokens to the vault address
+    const tokenAddress = tokenDeployTx.target as string;
+    console.log('✅ Token deployed. Address:', tokenAddress);
+    const LSP7TokenContract = new ethers.Contract(tokenAddress, LSP7Mintable.abi, provider);
+    const mintTx = await LSP7TokenContract.connect(signer).mint(UP_ADDR, 69, 0, "0x", { gasLimit: 400_000 });
+    console.log('✅ Token minted to vault through UP Grave Vault Forwader. Tx:', mintTx.hash);
+
+    // transfer from grave vault to elsewhere
+    console.log('⏳ Transferring token from Vault back to UP :)');
+    const graveForwarderWhitelist = {
+        to: graveForwaderAddress, // Address of the graveForwarder contract
+        data: new ethers.Contract(
+            graveForwaderAddress,
+            GraveForwarderAbi,
+            provider // signer to encode tx
+        ).interface.encodeFunctionData("addTokenToAllowlist", [tokenAddress]) // Encoding the setGrave function call
+    };
+    // Now, execute this transaction through the UP, effectively having the signer act on behalf of the UP
+    const whitelistAdditionTx = await UP.connect(signer).execute(
+        OPERATION_TYPES.CALL, // Assuming CALL is the correct operation type for executing a transaction
+        graveForwarderWhitelist.to,
+        0, // Value sent with the transaction, set to 0 if not sending any ether
+        graveForwarderWhitelist.data
+    );
+    console.log('✅ Token added to whitelist', whitelistAdditionTx.hash);
+    const transferPayloadTx = {
+        to: tokenAddress, // Address of the graveForwarder contract
+        data: LSP7TokenContract.interface.encodeFunctionData("transfer", [graveVaultAddress, UP_ADDR, 69, 0, "0x"]) // Encoding the setGrave function call
+    };
+
+    const LSP9VaultContract = new ethers.Contract(graveVaultAddress, LSP9Vault.abi, provider);
+    const executeVaultPayload = LSP9VaultContract.interface.encodeFunctionData('execute',
+        [OPERATION_TYPES.CALL, tokenAddress, 0, transferPayloadTx.data],
+    );
+
+    const executeVaultPaylodTx = await UP.connect(signer).execute(
+        OPERATION_TYPES.CALL, // 
+        graveVaultAddress,
+        0, // Value sent with the transaction, set to 0 if not sending any ether
+        executeVaultPayload,
+        { gasLimit: 400_000 }
+    );
+    console.log('✅ Token transferred from vault to UP', executeVaultPaylodTx.hash);
 }
 
 
