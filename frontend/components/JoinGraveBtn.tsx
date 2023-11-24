@@ -189,7 +189,6 @@ const JoinGraveBtn: React.FC = () => {
                parseInt(PERMISSIONS.SETDATA, 16) ^
                parseInt(PERMISSIONS.ENCRYPT, 16) ^
                parseInt(PERMISSIONS.DECRYPT, 16) ^
-               parseInt(PERMISSIONS.SIGN, 16) ^
                parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
                parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
                parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
