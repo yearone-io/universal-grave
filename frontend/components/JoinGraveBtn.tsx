@@ -201,26 +201,11 @@ export default function JoinGraveBtn () {
          try {
              const provider =  new ethers.providers.Web3Provider(window.lukso);
              const signer = provider.getSigner();
-             const UP = new ethers.Contract(
-                 account as string,
-                 UniversalProfile.abi,
-                 provider
-             );
              const vault = new ethers.Contract(graveVault, LSP9Vault.abi, signer);
-             const setDataCalldata = vault
-                 .setData(
-                     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-                     constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
-                 );
-
-             // execute the `setDataCalldata` that updates the Vault data
-             await UP.connect(signer).execute(
-                 0, // OPERATION CALL
-                 graveVault,
-                 0, // value to transfer
-                 setDataCalldata,
+             await vault.connect(signer).setData(
+                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+                 constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
              );
-
          } catch (err: any) {
              console.error("Error: ", err);
              toast({
