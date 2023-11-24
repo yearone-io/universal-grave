@@ -4,7 +4,7 @@ import ERC725, {ERC725JSONSchema} from "@erc725/erc725.js";
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import {detectLSP, LSPType, TokenInfo} from "@/utils/tokenUtils";
 
-export default function LspAssets({address}: { address?: string }) {
+export default function LspAssets({address}: { address: string | null }) {
     const [loading, setLoading] = useState(true);
     const walletContext = useContext(WalletContext);
     const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[]>([]);

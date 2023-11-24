@@ -29,19 +29,18 @@ import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
  * Additional functionalities and improvements are planned for future versions, including batch calls for data retrieval
  * and conditional permission updating during URD modifications.
  */
-const JoinGraveBtn: React.FC = () => {
+export default function JoinGraveBtn () {
     const [loading, setLoading] = useState(false);
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
-    const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
     const toast = useToast()
     
     // Checking if the walletContext is available
     if (!walletContext) {
         throw new Error('WalletConnector must be used within a WalletProvider.');
     }
-    const { account } = walletContext;
+    const { account, graveVault } = walletContext;
 
     useEffect(() => {
         // Request account access on component mount
@@ -62,9 +61,6 @@ const JoinGraveBtn: React.FC = () => {
         
         //1- GET LSP7 and LSP8 URD
         await getUPData(provider, signer);
-
-        // 2 - get grave vault from UP
-        await getGraveForwarder(provider, signer);
 
         // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
         //    to avoid issues related to renouncing ownership of the vault
@@ -102,29 +98,6 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
-    /**
-     *  Function to get the grave vault from the grave forwarder contract and set it in the state.
-     */
-    const getGraveForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
-        try {
-            const graveForwarder = new ethers.Contract(
-                constants.UNIVERSAL_GRAVE_FORWARDER,
-                LSP1GraveForwaderAbi,
-                provider
-            );
-            const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(account);
-            setGraveVault(vaultFromGraveDelegate);
-        } catch (err) {
-            console.error("Error: ", err);
-            toast({
-                title: `Error in Grave Forwarder.`,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-              })
-        }
-    }
 
     /**
      * Function to update the permissions if needed.
@@ -171,7 +144,7 @@ const JoinGraveBtn: React.FC = () => {
 
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
@@ -184,9 +157,9 @@ const JoinGraveBtn: React.FC = () => {
     }
 
     const updateDelegateVault = async () => {
-        if (!window.lukso) {
+        if (!window.lukso || !graveVault) {
              toast({
-                 title: `UP wallet is not connected.`,
+                 title: `UP wallet is not connected or no vault found.`,
                  status: 'error',
                  position: 'bottom-left',
                  duration: 9000,
@@ -226,7 +199,7 @@ const JoinGraveBtn: React.FC = () => {
                  setDataCalldata,
              );
 
-         } catch (err) {
+         } catch (err: any) {
              console.error("Error: ", err);
              toast({
                  title: 'Error: ' + err.message,
@@ -320,7 +293,7 @@ const JoinGraveBtn: React.FC = () => {
             // execute the tx
             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
             await setDataBatchTx.wait();
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
@@ -352,7 +325,7 @@ const JoinGraveBtn: React.FC = () => {
                 provider
             );
             await graveForwarder.connect(signer).setGrave(vaultReceipt.contractAddress);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
@@ -435,5 +408,3 @@ const JoinGraveBtn: React.FC = () => {
         </div>
     );
 };
-
-export default JoinGraveBtn;

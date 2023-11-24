@@ -2,6 +2,9 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
+import {ethers} from "ethers";
+import {constants} from "@/app/constants";
+import LSP1GraveForwaderAbi from "@/app/abis/LSP1GraveForwaderAbi.json";
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -25,6 +28,7 @@ interface Props {
 export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
+  const [graveVault, setGraveVault] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast()
 
@@ -39,6 +43,24 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
       setIsLoadingAccount(false)
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.lukso && account) {
+      // // Initialize a new Web3 instance using the LUKSO provider.
+      const provider =  new ethers.providers.Web3Provider(window.lukso);
+      const signer = provider.getSigner();
+
+      const graveForwarder = new ethers.Contract(
+          constants.UNIVERSAL_GRAVE_FORWARDER,
+          LSP1GraveForwaderAbi,
+          provider
+      );
+      graveForwarder.connect(signer).graveVaults(account)
+          .then((graveVault: string) => {
+            setGraveVault(graveVault);
+          });
+    }
+  }, [account]);
 
   /**
    * Connects to the wallet and sets the account address in state and localStorage.
@@ -94,7 +116,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   // Render the context provider, passing down the account state and control functions to children.
   return (
-    <WalletContext.Provider value={{ account, connect, disconnect, isLoadingAccount }}>
+    <WalletContext.Provider value={{ account, graveVault, connect, disconnect, isLoadingAccount }}>
       {children}
     </WalletContext.Provider>
   );

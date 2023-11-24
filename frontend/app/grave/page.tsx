@@ -3,9 +3,14 @@ import {Box, Container, Flex, Image, Stack} from "@chakra-ui/react";
 import "../globals.css";
 import JoinGraveBtn from "@/components/JoinGraveBtn";
 import LspAssets from "@/components/LspAssets";
+import {useContext} from "react";
+import {WalletContext} from "@/components/wallet/WalletContext";
 
 export default function Home() {
-    const logoPath = '/images/logo-full.png'
+    const logoPath = '/images/logo-full.png';
+    const walletContext = useContext(WalletContext);
+    const { graveVault} = walletContext;
+
     return (
         <Container
             as={Stack}
@@ -22,8 +27,8 @@ export default function Home() {
                     <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'}/>
                 </Flex>
                 <Box>
-                    <JoinGraveBtn/>
-                    <LspAssets address={"0x61a4C102f9731E43EA9D06B0Fe0c02b4777aA016"}/>
+                    <JoinGraveBtn  />
+                    <LspAssets address={graveVault} />
                 </Box>
             </Box>
         </Container>
