@@ -425,27 +425,6 @@ export default function JoinGraveBtn () {
         }
     };
 
-    const renderAccordeonDetails = () => {
-        return (
-            <Accordion  allowMultiple>
-                <AccordionItem>
-                    <h2>
-                    <AccordionButton>
-                        <Box as="span" flex='1' textAlign='left'>
-                            Details
-                        </Box>
-                        <AccordionIcon />
-                    </AccordionButton>
-                    </h2>
-                    <AccordionPanel pb={4}>
-                        <Box>LSP7 URD: {URDLsp7}</Box>
-                        <Box>LSP8 URD: {URDLsp8}</Box>
-                        <Box>Grave Vault: {graveVault}</Box>
-                    </AccordionPanel>
-                </AccordionItem>
-            </Accordion>
-        )
-    }
 
     const displayPermissionBECText = () => {
         if (loading) {
@@ -472,12 +451,6 @@ export default function JoinGraveBtn () {
         return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
     }
 
-    // Function to check if the address is valid. "0x" is not a valid address.
-    // This is mainly used to run ethers.utils.getAddress() without throwing an error.
-    const isValidAddress = (address: string | null) => {
-        return address && address.length === 42 && address.startsWith('0x');
-    }
-
     // Custom function to safely get checksum address
     const getChecksumAddress = (address: string | null) =>{
         // Check if the address is valid
@@ -489,7 +462,6 @@ export default function JoinGraveBtn () {
         // Convert to checksum address
         return ethers.utils.getAddress(address);
     }
-
 
     const displayJoinLeaveButtons = () => {
         // Note: check sum case address to avoid issues with case sensitivity
@@ -523,8 +495,6 @@ export default function JoinGraveBtn () {
                 Update Delegate Vault
             </Button>
             {displayJoinLeaveButtons()}
-            {renderAccordeonDetails()}
-            
         </div>
     );
 };
