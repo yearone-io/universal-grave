@@ -198,18 +198,19 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             // todo disable join button while joining
             // todo test error handling
             // todo on page load change step depending on the current state
-            toast({
-                title: `🪲👻 Beetlejuice, Beetlejuice, Beetlejuice 👻🪲`,
-                status: 'success',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-            })
 
         } catch (err: any) {
             handleError(err);
             return err;
         }
+        toast({
+            title: `🪲👻 Beetlejuice, Beetlejuice, Beetlejuice 👻🪲`,
+            status: 'success',
+            position: 'bottom-left',
+            duration: 9000,
+            isClosable: true,
+        })
+
         // 6. Update the UI
         fetchProfile();
     }
@@ -265,6 +266,13 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             })
             return err
         }
+        toast({
+            title: `Your UP left the grave. 👻🪦`,
+            status: 'success',
+            position: 'bottom-left',
+            duration: 9000,
+            isClosable: true,
+        })
         fetchProfile();
     }
 
