@@ -10,6 +10,7 @@ import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 import { FaInfoCircle } from "react-icons/fa";
 import {ERC725, ERC725JSONSchema} from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert { type: 'json' };
+import { sign } from 'crypto';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -319,6 +320,88 @@ export default function JoinGraveBtn () {
         return await graveForwarder.connect(signer).setGrave(vaultAddress);
     }
 
+    const setDelegateInVault = async () => {
+        const provider =  new ethers.providers.Web3Provider(window.lukso);
+        const signer = provider.getSigner();
+        const vault = new ethers.Contract(graveVault, LSP9Vault.abi, signer);
+        return await vault.connect(signer).setData(
+            ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+            constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
+        );
+     }
+
+
+    const setLSPDelegatesForForwarder = async (
+        signer: ethers.providers.JsonRpcSigner,
+        provider: ethers.providers.Web3Provider,
+        ) => {
+        // Interacting with the Universal Profile contract
+        const UP = new ethers.Contract(
+            account as string,
+            UniversalProfile.abi,
+            provider
+        );
+
+        const erc725 = new ERC725(
+            LSP6Schema as ERC725JSONSchema[],
+            account,
+            window.lukso,
+        );
+        // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
+        const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+            LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
+        const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+
+        let dataKeys = [
+            LSP7URDdataKey,
+            LSP8URDdataKey,
+        ];
+
+        let dataValues = [
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+        ];
+
+        const permissionsResult = await erc725.getData();
+        const allControllers = permissionsResult[0].value as string[];
+        let formattedControllers = [] as string[];
+        const permissions = erc725.encodePermissions({
+            SUPER_CALL: true,
+            REENTRANCY: true,
+        });
+
+        // 2 - remove the forwarder from the list of controllers for sanity check
+        // Note: check sum case address to avoid issues with case sensitivity
+        formattedControllers = allControllers.filter((controller: any) => {
+            return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        });
+
+        // 3- add the forwarder to the list of controllers
+        formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
+    
+        const data = erc725.encodeData([
+            // the permission of the beneficiary address
+            {
+            keyName: 'AddressPermissions:Permissions:<address>',
+            dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+            value: permissions,
+            },
+            // the new list controllers addresses (= addresses with permissions set on the UP)
+            // + or -  1 in the `AddressPermissions[]` array length
+            {
+            keyName: 'AddressPermissions[]',
+            value: formattedControllers,
+            },
+        ]);
+        dataKeys = [...dataKeys, ...data.keys];
+        dataValues = [...dataValues, ...data.values];
+
+        // 4.execute the tx
+        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+        return await setDataBatchTx.wait();
+    }
+
     const handleError = (err: any) => {
         console.error("Error: ", err);
         toast({
@@ -345,9 +428,11 @@ export default function JoinGraveBtn () {
         const signer = provider.getSigner();
         let vaultAddress = null;
         // 1. Give the Browser Extension Controller the necessary permissions
+        console.log('step 0');
         try {
             await updateBECPermissions(provider, signer);
             setJoiningStep(1);
+            console.log('step 1');
         } catch (err: any) {
             handleError(err);
             return err;
@@ -358,30 +443,40 @@ export default function JoinGraveBtn () {
                 const vaultTranx = await createUpVault(provider, signer);
                 vaultAddress = vaultTranx.contractAddress;
                 setJoiningStep(2);
+                console.log('step 2');
             } catch (err: any) {
                 handleError(err);
                 return err;
             }
              // 3. Set the vault in the forwarder contract
             try {
-                setGraveInForwarder(provider, signer, vaultAddress);
+                await setGraveInForwarder(provider, signer, vaultAddress);
                 setJoiningStep(3);
+                console.log('step 3');
             } catch (err: any) {
                 handleError(err);
                 return err;
             }
+        } else {
+            console.log('step 2 and 3 skipped, vault already exists');
         }
 
         // 4. Enable grave to keep assets inventory
         try {
+            await setDelegateInVault();
             setJoiningStep(4);
+            console.log('step 4');
         } catch (err: any) {
             handleError(err);
             return err;
         }
         // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
         try {
+            await setLSPDelegatesForForwarder(signer, provider);
             setJoiningStep(5);
+            console.log('step 5');
+            // TODO update UI
+            // todo disable join button while joining
         } catch (err: any) {
             handleError(err);
             return err;
@@ -611,7 +706,7 @@ export default function JoinGraveBtn () {
             )
         } else {
             return (
-                <Button onClick={handleClick} disabled={loading} mb='10px'>
+                <Button onClick={initJoinProcess} disabled={loading} mb='10px'>
                     {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
                 </Button>
             )
