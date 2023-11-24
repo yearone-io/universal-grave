@@ -5,7 +5,6 @@ import { WalletContext } from './wallet/WalletContext';
 
 const SignInBox: React.FC = () => {
   const walletContext = useContext(WalletContext);
-
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200'); // Adjusts color based on the theme
   const {  connect, isLoadingAccount } = walletContext;
 

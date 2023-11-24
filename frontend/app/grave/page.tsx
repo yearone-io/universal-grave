@@ -6,6 +6,7 @@ import LspAssets from "@/components/LspAssets";
 import { WalletContext } from "@/components/wallet/WalletContext";
 import SignInBox from "@/components/SignInBox";
 import { useContext } from "react";
+import JoinGravePannel from "@/components/joinGravePannel";
 
 export default function Home() {
     const logoPath = '/images/logo-full.png';
@@ -23,8 +24,9 @@ export default function Home() {
                 <Box w='60%'>
                     {account ? (
                         <Box>
-                            <JoinGraveBtn />
-                            <LspAssets />
+                            <JoinGravePannel />
+                            {/* <JoinGraveBtn /> */}
+                            {/* <LspAssets /> */}
                         </Box>
                     ) : (
                         <SignInBox />
