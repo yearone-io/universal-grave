@@ -8,7 +8,7 @@ import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 import { FaInfoCircle } from "react-icons/fa";
-import { ERC725 } from '@erc725/erc725.js';
+import {ERC725, ERC725JSONSchema} from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert { type: 'json' };
 
 /**
@@ -253,7 +253,7 @@ export default function JoinGraveBtn () {
             if (graveVault === constants.ZERO_ADDRESS) {
                 await createVault(provider, signer);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
@@ -287,7 +287,7 @@ export default function JoinGraveBtn () {
             //       The UP should still have access to the vault, but no more assets should be redirected.
             //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
             //       Something wrong like renouncing ownership.
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
@@ -318,7 +318,7 @@ export default function JoinGraveBtn () {
         );
 
         const erc725 = new ERC725(
-            LSP6Schema,
+            LSP6Schema as ERC725JSONSchema[],
             account,
             window.lukso,
         );
