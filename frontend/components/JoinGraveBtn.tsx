@@ -264,6 +264,8 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             })
             return err
         }
+        setJoiningStep(0);
+        fetchProfile();
         toast({
             title: `Your UP left the grave. 👻🪦`,
             status: 'success',
@@ -271,7 +273,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             duration: 9000,
             isClosable: true,
         })
-        fetchProfile();
     }
 
     // ========================= UPDATING DATA =========================

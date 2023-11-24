@@ -29,6 +29,7 @@ const JoinGravePannel: React.FC = () => {
       textAlign='center'
       padding='20px'
       h='400px'
+      color={useColorModeValue('black', 'black')}
     >
       <Text fontSize='2xl' fontWeight='bold' fontFamily='Roboto' >
         SET UP YOUR GRAVE SPAM BOX
