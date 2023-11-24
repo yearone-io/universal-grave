@@ -3,13 +3,9 @@ import {Box, Container, Flex, Image, Stack} from "@chakra-ui/react";
 import "../globals.css";
 import JoinGraveBtn from "@/components/JoinGraveBtn";
 import LspAssets from "@/components/LspAssets";
-import {useContext} from "react";
-import {WalletContext} from "@/components/wallet/WalletContext";
 
 export default function Home() {
     const logoPath = '/images/logo-full.png';
-    const walletContext = useContext(WalletContext);
-    const { graveVault} = walletContext;
 
     return (
         <Container
@@ -28,7 +24,7 @@ export default function Home() {
                 </Flex>
                 <Box>
                     <JoinGraveBtn  />
-                    <LspAssets address={graveVault} />
+                    <LspAssets />
                 </Box>
             </Box>
         </Container>

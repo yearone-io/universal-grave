@@ -4,11 +4,12 @@ import ERC725, {ERC725JSONSchema} from "@erc725/erc725.js";
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import {detectLSP, LSPType, TokenInfo} from "@/utils/tokenUtils";
 
-export default function LspAssets({address}: { address: string | null }) {
+export default function LspAssets() {
     const [loading, setLoading] = useState(true);
     const walletContext = useContext(WalletContext);
     const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[]>([]);
     const [lps8Assets, setLsp8VaultAssets] = useState<string[]>([]);
+    const {graveVault: address} = walletContext;
 
     // Checking if the walletContext is available
     if (!walletContext) {
@@ -24,18 +25,19 @@ export default function LspAssets({address}: { address: string | null }) {
                     ipfsGateway: 'https://api.universalprofile.cloud/ipfs',
                 },
             );
-            let fetchedLsp7Assets: TokenInfo[] = [];
             erc725js.fetchData('LSP5ReceivedAssets[]')
                 .then(receivedAssetsDataKey => {
-                    (receivedAssetsDataKey.value as string[]).map(async assetAddress => {
-                        const tokenInfo = await detectLSP(assetAddress, address, LSPType.LSP7DigitalAsset);
-                        if (tokenInfo) {
-                            fetchedLsp7Assets.push(tokenInfo);
-                        }
+                    return (receivedAssetsDataKey.value as string[]).forEach(assetAddress => {
+                        return detectLSP(assetAddress, address, LSPType.LSP7DigitalAsset)
+                            .then(tokenInfo => {
+                                if (tokenInfo) {
+                                    setLsp7VaultAsset([...lsp7Assets, tokenInfo]);
+                                }
+                            })
+
                     });
-                    setLoading(false);
-                }).then(value => {
-                setLsp7VaultAsset(fetchedLsp7Assets)
+                }).then(() => {
+                setLoading(false);
             });
         }
     }, [account, address]);

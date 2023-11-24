@@ -96,7 +96,6 @@ export const detectLSP = async (
         let balance = owned ? 1 : 0
         try {
             currentDecimals = await contract.decimals();
-            console.log("currentDecimals", currentDecimals);
             if (currentDecimals !== '0') {
                 const _balance = await contract
                     .balanceOf(addressToCheck)
@@ -104,7 +103,6 @@ export const detectLSP = async (
                         console.error("error getting balance", e);
                         return undefined;
                     })
-                console.log("balance", _balance);
                 balance = BigNumber.from(_balance).toNumber();
             }
         } catch (err) {
