@@ -8,7 +8,7 @@ import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 import { FaInfoCircle } from "react-icons/fa";
-import { ERC725 } from '@erc725/erc725.js';
+import {ERC725, ERC725JSONSchema} from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert { type: 'json' };
 
 /**
@@ -31,20 +31,19 @@ import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert {
  * Additional functionalities and improvements are planned for future versions, including batch calls for data retrieval
  * and conditional permission updating during URD modifications.
  */
-const JoinGraveBtn: React.FC = () => {
+export default function JoinGraveBtn () {
     const [loading, setLoading] = useState(false);
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
     const [browserExtensionControllerAddress, setBrowserExtensionControllerAddress] = useState<string>('');
-    const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
     const toast = useToast()
     
     // Checking if the walletContext is available
     if (!walletContext) {
         throw new Error('WalletConnector must be used within a WalletProvider.');
     }
-    const { account } = walletContext;
+    const { account, graveVault } = walletContext;
 
     useEffect(() => {
         // Request account access on component mount
@@ -65,9 +64,6 @@ const JoinGraveBtn: React.FC = () => {
         
         //1- GET LSP7 and LSP8 URD
         await getUPData(provider, signer);
-
-        // 2 - get grave vault from UP
-        await getGraveVault(provider, signer);
 
         // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
         //    to avoid issues related to renouncing ownership of the vault
@@ -98,7 +94,7 @@ const JoinGraveBtn: React.FC = () => {
                 if (UPData.length === 3 && window.lukso.isUniversalProfileExtension) {
                     // sanity check we get the Browser Extension controller address
                     // NOTE: Based on conversations with the Lukso Dev team, currently there is no way to specificly find
-                    //       the address of the Browser Extension controller. 
+                    //       the address of the Browser Extension controller.
                     //       We found that for most current cases where isUniversalProfileExtension the address of the Browser Extension
                     //       is in position [1]. Since this is not reliable we ask in the UI to check and confirm. This is a temporary solution only
                     //       for facilitating the setting up permissions for the Hackathon.
@@ -118,29 +114,6 @@ const JoinGraveBtn: React.FC = () => {
         }
     }
 
-    /**
-     *  Function to get the grave vault from the grave forwarder contract and set it in the state.
-     */
-    const getGraveVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
-        try {
-            const graveForwarder = new ethers.Contract(
-                constants.UNIVERSAL_GRAVE_FORWARDER,
-                LSP1GraveForwaderAbi,
-                provider
-            );
-            const vaultFromGraveDelegate = await graveForwarder.connect(signer).graveVaults(account);
-            setGraveVault(vaultFromGraveDelegate);
-        } catch (err) {
-            console.error("Error: ", err);
-            toast({
-                title: `Error in Grave Forwarder.`,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-              })
-        }
-    }
 
     /**
      * Function to update the permissions if needed.
@@ -148,33 +121,33 @@ const JoinGraveBtn: React.FC = () => {
      * 
      */
     const updatePermissionsOfBEC = async () => {
-        if (!window.lukso) {
-             toast({
-                 title: `UP wallet is not connected.`,
-                 status: 'error',
-                 position: 'bottom-left',
-                 duration: 9000,
-                 isClosable: true,
-               })
-             return;
-         }
-     
-         try {
-             // Creating a provider and signer using ethers
-             const provider =  new ethers.providers.Web3Provider(window.lukso);        
-             const signer = provider.getSigner();
-             const account = await signer.getAddress();
-             const UP = new ethers.Contract(
-                 account as string,
-                 UniversalProfile.abi,
-                 provider
-             );
- 
-             const dataKeys = [
-                 ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
-             ]; 
+       if (!window.lukso) {
+            toast({
+                title: `UP wallet is not connected.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
+            return;
+        }
 
-             const permInt = parseInt(PERMISSIONS.SIGN, 16) ^ 
+        try {
+            // Creating a provider and signer using ethers
+            const provider =  new ethers.providers.Web3Provider(window.lukso);
+            const signer = provider.getSigner();
+            const account = await signer.getAddress();
+            const UP = new ethers.Contract(
+                account as string,
+                UniversalProfile.abi,
+                provider
+            );
+
+            const dataKeys = [
+                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
+             ];
+
+             const permInt = parseInt(PERMISSIONS.SIGN, 16) ^
                //Default + required ones
                parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
                parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
@@ -193,16 +166,48 @@ const JoinGraveBtn: React.FC = () => {
                parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
                parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
              const permHex = '0x' + permInt.toString(16).padStart(64, '0');
- 
+
              // Interacting with the Universal Profile contract
              const dataValues = [
                  permHex,
-             ];
-         
-             const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-             await setDataBatchTx.wait();
-         } catch (err) {
-             console.error("Error: ", err);      
+            ];
+
+            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+            await setDataBatchTx.wait();
+        } catch (err: any) {
+            console.error("Error: ", err);
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+            })
+        }
+    }
+
+    const updateDelegateVault = async () => {
+        if (!window.lukso || !graveVault) {
+             toast({
+                 title: `UP wallet is not connected or no vault found.`,
+                 status: 'error',
+                 position: 'bottom-left',
+                 duration: 9000,
+                 isClosable: true,
+               })
+             return;
+         }
+
+         try {
+             const provider =  new ethers.providers.Web3Provider(window.lukso);
+             const signer = provider.getSigner();
+             const vault = new ethers.Contract(graveVault, LSP9Vault.abi, signer);
+             await vault.connect(signer).setData(
+                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+                 constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
+             );
+         } catch (err: any) {
+             console.error("Error: ", err);
              toast({
                  title: 'Error: ' + err.message,
                  status: 'error',
@@ -212,7 +217,6 @@ const JoinGraveBtn: React.FC = () => {
              })
          }
      }
-    
     /**
      *  Function to set the delegates for LSP7 and LSP8 to the Grave Forwarder and create a vault if needed.
      */
@@ -234,8 +238,8 @@ const JoinGraveBtn: React.FC = () => {
             if (graveVault === constants.ZERO_ADDRESS) {
                 await createVault(provider, signer);
             }
-        } catch (err) {
-            console.error("Error: ", err);      
+        } catch (err: any) {
+            console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
                 status: 'error',
@@ -268,8 +272,8 @@ const JoinGraveBtn: React.FC = () => {
             //       The UP should still have access to the vault, but no more assets should be redirected.
             //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
             //       Something wrong like renouncing ownership.
-        } catch (err) {
-            console.error("Error: ", err);      
+        } catch (err: any) {
+            console.error("Error: ", err);
             toast({
                 title: 'Error: ' + err.message,
                 status: 'error',
@@ -286,7 +290,9 @@ const JoinGraveBtn: React.FC = () => {
      * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
     */
     const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string, isJoiningVault: boolean) => {
-        const provider =  new ethers.providers.Web3Provider(window.lukso);
+            const provider =  new ethers.providers.Web3Provider(window.lukso);
+
+
         const signer = provider.getSigner();
         const account = await signer.getAddress();
         // Interacting with the Universal Profile contract
@@ -297,10 +303,10 @@ const JoinGraveBtn: React.FC = () => {
         );
 
         const erc725 = new ERC725(
-            LSP6Schema,
+            LSP6Schema as ERC725JSONSchema[],
             account,
             window.lukso,
-        );        
+        );
 
         // LSP7 data key to set the forwarder as the delegate
         const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
@@ -309,7 +315,7 @@ const JoinGraveBtn: React.FC = () => {
         // LSP8 data key to set the forwarder as the delegate
         const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-        
+
         let dataKeys = [
             LSP7URDdataKey,
             LSP8URDdataKey,
@@ -319,10 +325,10 @@ const JoinGraveBtn: React.FC = () => {
             lsp7DelegateAddress,
             lsp8DelegateAddress,
         ];
-        
+
         const permissionsResult = await erc725.getData();
         const allControllers = permissionsResult[0].value as string[];
-        
+
         // if Joining the vault set permissions and add the controller to the list of controllers
         // if Leaving the vault remove permissions and remove the controller from the list of controllers
         let permissions = '';
@@ -338,7 +344,7 @@ const JoinGraveBtn: React.FC = () => {
             formattedControllers = allControllers.filter((controller: any) => {
                return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
             });
-            
+
             // 2- add the forwarder to the list of controllers
             formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
         } else {
@@ -445,18 +451,18 @@ const JoinGraveBtn: React.FC = () => {
         if (loading) {
             return 'Processing...';
         } else {
-           return (                   
+           return (
              <Tooltip label='Make sure this is your Browser Extension Controller. If not, set permittions from UP Extension'>
                 <Box display='flex' alignItems='center'>
                     <Box>
-                        Update permissions 
+                        Update permissions
                     </ Box>
                     <Box fontSize='14px' fontWeight='800' ml='2px' mr='3px'>({displayTruncatedAddress(browserExtensionControllerAddress)})
                     </Box>
                     <Box >
                         <FaInfoCircle />
                     </Box>
-                </Box>  
+                </Box>
             </Tooltip>
             )
         }
@@ -487,7 +493,7 @@ const JoinGraveBtn: React.FC = () => {
 
     const displayJoinLeaveButtons = () => {
         // Note: check sum case address to avoid issues with case sensitivity
-        
+
         if (getChecksumAddress(URDLsp7) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
             getChecksumAddress(URDLsp8) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)) {
             return (
@@ -512,12 +518,13 @@ const JoinGraveBtn: React.FC = () => {
         <div>
             <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
                 {displayPermissionBECText()}
-            </Button>      
+            </Button>
+            <Button isDisabled={!graveVault} onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
+                Update Delegate Vault
+            </Button>
             {displayJoinLeaveButtons()}
             {renderAccordeonDetails()}
             
         </div>
     );
 };
-
-export default JoinGraveBtn;
