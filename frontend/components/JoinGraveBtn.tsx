@@ -233,9 +233,9 @@ const JoinGraveBtn: React.FC = () => {
         const signer = provider.getSigner();
         try {
             await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER, true);
-            if (graveVault === constants.ZERO_ADDRESS) {
+            // if (graveVault === constants.ZERO_ADDRESS) {
                 await createVault(provider, signer);
-            }
+            // }
         } catch (err) {
             console.error("Error: ", err);      
             toast({
