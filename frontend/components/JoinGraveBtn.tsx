@@ -169,27 +169,19 @@ export default function JoinGraveBtn () {
          }
 
          try {
-             // Creating a provider and signer using ethers
              const provider =  new ethers.providers.Web3Provider(window.lukso);
              const signer = provider.getSigner();
-             const URD_DATA_KEY = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
-             // Interacting with the Universal Profile contract
-
              const UP = new ethers.Contract(
                  account as string,
                  UniversalProfile.abi,
                  provider
              );
-             // create an instance of the LSP9Vault
-             const vault = new ethers.Contract(graveVault, LSP9Vault.abi);
-             // encode setData Calldata on the Vault
-             let vaultURDAddress = "0xBc7b3980614215c8090dF310661685Cc393B601A";
-             const setDataCalldata = await vault.methods
+             const vault = new ethers.Contract(graveVault, LSP9Vault.abi, signer);
+             const setDataCalldata = vault
                  .setData(
                      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-                     vaultURDAddress,
-                 )
-                 .encodeABI(); // Any other information can be stored here
+                     constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
+                 );
 
              // execute the `setDataCalldata` that updates the Vault data
              await UP.connect(signer).execute(
