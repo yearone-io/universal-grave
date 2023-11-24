@@ -5,10 +5,12 @@ import JoinGraveBtn from "@/components/JoinGraveBtn";
 import LspAssets from "@/components/LspAssets";
 import { WalletContext } from "@/components/wallet/WalletContext";
 import SignInBox from "@/components/SignInBox";
+import { useContext } from "react";
 
 export default function Home() {
     const logoPath = '/images/logo-full.png';
-    const { account } = WalletContext;
+    const walletContext = useContext(WalletContext);
+    const { account } = walletContext;
 
     return (
         <Container
