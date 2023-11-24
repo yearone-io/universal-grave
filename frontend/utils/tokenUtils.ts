@@ -6,6 +6,9 @@ import {eip165ABI} from "@/abis/eip165ABI";
 import {erc20ABI} from "@/abis/erc20ABI";
 import lsp3ProfileSchema from "@erc725/erc725.js/schemas/LSP3ProfileMetadata.json";
 import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json'
+import { constants } from '@/app/constants';
+
+//most functions below are copied from https://github.com/lukso-network/universalprofile-test-dapp/blob/main/src/helpers/tokenUtils.ts
 
 export enum LSPType {
     LSP7DigitalAsset = 'LSP7DigitalAsset',
@@ -110,9 +113,9 @@ export const detectLSP = async (
         }
         // ERC725 detection
         const erc725js = new ERC725(
-            (lsp3ProfileSchema).concat(lsp4Schema, lsp9Schema) as ERC725JSONSchema[], contractAddress, 'https://rpc.testnet.lukso.gateway.fm',
+            (lsp3ProfileSchema).concat(lsp4Schema, lsp9Schema) as ERC725JSONSchema[], contractAddress, constants.RPC,
             {
-                ipfsGateway: 'https://api.universalprofile.cloud/ipfs',
+                ipfsGateway: constants.IPFS,
             },
         );
 
