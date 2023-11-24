@@ -13,8 +13,8 @@ const JoinGravePannel: React.FC = () => {
     { title: '5. Direct all 🆙 spam to the GRAVE', description: 'Bla bla' },
   ]
 
-  const { activeStep } = useSteps({
-    index: 1,
+  const { activeStep, setActiveStep } = useSteps({
+    index: 0,
     count: steps.length,
   })
 
@@ -33,7 +33,7 @@ const JoinGravePannel: React.FC = () => {
       <Text fontSize='2xl' fontWeight='bold' fontFamily='Roboto' >
         SET UP YOUR GRAVE SPAM BOX
       </Text>
-      < JoinGraveBtn />
+      < JoinGraveBtn onJoiningStepChange={(newStep: number) => {setActiveStep(newStep)} } />
           <Stepper index={activeStep} orientation='vertical' height='100px' gap='0'>
             {steps.map((step, index) => (
                 <Step key={index}>

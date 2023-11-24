@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { use, useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
@@ -11,6 +11,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import {ERC725, ERC725JSONSchema} from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert { type: 'json' };
 import { sign } from 'crypto';
+import { on } from 'events';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -32,7 +33,7 @@ import { sign } from 'crypto';
  * Additional functionalities and improvements are planned for future versions, including batch calls for data retrieval
  * and conditional permission updating during URD modifications.
  */
-export default function JoinGraveBtn () {
+export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepChange: (newStep: number) => void }) {
     const [loading, setLoading] = useState(false);
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
@@ -53,6 +54,10 @@ export default function JoinGraveBtn () {
             fetchProfile();
         }
     }, [account]);
+
+    useEffect(() => {
+        onJoiningStepChange(joiningStep);
+    }, [joiningStep]);
 
     // TODOS after V1:
     // 0 - Add a batch call or wrapper contract so  on page load it gets URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
