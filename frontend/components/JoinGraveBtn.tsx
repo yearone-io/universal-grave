@@ -37,6 +37,7 @@ export default function JoinGraveBtn () {
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
     const [URDLsp8, setURDLsp8] = useState<string | null>(null);
     const [browserExtensionControllerAddress, setBrowserExtensionControllerAddress] = useState<string>('');
+    const [joiningStep, setJoiningStep] = useState<number>(0);
     const toast = useToast()
     
     // Checking if the walletContext is available
@@ -250,6 +251,141 @@ export default function JoinGraveBtn () {
             return err
         }
         fetchProfile();
+    }
+
+    /**
+     * Function to update the permissions if needed.
+     * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
+     * 
+     */
+    const updateBECPermissions = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
+        const UP = new ethers.Contract(
+            account as string,
+            UniversalProfile.abi,
+            provider
+        );
+
+        const dataKeys = [
+            ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
+        ];
+
+        const permInt = parseInt(PERMISSIONS.SIGN, 16) ^
+        //Default + required ones
+        parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
+        parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
+        parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
+        parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
+        parseInt(PERMISSIONS.SUPER_CALL, 16) ^
+        parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
+        parseInt(PERMISSIONS.CALL, 16) ^
+        parseInt(PERMISSIONS.STATICCALL, 16) ^
+        parseInt(PERMISSIONS.DEPLOY, 16) ^
+        parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
+        parseInt(PERMISSIONS.SETDATA, 16) ^
+        parseInt(PERMISSIONS.ENCRYPT, 16) ^
+        parseInt(PERMISSIONS.DECRYPT, 16) ^
+        parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
+        parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
+        parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
+        const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+
+        // Interacting with the Universal Profile contract
+        const dataValues = [
+            permHex,
+        ];
+
+        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+        return await setDataBatchTx.wait();
+    }
+
+    const createUpVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
+        // create an factory for the LSP9Vault contract
+        let vaultFactory = new ethers.ContractFactory(
+            LSP9Vault.abi,
+            LSP9Vault.bytecode,
+        );
+        const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
+        return await vaultTransaction.deployTransaction.wait();
+    }
+
+    const setGraveInForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner, vaultAddress: string) => {
+        // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+        // Note: remember to update ABIs if the delegate contracts change
+        const graveForwarder = new ethers.Contract(
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+            LSP1GraveForwaderAbi,
+            provider
+        );
+        return await graveForwarder.connect(signer).setGrave(vaultAddress);
+    }
+
+    const handleError = (err: any) => {
+        console.error("Error: ", err);
+        toast({
+            title: 'Error: ' + err.message,
+            status: 'error',
+            position: 'bottom-left',
+            duration: 9000,
+            isClosable: true,
+        })
+    }
+
+    const initJoinProcess = async () => {
+        if (!window.lukso) {
+            toast({
+                title: `UP wallet is not connected.`,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+              })
+            return;
+        } 
+        const provider =  new ethers.providers.Web3Provider(window.lukso);
+        const signer = provider.getSigner();
+        let vaultAddress = null;
+        // 1. Give the Browser Extension Controller the necessary permissions
+        try {
+            await updateBECPermissions(provider, signer);
+            setJoiningStep(1);
+        } catch (err: any) {
+            handleError(err);
+            return err;
+        }
+        if (graveVault === constants.ZERO_ADDRESS) {
+            // 2. Create a vault for the UP. (if needed)
+            try {
+                const vaultTranx = await createUpVault(provider, signer);
+                vaultAddress = vaultTranx.contractAddress;
+                setJoiningStep(2);
+            } catch (err: any) {
+                handleError(err);
+                return err;
+            }
+             // 3. Set the vault in the forwarder contract
+            try {
+                setGraveInForwarder(provider, signer, vaultAddress);
+                setJoiningStep(3);
+            } catch (err: any) {
+                handleError(err);
+                return err;
+            }
+        }
+
+        // 4. Enable grave to keep assets inventory
+        try {
+            setJoiningStep(4);
+        } catch (err: any) {
+            handleError(err);
+            return err;
+        }
+        // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
+        try {
+            setJoiningStep(5);
+        } catch (err: any) {
+            handleError(err);
+            return err;
+        }
     }
     
     /**
@@ -488,12 +624,12 @@ export default function JoinGraveBtn () {
 
     return (
         <div>
-            <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
+            {/* <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
                 {displayPermissionBECText()}
             </Button>
             <Button isDisabled={!graveVault} onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
                 Update Delegate Vault
-            </Button>
+            </Button> */}
             {displayJoinLeaveButtons()}
         </div>
     );
