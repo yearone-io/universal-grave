@@ -113,7 +113,7 @@ export const detectLSP = async (
         }
         // ERC725 detection
         const erc725js = new ERC725(
-            (lsp3ProfileSchema).concat(lsp4Schema, lsp9Schema) as ERC725JSONSchema[], contractAddress, constants.RPC,
+            (lsp3ProfileSchema).concat(lsp4Schema, lsp9Schema) as ERC725JSONSchema[], contractAddress, window.lukso,
             {
                 ipfsGateway: constants.IPFS,
             },
