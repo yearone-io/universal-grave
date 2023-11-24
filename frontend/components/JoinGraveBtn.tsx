@@ -51,9 +51,14 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
     useEffect(() => {
         // Request account access on component mount
         if (window.lukso && account) {
-            fetchProfile();
+            fetchProfile().then(() => {
+                // Update steps if the user has already joined the Grave
+                if (hasJoinedTheGrave()) {
+                    setJoiningStep(5);
+                };
+            });
         }
-    }, [account]);
+    }, [account, URDLsp7, URDLsp8]);
 
     useEffect(() => {
         onJoiningStepChange(joiningStep);
@@ -192,8 +197,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             await setLSPDelegatesForForwarder(signer, provider);
             setJoiningStep(5);
             console.log('step 5');
-            // todo on page load change step depending on the current state
-
         } catch (err: any) {
             handleError(err);
             return err;
@@ -504,6 +507,30 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         return await setDataBatchTx.wait();
     }
 
+    // ========================= HELPERS =========================
+
+    const displayTruncatedAddress = (address: string) => {
+        return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
+    }
+
+    // Custom function to safely get checksum address
+    const getChecksumAddress = (address: string | null) =>{
+        // Check if the address is valid
+        if (!address || !ethers.utils.isAddress(address)) {
+            // Handle invalid address
+            return address;
+        }
+
+        // Convert to checksum address
+        return ethers.utils.getAddress(address);
+    }
+
+    const hasJoinedTheGrave = () => {
+        // Note: check sum case address to avoid issues with case sensitivity
+        return getChecksumAddress(URDLsp7) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
+            getChecksumAddress(URDLsp8) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER);
+    }
+
     // ========================= UI =========================
     /**
      * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
@@ -565,27 +592,10 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         }
     }
 
-    const displayTruncatedAddress = (address: string) => {
-        return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
-    }
-
-    // Custom function to safely get checksum address
-    const getChecksumAddress = (address: string | null) =>{
-        // Check if the address is valid
-        if (!address || !ethers.utils.isAddress(address)) {
-            // Handle invalid address
-            return address;
-        }
-
-        // Convert to checksum address
-        return ethers.utils.getAddress(address);
-    }
-
     const displayJoinLeaveButtons = () => {
         // Note: check sum case address to avoid issues with case sensitivity
 
-        if (getChecksumAddress(URDLsp7) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
-            getChecksumAddress(URDLsp8) === getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)) {
+        if (hasJoinedTheGrave()) {
             return (
                 <Button onClick={handleReset} disabled={loading} mb='10px'>
                     {loading ? 'Processing...' : 'Leave the Grave'}
