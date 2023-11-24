@@ -13,31 +13,25 @@ export default function Home() {
     const { account } = walletContext;
 
     return (
-        <Container
-            as={Stack}
-            w={"100%"}
-            py={5}
-            direction={{base: "column", md: "row"}}
-            justify='space-between'
-            align={"center"}
-        >
-            <Flex id='grave-section' justifyContent='space-between' alignItems='center' w='100%'>
-                <Box>
-                    {account ?
-                        (
+        <Container w={"100%"} py={5} maxW='100%' pl='10%' pr='10%'>
+            <Stack
+                direction={{ base: "column", md: "row" }}
+                justify="space-around"
+                align="center"
+                w="100%"
+            >
+                <Box w='60%'>
+                    {account ? (
                         <Box>
-                            <JoinGraveBtn  />
+                            <JoinGraveBtn />
                             <LspAssets />
                         </Box>
-                        )
-                        : <SignInBox />
-                    }
+                    ) : (
+                        <SignInBox />
+                    )}
                 </Box>
-                <Flex gap="7px" justifyContent="center" alignItems="center"
-                      width={"100%"}>
-                    <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'}/>
-                </Flex>
-            </Flex>
+                <Image src={logoPath} alt="Universal-Grave-logo" width={"300px"}/>
+            </Stack>
         </Container>
     );
 }
