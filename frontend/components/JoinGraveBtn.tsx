@@ -560,12 +560,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
 
     return (
         <div>
-            {/* <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
-                {displayPermissionBECText()}
-            </Button>
-            <Button isDisabled={!graveVault} onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
-                Update Delegate Vault
-            </Button> */}
             {displayJoinLeaveButtons()}
         </div>
     );
