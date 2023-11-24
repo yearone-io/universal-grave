@@ -519,7 +519,7 @@ export default function JoinGraveBtn () {
             <Button onClick={updatePermissionsOfBEC} disabled={loading} colorScheme="red" mb='10px'>
                 {displayPermissionBECText()}
             </Button>
-            <Button onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
+            <Button isDisabled={!graveVault} onClick={updateDelegateVault} disabled={loading} colorScheme="red" mb='10px'>
                 Update Delegate Vault
             </Button>
             {displayJoinLeaveButtons()}
