@@ -46,6 +46,8 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
     }
     const { account, graveVault } = walletContext;
 
+    // ========================= HOOKS =========================
+
     useEffect(() => {
         // Request account access on component mount
         if (window.lukso && account) {
@@ -62,7 +64,11 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
     // 1 - Improve permission handling
     // 2 - Verifying owners of vaults
 
-    // Function to fetch Universal Profile data
+    // ========================= FETCHING DATA =========================
+
+    /**
+     * Function to fetch the profile data.
+     */
     const fetchProfile = async () =>  {  
         const provider =  new ethers.providers.Web3Provider(window.lukso);  
         const signer = provider.getSigner();    
@@ -75,6 +81,9 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         // TODO for future versions: check if the vault is owned by the UP
     }
 
+    /**
+     * Function to get the UP data and set the URD for LSP7 and LSP8.
+     */
     const getUPData = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         try {
             const UP = new ethers.Contract(
@@ -120,163 +129,7 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
     }
 
 
-    /**
-     * Function to update the permissions if needed.
-     * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
-     * 
-     */
-    const updateBECPermissions = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
-        const UP = new ethers.Contract(
-            account as string,
-            UniversalProfile.abi,
-            provider
-        );
-
-        const dataKeys = [
-            ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
-        ];
-
-        const permInt = parseInt(PERMISSIONS.SIGN, 16) ^
-        //Default + required ones
-        parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
-        parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
-        parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
-        parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
-        parseInt(PERMISSIONS.SUPER_CALL, 16) ^
-        parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
-        parseInt(PERMISSIONS.CALL, 16) ^
-        parseInt(PERMISSIONS.STATICCALL, 16) ^
-        parseInt(PERMISSIONS.DEPLOY, 16) ^
-        parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
-        parseInt(PERMISSIONS.SETDATA, 16) ^
-        parseInt(PERMISSIONS.ENCRYPT, 16) ^
-        parseInt(PERMISSIONS.DECRYPT, 16) ^
-        parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
-        parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
-        parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
-        const permHex = '0x' + permInt.toString(16).padStart(64, '0');
-
-        // Interacting with the Universal Profile contract
-        const dataValues = [
-            permHex,
-        ];
-
-        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-        return await setDataBatchTx.wait();
-    }
-
-    const createUpVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
-        // create an factory for the LSP9Vault contract
-        let vaultFactory = new ethers.ContractFactory(
-            LSP9Vault.abi,
-            LSP9Vault.bytecode,
-        );
-        const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-        return await vaultTransaction.deployTransaction.wait();
-    }
-
-    const setGraveInForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner, vaultAddress: string) => {
-        // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-        // Note: remember to update ABIs if the delegate contracts change
-        const graveForwarder = new ethers.Contract(
-            constants.UNIVERSAL_GRAVE_FORWARDER,
-            LSP1GraveForwaderAbi,
-            provider
-        );
-        return await graveForwarder.connect(signer).setGrave(vaultAddress);
-    }
-
-    const setDelegateInVault = async () => {
-        const provider =  new ethers.providers.Web3Provider(window.lukso);
-        const signer = provider.getSigner();
-        const vault = new ethers.Contract(graveVault, LSP9Vault.abi, signer);
-        return await vault.connect(signer).setData(
-            ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-            constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
-        );
-     }
-
-    const setLSPDelegatesForForwarder = async (
-        signer: ethers.providers.JsonRpcSigner,
-        provider: ethers.providers.Web3Provider,
-        ) => {
-        // Interacting with the Universal Profile contract
-        const UP = new ethers.Contract(
-            account as string,
-            UniversalProfile.abi,
-            provider
-        );
-
-        const erc725 = new ERC725(
-            LSP6Schema as ERC725JSONSchema[],
-            account,
-            window.lukso,
-        );
-        // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
-        const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-            LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-        const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-        let dataKeys = [
-            LSP7URDdataKey,
-            LSP8URDdataKey,
-        ];
-
-        let dataValues = [
-            constants.UNIVERSAL_GRAVE_FORWARDER,
-            constants.UNIVERSAL_GRAVE_FORWARDER,
-        ];
-
-        const permissionsResult = await erc725.getData();
-        const allControllers = permissionsResult[0].value as string[];
-        let formattedControllers = [] as string[];
-        const permissions = erc725.encodePermissions({
-            SUPER_CALL: true,
-            REENTRANCY: true,
-        });
-
-        // 2 - remove the forwarder from the list of controllers for sanity check
-        // Note: check sum case address to avoid issues with case sensitivity
-        formattedControllers = allControllers.filter((controller: any) => {
-            return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
-        });
-
-        // 3- add the forwarder to the list of controllers
-        formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
-    
-        const data = erc725.encodeData([
-            // the permission of the beneficiary address
-            {
-            keyName: 'AddressPermissions:Permissions:<address>',
-            dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
-            value: permissions,
-            },
-            // the new list controllers addresses (= addresses with permissions set on the UP)
-            // + or -  1 in the `AddressPermissions[]` array length
-            {
-            keyName: 'AddressPermissions[]',
-            value: formattedControllers,
-            },
-        ]);
-        dataKeys = [...dataKeys, ...data.keys];
-        dataValues = [...dataValues, ...data.values];
-
-        // 4.execute the tx
-        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-        return await setDataBatchTx.wait();
-    }
-
-    const handleError = (err: any) => {
-        console.error("Error: ", err);
-        toast({
-            title: 'Error: ' + err.message,
-            status: 'error',
-            position: 'bottom-left',
-            duration: 9000,
-            isClosable: true,
-        })
-    }
+    // ========================= JOINING FLOW =========================
 
     const initJoinProcess = async () => {
         if (!window.lukso) {
@@ -361,6 +214,8 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         fetchProfile();
     }
     
+    // ========================= LEAVING FLOW =========================
+
     /**
      * Function to reset the delegates for LSP7 and LSP8.
      */
@@ -413,6 +268,168 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         fetchProfile();
     }
 
+    // ========================= UPDATING DATA =========================
+
+    /**
+     * Function to update the permissions of the Browser Extension controller.
+     */
+    const updateBECPermissions = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
+        const UP = new ethers.Contract(
+            account as string,
+            UniversalProfile.abi,
+            provider
+        );
+
+        const dataKeys = [
+            ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
+        ];
+
+        const permInt = parseInt(PERMISSIONS.SIGN, 16) ^
+        //Default + required ones
+        parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
+        parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
+        parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
+        parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
+        parseInt(PERMISSIONS.SUPER_CALL, 16) ^
+        parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
+        parseInt(PERMISSIONS.CALL, 16) ^
+        parseInt(PERMISSIONS.STATICCALL, 16) ^
+        parseInt(PERMISSIONS.DEPLOY, 16) ^
+        parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
+        parseInt(PERMISSIONS.SETDATA, 16) ^
+        parseInt(PERMISSIONS.ENCRYPT, 16) ^
+        parseInt(PERMISSIONS.DECRYPT, 16) ^
+        parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
+        parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
+        parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
+        const permHex = '0x' + permInt.toString(16).padStart(64, '0');
+
+        // Interacting with the Universal Profile contract
+        const dataValues = [
+            permHex,
+        ];
+
+        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+        return await setDataBatchTx.wait();
+    }
+
+    /**
+     * Function to create a vault for the UP.
+     */
+    const createUpVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
+        // create an factory for the LSP9Vault contract
+        let vaultFactory = new ethers.ContractFactory(
+            LSP9Vault.abi,
+            LSP9Vault.bytecode,
+        );
+        const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
+        return await vaultTransaction.deployTransaction.wait();
+    }
+
+    /**
+     * Function to set the vault address in the forwarder contract.
+     */
+    const setGraveInForwarder = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner, vaultAddress: string) => {
+        // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+        // Note: remember to update ABIs if the delegate contracts change
+        const graveForwarder = new ethers.Contract(
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+            LSP1GraveForwaderAbi,
+            provider
+        );
+        return await graveForwarder.connect(signer).setGrave(vaultAddress);
+    }
+
+    /**
+     * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
+     */
+    const setDelegateInVault = async () => {
+        const provider =  new ethers.providers.Web3Provider(window.lukso);
+        const signer = provider.getSigner();
+        const vault = new ethers.Contract(graveVault as string, LSP9Vault.abi, signer);
+        return await vault.connect(signer).setData(
+            ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+            constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
+        );
+     }
+
+    /**
+     *  Function to set the forwarder contract as the delegate for LSP7 and LSP8.
+     */
+    const setLSPDelegatesForForwarder = async (
+        signer: ethers.providers.JsonRpcSigner,
+        provider: ethers.providers.Web3Provider,
+        ) => {
+        // Interacting with the Universal Profile contract
+        const UP = new ethers.Contract(
+            account as string,
+            UniversalProfile.abi,
+            provider
+        );
+
+        const erc725 = new ERC725(
+            LSP6Schema as ERC725JSONSchema[],
+            account,
+            window.lukso,
+        );
+        // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
+        const LSP7URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+            LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
+        const LSP8URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+
+        let dataKeys = [
+            LSP7URDdataKey,
+            LSP8URDdataKey,
+        ];
+
+        let dataValues = [
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+            constants.UNIVERSAL_GRAVE_FORWARDER,
+        ];
+
+        const permissionsResult = await erc725.getData();
+        const allControllers = permissionsResult[0].value as string[];
+        let formattedControllers = [] as string[];
+        const permissions = erc725.encodePermissions({
+            SUPER_CALL: true,
+            REENTRANCY: true,
+        });
+
+        // 2 - remove the forwarder from the list of controllers for sanity check
+        // Note: check sum case address to avoid issues with case sensitivity
+        formattedControllers = allControllers.filter((controller: any) => {
+            return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        });
+
+        // 3- add the forwarder to the list of controllers
+        formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
+    
+        const data = erc725.encodeData([
+            // the permission of the beneficiary address
+            {
+            keyName: 'AddressPermissions:Permissions:<address>',
+            dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+            value: permissions,
+            },
+            // the new list controllers addresses (= addresses with permissions set on the UP)
+            // + or -  1 in the `AddressPermissions[]` array length
+            {
+            keyName: 'AddressPermissions[]',
+            value: formattedControllers,
+            },
+        ]);
+        dataKeys = [...dataKeys, ...data.keys];
+        dataValues = [...dataValues, ...data.values];
+
+        // 4.execute the tx
+        const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
+        return await setDataBatchTx.wait();
+    }
+
+    /**
+     * Function to reset the delegates for LSP7 and LSP8 to the zero address. Used when leaving the Grave.
+     */
     const resetLSPDelegates =  async (
         signer: ethers.providers.JsonRpcSigner,
         provider: ethers.providers.Web3Provider,
@@ -484,6 +501,7 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         return await setDataBatchTx.wait();
     }
 
+    // ========================= UI =========================
     /**
      * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
      * This way no more assets are redirected but the UP still has access to the Grave vault.
@@ -497,6 +515,16 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         }
     };
         
+    const handleError = (err: any) => {
+        console.error("Error: ", err);
+        toast({
+            title: 'Error: ' + err.message,
+            status: 'error',
+            position: 'bottom-left',
+            duration: 9000,
+            isClosable: true,
+        })
+    }
 
     const displayPermissionBECText = () => {
         if (loading) {
