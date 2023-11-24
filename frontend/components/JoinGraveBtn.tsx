@@ -458,6 +458,7 @@ export default function JoinGraveBtn () {
                 return err;
             }
         } else {
+            setJoiningStep(3);
             console.log('step 2 and 3 skipped, vault already exists');
         }
 
@@ -477,6 +478,15 @@ export default function JoinGraveBtn () {
             console.log('step 5');
             // TODO update UI
             // todo disable join button while joining
+            // todo test error handling
+            toast({
+                title: `🪲👻 Beetlejuice, Beetlejuice, Beetlejuice 👻🪲`,
+                status: 'success',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+            })
+
         } catch (err: any) {
             handleError(err);
             return err;
