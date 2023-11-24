@@ -2,7 +2,7 @@ import React, { use, useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Tooltip, useToast } from '@chakra-ui/react';
+import { Box, Button, Tooltip, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
@@ -10,8 +10,6 @@ import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 import { FaInfoCircle } from "react-icons/fa";
 import {ERC725, ERC725JSONSchema} from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert { type: 'json' };
-import { sign } from 'crypto';
-import { on } from 'events';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -127,143 +125,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
      * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
      * 
      */
-    const updatePermissionsOfBEC = async () => {
-       if (!window.lukso) {
-            toast({
-                title: `UP wallet is not connected.`,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-              })
-            return;
-        }
-
-        try {
-            // Creating a provider and signer using ethers
-            const provider =  new ethers.providers.Web3Provider(window.lukso);
-            const signer = provider.getSigner();
-            const account = await signer.getAddress();
-            const UP = new ethers.Contract(
-                account as string,
-                UniversalProfile.abi,
-                provider
-            );
-
-            const dataKeys = [
-                ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + browserExtensionControllerAddress.slice(2),
-             ];
-
-             const permInt = parseInt(PERMISSIONS.SIGN, 16) ^
-               //Default + required ones
-               parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
-               parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
-               parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
-               parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
-               parseInt(PERMISSIONS.SUPER_CALL, 16) ^
-               parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
-               parseInt(PERMISSIONS.CALL, 16) ^
-               parseInt(PERMISSIONS.STATICCALL, 16) ^
-               parseInt(PERMISSIONS.DEPLOY, 16) ^
-               parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
-               parseInt(PERMISSIONS.SETDATA, 16) ^
-               parseInt(PERMISSIONS.ENCRYPT, 16) ^
-               parseInt(PERMISSIONS.DECRYPT, 16) ^
-               parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
-               parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
-               parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
-             const permHex = '0x' + permInt.toString(16).padStart(64, '0');
-
-             // Interacting with the Universal Profile contract
-             const dataValues = [
-                 permHex,
-            ];
-
-            const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
-            await setDataBatchTx.wait();
-        } catch (err: any) {
-            console.error("Error: ", err);
-            toast({
-                title: 'Error: ' + err.message,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-            })
-        }
-    }
-
-    const updateDelegateVault = async () => {
-        if (!window.lukso || !graveVault) {
-             toast({
-                 title: `UP wallet is not connected or no vault found.`,
-                 status: 'error',
-                 position: 'bottom-left',
-                 duration: 9000,
-                 isClosable: true,
-               })
-             return;
-         }
-
-         try {
-             const provider =  new ethers.providers.Web3Provider(window.lukso);
-             const signer = provider.getSigner();
-             const vault = new ethers.Contract(graveVault, LSP9Vault.abi, signer);
-             await vault.connect(signer).setData(
-                 ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-                 constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
-             );
-         } catch (err: any) {
-             console.error("Error: ", err);
-             toast({
-                 title: 'Error: ' + err.message,
-                 status: 'error',
-                 position: 'bottom-left',
-                 duration: 9000,
-                 isClosable: true,
-             })
-         }
-     }
-    /**
-     *  Function to set the delegates for LSP7 and LSP8 to the Grave Forwarder and create a vault if needed.
-     */
-    const joinTheGrave = async () => {
-        if (!window.lukso) {
-            toast({
-                title: `UP wallet is not connected.`,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-              })
-            return;
-        }
-        const provider =  new ethers.providers.Web3Provider(window.lukso);
-        const signer = provider.getSigner();
-        try {
-            await setLSPDelegates(constants.UNIVERSAL_GRAVE_FORWARDER, constants.UNIVERSAL_GRAVE_FORWARDER, true);
-            if (graveVault === constants.ZERO_ADDRESS) {
-                await createVault(provider, signer);
-            }
-        } catch (err: any) {
-            console.error("Error: ", err);
-            toast({
-                title: 'Error: ' + err.message,
-                status: 'error',
-                position: 'bottom-left',
-                duration: 9000,
-                isClosable: true,
-            })
-            return err
-        }
-        fetchProfile();
-    }
-
-    /**
-     * Function to update the permissions if needed.
-     * Ideally this would be done in a conditional way if the required permissions are not set (planned for the future).
-     * 
-     */
     const updateBECPermissions = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
         const UP = new ethers.Contract(
             account as string,
@@ -334,7 +195,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET,
         );
      }
-
 
     const setLSPDelegatesForForwarder = async (
         signer: ethers.providers.JsonRpcSigner,
@@ -484,6 +344,7 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             // TODO update UI
             // todo disable join button while joining
             // todo test error handling
+            // todo on page load change step depending on the current state
             toast({
                 title: `🪲👻 Beetlejuice, Beetlejuice, Beetlejuice 👻🪲`,
                 status: 'success',
@@ -512,8 +373,26 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
                 })
             return;
         }
+        const provider =  new ethers.providers.Web3Provider(window.lukso);
+        const signer = provider.getSigner();
+
+        // 1- Set Permissions on Browser Extension Controller
         try {
-            await setLSPDelegates('0x', '0x', false);
+            await updateBECPermissions(provider, signer);
+        } catch (err: any) {
+            console.error("Error: ", err);
+            toast({
+                title: 'Error: ' + err.message,
+                status: 'error',
+                position: 'bottom-left',
+                duration: 9000,
+                isClosable: true,
+            })
+            return err;
+        }
+        // 2- Set the URD for LSP7 and LSP8 to the zero address
+        try {
+            await resetLSPDelegates(signer, provider);
                 // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
             //       The UP should still have access to the vault, but no more assets should be redirected.
             //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
@@ -532,14 +411,10 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         fetchProfile();
     }
 
-    /**
-     * Function to set the delegates for LSP7 and LSP8 to the provided addresses.
-    */
-    const setLSPDelegates = async (lsp7DelegateAddress: string, lsp8DelegateAddress: string, isJoiningVault: boolean) => {
-            const provider =  new ethers.providers.Web3Provider(window.lukso);
-
-
-        const signer = provider.getSigner();
+    const resetLSPDelegates =  async (
+        signer: ethers.providers.JsonRpcSigner,
+        provider: ethers.providers.Web3Provider,
+        ) => {
         const account = await signer.getAddress();
         // Interacting with the Universal Profile contract
         const UP = new ethers.Contract(
@@ -568,55 +443,35 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         ];
 
         let dataValues = [
-            lsp7DelegateAddress,
-            lsp8DelegateAddress,
+            '0x',
+            '0x',
         ];
 
         const permissionsResult = await erc725.getData();
         const allControllers = permissionsResult[0].value as string[];
-
-        // if Joining the vault set permissions and add the controller to the list of controllers
-        // if Leaving the vault remove permissions and remove the controller from the list of controllers
-        let permissions = '';
-        let formattedControllers = [] as string[];
-
-        if (isJoiningVault) {
-            permissions = erc725.encodePermissions({
-                SUPER_CALL: true,
-                REENTRANCY: true,
-            });
-            // 1 - remove the forwarder from the list of controllers for sanity check
-            // Note: check sum case address to avoid issues with case sensitivity
-            formattedControllers = allControllers.filter((controller: any) => {
-               return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
-            });
-
-            // 2- add the forwarder to the list of controllers
-            formattedControllers = [...formattedControllers, constants.UNIVERSAL_GRAVE_FORWARDER];
-        } else {
-            // remove permissions if leaving the Grave and reducing the number of controllers
-            permissions = erc725.encodePermissions({
-                SUPER_CALL: false,
-                REENTRANCY: false,
-            });
-            // 1 - remove the forwarder from the list of controllers.
-            // Note: check sum case address to avoid issues with case sensitivity
-            formattedControllers = allControllers.filter((controller: any) => {
-                return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
-            });
-        }
+        // remove permissions if leaving the Grave and reducing the number of controllers
+        const permissions = erc725.encodePermissions({
+            SUPER_CALL: false,
+            REENTRANCY: false,
+        });
+        // Remove the forwarder from the list of controllers.
+        // Note: check sum case address to avoid issues with case sensitivity
+        const formattedControllers = allControllers.filter((controller: any) => {
+            return getChecksumAddress(controller) !== getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        });
+        
         const data = erc725.encodeData([
             // the permission of the beneficiary address
             {
-              keyName: 'AddressPermissions:Permissions:<address>',
-              dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
-              value: permissions,
+            keyName: 'AddressPermissions:Permissions:<address>',
+            dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+            value: permissions,
             },
             // the new list controllers addresses (= addresses with permissions set on the UP)
             // + or -  1 in the `AddressPermissions[]` array length
             {
-              keyName: 'AddressPermissions[]',
-              value: formattedControllers,
+            keyName: 'AddressPermissions[]',
+            value: formattedControllers,
             },
         ]);
         dataKeys = [...dataKeys, ...data.keys];
@@ -626,37 +481,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         const setDataBatchTx = await UP.connect(signer).setDataBatch(dataKeys, dataValues);
         return await setDataBatchTx.wait();
     }
-
-    /**
-     * Function to create a vault for the UP so the assets can be redirected to it.
-     */
-    const createVault = async (provider: ethers.providers.Web3Provider, signer: ethers.providers.JsonRpcSigner) => {
-        // create an factory for the LSP9Vault contract
-        let vaultFactory = new ethers.ContractFactory(
-            LSP9Vault.abi,
-            LSP9Vault.bytecode,
-        );
-        const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-        const vaultReceipt = await vaultTransaction.deployTransaction.wait();
-        // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-        // Note: remember to update ABIs if the delegate contracts change
-        const graveForwarder = new ethers.Contract(
-            constants.UNIVERSAL_GRAVE_FORWARDER,
-            LSP1GraveForwaderAbi,
-            provider
-        );
-        return await graveForwarder.connect(signer).setGrave(vaultReceipt.contractAddress);
-    }
-
-    // Event handler for the join button
-    const handleClick = async () => {
-        setLoading(true);
-        try {
-            await joinTheGrave();
-        } finally {
-            setLoading(false);
-        }
-    };
 
     /**
      * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
@@ -670,7 +494,7 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             setLoading(false);
         }
     };
-
+        
 
     const displayPermissionBECText = () => {
         if (loading) {

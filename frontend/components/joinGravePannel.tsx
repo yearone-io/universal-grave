@@ -6,7 +6,7 @@ const JoinGravePannel: React.FC = () => {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200'); // Adjusts color based on the theme
   
   const steps = [
-    { title: '1. Give your 🆙 necessary permissions', description: 'Bla bla' },
+    { title: '1. Give your 🆙 necessary permissions', description: 'todo: display Browser Extension address' },
     { title: '2. Create your GRAVE spam box', description: 'Bla bla' },
     { title: '3. Link GRAVE to your 🆙', description: 'Bla bla' },
     { title: '4. Enable GRAVE to keep assets inventory', description: 'Bla bla' },
