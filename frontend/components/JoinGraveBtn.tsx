@@ -357,6 +357,8 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             handleError(err);
             return err;
         }
+        // 6. Update the UI
+        fetchProfile();
     }
     
     /**
