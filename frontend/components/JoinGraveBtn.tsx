@@ -1,4 +1,4 @@
-import React, { use, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
@@ -61,8 +61,7 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
 
     // TODOS after V1:
     // 0 - Add a batch call or wrapper contract so  on page load it gets URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
-    // 1 - Improve permission handling
-    // 2 - Verifying owners of vaults
+    // 1 - Verifying owners of vaults
 
     // ========================= FETCHING DATA =========================
 
@@ -127,7 +126,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
               })
         }
     }
-
 
     // ========================= JOINING FLOW =========================
 
@@ -194,9 +192,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             await setLSPDelegatesForForwarder(signer, provider);
             setJoiningStep(5);
             console.log('step 5');
-            // TODO update UI
-            // todo disable join button while joining
-            // todo test error handling
             // todo on page load change step depending on the current state
 
         } catch (err: any) {
@@ -515,9 +510,24 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
      * This way no more assets are redirected but the UP still has access to the Grave vault.
      */
     const handleReset = async () => {
+        if (loading) return;
         setLoading(true);
         try {
             await leaveTheGrave();
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    /**
+     * When the user clicks the "Join the Grave" button, the joining flow of
+     * transactions is triggered.
+     */
+    const handleJoin = async () => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            await initJoinProcess();
         } finally {
             setLoading(false);
         }
@@ -583,7 +593,7 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
             )
         } else {
             return (
-                <Button onClick={initJoinProcess} disabled={loading} mb='10px'>
+                <Button onClick={handleJoin} disabled={loading} mb='10px'>
                     {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
                 </Button>
             )

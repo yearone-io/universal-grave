@@ -25,8 +25,7 @@ export default function Home() {
                     {account ? (
                         <Box>
                             <JoinGravePannel />
-                            {/* <JoinGraveBtn /> */}
-                            {/* <LspAssets /> */}
+                            <LspAssets />
                         </Box>
                     ) : (
                         <SignInBox />
