@@ -23,7 +23,7 @@ const initialSteps = [
   {
     title: 'Give your 🆙 necessary permissions',
     instructions: 'Give permissions to your Browser Extension Controller.',
-    instructions2: 'This can also be done manually.',
+    instructions2: { text: 'This can also be done manually.', address: null },
     completeText: { text: 'PERMISSION SET', address: null },
     complete: false,
   },
@@ -81,10 +81,7 @@ const JoinGravePannel: React.FC = () => {
   
     // Special case for step 0
     if (newStep === 0 && data[0] && modifiedSteps[0].instructions2) {
-      const address = `(${displayTruncatedAddress(data[0])})`;
-      if (!modifiedSteps[0].instructions2.includes(address)) {
-        modifiedSteps[0].instructions2 += address;
-      }
+        modifiedSteps[0].instructions2.address = data[0];
     }
   
     for (let step = 0; step < modifiedSteps.length; step++) {
@@ -154,7 +151,14 @@ const JoinGravePannel: React.FC = () => {
               {!step.complete ? (
                 <Box>
                   <Box>{step.instructions}</Box>
-                  <Box>{step.instructions2}</Box>
+                  {step.instructions2 && step.instructions2.address && (
+                    <Flex>
+                      <Box mr='2px'>{step.instructions2.text}</Box>
+                      <a href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.instructions2.address}`}  style={{ textDecoration: "underline" }} target='_blank'>
+                        ({displayTruncatedAddress(step.instructions2.address)})
+                      </a>
+                    </Flex>
+                  )}
                 </Box>
               ) : (
                 <StepDescription>
