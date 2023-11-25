@@ -28,7 +28,7 @@ interface Props {
 export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
-  const [graveVault, setGraveVault] = useState<string | null>(null);
+  const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast()
 
