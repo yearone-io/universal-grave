@@ -581,13 +581,13 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         if (hasJoinedTheGrave()) {
             return (
                 <Button onClick={handleReset} disabled={loading} mb='10px'>
-                    {loading ? 'Processing...' : 'Leave the Grave'}
+                    {loading ? 'Processing...' : 'UNSUBSCRIBE'}
                 </Button>
             )
         } else {
             return (
                 <Button onClick={handleJoin} disabled={loading} mb='10px'>
-                    {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
+                    {loading ? 'Processing...' : 'START'}
                 </Button>
             )
         }
