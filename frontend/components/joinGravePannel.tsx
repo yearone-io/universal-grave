@@ -26,7 +26,11 @@ const JoinGravePannel: React.FC = () => {
     return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
   }
 
-  // TODO refactor to make code more DRY
+  /**
+   * Update the data in the steps according to the step number
+   * 
+   * TODO refactor to make code more DRY
+   */
   const handleNewStep = (newStep: number, data: any) => {
     console.log('new step', newStep, data);
     // Reset steps each time. This helps when leaving the grave
@@ -107,7 +111,7 @@ const JoinGravePannel: React.FC = () => {
       h='430px'
       color={useColorModeValue('black', 'black')}
     >
-      <Text fontSize='2xl' fontWeight='bold' fontFamily='Roboto' >
+      <Text fontSize='2xl' fontWeight='bold' fontFamily='Montserrat' >
         SET UP YOUR GRAVE SPAM BOX
       </Text>
       < JoinGraveBtn onJoiningStepChange={handleNewStep} />
