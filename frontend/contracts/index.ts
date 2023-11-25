@@ -3,6 +3,8 @@
 /* eslint-disable */
 export type { LSP1GraveForwader } from "./LSP1GraveForwader";
 export type { LSP7Mintable } from "./LSP7Mintable";
+export type { LSP9Vault } from "./LSP9Vault";
 export * as factories from "./factories";
 export { LSP1GraveForwader__factory } from "./factories/LSP1GraveForwader__factory";
 export { LSP7Mintable__factory } from "./factories/LSP7Mintable__factory";
+export { LSP9Vault__factory } from "./factories/LSP9Vault__factory";
