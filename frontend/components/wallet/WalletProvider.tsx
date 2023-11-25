@@ -57,7 +57,6 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
       );
       graveForwarder.connect(signer).graveVaults(account)
           .then((graveVault: string) => {
-            console.log('Connected with', graveVault);
             setGraveVault(graveVault);
           });
     }
