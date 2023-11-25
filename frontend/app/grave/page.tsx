@@ -20,19 +20,21 @@ export default function Home() {
         justify="space-between"
         align="center"
         w="100%"
-        p={0}
+        pt='50px'
       >
         <Box w="60%">
           {account ? (
             <Box>
-              <Text fontSize="xl" fontWeight="bold" fontFamily="Bugee">
-                SETTINGS
-              </Text>
-              <JoinGravePannel />
-              <Text fontSize="xl" fontWeight="bold" fontFamily="Bugee">
-                YOUR GRAVEYARD
-              </Text>
-              <LspAssets />
+              <Box>
+                <Text fontSize='20px' color='FFFFFF' fontFamily="Bungee" mb='30px'>
+                  SETTINGS
+                </Text>
+                <Box>
+                  <Flex justifyContent='center'>
+                    <JoinGravePannel />
+                  </Flex>
+                </Box>
+              </Box>
             </Box>
           ) : (
             <SignInBox />
@@ -45,6 +47,16 @@ export default function Home() {
           width={'300px'}
         />
       </Stack>
+      {account ? 
+              <Box>
+                <Text fontSize='20px' color='FFFFFF' fontFamily="Bungee"  mb='30px' mt='30px'>
+                  YOUR GRAVEYARD
+                </Text>
+                <LspAssets />
+            </Box>
+            :
+          <></>
+    } 
     </Container>
   );
 }
