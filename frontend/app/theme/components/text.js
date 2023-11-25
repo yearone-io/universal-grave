@@ -1,6 +1,6 @@
 export const Text = {
   baseStyle: {
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "'Montserrat', sans-serif",
     fontSize: "16px",
     fontWeight: "normal",
   },

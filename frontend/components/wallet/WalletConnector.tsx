@@ -33,9 +33,9 @@ const WalletConnector: React.FC = () => {
         <Button  onClick={connect}>
           <Flex alignItems='center' justifyContent='space-between'>
               <Image src='images/LYX-logo.svg' alt='Sign In' />
-              <Box ml='10px' fontSize='10px' lineHeight='12px' fontFamily='Bungee' fontWeight='400'>Sign In</Box>
+              <Box ml='10px' fontSize='14px' lineHeight='14px' fontFamily='Bungee' fontWeight='400'>Sign In</Box>
           </Flex>
-      </Button>
+        </Button>
       )
     } else {
       return <Button onClick={disconnect}>{displayTruncatedAddress(account)}</Button>;
