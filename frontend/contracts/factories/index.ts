@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export { LSP1GraveForwader__factory } from "./LSP1GraveForwader__factory";
+export { LSP7Mintable__factory } from "./LSP7Mintable__factory";

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typechain": "typechain --target ethers-v5 --out-dir app/contracts '../solidity/artifacts/contracts/LSP1GraveForwarder.sol/LSP1GraveForwader.json'"
+    "typechain": "typechain --target ethers-v5 --out-dir contracts ./abis/*.json"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.1",
