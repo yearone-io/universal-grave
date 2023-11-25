@@ -1,5 +1,5 @@
 'use client'
-import {Box, Container, Flex, Image, Stack} from "@chakra-ui/react";
+import {Box, Container, Flex, Image, Stack, Text} from "@chakra-ui/react";
 import "../globals.css";
 import JoinGraveBtn from "@/components/JoinGraveBtn";
 import LspAssets from "@/components/LspAssets";
@@ -24,7 +24,13 @@ export default function Home() {
                 <Box w='60%'>
                     {account ? (
                         <Box>
+                            <Text fontSize='xl' fontWeight='bold' fontFamily='Bugee' >
+                                SETTINGS
+                            </Text>
                             <JoinGravePannel />
+                            <Text fontSize='xl' fontWeight='bold' fontFamily='Bugee' >
+                                YOUR GRAVEYARD
+                            </Text>
                             <LspAssets />
                         </Box>
                     ) : (
