@@ -1,7 +1,6 @@
 'use client';
 import { Box, Container, Flex, Image, Stack, Text } from '@chakra-ui/react';
 import '../globals.css';
-import JoinGraveBtn from '@/components/JoinGraveBtn';
 import LspAssets from '@/components/LspAssets';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';

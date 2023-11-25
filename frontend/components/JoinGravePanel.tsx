@@ -111,32 +111,30 @@ const JoinGravePanel: React.FC = () => {
   return (
     <VStack
       spacing={4}
-      p={5}
+      p={10}
       backgroundColor={bgColor}
       boxShadow="md"
       borderRadius="lg"
-      width="500px"
       textAlign="center"
-      padding="20px"
-      h="430px"
-      color={useColorModeValue('black', 'black')}
+      color={"dark.purple.500"}
+      width={"555px"}
+      minHeight={"435px"}
     >
       <Text fontSize="20px" fontWeight="bold" fontFamily="Bungee" color='dark.purple.400'>
-        SET UP YOUR GRAVE SPAM BOX
+        { !steps[4].complete ? `SET UP YOUR GRAVE SPAM BOX` : `YOU HAVE A GRAVE SPAM BOX!`}
       </Text>
       <JoinGraveBtn onJoiningStepChange={handleNewStep} />
       <Stepper
         index={activeStep}
         orientation="vertical"
-        height="200px"
         gap="3"
         id="grave-step-indicator"
       >
         {steps.map((step, index) => (
           <Step key={index}>
             <StepIndicator
-              color="dark.purple.500"
-              borderColor="dark.purple.500"
+              color="var(--chakra-colors-dark-purple-500)"
+              borderColor="var(--chakra-colors-dark-purple-500)"
               fontWeight={'bold'}
             >
               <StepStatus
@@ -146,11 +144,11 @@ const JoinGravePanel: React.FC = () => {
               />
             </StepIndicator>
             <Box flexShrink="0" textAlign={'left'}>
-              <StepTitle style={{ color: 'dark.purple.500', fontWeight: 'bold' }}>
+              <StepTitle style={{ color: "var(--chakra-colors-dark-purple-500)", fontWeight: 'bold', width: '435px'}}>
                 {step.title}
               </StepTitle>
               {!step.complete ? (
-                <Box>
+                <Box >
                   <Box>{step.instructions}</Box>
                   {step.instructions2 && step.instructions2.address && (
                     <Flex>
@@ -177,8 +175,8 @@ const JoinGravePanel: React.FC = () => {
             </Box>
             <StepSeparator
               style={{
-                color: 'dark.purple.500',
-                backgroundColor: 'dark.purple.500',
+                color: "var(--chakra-colors-dark-purple-500)",
+                backgroundColor: "var(--chakra-colors-dark-purple-500)",
               }}
             />
           </Step>
