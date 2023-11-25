@@ -15,20 +15,21 @@ const SignInBox: React.FC = () => {
       backgroundColor={bgColor}
       boxShadow='md'
       borderRadius='lg'
-      width='300px'
+      width='350px'
       mx='auto' // Centers the box
       my={8} // Margin top and bottom
       textAlign='center'
       padding='20px'
     >
-      <Text fontSize='lg' fontWeight='bold' fontFamily='Roboto' size='18px' lineHeight='21px' color='dark.purple.500'>
+      <Text fontSize='lg' fontWeight='bold' fontFamily='Montserrat' size='18px' lineHeight='24px' color='dark.purple.500'>
         Please sign in with your Universal Profile to connect a GRAVE spam box.
       </Text>
       <Button onClick={connect}>
         <Flex alignItems='center' justifyContent='space-between'>
             <Image src='images/LYX-logo.svg' alt='Sign In' />
-            <Box ml='10px' fontSize='10px' lineHeight='12px' fontFamily='Bungee' fontWeight='400'>
-              {isLoadingAccount ? '...' : 'Sign In'}</Box>
+            <Box ml='10px' fontSize='14px' lineHeight='14px' fontFamily='Bungee' fontWeight='400'>
+              {isLoadingAccount ? '...' : 'Sign In'}
+            </Box>
         </Flex>
       </Button>
     </VStack>

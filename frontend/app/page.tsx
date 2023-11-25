@@ -1,12 +1,13 @@
 'use client'
-import {Box, Container, Flex, Icon, Image, Stack, Text, useColorModeValue} from "@chakra-ui/react";
+import {Box, Button, Container, Flex, Icon, Image, Stack, Text, useColorModeValue} from "@chakra-ui/react";
 import "./globals.css";
 import {BsActivity, BsArrow90DegRight} from "react-icons/bs";
 import {RiAuctionLine} from "react-icons/ri";
 import Link from "next/link";
+import LSPExplainer from "@/components/LSPExplainer";
 
 export default function Home() {
-    const grave2Path = '/images/grave2.jpg'
+    const logoPath = '/images/logo-full.png';
     const lsp7Path = '/images/lsp7.png'
     const lsp8Path = '/images/lsp8.png'
     const subheadingColor = useColorModeValue("light.black", "dark.white");
@@ -23,6 +24,15 @@ export default function Home() {
     const borderColor = useColorModeValue(
         "var(--chakra-colors-light-black)",
         "var(--chakra-colors-dark-purple-200)"
+    );
+    const createButtonBg = useColorModeValue("light.green.brand", "dark.white");
+    const createButtonColor = useColorModeValue(
+        "light.black",
+        "var(--chakra-colors-dark-purple-500)"
+      );
+    const createButtonBorder = useColorModeValue(
+      "1px solid black",
+      "1px solid var(--chakra-colors-dark-purple-500)"
     );
 
     return (
@@ -58,7 +68,7 @@ export default function Home() {
                             fontWeight={800}
                         >
                             {
-                                "Stop receiving assets you don't want. Redirect them to the Grave."
+                                "Stop receiving assets you don't want. Redirect them to the GRAVE."
                             }
                         </Text>
                         <Text
@@ -68,43 +78,41 @@ export default function Home() {
                             fontWeight={500}
                             lineHeight={"160%"}
                         >
-                            The Global Reserve For Abandoned Virtual Entities (GRAVE) is bla bla bla.
+                            {`GRAVE - the Global Reserve For Abandoned Virtual Entities. A cemetery for unwanted digital assets. But given that one man's trash is another man's treasure, all assets have a chance at revival.`}
                         </Text>
+                        <Link href="/grave" passHref>
+                            <Button
+                                px={6}
+                                color={createButtonColor}
+                                bg={createButtonBg}
+                                _hover={{ bg: createButtonBg }}
+                                border={createButtonBorder}
+                                size={["sm", "sm", "md", "md"]}
+                            >
+                                {`Connect a GRAVE to your 🆙`}
+                            </Button>
+                        </Link>
+                        
                     </Flex>
                     <Flex
                         flexDirection={"column"}
                         alignItems={"center"}
                         justifyContent={"center"}
+                        px={"40px"}
+                        
                     >
-                        <Image src={grave2Path} alt="Universal-Grave-logo" width={'600px'}/>
+                        <Image src={logoPath} alt="Universal-Grave-logo" minWidth={"300px"}  />
                     </Flex>
                 </Flex>
-
-                <Box marginTop={{base: 5, md: 10}}>
-                    <Flex
-                        pb={{base: 3, sm: 4}}
-                        flexWrap="wrap"
-                        gap="4"
-                        width={"100%"}
-                        alignItems={"center"}
-                        justifyContent="flex-start"
-                    >
-                        <Link
-                            href={"/grave"}
-                        >
-                            Visit the Grave
-                        </Link>
-                    </Flex>
-                </Box>
                 <Box my={{base: 8, sm: 10, lg: 20}}>
                     <Text
-                        pb={{base: 1, sm: 2}}
+                        pb={5}
                         color={subheadingColor}
                         fontSize={{base: "lg", sm: "lg", md: "xl"}}
                         fontFamily={"Montserrat"}
                         fontWeight={800}
                     >
-                        {"How Grave works"}
+                        {"How the GRAVE works"}
                     </Text>
                     <Flex
                         flexDirection={{base: "column", md: "row"}}
@@ -141,18 +149,7 @@ export default function Home() {
                                     fontFamily={"Montserrat"}
                                     fontWeight={800}
                                 >
-                                    Redirect your incoming assets
-                                </Text>
-                                <Text
-                                    color={customColor}
-                                    fontSize={{base: "sm"}}
-                                    fontFamily={"Montserrat"}
-                                    fontWeight={500}
-                                    lineHeight={"155%"}
-                                >
-                                    {
-                                        "bla bla bla."
-                                    }
+                                    {`Redirect all incoming unwanted assets to the GRAVE`}
                                 </Text>
 
                             </Flex>
@@ -182,20 +179,8 @@ export default function Home() {
                                     fontFamily={"Montserrat"}
                                     fontWeight={800}
                                 >
-                                    Recover only the valid assets
+                                    Allow and recover only quality assets to your UP!
                                 </Text>
-                                <Text
-                                    color={customColor}
-                                    fontSize={{base: "sm"}}
-                                    fontFamily={"Montserrat"}
-                                    fontWeight={500}
-                                    lineHeight={"155%"}
-                                >
-                                    {
-                                        "bla bla bla."
-                                    }
-                                </Text>
-
                             </Flex>
                         </Flex>
                         <Flex
@@ -211,7 +196,7 @@ export default function Home() {
                         >
                             <Icon as={RiAuctionLine} color={customColor} boxSize={14}/>
                             <Flex
-                                gap={{base: 4, sm: 5, lg: 6}}
+                                gap={1}
                                 flexDirection={"column"}
                                 alignItems={"left"}
                                 justifyContent={"center"}
@@ -223,17 +208,16 @@ export default function Home() {
                                     fontFamily={"Montserrat"}
                                     fontWeight={800}
                                 >
-                                    Auction assets
+                                    Put up all unwanted assets up for auction
                                 </Text>
                                 <Text
                                     color={customColor}
                                     fontSize={{base: "sm"}}
                                     fontFamily={"Montserrat"}
                                     fontWeight={500}
-                                    lineHeight={"155%"}
                                 >
                                     {
-                                        "bla bla bla."
+                                        "coming soon"
                                     }
                                 </Text>
 
@@ -243,13 +227,13 @@ export default function Home() {
                 </Box>
                 <Box my={{base: 8, sm: 10, lg: 20}}>
                     <Text
-                        pb={{base: 1, sm: 2}}
+                        pb={5}
                         color={subheadingColor}
                         fontSize={{base: "lg", sm: "lg", md: "xl"}}
                         fontFamily={"Montserrat"}
                         fontWeight={800}
                     >
-                        Redirect your incoming assets to your own Vault
+                        The GRAVE supports the following LUKSO standards
                     </Text>
                     <Flex
                         flexWrap={"wrap"}
@@ -257,94 +241,18 @@ export default function Home() {
                         alignItems={"center"}
                         gap={2}
                     >
-                        <Flex
-                            flexDirection={"column"}
-                            alignItems={"center"}
-                            justifyContent={"space-between"}
-                            py={2}
-                            px={4}
-                            borderRadius={"lg"}
-                            color={customColor}
-                            bg={customBg}
-                            _hover={{bg: customBg}}
-                            border={customBorder}
-                            my={2}
-                            minW={40}
-                        >
-                            <Flex
-                                flexDirection={"row"}
-                                alignItems={"center"}
-                                justifyContent={"flex-start"}
-                            >
-                                <Box
-                                    fontSize={"2em"}
-                                    height={"1.5em"}
-                                    width="1.5em"
-                                    textAlign={"center"}
-                                >
-                                    <Image src={lsp7Path} alt="Universal-Grave-logo" width={'600px'}/>
-                                </Box>
-                            </Flex>
-                            <Flex
-                                flexDirection={"row"}
-                                alignItems={"center"}
-                                justifyContent={"flex-end"}
-                            >
-                                <Text
-                                    color={customColor}
-                                    fontSize={{base: "sm", sm: "sm", md: "md"}}
-                                    fontFamily={"Montserrat"}
-                                    fontWeight={500}
-                                    lineHeight={"160%"}
-                                >
-                                    LSP7 assets
-                                </Text>
-                            </Flex>
-                        </Flex>
-                        <Flex
-                            flexDirection={"column"}
-                            alignItems={"center"}
-                            justifyContent={"space-between"}
-                            py={2}
-                            px={4}
-                            borderRadius={"lg"}
-                            color={customColor}
-                            bg={customBg}
-                            _hover={{bg: customBg}}
-                            border={customBorder}
-                            my={2}
-                            minW={40}
-                        >
-                            <Flex
-                                flexDirection={"row"}
-                                alignItems={"center"}
-                                justifyContent={"flex-start"}
-                            >
-                                <Box
-                                    fontSize={"2em"}
-                                    height={"1.5em"}
-                                    width="1.5em"
-                                    textAlign={"center"}
-                                >
-                                    <Image src={lsp8Path} alt="Universal-Grave-logo" width={'600px'}/>
-                                </Box>
-                            </Flex>
-                            <Flex
-                                flexDirection={"row"}
-                                alignItems={"center"}
-                                justifyContent={"flex-end"}
-                            >
-                                <Text
-                                    color={customColor}
-                                    fontSize={{base: "sm", sm: "sm", md: "md"}}
-                                    fontFamily={"Montserrat"}
-                                    fontWeight={500}
-                                    lineHeight={"160%"}
-                                >
-                                    LSP8 assets
-                                </Text>
-                            </Flex>
-                        </Flex>
+                        <LSPExplainer
+                            title={"LSP7 Digital Assets"}
+                            description={"The monst advanced fungible token standard"}
+                            learnURL={"https://docs.lukso.tech/standards/tokens/LSP7-Digital-Asset"}
+                            badgeText={"LSP7"}
+                        />
+                        <LSPExplainer
+                            title={"LSP8 Digital Assets"}
+                            description={"(coming soon) Non-fungible tokens reimagined"}
+                            learnURL={"https://docs.lukso.tech/standards/tokens/LSP8-Identifiable-Digital-Asset"}
+                            badgeText={"LSP8"}
+                        />
                     </Flex>
                 </Box>
             </Box>

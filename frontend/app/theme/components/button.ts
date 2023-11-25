@@ -186,7 +186,7 @@ export const Button = {
     borderRadius: "100px",
     color: "white",
     textTransform: "uppercase",
-    letterSpacing: "1px",
+    letterSpacing: "0.7px",
     fontFamily: "'Bungee', sans-serif",
   },
   variants: {

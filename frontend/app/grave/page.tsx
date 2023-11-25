@@ -31,7 +31,7 @@ export default function Home() {
                         <SignInBox />
                     )}
                 </Box>
-                <Image src={logoPath} alt="Universal-Grave-logo" width={"300px"}/>
+                <Image mx={"40px"} src={logoPath} alt="Universal-Grave-logo" width={"300px"}/>
             </Stack>
         </Container>
     );
