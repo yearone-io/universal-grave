@@ -524,7 +524,6 @@ export default function JoinGraveBtn () {
             </Button>
             {displayJoinLeaveButtons()}
             {renderAccordeonDetails()}
-            
         </div>
     );
 };
