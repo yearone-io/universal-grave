@@ -13,23 +13,28 @@ export default function Home() {
   const { account } = walletContext;
 
   return (
-    <Container maxW={'6xl'}  width={'100%'} py={5}>
+    <Container maxW={'6xl'} width={'100%'} py={5}>
       <Stack
         direction={{ base: 'column', md: 'row' }}
         justify="space-between"
         align="center"
         w="100%"
-        pt='50px'
+        pt="50px"
       >
         <Box w="60%">
           {account ? (
             <Box>
               <Box>
-                <Text fontSize='20px' color={"white"} fontFamily="Bungee" mb='30px'>
+                <Text
+                  fontSize="20px"
+                  color={'white'}
+                  fontFamily="Bungee"
+                  mb="30px"
+                >
                   SETTINGS
                 </Text>
                 <Box>
-                  <Flex justifyContent='center'>
+                  <Flex justifyContent="center">
                     <JoinGravePanel />
                   </Flex>
                 </Box>
@@ -46,16 +51,22 @@ export default function Home() {
           width={'300px'}
         />
       </Stack>
-      {account ? 
-              <Box>
-                <Text fontSize='20px' color='white' fontFamily="Bungee"  mb='30px' mt='30px'>
-                  YOUR GRAVEYARD
-                </Text>
-                <LspAssets />
-            </Box>
-            :
-          <></>
-    } 
+      {account ? (
+        <Box>
+          <Text
+            fontSize="20px"
+            color="white"
+            fontFamily="Bungee"
+            mb="30px"
+            mt="30px"
+          >
+            YOUR GRAVEYARD
+          </Text>
+          <LspAssets />
+        </Box>
+      ) : (
+        <></>
+      )}
     </Container>
   );
 }

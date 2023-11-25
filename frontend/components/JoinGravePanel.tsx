@@ -51,8 +51,7 @@ const initialSteps = [
 
 const JoinGravePanel: React.FC = () => {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
-  const [steps, setSteps] = React.useState([...initialSteps])
-
+  const [steps, setSteps] = React.useState([...initialSteps]);
 
   const displayTruncatedAddress = (address: string) => {
     return `${address.substring(0, 5)}...${address.substring(
@@ -78,12 +77,12 @@ const JoinGravePanel: React.FC = () => {
       console.error('Invalid step');
       return;
     }
-  
+
     // Special case for step 0
     if (newStep === 0 && data[0] && modifiedSteps[0].instructions2) {
-        modifiedSteps[0].instructions2.address = data[0];
+      modifiedSteps[0].instructions2.address = data[0];
     }
-  
+
     for (let step = 0; step < modifiedSteps.length; step++) {
       if (step < newStep) {
         modifiedSteps[step].complete = true;
@@ -116,12 +115,19 @@ const JoinGravePanel: React.FC = () => {
       boxShadow="md"
       borderRadius="lg"
       textAlign="center"
-      color={"dark.purple.500"}
-      width={"555px"}
-      minHeight={"435px"}
+      color={'dark.purple.500'}
+      width={'555px'}
+      minHeight={'435px'}
     >
-      <Text fontSize="20px" fontWeight="bold" fontFamily="Bungee" color='dark.purple.400'>
-        { !steps[4].complete ? `SET UP YOUR GRAVE SPAM BOX` : `YOU HAVE A GRAVE SPAM BOX!`}
+      <Text
+        fontSize="20px"
+        fontWeight="bold"
+        fontFamily="Bungee"
+        color="dark.purple.400"
+      >
+        {!steps[4].complete
+          ? `SET UP YOUR GRAVE SPAM BOX`
+          : `YOU HAVE A GRAVE SPAM BOX!`}
       </Text>
       <JoinGraveBtn onJoiningStepChange={handleNewStep} />
       <Stepper
@@ -144,16 +150,26 @@ const JoinGravePanel: React.FC = () => {
               />
             </StepIndicator>
             <Box flexShrink="0" textAlign={'left'}>
-              <StepTitle style={{ color: "var(--chakra-colors-dark-purple-500)", fontWeight: 'bold', width: '435px'}}>
+              <StepTitle
+                style={{
+                  color: 'var(--chakra-colors-dark-purple-500)',
+                  fontWeight: 'bold',
+                  width: '435px',
+                }}
+              >
                 {step.title}
               </StepTitle>
               {!step.complete ? (
-                <Box >
+                <Box>
                   <Box>{step.instructions}</Box>
                   {step.instructions2 && step.instructions2.address && (
                     <Flex>
-                      <Box mr='2px'>{step.instructions2.text}</Box>
-                      <a href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.instructions2.address}`}  style={{ textDecoration: "underline" }} target='_blank'>
+                      <Box mr="2px">{step.instructions2.text}</Box>
+                      <a
+                        href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.instructions2.address}`}
+                        style={{ textDecoration: 'underline' }}
+                        target="_blank"
+                      >
                         ({displayTruncatedAddress(step.instructions2.address)})
                       </a>
                     </Flex>
@@ -162,12 +178,16 @@ const JoinGravePanel: React.FC = () => {
               ) : (
                 <StepDescription>
                   <Flex alignItems="center" gap={1}>
-                  {step.completeText.text}
-                  {step.completeText.address && (
-                    <a href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.completeText.address}`}  style={{ textDecoration: "underline" }} target='_blank'>
-                      {displayTruncatedAddress(step.completeText.address)}
-                    </a>
-                  )}
+                    {step.completeText.text}
+                    {step.completeText.address && (
+                      <a
+                        href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.completeText.address}`}
+                        style={{ textDecoration: 'underline' }}
+                        target="_blank"
+                      >
+                        {displayTruncatedAddress(step.completeText.address)}
+                      </a>
+                    )}
                     {step.complete ? <FaCheckCircle /> : <></>}
                   </Flex>
                 </StepDescription>
@@ -175,8 +195,8 @@ const JoinGravePanel: React.FC = () => {
             </Box>
             <StepSeparator
               style={{
-                color: "var(--chakra-colors-dark-purple-500)",
-                backgroundColor: "var(--chakra-colors-dark-purple-500)",
+                color: 'var(--chakra-colors-dark-purple-500)',
+                backgroundColor: 'var(--chakra-colors-dark-purple-500)',
               }}
             />
           </Step>

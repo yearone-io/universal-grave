@@ -38,7 +38,10 @@ const SignInBox: React.FC = () => {
       >
         Please sign in with your Universal Profile to connect a GRAVE spam box.
       </Text>
-      <Button onClick={connect} border={'1px solid var(--chakra-colors-dark-purple-500)'}>
+      <Button
+        onClick={connect}
+        border={'1px solid var(--chakra-colors-dark-purple-500)'}
+      >
         <Flex alignItems="center" justifyContent="space-between">
           <Image src="images/LYX-logo.svg" alt="Sign In" />
           <Box
@@ -47,7 +50,7 @@ const SignInBox: React.FC = () => {
             lineHeight="14px"
             fontFamily="Bungee"
             fontWeight="400"
-            color={"dark.purple.500"}
+            color={'dark.purple.500'}
           >
             {isLoadingAccount ? '...' : 'Sign In'}
           </Box>
