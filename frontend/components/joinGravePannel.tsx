@@ -33,7 +33,7 @@ const initialSteps = [
 
 const JoinGravePannel: React.FC = () => {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
-  const [steps, setSteps] = React.useState(initialSteps)
+  const [steps, setSteps] = React.useState([...initialSteps])
 
 
   const displayTruncatedAddress = (address: string) => {
@@ -58,18 +58,25 @@ const JoinGravePannel: React.FC = () => {
       console.error('Invalid step');
       return;
     }
-        // Special case for step 0
-    if (newStep === 0 && data[0]) {
-      modifiedSteps[0].instructions2 += `(${displayTruncatedAddress(data[0])})`;
+  
+    // Special case for step 0
+    if (newStep === 0 && data[0] && modifiedSteps[0].instructions2) {
+      const address = `(${displayTruncatedAddress(data[0])})`;
+      if (!modifiedSteps[0].instructions2.includes(address)) {
+        modifiedSteps[0].instructions2 += address;
+      }
     }
-
+  
     for (let step = 0; step < modifiedSteps.length; step++) {
       if (step < newStep) {
         modifiedSteps[step].complete = true;
   
         // Special handling for step 1
-        if (step === 1 && (newStep > 1)) {
-          modifiedSteps[1].completeText += displayTruncatedAddress(data[1]);
+        if (step === 1 && newStep > 1 && data[1]) {
+          const address1 = displayTruncatedAddress(data[1]);
+          if (!modifiedSteps[1].completeText.includes(address1)) {
+            modifiedSteps[1].completeText += address1;
+          }
         }
       } else {
         modifiedSteps[step].complete = false;
