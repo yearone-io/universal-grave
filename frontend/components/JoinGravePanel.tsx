@@ -49,7 +49,7 @@ const initialSteps = [
   },
 ];
 
-const JoinGravePannel: React.FC = () => {
+const JoinGravePanel: React.FC = () => {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   const [steps, setSteps] = React.useState([...initialSteps])
 
@@ -188,4 +188,4 @@ const JoinGravePannel: React.FC = () => {
   );
 };
 
-export default JoinGravePannel;
+export default JoinGravePanel;

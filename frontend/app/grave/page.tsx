@@ -6,7 +6,7 @@ import LspAssets from '@/components/LspAssets';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import { useContext } from 'react';
-import JoinGravePannel from '@/components/joinGravePannel';
+import JoinGravePanel from '@/components/JoinGravePanel';
 
 export default function Home() {
   const logoPath = '/images/logo-full.png';
@@ -26,12 +26,12 @@ export default function Home() {
           {account ? (
             <Box>
               <Box>
-                <Text fontSize='20px' color='FFFFFF' fontFamily="Bungee" mb='30px'>
+                <Text fontSize='20px' color={"white"} fontFamily="Bungee" mb='30px'>
                   SETTINGS
                 </Text>
                 <Box>
                   <Flex justifyContent='center'>
-                    <JoinGravePannel />
+                    <JoinGravePanel />
                   </Flex>
                 </Box>
               </Box>
@@ -49,7 +49,7 @@ export default function Home() {
       </Stack>
       {account ? 
               <Box>
-                <Text fontSize='20px' color='FFFFFF' fontFamily="Bungee"  mb='30px' mt='30px'>
+                <Text fontSize='20px' color='white' fontFamily="Bungee"  mb='30px' mt='30px'>
                   YOUR GRAVEYARD
                 </Text>
                 <LspAssets />

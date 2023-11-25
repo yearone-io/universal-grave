@@ -1,17 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import {
-  ERC725YDataKeys,
-  LSP1_TYPE_IDS,
-  PERMISSIONS,
-} from '@lukso/lsp-smart-contracts';
+import { ERC725YDataKeys, LSP1_TYPE_IDS, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Box, Button, Tooltip, useToast } from '@chakra-ui/react';
+import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
-import { FaInfoCircle } from 'react-icons/fa';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 
