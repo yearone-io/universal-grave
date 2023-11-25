@@ -14,12 +14,13 @@ export default function Home() {
   const { account } = walletContext;
 
   return (
-    <Container w={'100%'} py={5} maxW="100%" pl="10%" pr="10%">
+    <Container maxW={'6xl'}  width={'100%'} py={5}>
       <Stack
         direction={{ base: 'column', md: 'row' }}
-        justify="space-around"
+        justify="space-between"
         align="center"
         w="100%"
+        p={0}
       >
         <Box w="60%">
           {account ? (
