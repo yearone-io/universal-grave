@@ -13,10 +13,7 @@ npm run dev
 # or
 ```
 
-To generate types from the solidity project:
-
-1. compile solidity project from the root of that folder - `npm run build`
-2. run `npm run typechain` from the root of the frontend project
+To generate types from abis in `abis` folder, run `npm run typechain`
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
