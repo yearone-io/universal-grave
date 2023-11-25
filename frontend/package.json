@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typechain": "typechain --target ethers-v5 --out-dir app/contracts '../solidity/artifacts/contracts/LSP1GraveForwarder.sol/LSP1GraveForwader.json'"
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.1",
@@ -33,5 +34,9 @@
     "typescript": "5.1.3",
     "viem": "^0.3.50",
     "web3": "^4.2.2"
+  },
+  "devDependencies": {
+    "@typechain/ethers-v5": "^11.1.2",
+    "typechain": "^8.3.2"
   }
 }
