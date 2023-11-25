@@ -79,14 +79,12 @@ const JoinGravePannel: React.FC = () => {
   
     setSteps(modifiedSteps);
     setActiveStep(newStep);
-  }
-  
-  
+  };
 
   const { activeStep, setActiveStep } = useSteps({
     index: 0,
     count: steps.length,
-  })
+  });
 
   return (
     <VStack
