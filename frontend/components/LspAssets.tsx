@@ -20,7 +20,7 @@ export default function LspAssets() {
     const {account} = walletContext;
 
     useEffect(() => {
-        if (window.lukso && account && address && lsp7Assets.length === 0) {
+        if (window.lukso && account && address && address != constants.ZERO_ADDRESS && lsp7Assets.length === 0) {
             const erc725js = new ERC725(lsp3ProfileSchema as ERC725JSONSchema[], address, window.lukso,
                 {
                     ipfsGateway: constants.IPFS,
