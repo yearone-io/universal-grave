@@ -1,0 +1,7 @@
+{
+    "extends": [
+      // ... other extends
+      "plugin:prettier/recommended"
+    ]
+  }
+  
