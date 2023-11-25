@@ -248,7 +248,7 @@ export default function Home() {
                             badgeText={"LSP7"}
                         />
                         <LSPExplainer
-                            title={"LSP8 Digital Assets"}
+                            title={"LSP8 Identifiable Digital Assets"}
                             description={"(coming soon) Non-fungible tokens reimagined"}
                             learnURL={"https://docs.lukso.tech/standards/tokens/LSP8-Identifiable-Digital-Asset"}
                             badgeText={"LSP8"}
