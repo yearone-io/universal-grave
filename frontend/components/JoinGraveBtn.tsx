@@ -31,7 +31,7 @@ import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json'  assert {
  * Additional functionalities and improvements are planned for future versions, including batch calls for data retrieval
  * and conditional permission updating during URD modifications.
  */
-export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepChange: (newStep: number) => void }) {
+export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepChange: (newStep: number, data?: any) => void }) {
     const [loading, setLoading] = useState(false);
     const walletContext = useContext(WalletContext);
     const [URDLsp7, setURDLsp7] = useState<string | null>(null);
@@ -60,9 +60,16 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         }
     }, [account, URDLsp7, URDLsp8]);
 
+    // Update the joining step and add extra data if needed
     useEffect(() => {
-        onJoiningStepChange(joiningStep);
-    }, [joiningStep]);
+        const transactionsData = {
+            0: browserExtensionControllerAddress,
+            1: graveVault,
+        }
+
+        onJoiningStepChange(joiningStep, transactionsData);
+        
+    }, [joiningStep, browserExtensionControllerAddress, graveVault]);
 
     // TODOS after V1:
     // 0 - Add a batch call or wrapper contract so  on page load it gets URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions 
@@ -510,10 +517,6 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
 
     // ========================= HELPERS =========================
 
-    const displayTruncatedAddress = (address: string) => {
-        return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
-    }
-
     // Custom function to safely get checksum address
     const getChecksumAddress = (address: string | null) =>{
         // Check if the address is valid
@@ -572,40 +575,19 @@ export default function JoinGraveBtn ({ onJoiningStepChange }: { onJoiningStepCh
         })
     }
 
-    const displayPermissionBECText = () => {
-        if (loading) {
-            return 'Processing...';
-        } else {
-           return (
-             <Tooltip label='Make sure this is your Browser Extension Controller. If not, set permittions from UP Extension'>
-                <Box display='flex' alignItems='center'>
-                    <Box>
-                        Update permissions
-                    </ Box>
-                    <Box fontSize='14px' fontWeight='800' ml='2px' mr='3px'>({displayTruncatedAddress(browserExtensionControllerAddress)})
-                    </Box>
-                    <Box >
-                        <FaInfoCircle />
-                    </Box>
-                </Box>
-            </Tooltip>
-            )
-        }
-    }
-
     const displayJoinLeaveButtons = () => {
         // Note: check sum case address to avoid issues with case sensitivity
 
         if (hasJoinedTheGrave()) {
             return (
                 <Button onClick={handleReset} disabled={loading} mb='10px'>
-                    {loading ? 'Processing...' : 'Leave the Grave'}
+                    {loading ? 'Processing...' : 'UNSUBSCRIBE'}
                 </Button>
             )
         } else {
             return (
                 <Button onClick={handleJoin} disabled={loading} mb='10px'>
-                    {loading ? 'Processing...' : 'Join the Grave (multiple tranx)'}
+                    {loading ? 'Processing...' : 'START'}
                 </Button>
             )
         }
