@@ -6,20 +6,26 @@ import {
   Badge,
   IconButton,
   useColorMode,
-  useColorModeValue,
+  useColorModeValue, useToast,
 } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa'; // This is just an example, use the appropriate icon from `react-icons`
+import { FaExternalLinkAlt } from 'react-icons/fa';
+import {ContractInterface, ethers} from "ethers";
+import {constants} from "@/app/constants";
+import {lsp1GraveForwader} from "@/abis/lsp1GraveForwader";
+import {LSP1GraveForwader, LSP7Mintable__factory, LSP9Vault__factory} from "@/contracts"; // This is just an example, use the appropriate icon from `react-icons`
 
 interface LSP7PanelProps {
   tokenName: string;
   tokenAmount: string;
   tokenAddress: string;
+  vaultAddress: string;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenName,
   tokenAmount,
   tokenAddress,
+  vaultAddress
 }) => {
   const explorerURL =
     'https://explorer.execution.testnet.lukso.network/address/';
@@ -52,6 +58,55 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   };
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
+  const toast = useToast();
+
+  const transferTokenToUP = async (tokenAddress: string) => {
+    try {
+      const provider = new ethers.providers.Web3Provider(window.lukso);
+      const signer = provider.getSigner();
+
+      const lsp1GraveForwaderContract = new ethers.Contract(
+          constants.UNIVERSAL_GRAVE_FORWARDER,
+          lsp1GraveForwader as ContractInterface,
+          signer
+      ) as LSP1GraveForwader;
+
+      const upAddress = await signer.getAddress();
+      if (
+          !(await lsp1GraveForwaderContract.tokenAllowlist(
+              upAddress,
+              tokenAddress
+          ))
+      ) {
+        await lsp1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
+          gasLimit: 400_00,
+        });
+      }
+
+      const lsp7 = LSP7Mintable__factory.connect(tokenAddress, provider);
+      const lsp7Tx = lsp7.interface.encodeFunctionData("transfer", [
+        vaultAddress,
+        await signer.getAddress(),
+        tokenAmount,
+        0,
+        '0x',
+      ]);
+
+      const lsp9 = LSP9Vault__factory.connect(vaultAddress, provider);
+      await lsp9
+          .connect(signer)
+          .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        title: `Error fetching UP data. ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
     <Flex

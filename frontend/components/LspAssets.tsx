@@ -1,11 +1,10 @@
-import { useContext, useEffect, useState } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
+import {useContext, useEffect, useState} from 'react';
+import {WalletContext} from '@/components/wallet/WalletContext';
+import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
-import { constants } from '@/app/constants';
-import MoveAssetToUpButton from '@/components/MoveAssetToUpButton';
-import { ethers } from 'ethers';
+import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
+import {constants} from '@/app/constants';
+import LSP7Panel from "@/components/LSP7Panel";
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
@@ -66,22 +65,9 @@ export default function LspAssets() {
   return (
     <div>
       <h1>LSP7 Assets</h1>
-      <ul>
         {lsp7Assets.map((asset, index) => (
-          <li key={index}>
-            <p>
-              {asset.name} - {asset.address} - {asset.balance}
-            </p>
-            <MoveAssetToUpButton asset={asset.address!} from={graveVault!} />
-          </li>
+              <LSP7Panel tokenName={asset.name!} tokenAmount={asset.balance!.toString()} tokenAddress={asset.address!} vaultAddress={graveVault!} />
         ))}
-      </ul>
-      <h1>LSP8 Assets</h1>
-      <ul>
-        {lps8Assets.map((asset, index) => (
-          <li key={index}>{asset}</li>
-        ))}
-      </ul>
     </div>
   );
 }
