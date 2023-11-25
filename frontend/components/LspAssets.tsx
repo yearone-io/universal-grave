@@ -5,12 +5,12 @@ import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.jso
 import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
 import {constants} from '@/app/constants';
 import LSP7Panel from "@/components/LSP7Panel";
+import {Box} from "@chakra-ui/react";
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
   const walletContext = useContext(WalletContext);
   const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[]>([]);
-  const [lps8Assets, setLsp8VaultAssets] = useState<string[]>([]);
   const { graveVault } = walletContext;
 
   // Checking if the walletContext is available
@@ -63,11 +63,10 @@ export default function LspAssets() {
     return <div>Loading...</div>;
   }
   return (
-    <div>
-      <h1>LSP7 Assets</h1>
+    <Box mt={4} mb={4}>
         {lsp7Assets.map((asset, index) => (
               <LSP7Panel tokenName={asset.name!} tokenAmount={asset.balance!.toString()} tokenAddress={asset.address!} vaultAddress={graveVault!} />
         ))}
-    </div>
+    </Box>
   );
 }
