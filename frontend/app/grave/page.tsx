@@ -3,30 +3,35 @@ import {Box, Container, Flex, Image, Stack} from "@chakra-ui/react";
 import "../globals.css";
 import JoinGraveBtn from "@/components/JoinGraveBtn";
 import LspAssets from "@/components/LspAssets";
+import { WalletContext } from "@/components/wallet/WalletContext";
+import SignInBox from "@/components/SignInBox";
+import { useContext } from "react";
 
 export default function Home() {
     const logoPath = '/images/logo-full.png';
+    const walletContext = useContext(WalletContext);
+    const { account } = walletContext;
 
     return (
-        <Container
-            as={Stack}
-            maxW={"6xl"}
-            py={5}
-            direction={{base: "column", md: "row"}}
-            spacing={4}
-            justify={{base: "center", md: "space-between"}}
-            align={{base: "center", md: "center"}}
-        >
-            <Box id='grave-section'>
-                <Flex gap="7px" justifyContent="center" alignItems="center"
-                      width={"100%"}>
-                    <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'}/>
-                </Flex>
-                <Box>
-                    <JoinGraveBtn  />
-                    <LspAssets />
+        <Container w={"100%"} py={5} maxW='100%' pl='10%' pr='10%'>
+            <Stack
+                direction={{ base: "column", md: "row" }}
+                justify="space-around"
+                align="center"
+                w="100%"
+            >
+                <Box w='60%'>
+                    {account ? (
+                        <Box>
+                            <JoinGraveBtn />
+                            <LspAssets />
+                        </Box>
+                    ) : (
+                        <SignInBox />
+                    )}
                 </Box>
-            </Box>
+                <Image mx={"40px"} src={logoPath} alt="Universal-Grave-logo" width={"300px"}/>
+            </Stack>
         </Container>
     );
 }

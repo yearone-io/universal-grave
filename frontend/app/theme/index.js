@@ -14,7 +14,7 @@ const overrides = extendTheme({
   config,
   ...foundations,
   fonts: {
-    heading: "'Montserrat',  sans-serif",
+    heading: "'Bungee',  sans-serif",
     body: "'Montserrat',  sans-serif",
   },
   sizes: {
