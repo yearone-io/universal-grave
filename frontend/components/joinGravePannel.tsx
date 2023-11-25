@@ -3,14 +3,14 @@ import { Box, Button, Step, StepDescription, StepIcon, StepIndicator, StepNumber
 import JoinGraveBtn from './JoinGraveBtn';
 
 const JoinGravePannel: React.FC = () => {
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200'); // Adjusts color based on the theme
-  
+  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
+
   const steps = [
-    { title: '1. Give your 🆙 necessary permissions', description: 'todo: display Browser Extension address' },
-    { title: '2. Create your GRAVE spam box', description: 'Bla bla' },
-    { title: '3. Link GRAVE to your 🆙', description: 'Bla bla' },
-    { title: '4. Enable GRAVE to keep assets inventory', description: 'Bla bla' },
-    { title: '5. Direct all 🆙 spam to the GRAVE', description: 'Bla bla' },
+    { title: 'Give your 🆙 necessary permissions', description: 'Give permissions to your Browser Extension Controller.', description2: 'This can also be done manually.' },
+    { title: 'Create your GRAVE spam box', description: ' '},
+    { title: 'Link GRAVE to your 🆙'},
+    { title: 'Enable GRAVE to keep assets inventory' },
+    { title: 'Direct all 🆙 spam to the GRAVE' },
   ]
 
   const { activeStep, setActiveStep } = useSteps({
@@ -25,7 +25,7 @@ const JoinGravePannel: React.FC = () => {
       backgroundColor={bgColor}
       boxShadow='md'
       borderRadius='lg'
-      width='full' // Take the full width of the parent
+      width='500px'
       textAlign='center'
       padding='20px'
       h='400px'
@@ -35,23 +35,22 @@ const JoinGravePannel: React.FC = () => {
         SET UP YOUR GRAVE SPAM BOX
       </Text>
       < JoinGraveBtn onJoiningStepChange={(newStep: number) => {setActiveStep(newStep)} } />
-          <Stepper index={activeStep} orientation='vertical' height='100px' gap='0'>
+          <Stepper index={activeStep} orientation='vertical' height='200px' gap='2' id='grave-step-indicator'>
             {steps.map((step, index) => (
-                <Step key={index}>
-                <StepIndicator>
-                    <StepStatus
-                    complete={<StepIcon />}
+                <Step key={index}  >
+                <StepIndicator color='dark.purple.500' borderColor='dark.purple.500' >
+                    <StepStatus  
+                    complete={'🪦'}
                     incomplete={<StepNumber />}
                     active={<StepNumber />}
                     />
-                </StepIndicator>
-
-                <Box flexShrink='0'>
-                    <StepTitle>{step.title}</StepTitle>
-                    <StepDescription>{step.description}</StepDescription>
+                </StepIndicator >
+                <Box flexShrink='0' textAlign={'left'}>
+                    <StepTitle style={{color: 'dark.purple.500'}}>{step.title}</StepTitle>
+                    <StepDescription >{step.description}</StepDescription>
+                    <StepDescription >{step.description2}</StepDescription>
                 </Box>
-
-                <StepSeparator />
+                <StepSeparator style={{color: 'dark.purple.500', backgroundColor: 'dark.purple.500'}} />
                 </Step>
             ))}
             </Stepper>
