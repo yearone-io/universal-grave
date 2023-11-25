@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typechain": "typechain --target ethers-v5 --out-dir contracts ./abis/*.json"
+    "typechain": "typechain --target ethers-v5 --out-dir contracts ./abis/*.json",
+    "format": "prettier --write .",
+    "format-check": "prettier --check ."
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.1",
@@ -39,6 +41,9 @@
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^11.1.2",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "prettier": "^3.1.0",
     "typechain": "^8.3.2"
   }
 }

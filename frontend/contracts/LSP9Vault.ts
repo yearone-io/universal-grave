@@ -13,192 +13,192 @@ import type {
   PopulatedTransaction,
   Signer,
   utils,
-} from "ethers";
+} from 'ethers';
 import type {
   FunctionFragment,
   Result,
   EventFragment,
-} from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
+} from '@ethersproject/abi';
+import type { Listener, Provider } from '@ethersproject/providers';
 import type {
   TypedEventFilter,
   TypedEvent,
   TypedListener,
   OnEvent,
-} from "./common";
+} from './common';
 
 export interface LSP9VaultInterface extends utils.Interface {
   functions: {
-    "RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY()": FunctionFragment;
-    "RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD()": FunctionFragment;
-    "VERSION()": FunctionFragment;
-    "acceptOwnership()": FunctionFragment;
-    "batchCalls(bytes[])": FunctionFragment;
-    "execute(uint256,address,uint256,bytes)": FunctionFragment;
-    "executeBatch(uint256[],address[],uint256[],bytes[])": FunctionFragment;
-    "getData(bytes32)": FunctionFragment;
-    "getDataBatch(bytes32[])": FunctionFragment;
-    "owner()": FunctionFragment;
-    "pendingOwner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "setData(bytes32,bytes)": FunctionFragment;
-    "setDataBatch(bytes32[],bytes[])": FunctionFragment;
-    "supportsInterface(bytes4)": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
-    "universalReceiver(bytes32,bytes)": FunctionFragment;
+    'RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY()': FunctionFragment;
+    'RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD()': FunctionFragment;
+    'VERSION()': FunctionFragment;
+    'acceptOwnership()': FunctionFragment;
+    'batchCalls(bytes[])': FunctionFragment;
+    'execute(uint256,address,uint256,bytes)': FunctionFragment;
+    'executeBatch(uint256[],address[],uint256[],bytes[])': FunctionFragment;
+    'getData(bytes32)': FunctionFragment;
+    'getDataBatch(bytes32[])': FunctionFragment;
+    'owner()': FunctionFragment;
+    'pendingOwner()': FunctionFragment;
+    'renounceOwnership()': FunctionFragment;
+    'setData(bytes32,bytes)': FunctionFragment;
+    'setDataBatch(bytes32[],bytes[])': FunctionFragment;
+    'supportsInterface(bytes4)': FunctionFragment;
+    'transferOwnership(address)': FunctionFragment;
+    'universalReceiver(bytes32,bytes)': FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
-      | "RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY"
-      | "RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD"
-      | "VERSION"
-      | "acceptOwnership"
-      | "batchCalls"
-      | "execute"
-      | "executeBatch"
-      | "getData"
-      | "getDataBatch"
-      | "owner"
-      | "pendingOwner"
-      | "renounceOwnership"
-      | "setData"
-      | "setDataBatch"
-      | "supportsInterface"
-      | "transferOwnership"
-      | "universalReceiver"
+      | 'RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY'
+      | 'RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD'
+      | 'VERSION'
+      | 'acceptOwnership'
+      | 'batchCalls'
+      | 'execute'
+      | 'executeBatch'
+      | 'getData'
+      | 'getDataBatch'
+      | 'owner'
+      | 'pendingOwner'
+      | 'renounceOwnership'
+      | 'setData'
+      | 'setDataBatch'
+      | 'supportsInterface'
+      | 'transferOwnership'
+      | 'universalReceiver'
   ): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY",
+    functionFragment: 'RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY',
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD",
+    functionFragment: 'RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD',
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'VERSION', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "acceptOwnership",
+    functionFragment: 'acceptOwnership',
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "batchCalls",
+    functionFragment: 'batchCalls',
     values: [BytesLike[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "execute",
+    functionFragment: 'execute',
     values: [BigNumberish, string, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "executeBatch",
+    functionFragment: 'executeBatch',
     values: [BigNumberish[], string[], BigNumberish[], BytesLike[]]
   ): string;
-  encodeFunctionData(functionFragment: "getData", values: [BytesLike]): string;
+  encodeFunctionData(functionFragment: 'getData', values: [BytesLike]): string;
   encodeFunctionData(
-    functionFragment: "getDataBatch",
+    functionFragment: 'getDataBatch',
     values: [BytesLike[]]
   ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "pendingOwner",
+    functionFragment: 'pendingOwner',
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "renounceOwnership",
+    functionFragment: 'renounceOwnership',
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "setData",
+    functionFragment: 'setData',
     values: [BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "setDataBatch",
+    functionFragment: 'setDataBatch',
     values: [BytesLike[], BytesLike[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "supportsInterface",
+    functionFragment: 'supportsInterface',
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "transferOwnership",
+    functionFragment: 'transferOwnership',
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "universalReceiver",
+    functionFragment: 'universalReceiver',
     values: [BytesLike, BytesLike]
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY",
+    functionFragment: 'RENOUNCE_OWNERSHIP_CONFIRMATION_DELAY',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD",
+    functionFragment: 'RENOUNCE_OWNERSHIP_CONFIRMATION_PERIOD',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'VERSION', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "acceptOwnership",
+    functionFragment: 'acceptOwnership',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "batchCalls", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "execute", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'batchCalls', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'execute', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "executeBatch",
+    functionFragment: 'executeBatch',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "getData", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getData', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getDataBatch",
+    functionFragment: 'getDataBatch',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "pendingOwner",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "setData", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "setDataBatch",
+    functionFragment: 'pendingOwner',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "supportsInterface",
+    functionFragment: 'renounceOwnership',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: 'setData', data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: 'setDataBatch',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "transferOwnership",
+    functionFragment: 'supportsInterface',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "universalReceiver",
+    functionFragment: 'transferOwnership',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: 'universalReceiver',
     data: BytesLike
   ): Result;
 
   events: {
-    "ContractCreated(uint256,address,uint256,bytes32)": EventFragment;
-    "DataChanged(bytes32,bytes)": EventFragment;
-    "Executed(uint256,address,uint256,bytes4)": EventFragment;
-    "OwnershipRenounced()": EventFragment;
-    "OwnershipTransferStarted(address,address)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "RenounceOwnershipStarted()": EventFragment;
-    "UniversalReceiver(address,uint256,bytes32,bytes,bytes)": EventFragment;
+    'ContractCreated(uint256,address,uint256,bytes32)': EventFragment;
+    'DataChanged(bytes32,bytes)': EventFragment;
+    'Executed(uint256,address,uint256,bytes4)': EventFragment;
+    'OwnershipRenounced()': EventFragment;
+    'OwnershipTransferStarted(address,address)': EventFragment;
+    'OwnershipTransferred(address,address)': EventFragment;
+    'RenounceOwnershipStarted()': EventFragment;
+    'UniversalReceiver(address,uint256,bytes32,bytes,bytes)': EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "ContractCreated"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "DataChanged"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Executed"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipRenounced"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferStarted"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "RenounceOwnershipStarted"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "UniversalReceiver"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'ContractCreated'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'DataChanged'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'Executed'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipRenounced'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferStarted'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'RenounceOwnershipStarted'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'UniversalReceiver'): EventFragment;
 }
 
 export interface ContractCreatedEventObject {
@@ -556,7 +556,7 @@ export interface LSP9Vault extends BaseContract {
   };
 
   filters: {
-    "ContractCreated(uint256,address,uint256,bytes32)"(
+    'ContractCreated(uint256,address,uint256,bytes32)'(
       operationType?: BigNumberish | null,
       contractAddress?: string | null,
       value?: BigNumberish | null,
@@ -569,7 +569,7 @@ export interface LSP9Vault extends BaseContract {
       salt?: null
     ): ContractCreatedEventFilter;
 
-    "DataChanged(bytes32,bytes)"(
+    'DataChanged(bytes32,bytes)'(
       dataKey?: BytesLike | null,
       dataValue?: null
     ): DataChangedEventFilter;
@@ -578,7 +578,7 @@ export interface LSP9Vault extends BaseContract {
       dataValue?: null
     ): DataChangedEventFilter;
 
-    "Executed(uint256,address,uint256,bytes4)"(
+    'Executed(uint256,address,uint256,bytes4)'(
       operationType?: BigNumberish | null,
       target?: string | null,
       value?: BigNumberish | null,
@@ -591,10 +591,10 @@ export interface LSP9Vault extends BaseContract {
       selector?: null
     ): ExecutedEventFilter;
 
-    "OwnershipRenounced()"(): OwnershipRenouncedEventFilter;
+    'OwnershipRenounced()'(): OwnershipRenouncedEventFilter;
     OwnershipRenounced(): OwnershipRenouncedEventFilter;
 
-    "OwnershipTransferStarted(address,address)"(
+    'OwnershipTransferStarted(address,address)'(
       previousOwner?: string | null,
       newOwner?: string | null
     ): OwnershipTransferStartedEventFilter;
@@ -603,7 +603,7 @@ export interface LSP9Vault extends BaseContract {
       newOwner?: string | null
     ): OwnershipTransferStartedEventFilter;
 
-    "OwnershipTransferred(address,address)"(
+    'OwnershipTransferred(address,address)'(
       previousOwner?: string | null,
       newOwner?: string | null
     ): OwnershipTransferredEventFilter;
@@ -612,10 +612,10 @@ export interface LSP9Vault extends BaseContract {
       newOwner?: string | null
     ): OwnershipTransferredEventFilter;
 
-    "RenounceOwnershipStarted()"(): RenounceOwnershipStartedEventFilter;
+    'RenounceOwnershipStarted()'(): RenounceOwnershipStartedEventFilter;
     RenounceOwnershipStarted(): RenounceOwnershipStartedEventFilter;
 
-    "UniversalReceiver(address,uint256,bytes32,bytes,bytes)"(
+    'UniversalReceiver(address,uint256,bytes32,bytes,bytes)'(
       from?: string | null,
       value?: BigNumberish | null,
       typeId?: BytesLike | null,

@@ -4,14 +4,14 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 First, copy `.env.local.example` as `.env.local` (git ignored) and fill in the values.
 
-```bash
+````bash
 
 Then, run the development server:
 
 ```bash
 npm run dev
 # or
-```
+````
 
 To generate types from abis in `abis` folder, run `npm run typechain`
 

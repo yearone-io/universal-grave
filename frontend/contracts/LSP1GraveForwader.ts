@@ -12,102 +12,102 @@ import type {
   PopulatedTransaction,
   Signer,
   utils,
-} from "ethers";
-import type { FunctionFragment, Result } from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
+} from 'ethers';
+import type { FunctionFragment, Result } from '@ethersproject/abi';
+import type { Listener, Provider } from '@ethersproject/providers';
 import type {
   TypedEventFilter,
   TypedEvent,
   TypedListener,
   OnEvent,
-} from "./common";
+} from './common';
 
 export interface LSP1GraveForwaderInterface extends utils.Interface {
   functions: {
-    "VERSION()": FunctionFragment;
-    "addTokenToAllowlist(address)": FunctionFragment;
-    "getAddressStatus(address)": FunctionFragment;
-    "getGrave()": FunctionFragment;
-    "graveVaults(address)": FunctionFragment;
-    "removeTokenFromAllowlist(address)": FunctionFragment;
-    "setGrave(address)": FunctionFragment;
-    "supportsInterface(bytes4)": FunctionFragment;
-    "tokenAllowlist(address,address)": FunctionFragment;
-    "universalReceiverDelegate(address,uint256,bytes32,bytes)": FunctionFragment;
+    'VERSION()': FunctionFragment;
+    'addTokenToAllowlist(address)': FunctionFragment;
+    'getAddressStatus(address)': FunctionFragment;
+    'getGrave()': FunctionFragment;
+    'graveVaults(address)': FunctionFragment;
+    'removeTokenFromAllowlist(address)': FunctionFragment;
+    'setGrave(address)': FunctionFragment;
+    'supportsInterface(bytes4)': FunctionFragment;
+    'tokenAllowlist(address,address)': FunctionFragment;
+    'universalReceiverDelegate(address,uint256,bytes32,bytes)': FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
-      | "VERSION"
-      | "addTokenToAllowlist"
-      | "getAddressStatus"
-      | "getGrave"
-      | "graveVaults"
-      | "removeTokenFromAllowlist"
-      | "setGrave"
-      | "supportsInterface"
-      | "tokenAllowlist"
-      | "universalReceiverDelegate"
+      | 'VERSION'
+      | 'addTokenToAllowlist'
+      | 'getAddressStatus'
+      | 'getGrave'
+      | 'graveVaults'
+      | 'removeTokenFromAllowlist'
+      | 'setGrave'
+      | 'supportsInterface'
+      | 'tokenAllowlist'
+      | 'universalReceiverDelegate'
   ): FunctionFragment;
 
-  encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'VERSION', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "addTokenToAllowlist",
+    functionFragment: 'addTokenToAllowlist',
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "getAddressStatus",
+    functionFragment: 'getAddressStatus',
     values: [string]
   ): string;
-  encodeFunctionData(functionFragment: "getGrave", values?: undefined): string;
-  encodeFunctionData(functionFragment: "graveVaults", values: [string]): string;
+  encodeFunctionData(functionFragment: 'getGrave', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'graveVaults', values: [string]): string;
   encodeFunctionData(
-    functionFragment: "removeTokenFromAllowlist",
+    functionFragment: 'removeTokenFromAllowlist',
     values: [string]
   ): string;
-  encodeFunctionData(functionFragment: "setGrave", values: [string]): string;
+  encodeFunctionData(functionFragment: 'setGrave', values: [string]): string;
   encodeFunctionData(
-    functionFragment: "supportsInterface",
+    functionFragment: 'supportsInterface',
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "tokenAllowlist",
+    functionFragment: 'tokenAllowlist',
     values: [string, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "universalReceiverDelegate",
+    functionFragment: 'universalReceiverDelegate',
     values: [string, BigNumberish, BytesLike, BytesLike]
   ): string;
 
-  decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'VERSION', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "addTokenToAllowlist",
+    functionFragment: 'addTokenToAllowlist',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getAddressStatus",
+    functionFragment: 'getAddressStatus',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "getGrave", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getGrave', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "graveVaults",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "removeTokenFromAllowlist",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "setGrave", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "supportsInterface",
+    functionFragment: 'graveVaults',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "tokenAllowlist",
+    functionFragment: 'removeTokenFromAllowlist',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: 'setGrave', data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: 'supportsInterface',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "universalReceiverDelegate",
+    functionFragment: 'tokenAllowlist',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: 'universalReceiverDelegate',
     data: BytesLike
   ): Result;
 
