@@ -22,7 +22,7 @@ export default function LspAssets() {
     const {account} = walletContext;
 
     useEffect(() => {
-        if (window.lukso && account && graveVault && lsp7Assets.length === 0) {
+        if (window.lukso && account && graveVault && graveVault != constants.ZERO_ADDRESS && lsp7Assets.length === 0) {
             const erc725js = new ERC725(lsp3ProfileSchema as ERC725JSONSchema[], graveVault, window.lukso,
                 {
                     ipfsGateway: constants.IPFS,
