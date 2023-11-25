@@ -628,13 +628,13 @@ export default function JoinGraveBtn({
 
     if (hasJoinedTheGrave()) {
       return (
-        <Button onClick={handleReset} disabled={loading} mb="10px">
+        <Button onClick={handleReset} disabled={loading} mb="10px" fontFamily='Bungee' fontSize='16px' fontWeight='400'>
           {loading ? 'Processing...' : 'UNSUBSCRIBE'}
         </Button>
       );
     } else {
       return (
-        <Button onClick={handleJoin} disabled={loading} mb="10px">
+        <Button onClick={handleJoin} disabled={loading} mb="10px" fontFamily='Bungee' fontSize='16px' fontWeight='400'>
           {loading ? 'Processing...' : 'START'}
         </Button>
       );

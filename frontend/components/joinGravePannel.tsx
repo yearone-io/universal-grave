@@ -121,7 +121,7 @@ const JoinGravePannel: React.FC = () => {
       h="430px"
       color={useColorModeValue('black', 'black')}
     >
-      <Text fontSize="2xl" fontWeight="bold" fontFamily="Montserrat">
+      <Text fontSize="20px" fontWeight="bold" fontFamily="Bungee" color='dark.purple.400'>
         SET UP YOUR GRAVE SPAM BOX
       </Text>
       <JoinGraveBtn onJoiningStepChange={handleNewStep} />
@@ -129,7 +129,7 @@ const JoinGravePannel: React.FC = () => {
         index={activeStep}
         orientation="vertical"
         height="200px"
-        gap="1"
+        gap="3"
         id="grave-step-indicator"
       >
         {steps.map((step, index) => (
@@ -137,6 +137,7 @@ const JoinGravePannel: React.FC = () => {
             <StepIndicator
               color="dark.purple.500"
               borderColor="dark.purple.500"
+              fontWeight={'bold'}
             >
               <StepStatus
                 complete={'🪦'}
@@ -145,7 +146,7 @@ const JoinGravePannel: React.FC = () => {
               />
             </StepIndicator>
             <Box flexShrink="0" textAlign={'left'}>
-              <StepTitle style={{ color: 'dark.purple.500' }}>
+              <StepTitle style={{ color: 'dark.purple.500', fontWeight: 'bold' }}>
                 {step.title}
               </StepTitle>
               {!step.complete ? (
