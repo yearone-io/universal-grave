@@ -45,8 +45,8 @@ export default function MoveAssetToUpButton({
         from,
         await signer.getAddress(),
         1,
-        0,
-        '0x',
+        false,
+        "0x"
       ]);
 
       const lsp9 = LSP9Vault__factory.connect(from, provider);
