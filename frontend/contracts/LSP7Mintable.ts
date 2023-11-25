@@ -13,210 +13,210 @@ import type {
   PopulatedTransaction,
   Signer,
   utils,
-} from "ethers";
+} from 'ethers';
 import type {
   FunctionFragment,
   Result,
   EventFragment,
-} from "@ethersproject/abi";
-import type { Listener, Provider } from "@ethersproject/providers";
+} from '@ethersproject/abi';
+import type { Listener, Provider } from '@ethersproject/providers';
 import type {
   TypedEventFilter,
   TypedEvent,
   TypedListener,
   OnEvent,
-} from "./common";
+} from './common';
 
 export interface LSP7MintableInterface extends utils.Interface {
   functions: {
-    "authorizeOperator(address,uint256,bytes)": FunctionFragment;
-    "authorizedAmountFor(address,address)": FunctionFragment;
-    "balanceOf(address)": FunctionFragment;
-    "decimals()": FunctionFragment;
-    "decreaseAllowance(address,uint256,bytes)": FunctionFragment;
-    "getData(bytes32)": FunctionFragment;
-    "getDataBatch(bytes32[])": FunctionFragment;
-    "getOperatorsOf(address)": FunctionFragment;
-    "increaseAllowance(address,uint256,bytes)": FunctionFragment;
-    "mint(address,uint256,bool,bytes)": FunctionFragment;
-    "owner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "revokeOperator(address,bool,bytes)": FunctionFragment;
-    "setData(bytes32,bytes)": FunctionFragment;
-    "setDataBatch(bytes32[],bytes[])": FunctionFragment;
-    "supportsInterface(bytes4)": FunctionFragment;
-    "totalSupply()": FunctionFragment;
-    "transfer(address,address,uint256,bool,bytes)": FunctionFragment;
-    "transferBatch(address[],address[],uint256[],bool[],bytes[])": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
+    'authorizeOperator(address,uint256,bytes)': FunctionFragment;
+    'authorizedAmountFor(address,address)': FunctionFragment;
+    'balanceOf(address)': FunctionFragment;
+    'decimals()': FunctionFragment;
+    'decreaseAllowance(address,uint256,bytes)': FunctionFragment;
+    'getData(bytes32)': FunctionFragment;
+    'getDataBatch(bytes32[])': FunctionFragment;
+    'getOperatorsOf(address)': FunctionFragment;
+    'increaseAllowance(address,uint256,bytes)': FunctionFragment;
+    'mint(address,uint256,bool,bytes)': FunctionFragment;
+    'owner()': FunctionFragment;
+    'renounceOwnership()': FunctionFragment;
+    'revokeOperator(address,bool,bytes)': FunctionFragment;
+    'setData(bytes32,bytes)': FunctionFragment;
+    'setDataBatch(bytes32[],bytes[])': FunctionFragment;
+    'supportsInterface(bytes4)': FunctionFragment;
+    'totalSupply()': FunctionFragment;
+    'transfer(address,address,uint256,bool,bytes)': FunctionFragment;
+    'transferBatch(address[],address[],uint256[],bool[],bytes[])': FunctionFragment;
+    'transferOwnership(address)': FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
-      | "authorizeOperator"
-      | "authorizedAmountFor"
-      | "balanceOf"
-      | "decimals"
-      | "decreaseAllowance"
-      | "getData"
-      | "getDataBatch"
-      | "getOperatorsOf"
-      | "increaseAllowance"
-      | "mint"
-      | "owner"
-      | "renounceOwnership"
-      | "revokeOperator"
-      | "setData"
-      | "setDataBatch"
-      | "supportsInterface"
-      | "totalSupply"
-      | "transfer"
-      | "transferBatch"
-      | "transferOwnership"
+      | 'authorizeOperator'
+      | 'authorizedAmountFor'
+      | 'balanceOf'
+      | 'decimals'
+      | 'decreaseAllowance'
+      | 'getData'
+      | 'getDataBatch'
+      | 'getOperatorsOf'
+      | 'increaseAllowance'
+      | 'mint'
+      | 'owner'
+      | 'renounceOwnership'
+      | 'revokeOperator'
+      | 'setData'
+      | 'setDataBatch'
+      | 'supportsInterface'
+      | 'totalSupply'
+      | 'transfer'
+      | 'transferBatch'
+      | 'transferOwnership'
   ): FunctionFragment;
 
   encodeFunctionData(
-    functionFragment: "authorizeOperator",
+    functionFragment: 'authorizeOperator',
     values: [string, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "authorizedAmountFor",
+    functionFragment: 'authorizedAmountFor',
     values: [string, string]
   ): string;
-  encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
-  encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'balanceOf', values: [string]): string;
+  encodeFunctionData(functionFragment: 'decimals', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "decreaseAllowance",
+    functionFragment: 'decreaseAllowance',
     values: [string, BigNumberish, BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "getData", values: [BytesLike]): string;
+  encodeFunctionData(functionFragment: 'getData', values: [BytesLike]): string;
   encodeFunctionData(
-    functionFragment: "getDataBatch",
+    functionFragment: 'getDataBatch',
     values: [BytesLike[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "getOperatorsOf",
+    functionFragment: 'getOperatorsOf',
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "increaseAllowance",
+    functionFragment: 'increaseAllowance',
     values: [string, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "mint",
+    functionFragment: 'mint',
     values: [string, BigNumberish, boolean, BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "renounceOwnership",
+    functionFragment: 'renounceOwnership',
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "revokeOperator",
+    functionFragment: 'revokeOperator',
     values: [string, boolean, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "setData",
+    functionFragment: 'setData',
     values: [BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "setDataBatch",
+    functionFragment: 'setDataBatch',
     values: [BytesLike[], BytesLike[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "supportsInterface",
+    functionFragment: 'supportsInterface',
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "totalSupply",
+    functionFragment: 'totalSupply',
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "transfer",
+    functionFragment: 'transfer',
     values: [string, string, BigNumberish, boolean, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "transferBatch",
+    functionFragment: 'transferBatch',
     values: [string[], string[], BigNumberish[], boolean[], BytesLike[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "transferOwnership",
+    functionFragment: 'transferOwnership',
     values: [string]
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "authorizeOperator",
+    functionFragment: 'authorizeOperator',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "authorizedAmountFor",
+    functionFragment: 'authorizedAmountFor',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "decimals", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'balanceOf', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'decimals', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "decreaseAllowance",
+    functionFragment: 'decreaseAllowance',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "getData", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getData', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getDataBatch",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getOperatorsOf",
+    functionFragment: 'getDataBatch',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "increaseAllowance",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
+    functionFragment: 'getOperatorsOf',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "revokeOperator",
+    functionFragment: 'increaseAllowance',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "setData", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'mint', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "setDataBatch",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "supportsInterface",
+    functionFragment: 'renounceOwnership',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "totalSupply",
+    functionFragment: 'revokeOperator',
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "transfer", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setData', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "transferBatch",
+    functionFragment: 'setDataBatch',
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "transferOwnership",
+    functionFragment: 'supportsInterface',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: 'totalSupply',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: 'transfer', data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: 'transferBatch',
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: 'transferOwnership',
     data: BytesLike
   ): Result;
 
   events: {
-    "AuthorizedOperator(address,address,uint256,bytes)": EventFragment;
-    "DataChanged(bytes32,bytes)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "RevokedOperator(address,address,bool,bytes)": EventFragment;
-    "Transfer(address,address,address,uint256,bool,bytes)": EventFragment;
+    'AuthorizedOperator(address,address,uint256,bytes)': EventFragment;
+    'DataChanged(bytes32,bytes)': EventFragment;
+    'OwnershipTransferred(address,address)': EventFragment;
+    'RevokedOperator(address,address,bool,bytes)': EventFragment;
+    'Transfer(address,address,address,uint256,bool,bytes)': EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "AuthorizedOperator"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "DataChanged"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "RevokedOperator"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'AuthorizedOperator'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'DataChanged'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'RevokedOperator'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'Transfer'): EventFragment;
 }
 
 export interface AuthorizedOperatorEventObject {
@@ -640,7 +640,7 @@ export interface LSP7Mintable extends BaseContract {
   };
 
   filters: {
-    "AuthorizedOperator(address,address,uint256,bytes)"(
+    'AuthorizedOperator(address,address,uint256,bytes)'(
       operator?: string | null,
       tokenOwner?: string | null,
       amount?: BigNumberish | null,
@@ -653,7 +653,7 @@ export interface LSP7Mintable extends BaseContract {
       operatorNotificationData?: null
     ): AuthorizedOperatorEventFilter;
 
-    "DataChanged(bytes32,bytes)"(
+    'DataChanged(bytes32,bytes)'(
       dataKey?: BytesLike | null,
       dataValue?: null
     ): DataChangedEventFilter;
@@ -662,7 +662,7 @@ export interface LSP7Mintable extends BaseContract {
       dataValue?: null
     ): DataChangedEventFilter;
 
-    "OwnershipTransferred(address,address)"(
+    'OwnershipTransferred(address,address)'(
       previousOwner?: string | null,
       newOwner?: string | null
     ): OwnershipTransferredEventFilter;
@@ -671,7 +671,7 @@ export interface LSP7Mintable extends BaseContract {
       newOwner?: string | null
     ): OwnershipTransferredEventFilter;
 
-    "RevokedOperator(address,address,bool,bytes)"(
+    'RevokedOperator(address,address,bool,bytes)'(
       operator?: string | null,
       tokenOwner?: string | null,
       notified?: null,
@@ -684,7 +684,7 @@ export interface LSP7Mintable extends BaseContract {
       operatorNotificationData?: null
     ): RevokedOperatorEventFilter;
 
-    "Transfer(address,address,address,uint256,bool,bytes)"(
+    'Transfer(address,address,address,uint256,bool,bytes)'(
       operator?: string | null,
       from?: string | null,
       to?: string | null,

@@ -4,45 +4,49 @@ import {
   Container,
   Image,
   Box,
-} from "@chakra-ui/react";
-import React from "react";
-import WalletConnector from "./wallet/WalletConnector";
-
-
+} from '@chakra-ui/react';
+import React from 'react';
+import WalletConnector from './wallet/WalletConnector';
 
 export default function Header() {
-  const bgColor = useColorModeValue("light.green.brand", "dark.purple.300");
-  const color = useColorModeValue("light.black", "dark.black");
-  const logoPath = '/images/logo-text.png'
-  const testnetPath = '/images/testnet.png'
-  
+  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.300');
+  const color = useColorModeValue('light.black', 'dark.black');
+  const logoPath = '/images/logo-text.png';
+  const testnetPath = '/images/testnet.png';
+
   return (
     <Flex
       zIndex="1"
-      position={"relative"}
+      position={'relative'}
       bg={bgColor}
       color={color}
-      boxShadow={"md"}
+      boxShadow={'md'}
       width="100%"
       py={4}
-      justifyContent={"space-between"}
-      alignItems={"center"}
+      justifyContent={'space-between'}
+      alignItems={'center'}
     >
       <Container
         as={Flex}
-        maxW={"6xl"}
+        maxW={'6xl'}
         paddingX={4}
-        width={"100%"}
-        justifyContent={"space-between"}
-        alignItems={"center"}
+        width={'100%'}
+        justifyContent={'space-between'}
+        alignItems={'center'}
       >
-        <Flex ml={2} alignItems={"center"} justifyContent={"center"}>          
-          <Image cursor='pointer' onClick={() => {
-            window.location.href = '/'
-           }} src={logoPath} alt="Universal-Grave-logo" width={'70px'}/>
-          <Image src={testnetPath} alt="Universal-Grave-logo" width={'70px'}/>
+        <Flex ml={2} alignItems={'center'} justifyContent={'center'}>
+          <Image
+            cursor="pointer"
+            onClick={() => {
+              window.location.href = '/';
+            }}
+            src={logoPath}
+            alt="Universal-Grave-logo"
+            width={'70px'}
+          />
+          <Image src={testnetPath} alt="Universal-Grave-logo" width={'70px'} />
         </Flex>
-        <Flex justifyContent={"flex-end"}>
+        <Flex justifyContent={'flex-end'}>
           <WalletConnector />
         </Flex>
       </Container>

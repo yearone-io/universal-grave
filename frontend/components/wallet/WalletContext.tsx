@@ -13,11 +13,13 @@ const defaultImplementation: WalletContextType = {
   graveVault: null,
   isLoadingAccount: true,
   connect: async () => {
-    // Default connect implementation 
+    // Default connect implementation
   },
   disconnect: () => {
     // Default disconnect implementation
   },
 };
 
-export const WalletContext = React.createContext<WalletContextType>(defaultImplementation);
+export const WalletContext = React.createContext<WalletContextType>(
+  defaultImplementation
+);

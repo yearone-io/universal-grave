@@ -1,4 +1,10 @@
-import { Box, Flex, Text, IconButton, useColorModeValue } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Text,
+  IconButton,
+  useColorModeValue,
+} from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 
 // Add a props interface for TypeScript (if you're using it)
@@ -13,15 +19,15 @@ const LSPExplainer: React.FC<LSPExplainerProps> = ({
   title,
   description,
   learnURL,
-  badgeText
+  badgeText,
 }) => {
   const containerBorderColor = useColorModeValue(
-    "var(--chakra-colors-light-black)",
-    "var(--chakra-colors-dark-purple-500)"
+    'var(--chakra-colors-light-black)',
+    'var(--chakra-colors-dark-purple-500)'
   );
-  const panelBgColor = useColorModeValue("light.white", "dark.purple.200");
-  const interestsBgColor = useColorModeValue("light.white", "dark.white");
-  const fontColor = useColorModeValue("light.black", "dark.purple.500");
+  const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
+  const interestsBgColor = useColorModeValue('light.white', 'dark.white');
+  const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
   return (
     <Flex
@@ -42,29 +48,31 @@ const LSPExplainer: React.FC<LSPExplainerProps> = ({
         padding={1}
         height={16}
         minW={16}
-        justifyContent={"center"}
-        alignItems={"center"}
+        justifyContent={'center'}
+        alignItems={'center'}
       >
-        <Box fontWeight={"bold"}>
-          {badgeText}
-        </Box>  
+        <Box fontWeight={'bold'}>{badgeText}</Box>
       </Flex>
-    
-      <Flex w={"100%"} flexDirection={"column"} padding={2} gap={2}>
-        <Flex flexDirection={"row"} gap={1} alignItems={"center"}>
-          <Text color={fontColor} fontFamily={"Bungee"}>
+
+      <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
+        <Flex flexDirection={'row'} gap={1} alignItems={'center'}>
+          <Text color={fontColor} fontFamily={'Bungee'}>
             {title}
           </Text>
           <IconButton
-            aria-label={"lean more url"}
-            icon={<FaExternalLinkAlt color={fontColor}/>}
+            aria-label={'lean more url'}
+            icon={<FaExternalLinkAlt color={fontColor} />}
             color={fontColor}
             size="sm"
             variant="ghost"
             onClick={() => window.open(`${learnURL}`, '_blank')}
           />
         </Flex>
-        <Flex flexDirection={"row"} justifyContent={"space-between"} alignItems={"center"}>
+        <Flex
+          flexDirection={'row'}
+          justifyContent={'space-between'}
+          alignItems={'center'}
+        >
           <Flex align="center">
             <Text fontSize="sm" pr={2} color={fontColor}>
               {description}

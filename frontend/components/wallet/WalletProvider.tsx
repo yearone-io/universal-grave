@@ -2,9 +2,9 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
-import {ethers} from "ethers";
-import {constants} from "@/app/constants";
-import LSP1GraveForwaderAbi from "@/app/abis/LSP1GraveForwaderAbi.json";
+import { ethers } from 'ethers';
+import { constants } from '@/app/constants';
+import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -30,7 +30,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null);
   const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
-  const toast = useToast()
+  const toast = useToast();
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
   useEffect(() => {
@@ -40,25 +40,27 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
       if (storedAccount) {
         setAccount(storedAccount);
       }
-      setIsLoadingAccount(false)
+      setIsLoadingAccount(false);
     }
   }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
       // // Initialize a new Web3 instance using the LUKSO provider.
-      const provider =  new ethers.providers.Web3Provider(window.lukso);
+      const provider = new ethers.providers.Web3Provider(window.lukso);
       const signer = provider.getSigner();
 
       const graveForwarder = new ethers.Contract(
-          constants.UNIVERSAL_GRAVE_FORWARDER,
-          LSP1GraveForwaderAbi,
-          provider
+        constants.UNIVERSAL_GRAVE_FORWARDER,
+        LSP1GraveForwaderAbi,
+        provider
       );
-      graveForwarder.connect(signer).graveVaults(account)
-          .then((graveVault: string) => {
-            setGraveVault(graveVault);
-          });
+      graveForwarder
+        .connect(signer)
+        .graveVaults(account)
+        .then((graveVault: string) => {
+          setGraveVault(graveVault);
+        });
     }
   }, [account]);
 
@@ -79,7 +81,10 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         localStorage.setItem('connectedAccount', accounts[0]);
       } catch (error: any) {
         // Log any connection errors.
-        const message = error && error.error && error.error.message ? error.error.message : 'An unknown error occurred';
+        const message =
+          error && error.error && error.error.message
+            ? error.error.message
+            : 'An unknown error occurred';
         console.log(`Connection error: ${message}`);
         toast({
           title: `Connection error: ${message}`,
@@ -87,11 +92,12 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           position: 'bottom-left',
           duration: 9000,
           isClosable: true,
-        })
+        });
       }
     } else {
       // Inform the user if the LUKSO wallet extension is not installed.
-      const message = 'Please install the LUKSO Universal Profile Extension to use this app.';
+      const message =
+        'Please install the LUKSO Universal Profile Extension to use this app.';
       console.log(message);
       toast({
         title: `${message}`,
@@ -99,7 +105,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         duration: 9000,
         position: 'bottom-left',
         isClosable: true,
-      })
+      });
     }
   };
 
@@ -116,7 +122,9 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   // Render the context provider, passing down the account state and control functions to children.
   return (
-    <WalletContext.Provider value={{ account, graveVault, connect, disconnect, isLoadingAccount }}>
+    <WalletContext.Provider
+      value={{ account, graveVault, connect, disconnect, isLoadingAccount }}
+    >
       {children}
     </WalletContext.Provider>
   );

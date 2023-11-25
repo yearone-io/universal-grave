@@ -1,4 +1,3 @@
-
 declare global {
   interface Window {
     lukso: any;
@@ -18,35 +17,43 @@ const WalletConnector: React.FC = () => {
   // If the context is not available, throw an error. This component must be used within a WalletProvider.
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
-  }  
+  }
   const { account, connect, disconnect, isLoadingAccount } = walletContext;
 
   const displayTruncatedAddress = (address: string) => {
-    return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
-  }
+    return `${address.substring(0, 5)}...${address.substring(
+      address.length - 4
+    )}`;
+  };
 
   const displayConnectButton = () => {
     if (isLoadingAccount) {
       return <button disabled>Loading...</button>;
     } else if (!account) {
       return (
-        <Button  onClick={connect}>
-          <Flex alignItems='center' justifyContent='space-between'>
-              <Image src='images/LYX-logo.svg' alt='Sign In' />
-              <Box ml='10px' fontSize='14px' lineHeight='14px' fontFamily='Bungee' fontWeight='400'>Sign In</Box>
+        <Button onClick={connect}>
+          <Flex alignItems="center" justifyContent="space-between">
+            <Image src="images/LYX-logo.svg" alt="Sign In" />
+            <Box
+              ml="10px"
+              fontSize="14px"
+              lineHeight="14px"
+              fontFamily="Bungee"
+              fontWeight="400"
+            >
+              Sign In
+            </Box>
           </Flex>
         </Button>
-      )
+      );
     } else {
-      return <Button onClick={disconnect}>{displayTruncatedAddress(account)}</Button>;
+      return (
+        <Button onClick={disconnect}>{displayTruncatedAddress(account)}</Button>
+      );
     }
-  }
+  };
 
-  return (
-    <div>
-      {displayConnectButton()}
-    </div>
-  );
+  return <div>{displayConnectButton()}</div>;
 };
 
 export default WalletConnector;

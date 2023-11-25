@@ -2,61 +2,59 @@
 
 html,
 body {
-	font-family: 'Rubik';
-	font-weight: normal;
+  font-family: 'Rubik';
+  font-weight: normal;
 }
-h1{
-	margin-bottom: 1rem;
+h1 {
+  margin-bottom: 1rem;
 }
-h2{
-	margin-bottom: .5rem;
-	font-weight: normal;
-
+h2 {
+  margin-bottom: 0.5rem;
+  font-weight: normal;
 }
 
-p{
-	line-height: 1.5rem;
-	font-weight: lighter;
-
+p {
+  line-height: 1.5rem;
+  font-weight: lighter;
 }
 
 a {
-	color: inherit;
-	text-decoration: none;
+  color: inherit;
+  text-decoration: none;
 }
 
 * {
-	box-sizing: border-box;
-	padding: 0;
-	margin: 0;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 @media (prefers-color-scheme: dark) {
-	html {
-	}
+  html {
+  }
 }
 
 /* changes for stepper component */
 
-#grave-step-indicator .chakra-step__indicator[data-status="complete"] {
-    /* Styles for active status */
-	border-color: var(--chakra-colors-dark-purple-500) !important;
-	background-color: var(--chakra-colors-dark-purple-500) !important;
+#grave-step-indicator .chakra-step__indicator[data-status='complete'] {
+  /* Styles for active status */
+  border-color: var(--chakra-colors-dark-purple-500) !important;
+  background-color: var(--chakra-colors-dark-purple-500) !important;
 }
 
-#grave-step-indicator .chakra-step__indicator[data-status="active"] {
-    /* Styles for active status */
-	color: var(--chakra-colors-dark-purple-500) !important;
-	border-color: var(--chakra-colors-dark-purple-500) !important;
+#grave-step-indicator .chakra-step__indicator[data-status='active'] {
+  /* Styles for active status */
+  color: var(--chakra-colors-dark-purple-500) !important;
+  border-color: var(--chakra-colors-dark-purple-500) !important;
 }
 #grave-step-indicator .chakra-step__separator {
-	background-color: var(--chakra-colors-dark-purple-500) !important;
+  background-color: var(--chakra-colors-dark-purple-500) !important;
 }
 
-#grave-step-indicator .chakra-step__description  {
-	color: var(--chakra-colors-dark-purple-500) !important;
-	font-weight: 400 !important;
-	font-size: 14px !important;
-	list-style: 17px !important;
-	font-family: 'bungee' !important;
+#grave-step-indicator .chakra-step__description {
+  color: var(--chakra-colors-dark-purple-500) !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  list-style: 17px !important;
+  font-family: 'bungee' !important;
 }
