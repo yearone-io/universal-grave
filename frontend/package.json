@@ -13,6 +13,8 @@
     "@chakra-ui/react": "^2.8.1",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@fontsource/bungee": "^5.0.1",
+    "@fontsource/montserrat": "^5.0.13",
     "@lukso/lsp-factory.js": "^3.1.1",
     "@lukso/lsp-smart-contracts": "^0.12.1",
     "@types/node": "20.2.5",
