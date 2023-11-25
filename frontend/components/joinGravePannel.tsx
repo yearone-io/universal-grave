@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Step, StepDescription, StepIndicator, StepNumber, StepSeparator, StepStatus, StepTitle, Stepper, Text, VStack, useColorModeValue, useSteps } from '@chakra-ui/react';
+import { Box, Flex, Step, StepDescription, StepIndicator, StepNumber, StepSeparator, StepStatus, StepTitle, Stepper, Text, VStack, useColorModeValue, useSteps } from '@chakra-ui/react';
 import JoinGraveBtn from './JoinGraveBtn';
 import { FaCheckCircle } from 'react-icons/fa';
 
@@ -8,12 +8,13 @@ const initialSteps = [
   { 
     title: 'Give your 🆙 necessary permissions', 
     description: 'Give permissions to your Browser Extension Controller.', 
-    description2: 'This can also be done manually.' 
+    description2: 'This can also be done manually.',
+    complete: false
   },
-  { title: 'Create your GRAVE spam box'},
-  { title: 'Link GRAVE to your 🆙'},
-  { title: 'Enable GRAVE to keep assets inventory' },
-  { title: 'Direct all 🆙 spam to the GRAVE' },
+  { title: 'Create your GRAVE spam box', complete: false },
+  { title: 'Link GRAVE to your 🆙', complete: false},
+  { title: 'Enable GRAVE to keep assets inventory', complete: false },
+  { title: 'Direct all 🆙 spam to the GRAVE', complete: false},
 ]
 
 const JoinGravePannel: React.FC = () => {
@@ -25,30 +26,63 @@ const JoinGravePannel: React.FC = () => {
     return `${address.substring(0, 5)}...${address.substring(address.length - 4)}`;
   }
 
-  // notes:
-  // step 1 needs address for incomplete
-  // step 2 neeeds address for complete
+  // TODO refactor to make code more DRY
   const handleNewStep = (newStep: number, data: any) => {
     console.log('new step', newStep, data);
     // Reset steps each time. This helps when leaving the grave
     let modifiedSteps = [...initialSteps]
-    if (newStep === 0 && data[0]) {
-      // Set initial state of step 0 since it needs the Browser Extension Controller address
-      modifiedSteps[0].description2 = `This can also be done manually. (${displayTruncatedAddress(data[0])})`;
-    } else if (newStep >= 1 && data[1]) {
-      modifiedSteps[0].description = `PERMISSION SET `;
-      modifiedSteps[0].description2 = '';
-      modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
-    } 
-    if (newStep >= 2) {
-      modifiedSteps[2].description = `GRAVE LINKED`;
-    }
-    if (newStep >= 3) {
-      modifiedSteps[3].description = `INVENTORY TRACKED`;
-    }
-    // final step
-    if (newStep >= 5) {
-      modifiedSteps[4].description = `SPAM IS DEAD`;
+
+    switch (newStep) {
+      case 0:
+        modifiedSteps[0].description2 = `This can also be done manually. (${displayTruncatedAddress(data[0])})`;
+        break;
+      case 1:
+        modifiedSteps[0].complete = true;
+        modifiedSteps[0].description = `PERMISSION SET `;
+        modifiedSteps[0].description2 = '';
+        break;
+      case 2:
+        modifiedSteps[0].complete = true;
+        modifiedSteps[0].description = `PERMISSION SET `;
+        modifiedSteps[0].description2 = '';
+        modifiedSteps[1].complete = true;
+        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
+        break;
+      case 3:
+        modifiedSteps[0].complete = true;
+        modifiedSteps[0].description = `PERMISSION SET `;
+        modifiedSteps[0].description2 = '';
+        modifiedSteps[1].complete = true;
+        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
+        modifiedSteps[2].complete = true;
+        modifiedSteps[2].description = `GRAVE LINKED`;
+        break;
+      case 4:
+        modifiedSteps[0].complete = true;
+        modifiedSteps[0].description = `PERMISSION SET `;
+        modifiedSteps[0].description2 = '';
+        modifiedSteps[1].complete = true;
+        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
+        modifiedSteps[2].complete = true;
+        modifiedSteps[2].description = `GRAVE LINKED`;
+        modifiedSteps[3].complete = true;
+        modifiedSteps[3].description = `INVENTORY TRACKED`;
+        break;
+      case 5:
+        modifiedSteps[0].complete = true;
+        modifiedSteps[0].description = `PERMISSION SET `;
+        modifiedSteps[0].description2 = '';
+        modifiedSteps[1].complete = true;
+        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
+        modifiedSteps[2].complete = true;
+        modifiedSteps[2].description = `GRAVE LINKED`;
+        modifiedSteps[3].complete = true;
+        modifiedSteps[3].description = `INVENTORY TRACKED`;
+        modifiedSteps[4].complete = true;
+        modifiedSteps[4].description = `SPAM IS DEAD`;
+        break;
+      default:
+        console.error('Invalid step');
     }
     setSteps(modifiedSteps)
     setActiveStep(newStep)
@@ -89,7 +123,11 @@ const JoinGravePannel: React.FC = () => {
                 </StepIndicator >
                 <Box flexShrink='0' textAlign={'left'}>
                     <StepTitle style={{color: 'dark.purple.500'}}>{step.title}</StepTitle>
-                    <StepDescription >{step.description}</StepDescription>
+                    <StepDescription> 
+                      <Flex alignItems='center' gap={1}>
+                        {step.description} {step.complete ? <FaCheckCircle /> : <></>}
+                      </Flex>
+                    </StepDescription>
                     <StepDescription >{step.description2}</StepDescription>
                 </Box>
                 <StepSeparator style={{color: 'dark.purple.500', backgroundColor: 'dark.purple.500'}} />
