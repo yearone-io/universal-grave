@@ -52,34 +52,35 @@ const JoinGravePannel: React.FC = () => {
    */
   const handleNewStep = (newStep: number, data: any) => {
     console.log('new step', newStep, data);
-    // Reset steps each time. This helps when leaving the grave
     let modifiedSteps = [...initialSteps];
   
     if (newStep < 0 || newStep > 5) {
       console.error('Invalid step');
       return;
     }
-  
-    // Process each step according to the newStep value
+        // Special case for step 0
+    if (newStep === 0 && data[0]) {
+      modifiedSteps[0].instructions2 += `(${displayTruncatedAddress(data[0])})`;
+    }
+
     for (let step = 0; step < modifiedSteps.length; step++) {
       if (step < newStep) {
         modifiedSteps[step].complete = true;
-      }
   
-      if (step === 1 && (newStep === 2 || newStep === 3 || newStep > 3)) {
-        // step 2 (index 1) displays the address of the Vault
-        modifiedSteps[1].completeText += displayTruncatedAddress(data[1]);
+        // Special handling for step 1
+        if (step === 1 && (newStep > 1)) {
+          modifiedSteps[1].completeText += displayTruncatedAddress(data[1]);
+        }
+      } else {
+        modifiedSteps[step].complete = false;
+        // Reset completeText for steps after newStep, if needed
       }
-    }
-  
-    // Special case for step 0, we need to display the address of the Browser Extension controller
-    if (newStep === 0) {
-      modifiedSteps[0].instructions2 += `(${displayTruncatedAddress(data[0])})`;
     }
   
     setSteps(modifiedSteps);
     setActiveStep(newStep);
   };
+  
 
   const { activeStep, setActiveStep } = useSteps({
     index: 0,
