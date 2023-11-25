@@ -1,11 +1,12 @@
 'use client'
-import {Box, Container, Flex, Image, Stack} from "@chakra-ui/react";
+import {Box, Container, Flex, Image, Stack, Text} from "@chakra-ui/react";
 import "../globals.css";
 import JoinGraveBtn from "@/components/JoinGraveBtn";
 import LspAssets from "@/components/LspAssets";
 import { WalletContext } from "@/components/wallet/WalletContext";
 import SignInBox from "@/components/SignInBox";
 import { useContext } from "react";
+import JoinGravePannel from "@/components/joinGravePannel";
 
 export default function Home() {
     const logoPath = '/images/logo-full.png';
@@ -23,7 +24,13 @@ export default function Home() {
                 <Box w='60%'>
                     {account ? (
                         <Box>
-                            <JoinGraveBtn />
+                            <Text fontSize='xl' fontWeight='bold' fontFamily='Bugee' >
+                                SETTINGS
+                            </Text>
+                            <JoinGravePannel />
+                            <Text fontSize='xl' fontWeight='bold' fontFamily='Bugee' >
+                                YOUR GRAVEYARD
+                            </Text>
                             <LspAssets />
                         </Box>
                     ) : (
