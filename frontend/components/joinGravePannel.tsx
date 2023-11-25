@@ -7,14 +7,28 @@ import { FaCheckCircle } from 'react-icons/fa';
 const initialSteps = [
   { 
     title: 'Give your 🆙 necessary permissions', 
-    description: 'Give permissions to your Browser Extension Controller.', 
-    description2: 'This can also be done manually.',
+    instructions: 'Give permissions to your Browser Extension Controller.', 
+    instructions2: 'This can also be done manually.',
+    completeText: 'PERMISSION SET',
     complete: false
   },
-  { title: 'Create your GRAVE spam box', complete: false },
-  { title: 'Link GRAVE to your 🆙', complete: false},
-  { title: 'Enable GRAVE to keep assets inventory', complete: false },
-  { title: 'Direct all 🆙 spam to the GRAVE', complete: false},
+  { title: 'Create your GRAVE spam box', 
+    completeText: 'ADDRESS: ',
+    complete: false 
+  },
+  { 
+    title: 'Link GRAVE to your 🆙',
+    completeText: `GRAVE LINKED`,
+    complete: false
+  },
+  { title: 'Enable GRAVE to keep assets inventory',
+    completeText: `INVENTORY TRACKED`,
+    complete: false 
+  },
+  { title: 'Direct all 🆙 spam to the GRAVE',
+    completeText: `SPAM IS DEAD`, 
+    complete: false
+  },
 ]
 
 const JoinGravePannel: React.FC = () => {
@@ -29,68 +43,44 @@ const JoinGravePannel: React.FC = () => {
   /**
    * Update the data in the steps according to the step number
    * 
-   * TODO refactor to make code more DRY
+   * Notes: 
+   * - If complete, display a checkmark
+   * - If not complete, display a number
+   * - If active, display a number
+   * - If not complete and there are instructions, display instructions
+   * - If complete, display completeText
    */
   const handleNewStep = (newStep: number, data: any) => {
     console.log('new step', newStep, data);
     // Reset steps each time. This helps when leaving the grave
-    let modifiedSteps = [...initialSteps]
-
-    switch (newStep) {
-      case 0:
-        modifiedSteps[0].description2 = `This can also be done manually. (${displayTruncatedAddress(data[0])})`;
-        break;
-      case 1:
-        modifiedSteps[0].complete = true;
-        modifiedSteps[0].description = `PERMISSION SET `;
-        modifiedSteps[0].description2 = '';
-        break;
-      case 2:
-        modifiedSteps[0].complete = true;
-        modifiedSteps[0].description = `PERMISSION SET `;
-        modifiedSteps[0].description2 = '';
-        modifiedSteps[1].complete = true;
-        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
-        break;
-      case 3:
-        modifiedSteps[0].complete = true;
-        modifiedSteps[0].description = `PERMISSION SET `;
-        modifiedSteps[0].description2 = '';
-        modifiedSteps[1].complete = true;
-        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
-        modifiedSteps[2].complete = true;
-        modifiedSteps[2].description = `GRAVE LINKED`;
-        break;
-      case 4:
-        modifiedSteps[0].complete = true;
-        modifiedSteps[0].description = `PERMISSION SET `;
-        modifiedSteps[0].description2 = '';
-        modifiedSteps[1].complete = true;
-        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
-        modifiedSteps[2].complete = true;
-        modifiedSteps[2].description = `GRAVE LINKED`;
-        modifiedSteps[3].complete = true;
-        modifiedSteps[3].description = `INVENTORY TRACKED`;
-        break;
-      case 5:
-        modifiedSteps[0].complete = true;
-        modifiedSteps[0].description = `PERMISSION SET `;
-        modifiedSteps[0].description2 = '';
-        modifiedSteps[1].complete = true;
-        modifiedSteps[1].description = `ADDRESS: ${displayTruncatedAddress(data[1])} ` ;
-        modifiedSteps[2].complete = true;
-        modifiedSteps[2].description = `GRAVE LINKED`;
-        modifiedSteps[3].complete = true;
-        modifiedSteps[3].description = `INVENTORY TRACKED`;
-        modifiedSteps[4].complete = true;
-        modifiedSteps[4].description = `SPAM IS DEAD`;
-        break;
-      default:
-        console.error('Invalid step');
+    let modifiedSteps = [...initialSteps];
+  
+    if (newStep < 0 || newStep > 5) {
+      console.error('Invalid step');
+      return;
     }
-    setSteps(modifiedSteps)
-    setActiveStep(newStep)
+  
+    // Process each step according to the newStep value
+    for (let step = 0; step < modifiedSteps.length; step++) {
+      if (step < newStep) {
+        modifiedSteps[step].complete = true;
+      }
+  
+      if (step === 1 && (newStep === 2 || newStep === 3 || newStep > 3)) {
+        // step 2 (index 1) displays the address of the Vault
+        modifiedSteps[1].completeText += displayTruncatedAddress(data[1]);
+      }
+    }
+  
+    // Special case for step 0, we need to display the address of the Browser Extension controller
+    if (newStep === 0) {
+      modifiedSteps[0].instructions2 += `(${displayTruncatedAddress(data[0])})`;
+    }
+  
+    setSteps(modifiedSteps);
+    setActiveStep(newStep);
   }
+  
   
 
   const { activeStep, setActiveStep } = useSteps({
@@ -127,12 +117,19 @@ const JoinGravePannel: React.FC = () => {
                 </StepIndicator >
                 <Box flexShrink='0' textAlign={'left'}>
                     <StepTitle style={{color: 'dark.purple.500'}}>{step.title}</StepTitle>
-                    <StepDescription> 
-                      <Flex alignItems='center' gap={1}>
-                        {step.description} {step.complete ? <FaCheckCircle /> : <></>}
-                      </Flex>
-                    </StepDescription>
-                    <StepDescription >{step.description2}</StepDescription>
+                    {!step.complete ?
+                      (<Box>
+                        <Box>{step.instructions}</Box>
+                        <Box>{step.instructions2}</Box>
+                      </Box>  
+                      ) :
+                      (<StepDescription> 
+                        <Flex alignItems='center' gap={1}>
+                          {step.completeText} {step.complete ? <FaCheckCircle /> : <></>}
+                        </Flex>
+                      </StepDescription>
+                      )
+                    }
                 </Box>
                 <StepSeparator style={{color: 'dark.purple.500', backgroundColor: 'dark.purple.500'}} />
                 </Step>

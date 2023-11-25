@@ -55,4 +55,8 @@ a {
 
 #grave-step-indicator .chakra-step__description  {
 	color: var(--chakra-colors-dark-purple-500) !important;
+	font-weight: 400 !important;
+	font-size: 14px !important;
+	list-style: 17px !important;
+	font-family: 'bungee' !important;
 }
