@@ -79,7 +79,7 @@ export default function LspAssets() {
           mt="20px"
           textAlign="center"
         >
-          Your Grave is empty
+          Your Graveyard is empty
         </Text>
       </Box>
     );
