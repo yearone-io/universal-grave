@@ -109,7 +109,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       justify="space-between"
       boxShadow="md"
       minWidth={'lg'}
-      mb={4}
+      mb={2}
     >
       <Flex
         bg={interestsBgColor}
@@ -165,6 +165,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             _hover={{ bg: createButtonBg }}
             border={createButtonBorder}
             size={'xs'}
+            onClick={() => transferTokenToUP(tokenAddress)}
           >
             {`Revive Tokens`}
           </Button>
