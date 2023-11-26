@@ -11,13 +11,15 @@ interface LSP7PanelProps {
   tokenAmount: string;
   tokenAddress: string;
   vaultAddress: string;
+  onReviveSuccess: () => void;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenName,
   tokenAmount,
   tokenAddress,
-  vaultAddress
+  vaultAddress,
+  onReviveSuccess,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const explorerURL =
@@ -90,6 +92,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
           .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
     
       setIsProcessing(false);
+      onReviveSuccess();
       toast({
         title: `it's alive! ⚡`,
         status: 'success',
