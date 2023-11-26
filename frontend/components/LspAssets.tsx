@@ -5,8 +5,7 @@ import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.jso
 import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
 import {constants} from '@/app/constants';
 import LSP7Panel from "@/components/LSP7Panel";
-import {Box} from "@chakra-ui/react";
-import { Box, Flex, Image, Text } from '@chakra-ui/react';
+import {Box, Flex, Image, Text} from "@chakra-ui/react";
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);

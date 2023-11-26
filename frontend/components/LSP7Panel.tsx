@@ -1,14 +1,5 @@
-import {
-  Box,
-  Flex,
-  Text,
-  Button,
-  Badge,
-  IconButton,
-  useColorMode,
-  useColorModeValue, useToast,
-} from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import {Box, Button, Flex, IconButton, Text, useColorModeValue, useToast,} from '@chakra-ui/react';
+import {FaExternalLinkAlt} from 'react-icons/fa';
 import {ContractInterface, ethers} from "ethers";
 import {constants} from "@/app/constants";
 import {lsp1GraveForwader} from "@/abis/lsp1GraveForwader";
@@ -88,7 +79,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         vaultAddress,
         await signer.getAddress(),
         tokenAmount,
-        0,
+        false,
         '0x',
       ]);
 
