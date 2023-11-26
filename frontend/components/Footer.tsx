@@ -7,12 +7,10 @@ import {
   Stack,
   useColorModeValue,
   VisuallyHidden,
-  useColorMode,
   Flex,
   Image,
 } from '@chakra-ui/react';
-import { FaInstagram, FaTwitter, FaMoon, FaSun } from 'react-icons/fa';
-import Link from 'next/link';
+import { FaTwitter, FaMoon, FaGithub } from 'react-icons/fa';
 
 const SocialButton = ({
   children,
@@ -48,7 +46,6 @@ const SocialButton = ({
 };
 
 export default function SmallWithLogoLeft() {
-  const { toggleColorMode } = useColorMode();
   const colorModeIcon = FaMoon;
   const logoPath = '/images/logo-text.png';
 
@@ -79,13 +76,15 @@ export default function SmallWithLogoLeft() {
           <Icon as={colorModeIcon} />
         </Flex>
         <Stack direction={'row'} spacing={6} alignItems={'center'}>
-          <SocialButton label={'Twitter'} href={''}>
+          <SocialButton
+            label={'Twitter'}
+            href={'https://twitter.com/YearOneIO'}
+          >
             <FaTwitter />
           </SocialButton>
-          <SocialButton label={'Instagram'} href={''}>
-            <FaInstagram />
+          <SocialButton label={'Github'} href={'https://github.com/yearone-io'}>
+            <FaGithub />
           </SocialButton>
-          <Link href={'/feedback'}>Feedback</Link>
         </Stack>
       </Container>
     </Box>
