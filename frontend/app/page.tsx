@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'A cemetery for unwanted digital assets',
   openGraph: {
     images: {
-      url: "https://universal-grave.netlify.app/images/logo-text.png",
+      url: "https://universal-grave.netlify.app/images/ghoulie.jpg",
     }
   },
   twitter: {
