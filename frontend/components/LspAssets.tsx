@@ -26,46 +26,46 @@ export default function LspAssets() {
   const fetchAssets = useCallback(() => {
     setLoading(true);
     if (graveVault !== constants.ZERO_ADDRESS) {
-    const erc725js = new ERC725(
-      lsp3ProfileSchema as ERC725JSONSchema[],
-      graveVault,
-      window.lukso,
-      {
-        ipfsGateway: constants.IPFS,
-      }
-    );
-
-    erc725js
-      .fetchData('LSP5ReceivedAssets[]')
-      .then(async receivedAssetsDataKey => {
-        console.log('assets fetched');
-        const result: TokenInfo[] = [];
-        for (const assetAddress of receivedAssetsDataKey.value as string[]) {
-          await detectLSP(
-            assetAddress,
-            graveVault,
-            LSPType.LSP7DigitalAsset
-          ).then(tokenInfo => {
-            if (tokenInfo) {
-              result.push(tokenInfo);
-            }
-          });
+      const erc725js = new ERC725(
+        lsp3ProfileSchema as ERC725JSONSchema[],
+        graveVault,
+        window.lukso,
+        {
+          ipfsGateway: constants.IPFS,
         }
-        setLsp7VaultAsset(result);
-      })
-      .catch(error => {
-        console.log(error);
-        setLoading(false);
-        toast({
-          title: `Error fetching assets. ${error.message}`,
-          status: 'error',
-          position: 'bottom-left',
-          duration: 9000,
-          isClosable: true,
-        });
-      })
-      .finally(() => {
-        setLoading(false);
+      );
+
+      erc725js
+        .fetchData('LSP5ReceivedAssets[]')
+        .then(async receivedAssetsDataKey => {
+          console.log('assets fetched');
+          const result: TokenInfo[] = [];
+          for (const assetAddress of receivedAssetsDataKey.value as string[]) {
+            await detectLSP(
+              assetAddress,
+              graveVault,
+              LSPType.LSP7DigitalAsset
+            ).then(tokenInfo => {
+              if (tokenInfo) {
+                result.push(tokenInfo);
+              }
+            });
+          }
+          setLsp7VaultAsset(result);
+        })
+        .catch(error => {
+          console.log(error);
+          setLoading(false);
+          toast({
+            title: `Error fetching assets. ${error.message}`,
+            status: 'error',
+            position: 'bottom-left',
+            duration: 9000,
+            isClosable: true,
+          });
+        })
+        .finally(() => {
+          setLoading(false);
       });
     }
   }, [graveVault]);
