@@ -109,6 +109,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       justify="space-between"
       boxShadow="md"
       minWidth={'lg'}
+      mb={4}
     >
       <Flex
         bg={interestsBgColor}

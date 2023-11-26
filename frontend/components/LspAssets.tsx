@@ -87,7 +87,7 @@ export default function LspAssets() {
     return <div>Loading...</div>;
   }
   return (
-    <Flex justifyContent="space-between" ml="10%" mr="10%">
+    <Flex justifyContent="space-between">
       <Box>
         <Text
           color="white"
