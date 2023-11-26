@@ -1,3 +1,4 @@
+'use client';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
@@ -136,28 +137,6 @@ export default function LspAssets() {
               </Box>
             ))
           : emptyLS7PAssets()}
-      </Box>
-      <Box>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-        >
-          LSP8 Assets
-        </Text>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-          mt="20px"
-          textAlign="center"
-        >
-          Coming soon!
-        </Text>
       </Box>
     </Flex>
   );
