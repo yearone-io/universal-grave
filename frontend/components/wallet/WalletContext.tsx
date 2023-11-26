@@ -5,6 +5,7 @@ interface WalletContextType {
   graveVault: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  addGraveVault: (graveVault: string) => void;
   isLoadingAccount: boolean;
 }
 
@@ -17,6 +18,9 @@ const defaultImplementation: WalletContextType = {
   },
   disconnect: () => {
     // Default disconnect implementation
+  },
+  addGraveVault: () => {
+    // Default addGraveVault implementation
   },
 };
 

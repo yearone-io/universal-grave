@@ -73,6 +73,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
       const web3 = new Web3(window.lukso);
 
       try {
+        // Reset the graveVault address when connecting
+        setGraveVault(constants.ZERO_ADDRESS);
         // Request accounts from the wallet.
         const accounts = await web3.eth.requestAccounts();
         console.log('Connected with', accounts[0]);
@@ -115,15 +117,30 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const disconnect = () => {
     // Clear the account address from state.
     setAccount(null);
+    // reset the graveVault address
+    setGraveVault(constants.ZERO_ADDRESS);
     // Remove the stored account from localStorage.
     localStorage.removeItem('connectedAccount');
     // If additional logic is needed for disconnecting, it should be added here.
   };
 
+  // Function to add the graveVault address to the state.
+  // Mainly used when creating a new vault
+  const addGraveVault = (graveVault: string) => {
+    setGraveVault(graveVault);
+  };
+
   // Render the context provider, passing down the account state and control functions to children.
   return (
     <WalletContext.Provider
-      value={{ account, graveVault, connect, disconnect, isLoadingAccount }}
+      value={{
+        account,
+        graveVault,
+        connect,
+        disconnect,
+        isLoadingAccount,
+        addGraveVault,
+      }}
     >
       {children}
     </WalletContext.Provider>
