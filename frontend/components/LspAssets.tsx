@@ -38,20 +38,20 @@ export default function LspAssets() {
       );
       erc725js
         .fetchData('LSP5ReceivedAssets[]')
-        .then(receivedAssetsDataKey => {
-          return (receivedAssetsDataKey.value as string[]).forEach(
-            assetAddress => {
-              return detectLSP(
-                assetAddress,
-                graveVault,
-                LSPType.LSP7DigitalAsset
-              ).then(tokenInfo => {
-                if (tokenInfo) {
-                  setLsp7VaultAsset([...lsp7Assets, tokenInfo]);
-                }
-              });
+        .then(async receivedAssetsDataKey => {
+            const result: TokenInfo[] = [];
+            for (const assetAddress of (receivedAssetsDataKey.value as string[])) {
+                await detectLSP(
+                    assetAddress,
+                    graveVault,
+                    LSPType.LSP7DigitalAsset
+                ).then(tokenInfo => {
+                    if (tokenInfo) {
+                        result.push(tokenInfo);
+                    }
+                });
             }
-          );
+            setLsp7VaultAsset(result);
         })
         .then(() => {
           setLoading(false);
