@@ -1,35 +1,31 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
 import { constants } from '@/app/constants';
-import MoveAssetToUpButton from '@/components/MoveAssetToUpButton';
-import { ethers } from 'ethers';
-import { Box, Flex, Image, Text } from '@chakra-ui/react';
+import LSP7Panel from '@/components/LSP7Panel';
+import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
   const walletContext = useContext(WalletContext);
-  const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[]>([]);
-  const [lps8Assets, setLsp8VaultAssets] = useState<string[]>([]);
+  const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[] | null>(null);
   const { graveVault } = walletContext;
-
+  const toast = useToast();
   // Checking if the walletContext is available
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-
   const { account } = walletContext;
 
-  useEffect(() => {
-    if (
-      window.lukso &&
-      account &&
-      graveVault &&
-      graveVault != constants.ZERO_ADDRESS &&
-      lsp7Assets.length === 0
-    ) {
+  /**
+   * Fetch assets from the grave vault.
+   * This function is called when the page loads and when an asset is revived
+   */
+  const fetchAssets = useCallback(() => {
+    if (graveVault !== constants.ZERO_ADDRESS) {
+      setLoading(true);
       const erc725js = new ERC725(
         lsp3ProfileSchema as ERC725JSONSchema[],
         graveVault,
@@ -38,28 +34,55 @@ export default function LspAssets() {
           ipfsGateway: constants.IPFS,
         }
       );
+
       erc725js
         .fetchData('LSP5ReceivedAssets[]')
-        .then(receivedAssetsDataKey => {
-          return (receivedAssetsDataKey.value as string[]).forEach(
-            assetAddress => {
-              return detectLSP(
-                assetAddress,
-                graveVault,
-                LSPType.LSP7DigitalAsset
-              ).then(tokenInfo => {
-                if (tokenInfo) {
-                  setLsp7VaultAsset([...lsp7Assets, tokenInfo]);
-                }
-              });
-            }
-          );
+        .then(async receivedAssetsDataKey => {
+          console.log('assets fetched');
+          const result: TokenInfo[] = [];
+          for (const assetAddress of receivedAssetsDataKey.value as string[]) {
+            await detectLSP(
+              assetAddress,
+              graveVault as string,
+              LSPType.LSP7DigitalAsset
+            ).then(tokenInfo => {
+              if (tokenInfo) {
+                result.push(tokenInfo);
+              }
+            });
+          }
+          setLsp7VaultAsset(result);
         })
-        .then(() => {
+        .catch(error => {
+          console.log(error);
           setLoading(false);
-        });
+          toast({
+            title: `Error fetching assets. ${error.message}`,
+            status: 'error',
+            position: 'bottom-left',
+            duration: 9000,
+            isClosable: true,
+          });
+        })
+        .finally(() => {
+          setLoading(false);
+      });
     }
-  }, [account, graveVault, lsp7Assets]);
+  }, [graveVault]);
+
+  /**
+   * Fetch assets on account change when the page loads, if the criteria is met
+   */
+  useEffect(() => {
+    if (
+      window.lukso &&
+      account &&
+      graveVault &&
+      lsp7Assets === null
+    ) {
+      fetchAssets();
+    }
+  }, [account, graveVault, lsp7Assets, fetchAssets]);
 
   const emptyLS7PAssets = () => {
     return (
@@ -89,7 +112,7 @@ export default function LspAssets() {
     return <div>Loading...</div>;
   }
   return (
-    <Flex justifyContent="space-between" ml="10%" mr="10%">
+    <Flex justifyContent="space-between">
       <Box>
         <Text
           color="white"
@@ -100,23 +123,19 @@ export default function LspAssets() {
         >
           LSP7 Assets
         </Text>
-        {lsp7Assets.length === 0 ? (
-          emptyLS7PAssets()
-        ) : (
-          <ul>
-            {lsp7Assets.map((asset, index) => (
-              <li key={index}>
-                <p>
-                  {asset.name} - {asset.address} - {asset.balance}
-                </p>
-                <MoveAssetToUpButton
-                  asset={asset.address!}
-                  from={graveVault!}
+        {lsp7Assets && lsp7Assets.length > 0
+          ? lsp7Assets.map((asset, index) => (
+              <Box key={'lsp7-' + index}>
+                <LSP7Panel
+                  tokenName={asset.name!}
+                  tokenAmount={asset.balance!.toString()}
+                  tokenAddress={asset.address!}
+                  vaultAddress={graveVault!}
+                  onReviveSuccess={fetchAssets}
                 />
-              </li>
-            ))}
-          </ul>
-        )}
+              </Box>
+            ))
+          : emptyLS7PAssets()}
       </Box>
       <Box>
         <Text
@@ -139,12 +158,6 @@ export default function LspAssets() {
         >
           Coming soon!
         </Text>
-
-        {/* <ul>
-          {lps8Assets.map((asset, index) => (
-            <li key={index}>{asset}</li>
-          ))}
-        </ul> */}
       </Box>
     </Flex>
   );

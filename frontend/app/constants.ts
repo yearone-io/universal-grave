@@ -10,6 +10,5 @@ export const constants = {
     IMAGE: '/images/ghoulie.jpg',
     DESCRIPTION:
       'GRAVE is a digital spambox that allows you to receive and manage web3 digital assets.',
-
   },
 };

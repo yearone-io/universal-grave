@@ -1,26 +1,39 @@
 import {
   Box,
-  Flex,
-  Text,
   Button,
-  Badge,
+  Flex,
   IconButton,
-  useColorMode,
+  Text,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa'; // This is just an example, use the appropriate icon from `react-icons`
+import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ContractInterface, ethers } from 'ethers';
+import { constants } from '@/app/constants';
+import { lsp1GraveForwader } from '@/abis/lsp1GraveForwader';
+import {
+  LSP1GraveForwader,
+  LSP7Mintable__factory,
+  LSP9Vault__factory,
+} from '@/contracts';
+import { useState } from 'react';
 
 interface LSP7PanelProps {
   tokenName: string;
   tokenAmount: string;
   tokenAddress: string;
+  vaultAddress: string;
+  onReviveSuccess: () => void;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenName,
   tokenAmount,
   tokenAddress,
+  vaultAddress,
+  onReviveSuccess,
 }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
   const explorerURL =
     'https://explorer.execution.testnet.lukso.network/address/';
   const containerBorderColor = useColorModeValue(
@@ -38,13 +51,8 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     '1px solid black',
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
-  const bgColor = useColorModeValue('light.black', 'dark.purple.200');
   const interestsBgColor = useColorModeValue('light.white', 'dark.white');
-  const buttonVariant = useColorModeValue('solidLight', 'solidDark');
-  const interestBgColor = useColorModeValue(
-    'light.green.brand',
-    'dark.purple.300'
-  );
+
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
   // Helper function to format the blockchain address
   const formatAddress = (address: string) => {
@@ -52,6 +60,70 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   };
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
+  const toast = useToast();
+
+  const transferTokenToUP = async (tokenAddress: string) => {
+    if (isProcessing) {
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const provider = new ethers.providers.Web3Provider(window.lukso);
+      const signer = provider.getSigner();
+
+      const lsp1GraveForwaderContract = new ethers.Contract(
+        constants.UNIVERSAL_GRAVE_FORWARDER,
+        lsp1GraveForwader as ContractInterface,
+        signer
+      ) as LSP1GraveForwader;
+
+      const upAddress = await signer.getAddress();
+      if (
+        !(await lsp1GraveForwaderContract.tokenAllowlist(
+          upAddress,
+          tokenAddress
+        ))
+      ) {
+        await lsp1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
+          gasLimit: 400_00,
+        });
+      }
+
+      const lsp7 = LSP7Mintable__factory.connect(tokenAddress, provider);
+      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+        vaultAddress,
+        await signer.getAddress(),
+        tokenAmount,
+        false,
+        '0x',
+      ]);
+
+      const lsp9 = LSP9Vault__factory.connect(vaultAddress, provider);
+      await lsp9
+        .connect(signer)
+        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+
+      setIsProcessing(false);
+      onReviveSuccess();
+      toast({
+        title: `it's alive! ⚡`,
+        status: 'success',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    } catch (error: any) {
+      setIsProcessing(false);
+      console.error(error);
+      toast({
+        title: `Error fetching UP data. ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
     <Flex
@@ -63,6 +135,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       justify="space-between"
       boxShadow="md"
       minWidth={'lg'}
+      mb={2}
     >
       <Flex
         bg={interestsBgColor}
@@ -118,8 +191,9 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             _hover={{ bg: createButtonBg }}
             border={createButtonBorder}
             size={'xs'}
+            onClick={() => transferTokenToUP(tokenAddress)}
           >
-            {`Revive Tokens`}
+            {isProcessing ? 'Reviving...' : `Revive Tokens`}
           </Button>
         </Flex>
       </Flex>
