@@ -54,7 +54,7 @@ export default function JoinGraveBtn({
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-  const { account, graveVault } = walletContext;
+  const { account, graveVault, addGraveVault } = walletContext;
 
   // ========================= HOOKS =========================
 
@@ -184,6 +184,8 @@ export default function JoinGraveBtn({
       try {
         const vaultTranx = await createUpVault(provider, signer);
         vaultAddress = vaultTranx.contractAddress;
+        // add the vault to the provider store
+        addGraveVault(vaultAddress);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
