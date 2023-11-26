@@ -1,11 +1,11 @@
-import {useCallback, useContext, useEffect, useState} from 'react';
-import {WalletContext} from '@/components/wallet/WalletContext';
-import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { WalletContext } from '@/components/wallet/WalletContext';
+import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
-import {constants} from '@/app/constants';
-import LSP7Panel from "@/components/LSP7Panel";
-import {Box, Flex, Image, Text, useToast} from "@chakra-ui/react";
+import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
+import { constants } from '@/app/constants';
+import LSP7Panel from '@/components/LSP7Panel';
+import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
@@ -37,35 +37,35 @@ export default function LspAssets() {
     erc725js
       .fetchData('LSP5ReceivedAssets[]')
       .then(async receivedAssetsDataKey => {
-          console.log('assets fetched');
-          const result: TokenInfo[] = [];
-          for (const assetAddress of (receivedAssetsDataKey.value as string[])) {
-              await detectLSP(
-                  assetAddress,
-                  graveVault,
-                  LSPType.LSP7DigitalAsset
-              ).then(tokenInfo => {
-                  if (tokenInfo) {
-                      result.push(tokenInfo);
-                  }
-              });
-          }
-          setLsp7VaultAsset(result);
-      }).catch((error) => {
-          console.log(error);
-          setLoading(false);
-          toast({
-            title: `Error fetching assets. ${error.message}`,
-            status: 'error',
-            position: 'bottom-left',
-            duration: 9000,
-            isClosable: true,
-          });    
+        console.log('assets fetched');
+        const result: TokenInfo[] = [];
+        for (const assetAddress of receivedAssetsDataKey.value as string[]) {
+          await detectLSP(
+            assetAddress,
+            graveVault,
+            LSPType.LSP7DigitalAsset
+          ).then(tokenInfo => {
+            if (tokenInfo) {
+              result.push(tokenInfo);
+            }
+          });
+        }
+        setLsp7VaultAsset(result);
+      })
+      .catch(error => {
+        console.log(error);
+        setLoading(false);
+        toast({
+          title: `Error fetching assets. ${error.message}`,
+          status: 'error',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .finally(() => {
         setLoading(false);
-      }
-    );
+      });
   }, []);
 
   /**
@@ -79,10 +79,10 @@ export default function LspAssets() {
       graveVault !== constants.ZERO_ADDRESS &&
       lsp7Assets === null
     ) {
-      fetchAssets()  
-    };
+      fetchAssets();
+    }
   }, [account, graveVault, lsp7Assets, fetchAssets]);
-  
+
   const emptyLS7PAssets = () => {
     return (
       <Box>
@@ -122,44 +122,42 @@ export default function LspAssets() {
         >
           LSP7 Assets
         </Text>
-        {lsp7Assets && lsp7Assets.length > 0 ? (
-          lsp7Assets.map((asset, index) => (
-            <Box key={'lsp7-' + index}>
-              <LSP7Panel 
-                tokenName={asset.name!} 
-                tokenAmount={asset.balance!.toString()} 
-                tokenAddress={asset.address!}
-                vaultAddress={graveVault!} 
-                onReviveSuccess={fetchAssets}  
-              />
-            </Box>
-          ))
-        ) :
-          emptyLS7PAssets()
-        }
+        {lsp7Assets && lsp7Assets.length > 0
+          ? lsp7Assets.map((asset, index) => (
+              <Box key={'lsp7-' + index}>
+                <LSP7Panel
+                  tokenName={asset.name!}
+                  tokenAmount={asset.balance!.toString()}
+                  tokenAddress={asset.address!}
+                  vaultAddress={graveVault!}
+                  onReviveSuccess={fetchAssets}
+                />
+              </Box>
+            ))
+          : emptyLS7PAssets()}
       </Box>
-        <Box>
-          <Text
-            color="white"
-            fontWeight={400}
-            fontSize="16px"
-            fontFamily="Bungee"
-            mb="20px"
-          >
-            LSP8 Assets
-          </Text>
-          <Text
-            color="white"
-            fontWeight={400}
-            fontSize="16px"
-            fontFamily="Bungee"
-            mb="20px"
-            mt="20px"
-            textAlign="center"
-          >
-            Coming soon!
-          </Text>
-        </Box>
+      <Box>
+        <Text
+          color="white"
+          fontWeight={400}
+          fontSize="16px"
+          fontFamily="Bungee"
+          mb="20px"
+        >
+          LSP8 Assets
+        </Text>
+        <Text
+          color="white"
+          fontWeight={400}
+          fontSize="16px"
+          fontFamily="Bungee"
+          mb="20px"
+          mt="20px"
+          textAlign="center"
+        >
+          Coming soon!
+        </Text>
+      </Box>
     </Flex>
   );
 }
