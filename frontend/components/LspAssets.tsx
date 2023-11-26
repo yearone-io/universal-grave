@@ -25,6 +25,7 @@ export default function LspAssets() {
    */
   const fetchAssets = useCallback(() => {
     setLoading(true);
+    if (graveVault !== constants.ZERO_ADDRESS) {
     const erc725js = new ERC725(
       lsp3ProfileSchema as ERC725JSONSchema[],
       graveVault,
@@ -66,7 +67,8 @@ export default function LspAssets() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+    }
+  }, [graveVault]);
 
   /**
    * Fetch assets on account change when the page loads, if the criteria is met
@@ -76,7 +78,6 @@ export default function LspAssets() {
       window.lukso &&
       account &&
       graveVault &&
-      graveVault !== constants.ZERO_ADDRESS &&
       lsp7Assets === null
     ) {
       fetchAssets();
