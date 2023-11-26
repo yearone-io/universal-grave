@@ -91,7 +91,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     
       setIsProcessing(false);
       toast({
-        title: `it's alive!`,
+        title: `it's alive! ⚡`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
