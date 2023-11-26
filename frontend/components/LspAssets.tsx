@@ -1,18 +1,16 @@
-import { useContext, useEffect, useState } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
+import {useContext, useEffect, useState} from 'react';
+import {WalletContext} from '@/components/wallet/WalletContext';
+import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
-import { constants } from '@/app/constants';
-import MoveAssetToUpButton from '@/components/MoveAssetToUpButton';
-import { ethers } from 'ethers';
-import { Box, Flex, Image, Text } from '@chakra-ui/react';
+import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
+import {constants} from '@/app/constants';
+import LSP7Panel from "@/components/LSP7Panel";
+import {Box, Flex, Image, Text} from "@chakra-ui/react";
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
   const walletContext = useContext(WalletContext);
   const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[]>([]);
-  const [lps8Assets, setLsp8VaultAssets] = useState<string[]>([]);
   const { graveVault } = walletContext;
 
   // Checking if the walletContext is available
@@ -40,20 +38,20 @@ export default function LspAssets() {
       );
       erc725js
         .fetchData('LSP5ReceivedAssets[]')
-        .then(receivedAssetsDataKey => {
-          return (receivedAssetsDataKey.value as string[]).forEach(
-            assetAddress => {
-              return detectLSP(
-                assetAddress,
-                graveVault,
-                LSPType.LSP7DigitalAsset
-              ).then(tokenInfo => {
-                if (tokenInfo) {
-                  setLsp7VaultAsset([...lsp7Assets, tokenInfo]);
-                }
-              });
+        .then(async receivedAssetsDataKey => {
+            const result: TokenInfo[] = [];
+            for (const assetAddress of (receivedAssetsDataKey.value as string[])) {
+                await detectLSP(
+                    assetAddress,
+                    graveVault,
+                    LSPType.LSP7DigitalAsset
+                ).then(tokenInfo => {
+                    if (tokenInfo) {
+                        result.push(tokenInfo);
+                    }
+                });
             }
-          );
+            setLsp7VaultAsset(result);
         })
         .then(() => {
           setLoading(false);
@@ -89,7 +87,7 @@ export default function LspAssets() {
     return <div>Loading...</div>;
   }
   return (
-    <Flex justifyContent="space-between" ml="10%" mr="10%">
+    <Flex justifyContent="space-between">
       <Box>
         <Text
           color="white"
@@ -102,50 +100,36 @@ export default function LspAssets() {
         </Text>
         {lsp7Assets.length === 0 ? (
           emptyLS7PAssets()
-        ) : (
-          <ul>
-            {lsp7Assets.map((asset, index) => (
-              <li key={index}>
-                <p>
-                  {asset.name} - {asset.address} - {asset.balance}
-                </p>
-                <MoveAssetToUpButton
-                  asset={asset.address!}
-                  from={graveVault!}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
+        ) :
+            lsp7Assets.map((asset, index) => (
+                  <Box key={'lsp7-' + index}>
+                    <LSP7Panel tokenName={asset.name!} tokenAmount={asset.balance!.toString()} tokenAddress={asset.address!} vaultAddress={graveVault!} />
+                  </Box>
+                ))
+        }
       </Box>
-      <Box>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-        >
-          LSP8 Assets
-        </Text>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-          mt="20px"
-          textAlign="center"
-        >
-          Coming soon!
-        </Text>
-
-        {/* <ul>
-          {lps8Assets.map((asset, index) => (
-            <li key={index}>{asset}</li>
-          ))}
-        </ul> */}
-      </Box>
+        <Box>
+          <Text
+            color="white"
+            fontWeight={400}
+            fontSize="16px"
+            fontFamily="Bungee"
+            mb="20px"
+          >
+            LSP8 Assets
+          </Text>
+          <Text
+            color="white"
+            fontWeight={400}
+            fontSize="16px"
+            fontFamily="Bungee"
+            mb="20px"
+            mt="20px"
+            textAlign="center"
+          >
+            Coming soon!
+          </Text>
+        </Box>
     </Flex>
   );
 }
