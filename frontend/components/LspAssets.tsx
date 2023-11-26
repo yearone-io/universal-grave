@@ -43,7 +43,7 @@ export default function LspAssets() {
           for (const assetAddress of receivedAssetsDataKey.value as string[]) {
             await detectLSP(
               assetAddress,
-              graveVault,
+              graveVault as string,
               LSPType.LSP7DigitalAsset
             ).then(tokenInfo => {
               if (tokenInfo) {
