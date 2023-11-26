@@ -6,11 +6,12 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
+import { constants } from '../constants';
 
 export default function Home() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
-  const { account } = walletContext;
+  const { account, graveVault } = walletContext;
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -51,7 +52,7 @@ export default function Home() {
           width={'300px'}
         />
       </Stack>
-      {account ? (
+      {account && graveVault && graveVault !== constants.ZERO_ADDRESS ? (
         <Box>
           <Text
             fontSize="20px"

@@ -1,9 +1,21 @@
-import {Box, Button, Flex, IconButton, Text, useColorModeValue, useToast,} from '@chakra-ui/react';
-import {FaExternalLinkAlt} from 'react-icons/fa';
-import {ContractInterface, ethers} from "ethers";
-import {constants} from "@/app/constants";
-import {lsp1GraveForwader} from "@/abis/lsp1GraveForwader";
-import {LSP1GraveForwader, LSP7Mintable__factory, LSP9Vault__factory} from "@/contracts"; // This is just an example, use the appropriate icon from `react-icons`
+import {
+  Box,
+  Button,
+  Flex,
+  IconButton,
+  Text,
+  useColorModeValue,
+  useToast,
+} from '@chakra-ui/react';
+import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ContractInterface, ethers } from 'ethers';
+import { constants } from '@/app/constants';
+import { lsp1GraveForwader } from '@/abis/lsp1GraveForwader';
+import {
+  LSP1GraveForwader,
+  LSP7Mintable__factory,
+  LSP9Vault__factory,
+} from '@/contracts';
 import { useState } from 'react';
 
 interface LSP7PanelProps {
@@ -11,13 +23,15 @@ interface LSP7PanelProps {
   tokenAmount: string;
   tokenAddress: string;
   vaultAddress: string;
+  onReviveSuccess: () => void;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenName,
   tokenAmount,
   tokenAddress,
-  vaultAddress
+  vaultAddress,
+  onReviveSuccess,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const explorerURL =
@@ -58,17 +72,17 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const signer = provider.getSigner();
 
       const lsp1GraveForwaderContract = new ethers.Contract(
-          constants.UNIVERSAL_GRAVE_FORWARDER,
-          lsp1GraveForwader as ContractInterface,
-          signer
+        constants.UNIVERSAL_GRAVE_FORWARDER,
+        lsp1GraveForwader as ContractInterface,
+        signer
       ) as LSP1GraveForwader;
 
       const upAddress = await signer.getAddress();
       if (
-          !(await lsp1GraveForwaderContract.tokenAllowlist(
-              upAddress,
-              tokenAddress
-          ))
+        !(await lsp1GraveForwaderContract.tokenAllowlist(
+          upAddress,
+          tokenAddress
+        ))
       ) {
         await lsp1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
           gasLimit: 400_00,
@@ -76,7 +90,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       }
 
       const lsp7 = LSP7Mintable__factory.connect(tokenAddress, provider);
-      const lsp7Tx = lsp7.interface.encodeFunctionData("transfer", [
+      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
         tokenAmount,
@@ -86,10 +100,11 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
       const lsp9 = LSP9Vault__factory.connect(vaultAddress, provider);
       await lsp9
-          .connect(signer)
-          .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
-    
+        .connect(signer)
+        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+
       setIsProcessing(false);
+      onReviveSuccess();
       toast({
         title: `it's alive! ⚡`,
         status: 'success',
@@ -178,7 +193,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             size={'xs'}
             onClick={() => transferTokenToUP(tokenAddress)}
           >
-            {isProcessing ? 'Reviving...' :  `Revive Tokens`}
+            {isProcessing ? 'Reviving...' : `Revive Tokens`}
           </Button>
         </Flex>
       </Flex>
