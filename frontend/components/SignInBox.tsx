@@ -36,7 +36,7 @@ const SignInBox: React.FC = () => {
         lineHeight="24px"
         color="dark.purple.500"
       >
-        Please sign in with your Universal Profile to connect a GRAVE spam box.
+        Please sign in with your Universal Profile to connect a GRAVE spambox.
       </Text>
       <Button
         onClick={connect}

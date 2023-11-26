@@ -28,7 +28,7 @@ const initialSteps = [
     complete: false,
   },
   {
-    title: 'Create your GRAVE spam box',
+    title: 'Create your GRAVE spambox',
     completeText: { text: 'ADDRESS: ', address: null },
     complete: false,
   },
@@ -126,8 +126,8 @@ const JoinGravePanel: React.FC = () => {
         color="dark.purple.400"
       >
         {!steps[4].complete
-          ? `SET UP YOUR GRAVE SPAM BOX`
-          : `YOU HAVE A GRAVE SPAM BOX!`}
+          ? `SET UP YOUR GRAVE SPAMBOX`
+          : `YOU HAVE A GRAVE SPAMBOX!`}
       </Text>
       <JoinGraveBtn onJoiningStepChange={handleNewStep} />
       <Stepper

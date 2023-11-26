@@ -5,4 +5,11 @@ export const constants = {
   IPFS: 'https://api.universalprofile.cloud/ipfs',
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
   LUKSO_TESTNET_EXPLORER: 'https://explorer.execution.testnet.lukso.network',
+  METADATA: {
+    TITLE: 'GRAVE | Digital Spambox',
+    IMAGE: '/images/ghoulie.jpg',
+    DESCRIPTION:
+      'GRAVE is a digital spambox that allows you to receive and manage web3 digital assets.',
+
+  },
 };
