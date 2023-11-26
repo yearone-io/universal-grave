@@ -24,8 +24,8 @@ export default function LspAssets() {
    * This function is called when the page loads and when an asset is revived
    */
   const fetchAssets = useCallback(() => {
-    setLoading(true);
     if (graveVault !== constants.ZERO_ADDRESS) {
+      setLoading(true);
       const erc725js = new ERC725(
         lsp3ProfileSchema as ERC725JSONSchema[],
         graveVault,
