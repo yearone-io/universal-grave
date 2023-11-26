@@ -49,7 +49,7 @@ const SocialButton = ({
 
 export default function SmallWithLogoLeft() {
   const { toggleColorMode } = useColorMode();
-  const colorModeIcon = useColorModeValue(FaMoon, FaSun);
+  const colorModeIcon = FaMoon;
   const logoPath = '/images/logo-text.png';
 
   return (
@@ -76,9 +76,7 @@ export default function SmallWithLogoLeft() {
         </Flex>
         <Flex gap="7px" justifyContent="center" alignItems="center">
           © 2023 Universal Grave. All rights reserved
-          <Box onClick={toggleColorMode} cursor="pointer">
-            <Icon as={colorModeIcon} />
-          </Box>
+          <Icon as={colorModeIcon} />
         </Flex>
         <Stack direction={'row'} spacing={6} alignItems={'center'}>
           <SocialButton label={'Twitter'} href={''}>

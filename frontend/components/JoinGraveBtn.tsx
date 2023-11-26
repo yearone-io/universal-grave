@@ -6,12 +6,11 @@ import {
   PERMISSIONS,
 } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Box, Button, Tooltip, useToast } from '@chakra-ui/react';
+import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
-import { FaInfoCircle } from 'react-icons/fa';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 
@@ -628,13 +627,29 @@ export default function JoinGraveBtn({
 
     if (hasJoinedTheGrave()) {
       return (
-        <Button onClick={handleReset} disabled={loading} mb="10px">
+        <Button
+          color={'dark.purple.500'}
+          border={'1px solid var(--chakra-colors-dark-purple-500)'}
+          onClick={handleReset}
+          disabled={loading}
+          mb="10px"
+          fontFamily="Bungee"
+          fontSize="16px"
+          fontWeight="400"
+        >
           {loading ? 'Processing...' : 'UNSUBSCRIBE'}
         </Button>
       );
     } else {
       return (
-        <Button onClick={handleJoin} disabled={loading} mb="10px">
+        <Button
+          onClick={handleJoin}
+          disabled={loading}
+          mb="10px"
+          fontFamily="Bungee"
+          fontSize="16px"
+          fontWeight="400"
+        >
           {loading ? 'Processing...' : 'START'}
         </Button>
       );

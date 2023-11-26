@@ -31,7 +31,10 @@ const WalletConnector: React.FC = () => {
       return <button disabled>Loading...</button>;
     } else if (!account) {
       return (
-        <Button onClick={connect}>
+        <Button
+          onClick={connect}
+          border={'1px solid var(--chakra-colors-dark-purple-500)'}
+        >
           <Flex alignItems="center" justifyContent="space-between">
             <Image src="images/LYX-logo.svg" alt="Sign In" />
             <Box
@@ -40,6 +43,7 @@ const WalletConnector: React.FC = () => {
               lineHeight="14px"
               fontFamily="Bungee"
               fontWeight="400"
+              color={'dark.purple.500'}
             >
               Sign In
             </Box>
@@ -48,7 +52,13 @@ const WalletConnector: React.FC = () => {
       );
     } else {
       return (
-        <Button onClick={disconnect}>{displayTruncatedAddress(account)}</Button>
+        <Button
+          color={'dark.purple.500'}
+          border={'1px solid var(--chakra-colors-dark-purple-500)'}
+          onClick={disconnect}
+        >
+          {displayTruncatedAddress(account)}
+        </Button>
       );
     }
   };

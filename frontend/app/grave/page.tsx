@@ -1,12 +1,11 @@
 'use client';
 import { Box, Container, Flex, Image, Stack, Text } from '@chakra-ui/react';
 import '../globals.css';
-import JoinGraveBtn from '@/components/JoinGraveBtn';
 import LspAssets from '@/components/LspAssets';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import { useContext } from 'react';
-import JoinGravePannel from '@/components/joinGravePannel';
+import JoinGravePanel from '@/components/JoinGravePanel';
 
 export default function Home() {
   const logoPath = '/images/logo-full.png';
@@ -14,24 +13,32 @@ export default function Home() {
   const { account } = walletContext;
 
   return (
-    <Container w={'100%'} py={5} maxW="100%" pl="10%" pr="10%">
+    <Container maxW={'6xl'} width={'100%'} py={5}>
       <Stack
         direction={{ base: 'column', md: 'row' }}
-        justify="space-around"
+        justify="space-between"
         align="center"
         w="100%"
+        pt="50px"
       >
         <Box w="60%">
           {account ? (
             <Box>
-              <Text fontSize="xl" fontWeight="bold" fontFamily="Bugee">
-                SETTINGS
-              </Text>
-              <JoinGravePannel />
-              <Text fontSize="xl" fontWeight="bold" fontFamily="Bugee">
-                YOUR GRAVEYARD
-              </Text>
-              <LspAssets />
+              <Box>
+                <Text
+                  fontSize="20px"
+                  color={'white'}
+                  fontFamily="Bungee"
+                  mb="30px"
+                >
+                  SETTINGS
+                </Text>
+                <Box>
+                  <Flex justifyContent="center">
+                    <JoinGravePanel />
+                  </Flex>
+                </Box>
+              </Box>
             </Box>
           ) : (
             <SignInBox />
@@ -44,6 +51,22 @@ export default function Home() {
           width={'300px'}
         />
       </Stack>
+      {account ? (
+        <Box>
+          <Text
+            fontSize="20px"
+            color="white"
+            fontFamily="Bungee"
+            mb="30px"
+            mt="30px"
+          >
+            YOUR GRAVEYARD
+          </Text>
+          <LspAssets />
+        </Box>
+      ) : (
+        <></>
+      )}
     </Container>
   );
 }

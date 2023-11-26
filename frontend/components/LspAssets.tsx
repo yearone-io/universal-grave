@@ -6,6 +6,7 @@ import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
 import {constants} from '@/app/constants';
 import LSP7Panel from "@/components/LSP7Panel";
 import {Box} from "@chakra-ui/react";
+import { Box, Flex, Image, Text } from '@chakra-ui/react';
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
@@ -59,14 +60,53 @@ export default function LspAssets() {
     }
   }, [account, graveVault, lsp7Assets]);
 
+  const emptyLS7PAssets = () => {
+    return (
+      <Box>
+        <Image
+          w="300px"
+          src="/images/empty-grave.png"
+          alt="empty-grave"
+          borderRadius="10px"
+        />
+        <Text
+          color="white"
+          fontWeight={400}
+          fontSize="16px"
+          fontFamily="Bungee"
+          mb="20px"
+          mt="20px"
+          textAlign="center"
+        >
+          Your Grave is empty
+        </Text>
+      </Box>
+    );
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
   return (
-    <Box mt={4} mb={4}>
-        {lsp7Assets.map((asset, index) => (
-              <LSP7Panel tokenName={asset.name!} tokenAmount={asset.balance!.toString()} tokenAddress={asset.address!} vaultAddress={graveVault!} />
-        ))}
-    </Box>
+    <Flex justifyContent="space-between" ml="10%" mr="10%">
+      <Box>
+        <Text
+          color="white"
+          fontWeight={400}
+          fontSize="16px"
+          fontFamily="Bungee"
+          mb="20px"
+        >
+          LSP7 Assets
+        </Text>
+        {lsp7Assets.length === 0 ? (
+          emptyLS7PAssets()
+        ) :
+            lsp7Assets.map((asset, index) => (
+                    <LSP7Panel tokenName={asset.name!} tokenAmount={asset.balance!.toString()} tokenAddress={asset.address!} vaultAddress={graveVault!} />
+                ))
+        }
+      </Box>
+    </Flex>
   );
 }
