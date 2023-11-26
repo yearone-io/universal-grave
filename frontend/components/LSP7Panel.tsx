@@ -15,7 +15,7 @@ import {
   LSP1GraveForwader,
   LSP7Mintable__factory,
   LSP9Vault__factory,
-} from '@/contracts'; // This is just an example, use the appropriate icon from `react-icons`
+} from '@/contracts';
 import { useState } from 'react';
 
 interface LSP7PanelProps {
