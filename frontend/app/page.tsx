@@ -11,7 +11,8 @@ export const metadata: Metadata = {
     }
   },
   twitter: {
-    card: "summary",
+    images: "https://universal-grave.netlify.app/images/ghoulie.jpg",
+    card: "summary_large_image",
   }
 }
 
