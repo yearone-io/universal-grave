@@ -4,6 +4,7 @@ import {ContractInterface, ethers} from "ethers";
 import {constants} from "@/app/constants";
 import {lsp1GraveForwader} from "@/abis/lsp1GraveForwader";
 import {LSP1GraveForwader, LSP7Mintable__factory, LSP9Vault__factory} from "@/contracts"; // This is just an example, use the appropriate icon from `react-icons`
+import { useState } from 'react';
 
 interface LSP7PanelProps {
   tokenName: string;
@@ -18,6 +19,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenAddress,
   vaultAddress
 }) => {
+  const [isProcessing, setIsProcessing] = useState(false);
   const explorerURL =
     'https://explorer.execution.testnet.lukso.network/address/';
   const containerBorderColor = useColorModeValue(
@@ -35,13 +37,8 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     '1px solid black',
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
-  const bgColor = useColorModeValue('light.black', 'dark.purple.200');
   const interestsBgColor = useColorModeValue('light.white', 'dark.white');
-  const buttonVariant = useColorModeValue('solidLight', 'solidDark');
-  const interestBgColor = useColorModeValue(
-    'light.green.brand',
-    'dark.purple.300'
-  );
+
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
   // Helper function to format the blockchain address
   const formatAddress = (address: string) => {
@@ -52,6 +49,10 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
+    if (isProcessing) {
+      return;
+    }
+    setIsProcessing(true);
     try {
       const provider = new ethers.providers.Web3Provider(window.lukso);
       const signer = provider.getSigner();
@@ -87,7 +88,17 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       await lsp9
           .connect(signer)
           .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+    
+      setIsProcessing(false);
+      toast({
+        title: `it's alive!`,
+        status: 'success',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
     } catch (error: any) {
+      setIsProcessing(false);
       console.error(error);
       toast({
         title: `Error fetching UP data. ${error.message}`,
@@ -167,7 +178,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             size={'xs'}
             onClick={() => transferTokenToUP(tokenAddress)}
           >
-            {`Revive Tokens`}
+            {isProcessing ? 'Reviving...' :  `Revive Tokens`}
           </Button>
         </Flex>
       </Flex>

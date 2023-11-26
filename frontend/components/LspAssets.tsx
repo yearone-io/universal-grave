@@ -102,10 +102,34 @@ export default function LspAssets() {
           emptyLS7PAssets()
         ) :
             lsp7Assets.map((asset, index) => (
+                  <Box key={'lsp7-' + index}>
                     <LSP7Panel tokenName={asset.name!} tokenAmount={asset.balance!.toString()} tokenAddress={asset.address!} vaultAddress={graveVault!} />
+                  </Box>
                 ))
         }
       </Box>
+        <Box>
+          <Text
+            color="white"
+            fontWeight={400}
+            fontSize="16px"
+            fontFamily="Bungee"
+            mb="20px"
+          >
+            LSP8 Assets
+          </Text>
+          <Text
+            color="white"
+            fontWeight={400}
+            fontSize="16px"
+            fontFamily="Bungee"
+            mb="20px"
+            mt="20px"
+            textAlign="center"
+          >
+            Coming soon!
+          </Text>
+        </Box>
     </Flex>
   );
 }
