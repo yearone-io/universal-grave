@@ -18,7 +18,7 @@
    UP_ADDR=
    RECEIVER_UP_ADDR=
    ```
-
+4. Generate types `npm run typechain`
 
 ### Basic Usage
 
