@@ -8,7 +8,8 @@
 		"deploy": "npx hardhat run ./scripts/MyContract_deploy.js --network ETH_MAINNET",
 		"node": "npx hardhat node",
 		"test": "npx hardhat test",
-		"deploy-local": "npx hardhat run ./scripts/MyContract_deploy.js --network localhost"
+		"deploy-local": "npx hardhat run ./scripts/MyContract_deploy.js --network localhost",
+		"typechain": "typechain --target ethers-v6 --out-dir typechain-types ./node_modules/@lukso/lsp-smart-contracts/artifacts/*.json"
 	},
 	"dependencies": {
 		"@erc725/erc725.js": "^0.21.2",
