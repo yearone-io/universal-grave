@@ -1,3 +1,4 @@
+'use client';
 import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import {
