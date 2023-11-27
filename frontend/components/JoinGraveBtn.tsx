@@ -170,7 +170,7 @@ export default function JoinGraveBtn({
     }
     const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
-    let vaultAddress = null;
+    let vaultAddress = graveVault;
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
@@ -210,7 +210,7 @@ export default function JoinGraveBtn({
 
     // 4. Enable grave to keep assets inventory
     try {
-      await setDelegateInVault();
+      await setDelegateInVault(vaultAddress);
       setJoiningStep(4);
       console.log('step 4');
     } catch (err: any) {
@@ -388,11 +388,11 @@ export default function JoinGraveBtn({
   /**
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
-  const setDelegateInVault = async () => {
+  const setDelegateInVault = async (vaultAddress: string) => {
     const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
     const vault = new ethers.Contract(
-      graveVault as string,
+      vaultAddress as string,
       LSP9Vault.abi,
       signer
     );
