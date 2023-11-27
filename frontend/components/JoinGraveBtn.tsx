@@ -431,7 +431,7 @@ export default function JoinGraveBtn({
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-    let dataKeys = [LSP7URDdataKey/*, LSP8URDdataKey*/];
+    let dataKeys = [LSP7URDdataKey /*, LSP8URDdataKey*/];
 
     let dataValues = [
       constants.UNIVERSAL_GRAVE_FORWARDER,
@@ -517,9 +517,9 @@ export default function JoinGraveBtn({
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-    let dataKeys = [LSP7URDdataKey/*, LSP8URDdataKey*/];
+    let dataKeys = [LSP7URDdataKey /*, LSP8URDdataKey*/];
 
-    let dataValues = ['0x'/*, '0x'*/];
+    let dataValues = ['0x' /*, '0x'*/];
 
     const permissionsResult = await erc725.getData();
     const allControllers = permissionsResult[0].value as string[];
@@ -580,7 +580,7 @@ export default function JoinGraveBtn({
     // Note: check sum case address to avoid issues with case sensitivity
     return (
       getChecksumAddress(URDLsp7) ===
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)/* &&
+      getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) /* &&
       getChecksumAddress(URDLsp8) ===
         getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)*/
     );
