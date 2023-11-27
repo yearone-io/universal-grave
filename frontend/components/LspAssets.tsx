@@ -138,6 +138,28 @@ export default function LspAssets() {
             ))
           : emptyLS7PAssets()}
       </Box>
+      <Box>
+        <Text
+          color="white"
+          fontWeight={400}
+          fontSize="16px"
+          fontFamily="Bungee"
+          mb="20px"
+        >
+          LSP8 Assets
+        </Text>
+        <Text
+          color="white"
+          fontWeight={400}
+          fontSize="16px"
+          fontFamily="Bungee"
+          mb="20px"
+          mt="20px"
+          textAlign="center"
+        >
+          Coming soon!
+        </Text>
+      </Box>
     </Flex>
   );
 }
