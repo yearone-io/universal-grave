@@ -127,6 +127,7 @@ export default function JoinGraveBtn({
       if (UPData) {
         // Set the URD for LSP7 and LSP8 to what is returned from the UP.
         // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
+        console.log('UPData: ', UPData);
         setURDLsp7(getChecksumAddress(UPData[0]));
         setURDLsp8(getChecksumAddress(UPData[1]));
         if (UPData.length === 3 && window.lukso.isUniversalProfileExtension) {
@@ -430,11 +431,11 @@ export default function JoinGraveBtn({
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
+    let dataKeys = [LSP7URDdataKey/*, LSP8URDdataKey*/];
 
     let dataValues = [
       constants.UNIVERSAL_GRAVE_FORWARDER,
-      constants.UNIVERSAL_GRAVE_FORWARDER,
+      /*constants.UNIVERSAL_GRAVE_FORWARDER,*/
     ];
 
     const permissionsResult = await erc725.getData();
@@ -516,9 +517,9 @@ export default function JoinGraveBtn({
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
+    let dataKeys = [LSP7URDdataKey/*, LSP8URDdataKey*/];
 
-    let dataValues = ['0x', '0x'];
+    let dataValues = ['0x'/*, '0x'*/];
 
     const permissionsResult = await erc725.getData();
     const allControllers = permissionsResult[0].value as string[];
@@ -579,9 +580,9 @@ export default function JoinGraveBtn({
     // Note: check sum case address to avoid issues with case sensitivity
     return (
       getChecksumAddress(URDLsp7) ===
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
+        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)/* &&
       getChecksumAddress(URDLsp8) ===
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)*/
     );
   };
 
