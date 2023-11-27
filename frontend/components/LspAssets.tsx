@@ -66,7 +66,7 @@ export default function LspAssets() {
         })
         .finally(() => {
           setLoading(false);
-      });
+        });
     }
   }, [graveVault]);
 
@@ -74,12 +74,7 @@ export default function LspAssets() {
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (
-      window.lukso &&
-      account &&
-      graveVault &&
-      lsp7Assets === null
-    ) {
+    if (window.lukso && account && graveVault && lsp7Assets === null) {
       fetchAssets();
     }
   }, [account, graveVault, lsp7Assets, fetchAssets]);
@@ -130,6 +125,7 @@ export default function LspAssets() {
                   tokenName={asset.name!}
                   tokenAmount={asset.balance!.toString()}
                   tokenAddress={asset.address!}
+                  tokenMetadata={asset.metadata!}
                   vaultAddress={graveVault!}
                   onReviveSuccess={fetchAssets}
                 />

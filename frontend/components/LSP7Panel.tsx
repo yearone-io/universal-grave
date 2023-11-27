@@ -6,6 +6,7 @@ import {
   Text,
   useColorModeValue,
   useToast,
+  Avatar,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ContractInterface, ethers } from 'ethers';
@@ -23,6 +24,7 @@ interface LSP7PanelProps {
   tokenAmount: string;
   tokenAddress: string;
   vaultAddress: string;
+  tokenMetadata: Record<string, any>; //LSP4Metadata
   onReviveSuccess: () => void;
 }
 
@@ -30,6 +32,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenName,
   tokenAmount,
   tokenAddress,
+  tokenMetadata,
   vaultAddress,
   onReviveSuccess,
 }) => {
@@ -125,6 +128,23 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     }
   };
 
+  const getTokenIconUrl = () => {
+    let tokenIcon = (
+      <Box padding={1} fontWeight={'bold'}>
+        LSP7
+      </Box>
+    );
+    if (tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.startsWith('ipfs://')) {
+      const iconURL = `${
+        constants.LUKSO_IPFS_API
+      }${tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.slice(7)}`;
+      tokenIcon = (
+        <Avatar height={16} minW={16} name={tokenName} src={iconURL} />
+      );
+    }
+    return tokenIcon;
+  };
+
   return (
     <Flex
       bg={panelBgColor}
@@ -143,13 +163,13 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         color={fontColor}
         border={`1px solid ${containerBorderColor}`}
         fontSize="md"
-        padding={1}
         height={16}
         minW={16}
         justifyContent={'center'}
         alignItems={'center'}
+        boxSizing={'content-box'}
       >
-        <Box fontWeight={'bold'}>LSP7</Box>
+        {getTokenIconUrl()}
       </Flex>
 
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>

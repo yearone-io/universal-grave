@@ -60,6 +60,7 @@ export type TokenInfo = {
   decimals?: string;
   balance?: number;
   label?: string;
+  metadata?: Record<string, any>;
 };
 
 export const detectLSP = async (
@@ -126,10 +127,12 @@ export const detectLSP = async (
       }
     );
 
-    let [{ value: name }, { value: symbol }] = await erc725js.fetchData([
-      'LSP4TokenName',
-      'LSP4TokenSymbol',
-    ]);
+    let [{ value: name }, { value: symbol }, { value: LSP4Metadata }] =
+      await erc725js.fetchData([
+        'LSP4TokenName',
+        'LSP4TokenSymbol',
+        'LSP4Metadata',
+      ]);
     if (typeof name !== 'string') {
       try {
         name = (await contract.name().call()) as string;
@@ -160,6 +163,7 @@ export const detectLSP = async (
       address: contractAddress,
       balance,
       decimals: currentDecimals,
+      metadata: LSP4Metadata as Record<string, any>,
       label: `${shortType} ${name} (sym) ${contractAddress.substring(
         0,
         10
