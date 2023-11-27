@@ -1,3 +1,4 @@
+'use client';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
