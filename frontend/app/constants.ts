@@ -5,7 +5,7 @@ export const constants = {
   IPFS: 'https://api.universalprofile.cloud/ipfs',
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
   LUKSO_TESTNET_EXPLORER: 'https://explorer.execution.testnet.lukso.network',
-  LUKSO_IPFS_API: 'https://api.universalprofile.cloud/ipfs/',
+  IPFS_GATEWAY: 'https://gateway.pinata.cloud/ipfs/',
   METADATA: {
     TITLE: 'GRAVE | Digital Spambox',
     IMAGE: '/images/ghoulie.jpg',

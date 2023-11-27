@@ -136,7 +136,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     );
     if (tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.startsWith('ipfs://')) {
       const iconURL = `${
-        constants.LUKSO_IPFS_API
+        constants.IPFS_GATEWAY
       }${tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.slice(7)}`;
       tokenIcon = (
         <Avatar height={16} minW={16} name={tokenName} src={iconURL} />
