@@ -29,7 +29,7 @@ async function main() {
     const lsp7Factory = new ethers.ContractFactory(
         LSP7Mintable.abi,
         LSP7Mintable.bytecode,
-    ) as LSP7Mintable__factory;
+    );
 
     const tokenDeployTx = await lsp7Factory.connect(signer).deploy(
       tokenName, // token name
@@ -59,7 +59,7 @@ async function main() {
     //const dataValue = "0x6f357c6a0feb2861343e8c2b010c0ea817bd56edc24e8be73c4c8e1ec59b47ad6d6930ed697066733a2f2f516d65436764394b47325276554a7a32617a46413551324e547031395770394151704661435a7a7a6b4357785954";
     //const dataValue = "0x6f357c6aa646d6355e6b38fb4e5d90a2612bcba76c6d70fd134cefb0f5e42a71b585c492697066733a2f2f516d52586d65414450657566525a756d6e37326347724d34785939714c7065697157537a367432746b546735655a";
     //const dataValue = "0x6f357c6af26b079dcfa66a6ccdf25383dbd9d89bd22e4b5da8da753b3014ea7fdfa90ee4697066733a2f2f516d623442394c71416951504c694c46524b33684273533845386d3764484569546f41486b6856336d713563427a"
-    let lsp7Mintable = LSP7TokenContract.connect(signer) as LSP7MintableType;
+    let lsp7Mintable = LSP7TokenContract.connect(signer);
     const setDataTx = await lsp7Mintable.setData(dataKey,dataValue,{gasLimit: 400_000});
     console.log('✅ Data set. Tx:', setDataTx.hash);
     const mintTx = await lsp7Mintable.mint(signer.address, 69, true, "0x", { gasLimit: 400_000 });
