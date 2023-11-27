@@ -11,3 +11,5 @@ Our solution empowers Universal Profile (LSP0) accounts to implement a unique LS
 The GRAVE is designed with flexibility in mind, allowing users to easily toggle its functionality without losing access to their Vault or underlying assets. Moreover, when assets are retrieved from the GRAVE, they still undergo the standard accounting process enjoyed by UP profiles through the UniversalReceiverDelegateUP implementation. Future enhancements could include the integration of incentivized curators, either individuals or communities, who maintain their own whitelists, that other users could subscribe to. Additionally, there is the prospect of allowing users to auction assets from their GRAVE, with the option to retain the proceeds or donate a portion to charity or public goods funding.
 
 We hope that our hackathon submission inspires further exploration of practical solutions to the spam problem in Web3.
+
+**NOTE:** Works solely with the latest version of the LSP7 standards at the moment.
