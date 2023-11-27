@@ -210,7 +210,7 @@ export default function JoinGraveBtn({
 
     // 4. Enable grave to keep assets inventory
     try {
-      await setDelegateInVault(vaultAddress);
+      await setDelegateInVault(vaultAddress as string);
       setJoiningStep(4);
       console.log('step 4');
     } catch (err: any) {
