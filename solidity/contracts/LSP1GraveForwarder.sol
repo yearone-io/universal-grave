@@ -55,6 +55,16 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
             return super.universalReceiverDelegate(notifier, value, typeId, data);
         }
         require(graveVaults[msg.sender] != address(0), "LSP1GraveForwader: user vault not set");// CHECK that notifier is a contract with a `balanceOf` method
+        // CHECK that the caller is a LSP0 (UniversalProfile)
+        // by checking its interface support
+        if (
+            !ERC165Checker.supportsERC165InterfaceUnchecked(
+                msg.sender,
+                _INTERFACEID_LSP0
+            )
+        ) {
+            return "LSP1GraveForwader: caller is not a LSP0";
+        }
         // and that msg.sender (the UP) has a positive balance
         if (notifier.code.length > 0) {
             try ILSP7DigitalAsset(notifier).balanceOf(msg.sender) returns (
@@ -100,8 +110,8 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
             );
             // 0 = CALL
             return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
-        } else {
-            return super.universalReceiverDelegate(notifier, value, typeId, data);
         }
+        
+        return "";
     }
 }
