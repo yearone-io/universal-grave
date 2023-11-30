@@ -60,6 +60,7 @@ export type TokenInfo = {
   decimals?: string;
   balance?: number;
   label?: string;
+  tokenId?: string;
   metadata?: Record<string, any>;
 };
 

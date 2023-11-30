@@ -4,7 +4,6 @@
 import type {
   BaseContract,
   BigNumber,
-  BigNumberish,
   BytesLike,
   CallOverrides,
   ContractTransaction,
@@ -27,68 +26,50 @@ import type {
   OnEvent,
 } from "./common";
 
-export interface LSP7MintableInterface extends utils.Interface {
+export interface ILSP8IdentifiableDigitalAssetInterface
+  extends utils.Interface {
   functions: {
-    "authorizeOperator(address,uint256,bytes)": FunctionFragment;
-    "authorizedAmountFor(address,address)": FunctionFragment;
+    "authorizeOperator(address,bytes32,bytes)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
-    "decimals()": FunctionFragment;
-    "decreaseAllowance(address,uint256,bytes)": FunctionFragment;
     "getData(bytes32)": FunctionFragment;
     "getDataBatch(bytes32[])": FunctionFragment;
-    "getOperatorsOf(address)": FunctionFragment;
-    "increaseAllowance(address,uint256,bytes)": FunctionFragment;
-    "mint(address,uint256,bool,bytes)": FunctionFragment;
-    "owner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "revokeOperator(address,bool,bytes)": FunctionFragment;
+    "getOperatorsOf(bytes32)": FunctionFragment;
+    "isOperatorFor(address,bytes32)": FunctionFragment;
+    "revokeOperator(address,bytes32,bool,bytes)": FunctionFragment;
     "setData(bytes32,bytes)": FunctionFragment;
     "setDataBatch(bytes32[],bytes[])": FunctionFragment;
     "supportsInterface(bytes4)": FunctionFragment;
+    "tokenIdsOf(address)": FunctionFragment;
+    "tokenOwnerOf(bytes32)": FunctionFragment;
     "totalSupply()": FunctionFragment;
-    "transfer(address,address,uint256,bool,bytes)": FunctionFragment;
-    "transferBatch(address[],address[],uint256[],bool[],bytes[])": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
+    "transfer(address,address,bytes32,bool,bytes)": FunctionFragment;
+    "transferBatch(address[],address[],bytes32[],bool[],bytes[])": FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
       | "authorizeOperator"
-      | "authorizedAmountFor"
       | "balanceOf"
-      | "decimals"
-      | "decreaseAllowance"
       | "getData"
       | "getDataBatch"
       | "getOperatorsOf"
-      | "increaseAllowance"
-      | "mint"
-      | "owner"
-      | "renounceOwnership"
+      | "isOperatorFor"
       | "revokeOperator"
       | "setData"
       | "setDataBatch"
       | "supportsInterface"
+      | "tokenIdsOf"
+      | "tokenOwnerOf"
       | "totalSupply"
       | "transfer"
       | "transferBatch"
-      | "transferOwnership"
   ): FunctionFragment;
 
   encodeFunctionData(
     functionFragment: "authorizeOperator",
-    values: [string, BigNumberish, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "authorizedAmountFor",
-    values: [string, string]
+    values: [string, BytesLike, BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "balanceOf", values: [string]): string;
-  encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "decreaseAllowance",
-    values: [string, BigNumberish, BytesLike]
-  ): string;
   encodeFunctionData(functionFragment: "getData", values: [BytesLike]): string;
   encodeFunctionData(
     functionFragment: "getDataBatch",
@@ -96,24 +77,15 @@ export interface LSP7MintableInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "getOperatorsOf",
-    values: [string]
+    values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "increaseAllowance",
-    values: [string, BigNumberish, BytesLike]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "mint",
-    values: [string, BigNumberish, boolean, BytesLike]
-  ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
+    functionFragment: "isOperatorFor",
+    values: [string, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "revokeOperator",
-    values: [string, boolean, BytesLike]
+    values: [string, BytesLike, boolean, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "setData",
@@ -127,37 +99,29 @@ export interface LSP7MintableInterface extends utils.Interface {
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
+  encodeFunctionData(functionFragment: "tokenIdsOf", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "tokenOwnerOf",
+    values: [BytesLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "totalSupply",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "transfer",
-    values: [string, string, BigNumberish, boolean, BytesLike]
+    values: [string, string, BytesLike, boolean, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "transferBatch",
-    values: [string[], string[], BigNumberish[], boolean[], BytesLike[]]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [string]
+    values: [string[], string[], BytesLike[], boolean[], BytesLike[]]
   ): string;
 
   decodeFunctionResult(
     functionFragment: "authorizeOperator",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "authorizedAmountFor",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "decimals", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "decreaseAllowance",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "getData", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getDataBatch",
@@ -168,13 +132,7 @@ export interface LSP7MintableInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "increaseAllowance",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
+    functionFragment: "isOperatorFor",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -190,6 +148,11 @@ export interface LSP7MintableInterface extends utils.Interface {
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "tokenIdsOf", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenOwnerOf",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "totalSupply",
     data: BytesLike
@@ -199,22 +162,16 @@ export interface LSP7MintableInterface extends utils.Interface {
     functionFragment: "transferBatch",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
 
   events: {
-    "AuthorizedOperator(address,address,uint256,bytes)": EventFragment;
+    "AuthorizedOperator(address,address,bytes32,bytes)": EventFragment;
     "DataChanged(bytes32,bytes)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "RevokedOperator(address,address,bool,bytes)": EventFragment;
-    "Transfer(address,address,address,uint256,bool,bytes)": EventFragment;
+    "RevokedOperator(address,address,bytes32,bool,bytes)": EventFragment;
+    "Transfer(address,address,address,bytes32,bool,bytes)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AuthorizedOperator"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "DataChanged"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RevokedOperator"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
@@ -222,11 +179,11 @@ export interface LSP7MintableInterface extends utils.Interface {
 export interface AuthorizedOperatorEventObject {
   operator: string;
   tokenOwner: string;
-  amount: BigNumber;
+  tokenId: string;
   operatorNotificationData: string;
 }
 export type AuthorizedOperatorEvent = TypedEvent<
-  [string, string, BigNumber, string],
+  [string, string, string, string],
   AuthorizedOperatorEventObject
 >;
 
@@ -244,26 +201,15 @@ export type DataChangedEvent = TypedEvent<
 
 export type DataChangedEventFilter = TypedEventFilter<DataChangedEvent>;
 
-export interface OwnershipTransferredEventObject {
-  previousOwner: string;
-  newOwner: string;
-}
-export type OwnershipTransferredEvent = TypedEvent<
-  [string, string],
-  OwnershipTransferredEventObject
->;
-
-export type OwnershipTransferredEventFilter =
-  TypedEventFilter<OwnershipTransferredEvent>;
-
 export interface RevokedOperatorEventObject {
   operator: string;
   tokenOwner: string;
+  tokenId: string;
   notified: boolean;
   operatorNotificationData: string;
 }
 export type RevokedOperatorEvent = TypedEvent<
-  [string, string, boolean, string],
+  [string, string, string, boolean, string],
   RevokedOperatorEventObject
 >;
 
@@ -273,23 +219,23 @@ export interface TransferEventObject {
   operator: string;
   from: string;
   to: string;
-  amount: BigNumber;
+  tokenId: string;
   force: boolean;
   data: string;
 }
 export type TransferEvent = TypedEvent<
-  [string, string, string, BigNumber, boolean, string],
+  [string, string, string, string, boolean, string],
   TransferEventObject
 >;
 
 export type TransferEventFilter = TypedEventFilter<TransferEvent>;
 
-export interface LSP7Mintable extends BaseContract {
+export interface ILSP8IdentifiableDigitalAsset extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: LSP7MintableInterface;
+  interface: ILSP8IdentifiableDigitalAssetInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,
@@ -313,30 +259,15 @@ export interface LSP7Mintable extends BaseContract {
   functions: {
     authorizeOperator(
       operator: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       operatorNotificationData: BytesLike,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
-
-    authorizedAmountFor(
-      operator: string,
-      tokenOwner: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
 
     balanceOf(
       tokenOwner: string,
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
-
-    decimals(overrides?: CallOverrides): Promise<[number]>;
-
-    decreaseAllowance(
-      operator: string,
-      subtractedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
 
     getData(
       dataKey: BytesLike,
@@ -349,33 +280,19 @@ export interface LSP7Mintable extends BaseContract {
     ): Promise<[string[]] & { dataValues: string[] }>;
 
     getOperatorsOf(
-      tokenOwner: string,
+      tokenId: BytesLike,
       overrides?: CallOverrides
     ): Promise<[string[]]>;
 
-    increaseAllowance(
+    isOperatorFor(
       operator: string,
-      addedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
-    mint(
-      to: string,
-      amount: BigNumberish,
-      force: boolean,
-      data: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<[string]>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
+      tokenId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
 
     revokeOperator(
       operator: string,
+      tokenId: BytesLike,
       notify: boolean,
       operatorNotificationData: BytesLike,
       overrides?: Overrides & { from?: string }
@@ -398,12 +315,22 @@ export interface LSP7Mintable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
+    tokenIdsOf(
+      tokenOwner: string,
+      overrides?: CallOverrides
+    ): Promise<[string[]]>;
+
+    tokenOwnerOf(
+      tokenId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
     totalSupply(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     transfer(
       from: string,
       to: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       force: boolean,
       data: BytesLike,
       overrides?: Overrides & { from?: string }
@@ -412,41 +339,21 @@ export interface LSP7Mintable extends BaseContract {
     transferBatch(
       from: string[],
       to: string[],
-      amount: BigNumberish[],
+      tokenId: BytesLike[],
       force: boolean[],
       data: BytesLike[],
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
-    transferOwnership(
-      newOwner: string,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
   };
 
   authorizeOperator(
     operator: string,
-    amount: BigNumberish,
+    tokenId: BytesLike,
     operatorNotificationData: BytesLike,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
-
-  authorizedAmountFor(
-    operator: string,
-    tokenOwner: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
 
   balanceOf(tokenOwner: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-  decimals(overrides?: CallOverrides): Promise<number>;
-
-  decreaseAllowance(
-    operator: string,
-    subtractedAmount: BigNumberish,
-    operatorNotificationData: BytesLike,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
 
   getData(dataKey: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -456,33 +363,19 @@ export interface LSP7Mintable extends BaseContract {
   ): Promise<string[]>;
 
   getOperatorsOf(
-    tokenOwner: string,
+    tokenId: BytesLike,
     overrides?: CallOverrides
   ): Promise<string[]>;
 
-  increaseAllowance(
+  isOperatorFor(
     operator: string,
-    addedAmount: BigNumberish,
-    operatorNotificationData: BytesLike,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  mint(
-    to: string,
-    amount: BigNumberish,
-    force: boolean,
-    data: BytesLike,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  owner(overrides?: CallOverrides): Promise<string>;
-
-  renounceOwnership(
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
+    tokenId: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   revokeOperator(
     operator: string,
+    tokenId: BytesLike,
     notify: boolean,
     operatorNotificationData: BytesLike,
     overrides?: Overrides & { from?: string }
@@ -505,12 +398,16 @@ export interface LSP7Mintable extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
+  tokenIdsOf(tokenOwner: string, overrides?: CallOverrides): Promise<string[]>;
+
+  tokenOwnerOf(tokenId: BytesLike, overrides?: CallOverrides): Promise<string>;
+
   totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
   transfer(
     from: string,
     to: string,
-    amount: BigNumberish,
+    tokenId: BytesLike,
     force: boolean,
     data: BytesLike,
     overrides?: Overrides & { from?: string }
@@ -519,44 +416,24 @@ export interface LSP7Mintable extends BaseContract {
   transferBatch(
     from: string[],
     to: string[],
-    amount: BigNumberish[],
+    tokenId: BytesLike[],
     force: boolean[],
     data: BytesLike[],
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  transferOwnership(
-    newOwner: string,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
 
   callStatic: {
     authorizeOperator(
       operator: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       operatorNotificationData: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    authorizedAmountFor(
-      operator: string,
-      tokenOwner: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
 
     balanceOf(
       tokenOwner: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    decimals(overrides?: CallOverrides): Promise<number>;
-
-    decreaseAllowance(
-      operator: string,
-      subtractedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     getData(dataKey: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -566,31 +443,19 @@ export interface LSP7Mintable extends BaseContract {
     ): Promise<string[]>;
 
     getOperatorsOf(
-      tokenOwner: string,
+      tokenId: BytesLike,
       overrides?: CallOverrides
     ): Promise<string[]>;
 
-    increaseAllowance(
+    isOperatorFor(
       operator: string,
-      addedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
+      tokenId: BytesLike,
       overrides?: CallOverrides
-    ): Promise<void>;
-
-    mint(
-      to: string,
-      amount: BigNumberish,
-      force: boolean,
-      data: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    owner(overrides?: CallOverrides): Promise<string>;
-
-    renounceOwnership(overrides?: CallOverrides): Promise<void>;
+    ): Promise<boolean>;
 
     revokeOperator(
       operator: string,
+      tokenId: BytesLike,
       notify: boolean,
       operatorNotificationData: BytesLike,
       overrides?: CallOverrides
@@ -613,12 +478,22 @@ export interface LSP7Mintable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    tokenIdsOf(
+      tokenOwner: string,
+      overrides?: CallOverrides
+    ): Promise<string[]>;
+
+    tokenOwnerOf(
+      tokenId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
     transfer(
       from: string,
       to: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       force: boolean,
       data: BytesLike,
       overrides?: CallOverrides
@@ -627,29 +502,24 @@ export interface LSP7Mintable extends BaseContract {
     transferBatch(
       from: string[],
       to: string[],
-      amount: BigNumberish[],
+      tokenId: BytesLike[],
       force: boolean[],
       data: BytesLike[],
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    transferOwnership(
-      newOwner: string,
       overrides?: CallOverrides
     ): Promise<void>;
   };
 
   filters: {
-    "AuthorizedOperator(address,address,uint256,bytes)"(
+    "AuthorizedOperator(address,address,bytes32,bytes)"(
       operator?: string | null,
       tokenOwner?: string | null,
-      amount?: BigNumberish | null,
+      tokenId?: BytesLike | null,
       operatorNotificationData?: null
     ): AuthorizedOperatorEventFilter;
     AuthorizedOperator(
       operator?: string | null,
       tokenOwner?: string | null,
-      amount?: BigNumberish | null,
+      tokenId?: BytesLike | null,
       operatorNotificationData?: null
     ): AuthorizedOperatorEventFilter;
 
@@ -662,41 +532,34 @@ export interface LSP7Mintable extends BaseContract {
       dataValue?: null
     ): DataChangedEventFilter;
 
-    "OwnershipTransferred(address,address)"(
-      previousOwner?: string | null,
-      newOwner?: string | null
-    ): OwnershipTransferredEventFilter;
-    OwnershipTransferred(
-      previousOwner?: string | null,
-      newOwner?: string | null
-    ): OwnershipTransferredEventFilter;
-
-    "RevokedOperator(address,address,bool,bytes)"(
+    "RevokedOperator(address,address,bytes32,bool,bytes)"(
       operator?: string | null,
       tokenOwner?: string | null,
+      tokenId?: BytesLike | null,
       notified?: null,
       operatorNotificationData?: null
     ): RevokedOperatorEventFilter;
     RevokedOperator(
       operator?: string | null,
       tokenOwner?: string | null,
+      tokenId?: BytesLike | null,
       notified?: null,
       operatorNotificationData?: null
     ): RevokedOperatorEventFilter;
 
-    "Transfer(address,address,address,uint256,bool,bytes)"(
-      operator?: string | null,
+    "Transfer(address,address,address,bytes32,bool,bytes)"(
+      operator?: null,
       from?: string | null,
       to?: string | null,
-      amount?: null,
+      tokenId?: BytesLike | null,
       force?: null,
       data?: null
     ): TransferEventFilter;
     Transfer(
-      operator?: string | null,
+      operator?: null,
       from?: string | null,
       to?: string | null,
-      amount?: null,
+      tokenId?: BytesLike | null,
       force?: null,
       data?: null
     ): TransferEventFilter;
@@ -705,29 +568,14 @@ export interface LSP7Mintable extends BaseContract {
   estimateGas: {
     authorizeOperator(
       operator: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       operatorNotificationData: BytesLike,
       overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    authorizedAmountFor(
-      operator: string,
-      tokenOwner: string,
-      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     balanceOf(
       tokenOwner: string,
       overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    decimals(overrides?: CallOverrides): Promise<BigNumber>;
-
-    decreaseAllowance(
-      operator: string,
-      subtractedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: Overrides & { from?: string }
     ): Promise<BigNumber>;
 
     getData(dataKey: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
@@ -738,33 +586,19 @@ export interface LSP7Mintable extends BaseContract {
     ): Promise<BigNumber>;
 
     getOperatorsOf(
-      tokenOwner: string,
+      tokenId: BytesLike,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    increaseAllowance(
+    isOperatorFor(
       operator: string,
-      addedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    mint(
-      to: string,
-      amount: BigNumberish,
-      force: boolean,
-      data: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: string }
+      tokenId: BytesLike,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     revokeOperator(
       operator: string,
+      tokenId: BytesLike,
       notify: boolean,
       operatorNotificationData: BytesLike,
       overrides?: Overrides & { from?: string }
@@ -787,12 +621,22 @@ export interface LSP7Mintable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    tokenIdsOf(
+      tokenOwner: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    tokenOwnerOf(
+      tokenId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     totalSupply(overrides?: CallOverrides): Promise<BigNumber>;
 
     transfer(
       from: string,
       to: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       force: boolean,
       data: BytesLike,
       overrides?: Overrides & { from?: string }
@@ -801,14 +645,9 @@ export interface LSP7Mintable extends BaseContract {
     transferBatch(
       from: string[],
       to: string[],
-      amount: BigNumberish[],
+      tokenId: BytesLike[],
       force: boolean[],
       data: BytesLike[],
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    transferOwnership(
-      newOwner: string,
       overrides?: Overrides & { from?: string }
     ): Promise<BigNumber>;
   };
@@ -816,29 +655,14 @@ export interface LSP7Mintable extends BaseContract {
   populateTransaction: {
     authorizeOperator(
       operator: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       operatorNotificationData: BytesLike,
       overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    authorizedAmountFor(
-      operator: string,
-      tokenOwner: string,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     balanceOf(
       tokenOwner: string,
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    decimals(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    decreaseAllowance(
-      operator: string,
-      subtractedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: Overrides & { from?: string }
     ): Promise<PopulatedTransaction>;
 
     getData(
@@ -852,33 +676,19 @@ export interface LSP7Mintable extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     getOperatorsOf(
-      tokenOwner: string,
+      tokenId: BytesLike,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    increaseAllowance(
+    isOperatorFor(
       operator: string,
-      addedAmount: BigNumberish,
-      operatorNotificationData: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    mint(
-      to: string,
-      amount: BigNumberish,
-      force: boolean,
-      data: BytesLike,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    renounceOwnership(
-      overrides?: Overrides & { from?: string }
+      tokenId: BytesLike,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     revokeOperator(
       operator: string,
+      tokenId: BytesLike,
       notify: boolean,
       operatorNotificationData: BytesLike,
       overrides?: Overrides & { from?: string }
@@ -901,12 +711,22 @@ export interface LSP7Mintable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    tokenIdsOf(
+      tokenOwner: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    tokenOwnerOf(
+      tokenId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     totalSupply(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     transfer(
       from: string,
       to: string,
-      amount: BigNumberish,
+      tokenId: BytesLike,
       force: boolean,
       data: BytesLike,
       overrides?: Overrides & { from?: string }
@@ -915,14 +735,9 @@ export interface LSP7Mintable extends BaseContract {
     transferBatch(
       from: string[],
       to: string[],
-      amount: BigNumberish[],
+      tokenId: BytesLike[],
       force: boolean[],
       data: BytesLike[],
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    transferOwnership(
-      newOwner: string,
       overrides?: Overrides & { from?: string }
     ): Promise<PopulatedTransaction>;
   };

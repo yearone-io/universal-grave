@@ -1,17 +1,21 @@
 'use client';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
+import {useCallback, useContext, useEffect, useState} from 'react';
+import {WalletContext} from '@/components/wallet/WalletContext';
+import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
-import { constants } from '@/app/constants';
+import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
+import {constants} from '@/app/constants';
 import LSP7Panel from '@/components/LSP7Panel';
-import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
+import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
+import LSP8Panel from "@/components/LSP8Panel";
+import {ethers} from "ethers";
+import ILSP8IdentifiableDigitalAsset from "@/abis/ILSP8IdentifiableDigitalAsset.json";
 
 export default function LspAssets() {
   const [loading, setLoading] = useState(true);
   const walletContext = useContext(WalletContext);
   const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[] | null>(null);
+  const [lsp8Assets, setLsp8VaultAsset] = useState<TokenInfo[] | null>(null);
   const { graveVault } = walletContext;
   const toast = useToast();
   // Checking if the walletContext is available
@@ -40,7 +44,7 @@ export default function LspAssets() {
         .fetchData('LSP5ReceivedAssets[]')
         .then(async receivedAssetsDataKey => {
           console.log('assets fetched');
-          const result: TokenInfo[] = [];
+          const lsp7Results: TokenInfo[] = [];
           for (const assetAddress of receivedAssetsDataKey.value as string[]) {
             await detectLSP(
               assetAddress,
@@ -48,11 +52,45 @@ export default function LspAssets() {
               LSPType.LSP7DigitalAsset
             ).then(tokenInfo => {
               if (tokenInfo) {
-                result.push(tokenInfo);
+                if (tokenInfo.type === LSPType.LSP7DigitalAsset) {
+                  lsp7Results.push(tokenInfo);
+                }
               }
             });
           }
-          setLsp7VaultAsset(result);
+          setLsp7VaultAsset(lsp7Results);
+          const lsp8Results: TokenInfo[] = [];
+
+          for (const assetAddress of receivedAssetsDataKey.value as string[]) {
+            //call tokenIdsOf function on assetAddress
+              const contract = new ethers.Contract(
+                  assetAddress,
+                  ILSP8IdentifiableDigitalAsset.abi,
+                  new ethers.providers.Web3Provider(window.lukso)
+              );
+            await detectLSP(
+                assetAddress,
+                graveVault as string,
+                LSPType.LSP8IdentifiableDigitalAsset
+            ).then(tokenInfo => {
+                console.log("ff", tokenInfo);
+              if (tokenInfo) {
+                if (tokenInfo.type === LSPType.LSP8IdentifiableDigitalAsset) {
+                    contract.tokenIdsOf(graveVault).then((tokenIds: string[]) => {
+                        tokenIds.forEach((tokenId: string) => {
+                            lsp8Results.push(
+                                {
+                                    ...tokenInfo,
+                                    tokenId: tokenId.toString()
+                                }
+                            );
+                        });
+                    });
+                }
+              }
+            });
+          }
+          setLsp8VaultAsset(lsp8Results);
         })
         .catch(error => {
           console.log(error);
@@ -144,17 +182,20 @@ export default function LspAssets() {
         >
           LSP8 Assets
         </Text>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-          mt="20px"
-          textAlign="center"
-        >
-          Coming soon!
-        </Text>
+        {lsp8Assets && lsp8Assets.length > 0
+            ? lsp8Assets.map((asset, index) => (
+                <Box key={'lsp8-' + index}>
+                  <LSP8Panel
+                      tokenName={asset.name!}
+                      tokenId={asset.tokenId!}
+                      tokenAddress={asset.address!}
+                      tokenMetadata={asset.metadata!}
+                      vaultAddress={graveVault!}
+                      onReviveSuccess={fetchAssets}
+                  />
+                </Box>
+            ))
+            : emptyLS7PAssets()}
       </Box>
     </Flex>
   );
