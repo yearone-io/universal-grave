@@ -1,4 +1,3 @@
-'use client';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
@@ -12,109 +11,104 @@ import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
 
 export default function LSPAssets() {
-  const [loading, setLoading] = useState(true);
   const walletContext = useContext(WalletContext);
-  const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[] | null>(null);
-  const [lsp8Assets, setLsp8VaultAsset] = useState<TokenInfo[] | null>(null);
-  const { graveVault } = walletContext;
+  const [loading, setLoading] = useState(true);
+  const [lsp7Assets, setLsp7Assets] = useState<TokenInfo[]>([]);
+  const [lsp8Assets, setLsp8Assets] = useState<TokenInfo[]>([]);
   const toast = useToast();
-  // Checking if the walletContext is available
+
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-  const { account } = walletContext;
+
+  const { account, graveVault } = walletContext;
 
   /**
    * Fetch assets from the grave vault.
    * This function is called when the page loads and when an asset is revived
    */
-  const fetchAssets = useCallback(() => {
-    if (graveVault !== constants.ZERO_ADDRESS) {
-      setLoading(true);
-      const erc725js = new ERC725(
-        LSP3ProfileSchema as ERC725JSONSchema[],
-        graveVault,
-        window.lukso,
-        {
-          ipfsGateway: constants.IPFS,
-        }
-      );
-
-      erc725js
-        .fetchData('LSP5ReceivedAssets[]')
-        .then(async receivedAssetsDataKey => {
-          console.log('assets fetched');
-          const lsp7Results: TokenInfo[] = [];
-          for (const assetAddress of receivedAssetsDataKey.value as string[]) {
-            await detectLSP(
-              assetAddress,
-              graveVault as string,
-              LSPType.LSP7DigitalAsset
-            ).then(tokenInfo => {
-              if (tokenInfo) {
-                if (tokenInfo.type === LSPType.LSP7DigitalAsset) {
-                  lsp7Results.push(tokenInfo);
-                }
-              }
-            });
-          }
-          setLsp7VaultAsset(lsp7Results);
-          const lsp8Results: TokenInfo[] = [];
-
-          for (const assetAddress of receivedAssetsDataKey.value as string[]) {
-            //call tokenIdsOf function on assetAddress
-            const contract = new ethers.Contract(
-              assetAddress,
-              LSP8IdentifiableDigitalAsset.abi,
-              new ethers.providers.Web3Provider(window.lukso)
-            );
-            await detectLSP(
-              assetAddress,
-              graveVault as string,
-              LSPType.LSP8IdentifiableDigitalAsset
-            ).then(tokenInfo => {
-              console.log('ff', tokenInfo);
-              if (tokenInfo) {
-                if (tokenInfo.type === LSPType.LSP8IdentifiableDigitalAsset) {
-                  contract.tokenIdsOf(graveVault).then((tokenIds: string[]) => {
-                    tokenIds.forEach((tokenId: string) => {
-                      lsp8Results.push({
-                        ...tokenInfo,
-                        tokenId: tokenId.toString(),
-                      });
-                    });
-                  });
-                }
-              }
-            });
-          }
-          setLsp8VaultAsset(lsp8Results);
-        })
-        .catch(error => {
-          console.log(error);
-          setLoading(false);
-          toast({
-            title: `Error fetching assets. ${error.message}`,
-            status: 'error',
-            position: 'bottom-left',
-            duration: 9000,
-            isClosable: true,
-          });
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+  const fetchAssets = useCallback(async () => {
+    if (!graveVault || graveVault === constants.ZERO_ADDRESS) {
+      setLoading(false);
+      return;
     }
-  }, [graveVault]);
+    setLoading(true);
+    const erc725js = new ERC725(
+      LSP3ProfileSchema as ERC725JSONSchema[],
+      graveVault,
+      window.lukso,
+      {
+        ipfsGateway: constants.IPFS,
+      }
+    );
+
+    try {
+      const receivedAssetsResults = await erc725js.fetchData(
+        'LSP5ReceivedAssets[]'
+      );
+      const lsp7Results: TokenInfo[] = [];
+      const lsp8Results: TokenInfo[] = [];
+      const detectAssetCalls: Promise<TokenInfo | undefined>[] = [];
+
+      for (const assetAddress of receivedAssetsResults.value as string[]) {
+        detectAssetCalls.push(
+          detectLSP(assetAddress, graveVault, LSPType.LSP7DigitalAsset)
+        );
+        detectAssetCalls.push(
+          detectLSP(
+            assetAddress,
+            graveVault,
+            LSPType.LSP8IdentifiableDigitalAsset
+          )
+        );
+      }
+
+      const receivedAssetsWithTypes = await Promise.all(detectAssetCalls);
+      for (const asset of receivedAssetsWithTypes) {
+        if (!asset) continue;
+
+        if (asset.type === LSPType.LSP7DigitalAsset) {
+          lsp7Results.push(asset);
+        } else if (asset.type === LSPType.LSP8IdentifiableDigitalAsset) {
+          const contract = new ethers.Contract(
+            asset.address as string,
+            LSP8IdentifiableDigitalAsset.abi,
+            new ethers.providers.Web3Provider(window.lukso)
+          );
+          const tokenIds = await contract.tokenIdsOf(graveVault);
+          tokenIds.forEach((tokenId: string) => {
+            lsp8Results.push({
+              ...asset,
+              tokenId: tokenId.toString(),
+            });
+          });
+        }
+      }
+
+      setLsp7Assets(lsp7Results);
+      setLsp8Assets(lsp8Results);
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: `Error fetching assets. ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [graveVault, toast]);
 
   /**
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (window.lukso && account && graveVault && lsp7Assets === null) {
+    if (account && graveVault) {
       fetchAssets();
     }
-  }, [account, graveVault, lsp7Assets, fetchAssets]);
+  }, [account, graveVault, fetchAssets]);
 
   const emptyLS7PAssets = () => {
     return (
@@ -143,6 +137,7 @@ export default function LSPAssets() {
   if (loading) {
     return <div>Loading...</div>;
   }
+
   return (
     <Flex justifyContent="space-between">
       <Box>
@@ -155,7 +150,7 @@ export default function LSPAssets() {
         >
           LSP7 Assets
         </Text>
-        {lsp7Assets && lsp7Assets.length > 0
+        {lsp7Assets.length
           ? lsp7Assets.map((asset, index) => (
               <Box key={'lsp7-' + index}>
                 <LSP7Panel
@@ -180,7 +175,7 @@ export default function LSPAssets() {
         >
           LSP8 Assets
         </Text>
-        {lsp8Assets && lsp8Assets.length > 0
+        {lsp8Assets.length
           ? lsp8Assets.map((asset, index) => (
               <Box key={'lsp8-' + index}>
                 <LSP8Panel

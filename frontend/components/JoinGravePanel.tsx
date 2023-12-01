@@ -175,7 +175,7 @@ const JoinGravePanel: React.FC = () => {
                   )}
                 </Box>
               ) : (
-                <StepDescription as={Box}>
+                <StepDescription as={'div'}>
                   <Flex alignItems="center" gap={1}>
                     {step.completeText.text}
                     {step.completeText.address && (
