@@ -54,7 +54,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
         if (tokenAllowlist[msg.sender][notifier]) {
             return super.universalReceiverDelegate(notifier, value, typeId, data);
         }
-        require(graveVaults[msg.sender] != address(0), "LSP1GraveForwader: user vault not set");// CHECK that notifier is a contract with a `balanceOf` method
+        require(graveVaults[msg.sender] != address(0), "LSP1GraveForwader: user vault not set");
         // CHECK that the caller is a LSP0 (UniversalProfile)
         // by checking its interface support
         if (
@@ -65,6 +65,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
         ) {
             return "LSP1GraveForwader: caller is not a LSP0";
         }
+        // CHECK that notifier is a contract with a `balanceOf` method
         // and that msg.sender (the UP) has a positive balance
         if (notifier.code.length > 0) {
             try ILSP7DigitalAsset(notifier).balanceOf(msg.sender) returns (
