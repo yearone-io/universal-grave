@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Button,
@@ -11,13 +12,9 @@ import {
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ContractInterface, ethers } from 'ethers';
 import { constants } from '@/app/constants';
-import { lsp1GraveForwader } from '@/abis/lsp1GraveForwader';
-import {
-  LSP1GraveForwader,
-  LSP8Mintable__factory,
-  LSP9Vault__factory,
-} from '@/contracts';
-import { useState } from 'react';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
+import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 
 interface LSP8PanelProps {
   tokenName: string;
@@ -74,25 +71,30 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
       const provider = new ethers.providers.Web3Provider(window.lukso);
       const signer = provider.getSigner();
 
-      const lsp1GraveForwaderContract = new ethers.Contract(
+      const LSP1GraveForwaderContract = new ethers.Contract(
         constants.UNIVERSAL_GRAVE_FORWARDER,
-        lsp1GraveForwader as ContractInterface,
+        LSP1GraveForwader.abi,
         signer
-      ) as LSP1GraveForwader;
+      );
 
       const upAddress = await signer.getAddress();
       if (
-        !(await lsp1GraveForwaderContract.tokenAllowlist(
+        !(await LSP1GraveForwaderContract.tokenAllowlist(
           upAddress,
           tokenAddress
         ))
       ) {
-        await lsp1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
+        await LSP1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
           gasLimit: 400_00,
         });
       }
 
-      const lsp8 = LSP8Mintable__factory.connect(tokenAddress, provider);
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        LSP8IdentifiableDigitalAsset.abi,
+        signer
+      );
+      const lsp8 = tokenContract.connect(signer);
       const lsp8Tx = lsp8.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
@@ -101,7 +103,12 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         '0x',
       ]);
 
-      const lsp9 = LSP9Vault__factory.connect(vaultAddress, provider);
+      const vaultContract = new ethers.Contract(
+        vaultAddress,
+        LSP9Vault.abi,
+        signer
+      );
+      const lsp9 = vaultContract.connect(signer);
       await lsp9
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });

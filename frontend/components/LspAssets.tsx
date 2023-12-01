@@ -1,17 +1,17 @@
 'use client';
 import {useCallback, useContext, useEffect, useState} from 'react';
+import {ethers} from "ethers";
+import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
 import {WalletContext} from '@/components/wallet/WalletContext';
 import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
-import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
+import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
-import {constants} from '@/app/constants';
 import LSP7Panel from '@/components/LSP7Panel';
-import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
 import LSP8Panel from "@/components/LSP8Panel";
-import {ethers} from "ethers";
-import ILSP8IdentifiableDigitalAsset from "@/abis/ILSP8IdentifiableDigitalAsset.json";
+import {constants} from '@/app/constants';
 
-export default function LspAssets() {
+export default function LSPAssets() {
   const [loading, setLoading] = useState(true);
   const walletContext = useContext(WalletContext);
   const [lsp7Assets, setLsp7VaultAsset] = useState<TokenInfo[] | null>(null);
@@ -32,7 +32,7 @@ export default function LspAssets() {
     if (graveVault !== constants.ZERO_ADDRESS) {
       setLoading(true);
       const erc725js = new ERC725(
-        lsp3ProfileSchema as ERC725JSONSchema[],
+        LSP3ProfileSchema as ERC725JSONSchema[],
         graveVault,
         window.lukso,
         {
@@ -65,7 +65,7 @@ export default function LspAssets() {
             //call tokenIdsOf function on assetAddress
               const contract = new ethers.Contract(
                   assetAddress,
-                  ILSP8IdentifiableDigitalAsset.abi,
+                  LSP8IdentifiableDigitalAsset.abi,
                   new ethers.providers.Web3Provider(window.lukso)
               );
             await detectLSP(

@@ -3,7 +3,6 @@ import {
   useColorModeValue,
   Container,
   Image,
-  Box,
 } from '@chakra-ui/react';
 import React from 'react';
 import WalletConnector from './wallet/WalletConnector';

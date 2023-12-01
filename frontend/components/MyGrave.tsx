@@ -1,6 +1,6 @@
 'use client';
 import { Box, Container, Flex, Image, Stack, Text } from '@chakra-ui/react';
-import LspAssets from '@/components/LspAssets';
+import LSPAssets from '@/components/LSPAssets';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import { useContext } from 'react';
@@ -62,7 +62,7 @@ export default function MyGrave() {
           >
             YOUR GRAVEYARD
           </Text>
-          <LspAssets />
+          <LSPAssets />
         </Box>
       ) : (
         <></>
