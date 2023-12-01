@@ -16,7 +16,6 @@ import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 
-
 interface LSP7PanelProps {
   tokenName: string;
   tokenAmount: string;

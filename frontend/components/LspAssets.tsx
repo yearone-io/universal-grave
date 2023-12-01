@@ -1,15 +1,15 @@
 'use client';
-import {useCallback, useContext, useEffect, useState} from 'react';
-import {ethers} from "ethers";
-import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
-import {WalletContext} from '@/components/wallet/WalletContext';
-import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { ethers } from 'ethers';
+import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
+import { WalletContext } from '@/components/wallet/WalletContext';
+import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
+import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
-import LSP8Panel from "@/components/LSP8Panel";
-import {constants} from '@/app/constants';
+import LSP8Panel from '@/components/LSP8Panel';
+import { constants } from '@/app/constants';
 
 export default function LSPAssets() {
   const [loading, setLoading] = useState(true);
@@ -63,29 +63,27 @@ export default function LSPAssets() {
 
           for (const assetAddress of receivedAssetsDataKey.value as string[]) {
             //call tokenIdsOf function on assetAddress
-              const contract = new ethers.Contract(
-                  assetAddress,
-                  LSP8IdentifiableDigitalAsset.abi,
-                  new ethers.providers.Web3Provider(window.lukso)
-              );
+            const contract = new ethers.Contract(
+              assetAddress,
+              LSP8IdentifiableDigitalAsset.abi,
+              new ethers.providers.Web3Provider(window.lukso)
+            );
             await detectLSP(
-                assetAddress,
-                graveVault as string,
-                LSPType.LSP8IdentifiableDigitalAsset
+              assetAddress,
+              graveVault as string,
+              LSPType.LSP8IdentifiableDigitalAsset
             ).then(tokenInfo => {
-                console.log("ff", tokenInfo);
+              console.log('ff', tokenInfo);
               if (tokenInfo) {
                 if (tokenInfo.type === LSPType.LSP8IdentifiableDigitalAsset) {
-                    contract.tokenIdsOf(graveVault).then((tokenIds: string[]) => {
-                        tokenIds.forEach((tokenId: string) => {
-                            lsp8Results.push(
-                                {
-                                    ...tokenInfo,
-                                    tokenId: tokenId.toString()
-                                }
-                            );
-                        });
+                  contract.tokenIdsOf(graveVault).then((tokenIds: string[]) => {
+                    tokenIds.forEach((tokenId: string) => {
+                      lsp8Results.push({
+                        ...tokenInfo,
+                        tokenId: tokenId.toString(),
+                      });
                     });
+                  });
                 }
               }
             });
@@ -183,19 +181,19 @@ export default function LSPAssets() {
           LSP8 Assets
         </Text>
         {lsp8Assets && lsp8Assets.length > 0
-            ? lsp8Assets.map((asset, index) => (
-                <Box key={'lsp8-' + index}>
-                  <LSP8Panel
-                      tokenName={asset.name!}
-                      tokenId={asset.tokenId!}
-                      tokenAddress={asset.address!}
-                      tokenMetadata={asset.metadata!}
-                      vaultAddress={graveVault!}
-                      onReviveSuccess={fetchAssets}
-                  />
-                </Box>
+          ? lsp8Assets.map((asset, index) => (
+              <Box key={'lsp8-' + index}>
+                <LSP8Panel
+                  tokenName={asset.name!}
+                  tokenId={asset.tokenId!}
+                  tokenAddress={asset.address!}
+                  tokenMetadata={asset.metadata!}
+                  vaultAddress={graveVault!}
+                  onReviveSuccess={fetchAssets}
+                />
+              </Box>
             ))
-            : emptyLS7PAssets()}
+          : emptyLS7PAssets()}
       </Box>
     </Flex>
   );

@@ -580,7 +580,7 @@ export default function JoinGraveBtn({
     // Note: check sum case address to avoid issues with case sensitivity
     return (
       getChecksumAddress(URDLsp7) ===
-      getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
+        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
       getChecksumAddress(URDLsp8) ===
         getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
     );
