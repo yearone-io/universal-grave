@@ -400,7 +400,7 @@ export default function JoinGraveBtn({
       .connect(signer)
       .setData(
         ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET
+        constants.LSP1_URD_VAULT_TESTNET
       );
   };
 
