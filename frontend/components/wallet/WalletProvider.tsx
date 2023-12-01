@@ -4,7 +4,7 @@ import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
-import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
+import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -52,7 +52,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
       const graveForwarder = new ethers.Contract(
         constants.UNIVERSAL_GRAVE_FORWARDER,
-        LSP1GraveForwaderAbi,
+        LSP1GraveForwader.abi,
         provider
       );
       graveForwarder
