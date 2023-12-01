@@ -89,7 +89,6 @@ const JoinGravePanel: React.FC = () => {
 
         // Special handling for step 1
         if (step === 1 && newStep > 1 && data[1]) {
-          const address1 = displayTruncatedAddress(data[1]);
           modifiedSteps[1].completeText.address = data[1];
         }
       } else {
@@ -176,7 +175,7 @@ const JoinGravePanel: React.FC = () => {
                   )}
                 </Box>
               ) : (
-                <StepDescription>
+                <StepDescription as={Box}>
                   <Flex alignItems="center" gap={1}>
                     {step.completeText.text}
                     {step.completeText.address && (
