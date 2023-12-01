@@ -87,7 +87,7 @@ export default function LSPAssets() {
 
       setLsp7Assets(lsp7Results);
       setLsp8Assets(lsp8Results);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         title: `Error fetching assets. ${error.message}`,
