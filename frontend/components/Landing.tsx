@@ -23,10 +23,6 @@ export default function Landing() {
     'light.black',
     'var(--chakra-colors-dark-purple-500)'
   );
-  const customBorder = useColorModeValue(
-    '1px solid black',
-    '1px solid var(--chakra-colors-dark-purple-500)'
-  );
   const borderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-200)'
