@@ -1,10 +1,10 @@
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import { INTERFACE_IDS } from '@lukso/lsp-smart-contracts';
-import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import { BigNumber, ethers } from 'ethers';
 import { eip165ABI } from '@/abis/eip165ABI';
 import { erc20ABI } from '@/abis/erc20ABI';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
+import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json';
 import { constants } from '@/app/constants';
 
