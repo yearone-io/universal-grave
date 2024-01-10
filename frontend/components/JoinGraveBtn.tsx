@@ -324,22 +324,13 @@ export default function JoinGraveBtn({
     const dataKeys = [
       ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] +
         browserExtensionControllerAddress.slice(2),
-      // need this permission to be able to add vault address to forwarder
-      //   and to modify allowlist of LSP7 & LSP8 assets on forwarder
-      ERC725YDataKeys.LSP6['AddressPermissions:AllowedCalls'] +
-        browserExtensionControllerAddress.slice(2),
     ];
 
     const permInt = DEFAULT_MAIN_CONTROLLER_PERMISSIONS ^ GRAVE_PERMISSIONS;
     const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
-    // couldn't get encoding too work using provided example: https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions#step-3---generate-the-data-key-value-pair-for-allowedcalls
-    // so manually derived value based on: https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
-    const allowedForwarderCalls = `0020${CALLTYPE.CALL.slice(2)}${constants.UNIVERSAL_GRAVE_FORWARDER.slice(2)}${INTERFACE_IDS.LSP1UniversalReceiverDelegate.slice(2)}${"0xffffffff".slice(2)}`;
-    const allowedGraveVaultCalls = `0020${CALLTYPE.CALL.slice(2)}${"0xffffffffffffffffffffffffffffffffffffffff".slice(2)}${INTERFACE_IDS.LSP9Vault.slice(2)}${"0xffffffff".slice(2)}`;
     const dataValues = [
       permHex,
-      `0x${allowedForwarderCalls}${allowedGraveVaultCalls}`,
     ];
     const setDataBatchTx = await UP.connect(signer).setDataBatch(
       dataKeys,
