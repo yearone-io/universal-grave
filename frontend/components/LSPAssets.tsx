@@ -36,13 +36,6 @@ export default function LSPAssets() {
         "valueContent": "Number"
       },
       {
-        "name": "LSP8MetadataTokenURI:<address|uint256|bytes32|string>",
-        "key": "0x1339e76a390b7b9ec9010000<address|uint256|bytes32|string>",
-        "keyType": "Mapping",
-        "valueType": "string",
-        "valueContent": "URL"
-      },
-      {
         "name": "LSP8TokenMetadataBaseURI",
         "key": "0x1a7628600c3bac7101f53697f48df381ddc36b9015e7d7c9c5633d1252aa2843",
         "keyType": "Singleton",

@@ -4,15 +4,18 @@ import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProf
 import {
   ERC725YDataKeys,
   LSP1_TYPE_IDS,
+  CALLTYPE,
+  INTERFACE_IDS,
   PERMISSIONS,
+  ALL_PERMISSIONS,
 } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
-import { constants } from '@/app/constants';
+import { DEFAULT_MAIN_CONTROLLER_PERMISSIONS, GRAVE_PERMISSIONS, constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
-import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
+import { ERC725, ERC725JSONSchema, ERC725JSONSchemaKeyType } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 
 /**
@@ -174,14 +177,14 @@ export default function JoinGraveBtn({
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
-      await updateBECPermissions(provider, signer);
+      await updateBECPermissions(provider, signer); // ? along w/ permissions, should also set allowed calls?
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
       handleError(err);
       return err;
     }
-    if (graveVault === constants.ZERO_ADDRESS) {
+    //if (graveVault === constants.ZERO_ADDRESS) {
       // 2. Create a vault for the UP. (if needed)
       try {
         const vaultTranx = await createUpVault(provider, signer);
@@ -196,17 +199,22 @@ export default function JoinGraveBtn({
       }
       // 3. Set the vault in the forwarder contract
       try {
+        console.log('starting step 2 setGraveInForwarder')
+        // need to allow controller to interact with the forwarder using AllowedCalls
+        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
+        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
         await setGraveInForwarder(provider, signer, vaultAddress);
+        console.log('finished 2 setGraveInForwarder')
         setJoiningStep(3);
         console.log('step 3');
       } catch (err: any) {
         handleError(err);
         return err;
       }
-    } else {
-      setJoiningStep(3);
-      console.log('step 2 and 3 skipped, vault already exists');
-    }
+    //} else {
+    //  setJoiningStep(3);
+    //  console.log('step 2 and 3 skipped, vault already exists');
+    //}
 
     // 4. Enable grave to keep assets inventory
     try {
@@ -318,8 +326,20 @@ export default function JoinGraveBtn({
     const dataKeys = [
       ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] +
         browserExtensionControllerAddress.slice(2),
+      // need this permission to be able to add vault address to forwarder
+      //   and to modify allowlist of LSP7 & LSP8 assets on forwarder
+      ERC725YDataKeys.LSP6['AddressPermissions:AllowedCalls'] +
+        browserExtensionControllerAddress.slice(2),
     ];
 
+    /*
+    const allPermissionsInt = BigInt(ALL_PERMISSIONS);
+    const delegateCallPermInt = BigInt(delegateCallPerm);
+    const updatedPermissionsInt = allPermissionsInt | delegateCallPermInt;
+    const permHex = '0x' + updatedPermissionsInt.toString(16).padStart(64, '0');
+    */
+
+    /*
     const permInt =
       parseInt(PERMISSIONS.SIGN, 16) ^
       //Default + required ones
@@ -339,11 +359,19 @@ export default function JoinGraveBtn({
       parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
       parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
       parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
+    */
+    const permInt = GRAVE_PERMISSIONS;
     const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
-    // Interacting with the Universal Profile contract
-    const dataValues = [permHex];
+    // couldn't get encoding too work using provided example: https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions#step-3---generate-the-data-key-value-pair-for-allowedcalls
+    // so manually derived value based on: https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
 
+    const allowedForwarderCalls = `0020${CALLTYPE.CALL.slice(2)}${constants.UNIVERSAL_GRAVE_FORWARDER.slice(2)}${INTERFACE_IDS.LSP1UniversalReceiverDelegate.slice(2)}${"0xffffffff".slice(2)}`;
+    const allowedGraveVaultCalls = `0020${CALLTYPE.CALL.slice(2)}${"0xffffffffffffffffffffffffffffffffffffffff".slice(2)}${INTERFACE_IDS.LSP9Vault.slice(2)}${"0xffffffff".slice(2)}`;
+    const dataValues = [
+      permHex,
+      `0x${allowedForwarderCalls}${allowedGraveVaultCalls}`,
+    ];
     const setDataBatchTx = await UP.connect(signer).setDataBatch(
       dataKeys,
       dataValues
