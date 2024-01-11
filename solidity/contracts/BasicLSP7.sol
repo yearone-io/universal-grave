@@ -3,29 +3,23 @@ pragma solidity ^0.8.4;
 
 // modules
 import {
-    LSP8Mintable
-} from "@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/presets/LSP8Mintable.sol";
+    LSP7Mintable
+} from "@lukso/lsp-smart-contracts/contracts/LSP7DigitalAsset/presets/LSP7Mintable.sol";
 
-// constants
-import {
-    _LSP4_TOKEN_TYPE_COLLECTION
-} from "@lukso/lsp-smart-contracts/contracts/LSP4DigitalAssetMetadata/LSP4Constants.sol";
-import {
-    _LSP8_TOKENID_FORMAT_NUMBER
-} from "@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/LSP8Constants.sol";
-
-contract BasicLSP8 is LSP8Mintable {
+contract BasicLSP7 is LSP7Mintable {
     constructor(
         string memory nftCollectionName,
         string memory nftCollectionSymbol,
-        address contractOwner
+        address contractOwner,
+        uint256 lsp4Type,
+        bool isNonDivisible
     )
-        LSP8Mintable(
+        LSP7Mintable(
             nftCollectionName,
             nftCollectionSymbol,
             contractOwner,
-            _LSP4_TOKEN_TYPE_COLLECTION,
-            _LSP8_TOKENID_FORMAT_NUMBER
+            lsp4Type,
+            isNonDivisible
         )
     {}
 }
