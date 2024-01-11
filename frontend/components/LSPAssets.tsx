@@ -89,6 +89,7 @@ export default function LSPAssets() {
       const receivedAssetsResults = await erc725js.fetchData(
         'LSP5ReceivedAssets[]'
       );
+      console.log("Received assets", receivedAssetsResults);
       const lsp7Results: TokenInfo[] = [];
       const lsp8Results: TokenInfo[] = [];
       const detectAssetCalls: Promise<TokenInfo | undefined>[] = [];
@@ -107,6 +108,7 @@ export default function LSPAssets() {
       }
 
       const receivedAssetsWithTypes = await Promise.all(detectAssetCalls);
+      console.log("Received assets with types", receivedAssetsWithTypes);
       for (const asset of receivedAssetsWithTypes) {
         if (!asset) continue;
 

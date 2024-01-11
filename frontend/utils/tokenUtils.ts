@@ -94,6 +94,7 @@ export const detectLSP = async (
     doesSupportInterface = await contract.supportsInterface(
       lspTypeOptions[lspType].interfaceId
     );
+    console.log('doesSupportInterface', lspTypeOptions[lspType].interfaceId, doesSupportInterface);
   } catch (error) {
     doesSupportInterface = false;
   }

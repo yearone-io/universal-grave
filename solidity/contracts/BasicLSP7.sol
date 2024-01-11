@@ -14,7 +14,7 @@ import {
     _LSP8_TOKENID_FORMAT_NUMBER
 } from "@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/LSP8Constants.sol";
 
-contract BasicNFTCollection is LSP8Mintable {
+contract BasicLSP8 is LSP8Mintable {
     constructor(
         string memory nftCollectionName,
         string memory nftCollectionSymbol,

@@ -1,18 +1,14 @@
 import hre, { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
-import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
-import { OPERATION_TYPES, PERMISSIONS } from '@lukso/lsp-smart-contracts';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP7Mintable from '@lukso/lsp-smart-contracts/artifacts/LSP7Mintable.json';
-import {LSP7Mintable__factory, LSP7Mintable as LSP7MintableType} from "../typechain-types";
+import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
+import {ILSP7DigitalAsset__factory, ILSP7DigitalAsset as ILSP7DigitalAssetType} from "../typechain-types";
 
 
 // load env vars
 dotenv.config();
 
 // Update those values in the .env file
-const { UP_ADDR, EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
+const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
 
 async function main() {
     const tokenName = "Token Name";
@@ -27,32 +23,35 @@ async function main() {
     console.log('⏳ Deploying Token');
     // create an instance of the token contract
     const lsp7Factory = new ethers.ContractFactory(
-        LSP7Mintable.abi,
-        LSP7Mintable.bytecode,
-    ) as LSP7Mintable__factory;
+        LSP7DigitalAsset.abi,
+        LSP7DigitalAsset.bytecode,
+    ) as ILSP7DigitalAsset__factory;
 
     const tokenDeployTx = await lsp7Factory.connect(signer).deploy(
       tokenName, // token name
       tokenTicker,          // token symbol
       tokenOwner!,   // new owner, who will mint later
+      0,
       tokenNondivisible,           // isNonDivisible = TRUE, means NOT divisible, decimals = 0)
     );
 
     await tokenDeployTx.waitForDeployment();
+    const tokenAddress = tokenDeployTx.target as string;
+
     
     try {
-        await hre.run("verify:verify", {
-            address: tokenDeployTx.target,
+        await hre.run("verify:verify --force", {
+            address: tokenAddress,
             network: "luksoTestnet",
-            constructorArguments: [tokenName, tokenTicker, tokenOwner, tokenNondivisible],
+            constructorArguments: [tokenName, tokenTicker, tokenOwner, 0, tokenNondivisible],
             // If your contract uses libraries or you have other specific settings, include them here
         });
         console.log("Contract verified");
     } catch (error) {
         console.error("Contract verification failed:", error);
     }
-    const tokenAddress = tokenDeployTx.target as string;
     console.log('✅ Token deployed. Address:', tokenAddress);
+    /*
     const LSP7TokenContract = new ethers.Contract(tokenAddress, LSP7Mintable.abi, provider);
     const dataKey = "0x9afb95cacc9f95858ec44aa8c3b685511002e30ae54415823f406128b85b238e";
     const dataValue = "0x6f357c6af141c28c529f44e5ac1aa63530ada217aae14edb56fc82f69f43407719d8e216697066733a2f2f6261666b72656965627972786f3337616a77696d7566363270347a796a3265766a626534666369377232746e6f63643664346f6b62776968626d61"
@@ -64,6 +63,7 @@ async function main() {
     console.log('✅ Data set. Tx:', setDataTx.hash);
     const mintTx = await lsp7Mintable.mint(signer.address, 69, true, "0x", { gasLimit: 400_000 });
     console.log('✅ Token minted to vault through UP Grave Vault Forwader. Tx:', mintTx.hash);
+    */
 }
 
 

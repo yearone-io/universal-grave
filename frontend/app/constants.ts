@@ -17,8 +17,9 @@ export const constants = {
 };
 
 /*
+UP! Extension Profile Default Main Controller Permissions
 extacted using https://erc725-inspect.lukso.tech/data-fetcher
-and 🔑  AddressPermissions:Permissions:<address> for the main controller of new UP! extension profile
+and 🔑  AddressPermissions:Permissions:<address> for the URD of new UP! extension profile
   {
   "CHANGEOWNER": false,
   "ADDCONTROLLER": true,
@@ -46,24 +47,63 @@ and 🔑  AddressPermissions:Permissions:<address> for the main controller of ne
 }
 */
 
-export const DEFAULT_MAIN_CONTROLLER_PERMISSIONS = 
-  parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
-  parseInt(PERMISSIONS.SETDATA, 16) ^
-  parseInt(PERMISSIONS.SIGN, 16) ^
-  parseInt(PERMISSIONS.ENCRYPT, 16) ^
-  parseInt(PERMISSIONS.DECRYPT, 16) ^
-  parseInt(PERMISSIONS.SUPER_CALL, 16) ^
-  parseInt(PERMISSIONS.CALL, 16) ^
-  parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
-  parseInt(PERMISSIONS.STATICCALL, 16) ^
-  parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
-  parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
-  parseInt(PERMISSIONS.DEPLOY, 16) ^
-  parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
-  parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
-  parseInt(PERMISSIONS.ADDCONTROLLER, 16);
+export const DEFAULT_UP_CONTROLLER_PERMISSIONS = {
+  [PERMISSIONS.SUPER_SETDATA]: true,
+  [PERMISSIONS.SETDATA]: true,
+  [PERMISSIONS.SIGN]: true,
+  [PERMISSIONS.ENCRYPT]: true,
+  [PERMISSIONS.DECRYPT]: true,
+  [PERMISSIONS.SUPER_CALL]: true,
+  [PERMISSIONS.CALL]: true,
+  [PERMISSIONS.SUPER_STATICCALL]: true,
+  [PERMISSIONS.STATICCALL]: true,
+  [PERMISSIONS.SUPER_TRANSFERVALUE]: true,
+  [PERMISSIONS.TRANSFERVALUE]: true,
+  [PERMISSIONS.DEPLOY]: true,
+  [PERMISSIONS.EXECUTE_RELAY_CALL]: true,
+  [PERMISSIONS.EDITPERMISSIONS]: true,
+  [PERMISSIONS.ADDCONTROLLER]: true,
+};
 
-export const GRAVE_PERMISSIONS = 
-  parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^ // necessary for adding a Grave Forwarder as Universal Receiver Delegate
-  parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16); // necessary for in future removing a Grave Forwarder as Universal Receiver Delegate
+export const GRAVE_CONTROLLER_PERMISSIONS = {
+  [PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE]: true,
+  [PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE]: true,
+};
+
+/*
+  UP! Extension Default UP URD Permissions
+  extacted using https://erc725-inspect.lukso.tech/data-fetcher
+  and 🔑  AddressPermissions:Permissions:<address> for the main controller of new UP! extension profile
+  {
+  "CHANGEOWNER": false,
+  "ADDCONTROLLER": false,
+  "EDITPERMISSIONS": false,
+  "ADDEXTENSIONS": false,
+  "CHANGEEXTENSIONS": false,
+  "ADDUNIVERSALRECEIVERDELEGATE": false,
+  "CHANGEUNIVERSALRECEIVERDELEGATE": false,
+  "REENTRANCY": true,
+  "SUPER_TRANSFERVALUE": false,
+  "TRANSFERVALUE": false,
+  "SUPER_CALL": false,
+  "CALL": false,
+  "SUPER_STATICCALL": false,
+  "STATICCALL": false,
+  "SUPER_DELEGATECALL": false,
+  "DELEGATECALL": false,
+  "DEPLOY": false,
+  "SUPER_SETDATA": true,
+  "SETDATA": true,
+  "ENCRYPT": false,
+  "DECRYPT": false,
+  "SIGN": false,
+  "EXECUTE_RELAY_CALL": false
+}
+*/
+
+export const DEFAULT_UP_URD_PERMISSIONS = {
+  [PERMISSIONS.REENTRANCY]: true,
+  [PERMISSIONS.SUPER_SETDATA]: true,
+  [PERMISSIONS.SETDATA]: true,
+};
 

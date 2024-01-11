@@ -1,6 +1,8 @@
 import { ethers } from "hardhat";
 import * as dotenv from 'dotenv';
-import LSP8 from './abis/mintableABI.json';
+// need to 'npx hardhat compile' before
+import BasicLSP8 from "../artifacts/contracts/BasicLSP8.sol/BasicLSP8.json";
+import { LSP4_TOKEN_TYPES, LSP8_TOKEN_ID_FORMAT } from "@lukso/lsp-smart-contracts";
 
 // load env vars
 dotenv.config();
@@ -22,19 +24,21 @@ async function deployAndSetLSP8MetadataBaseURI() {
     console.log('⏳ Deploying LSP8 Token');
 
     const Lsp8Factory = new ethers.ContractFactory(
-        LSP8.abi,
-        LSP8.bytecode,
+        BasicLSP8.abi,
+        BasicLSP8.bytecode,
     );
 
-    const tokenDeployTx = await Lsp8Factory.connect(signer).deploy(tokenName, tokenTicker, tokenOwner);
+    const deploymentArguments = [tokenName, tokenTicker, tokenOwner, LSP4_TOKEN_TYPES.COLLECTION, LSP8_TOKEN_ID_FORMAT.NUMBER];
+
+    const tokenDeployTx = await Lsp8Factory.connect(signer).deploy(...deploymentArguments);
     await tokenDeployTx.waitForDeployment();
 
     try {
         await hre.run("verify:verify", {
             address: tokenDeployTx.target,
             network: "luksoTestnet",
-            constructorArguments: [tokenName, tokenTicker, tokenOwner],
-            contract: "contracts/BasicNFTCollection.sol:BasicNFTCollection"
+            constructorArguments: deploymentArguments,
+            contract: "contracts/BasicLSP8.sol:BasicLSP8"
         });
         console.log("Contract verified");
     } catch (error) {
@@ -42,7 +46,7 @@ async function deployAndSetLSP8MetadataBaseURI() {
     }
     const tokenAddress = tokenDeployTx.target as string;
     console.log('✅ LSP8 Token deployed. Address:', tokenAddress);
-    const LSP8TokenContract = new ethers.Contract(tokenAddress,  LSP8.abi, provider);
+    const LSP8TokenContract = new ethers.Contract(tokenAddress,  BasicLSP8.abi, provider);
     let lsp8Mintable = LSP8TokenContract.connect(signer);
     const nftBaseURI = "0x6f357c6a697066733a2f2f6261667962656966353266793266737966786374356b796234657433776e7136333234617a6f7879366b6b7873366d6536666233666575666b34342f";
     const nftMetadata = "0x6f357c6af141c28c529f44e5ac1aa63530ada217aae14edb56fc82f69f43407719d8e216697066733a2f2f6261666b72656965627972786f3337616a77696d7566363270347a796a3265766a626534666369377232746e6f63643664346f6b62776968626d61";
