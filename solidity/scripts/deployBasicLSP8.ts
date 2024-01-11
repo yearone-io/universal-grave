@@ -14,7 +14,7 @@ const LSP4MetadataKey = "0x9afb95cacc9f95858ec44aa8c3b685511002e30ae54415823f406
 async function deployAndSetLSP8MetadataBaseURI() {
     const tokenName = '#3 Year One Wolves (Meta)';
     const tokenTicker = 'YOW';
-    const tokenOwner = CONTROLLER_PUBLIC_KEY as string;;
+    const tokenOwner = "0x46c4234d089b8b098617ce323a11cF90C63410b2";
     // setup provider
     const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
     // setup signer (the browser extension controller)

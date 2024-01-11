@@ -3,7 +3,6 @@ import * as dotenv from 'dotenv';
 import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
 
-
 // load env vars
 dotenv.config();
 

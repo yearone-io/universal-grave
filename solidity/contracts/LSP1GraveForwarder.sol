@@ -55,6 +55,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
             return super.universalReceiverDelegate(notifier, value, typeId, data);
         }
         require(graveVaults[msg.sender] != address(0), "LSP1GraveForwader: user vault not set");
+
         // CHECK that the caller is a LSP0 (UniversalProfile)
         // by checking its interface support
         if (
@@ -78,12 +79,12 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
                 return "LSP1GraveForwader: `balanceOf(address)` function not found";
             }
         }
-            
+        
         if (typeId == _TYPEID_LSP7_TOKENSRECIPIENT) {
             // extract data (we only need the amount that was transfered / minted)
-            (, , uint256 amount, ) = abi.decode(
+            (, , , uint256 amount, ) = abi.decode(
                 data,
-                (address, address, uint256, bytes)
+                (address, address, address, uint256, bytes)
             );
              bytes memory encodedLSP7Tx = abi.encodeCall(
                 ILSP7DigitalAsset.transfer,
@@ -97,9 +98,9 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
             return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
         } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
             // extract data (we only need the amount that was transfered / minted)
-            (, , bytes32 tokenId, ) = abi.decode(
+            (, , , bytes32 tokenId, ) = abi.decode(
                 data,
-                (address, address, bytes32, bytes)
+                (address, address, address, bytes32, bytes)
             );
             bytes memory encodedLSP8Tx = abi.encodeCall(
                 ILSP8IdentifiableDigitalAsset.transfer,
