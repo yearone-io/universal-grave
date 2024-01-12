@@ -247,7 +247,7 @@ export default function Landing() {
             />
             <LSPExplainer
               title={'LSP8 Identifiable Digital Assets'}
-              description={'(coming soon) Non-fungible tokens reimagined'}
+              description={'Non-fungible tokens reimagined'}
               learnURL={
                 'https://docs.lukso.tech/standards/tokens/LSP8-Identifiable-Digital-Asset'
               }
