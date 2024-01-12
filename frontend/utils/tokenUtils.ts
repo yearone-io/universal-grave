@@ -62,6 +62,7 @@ export type TokenInfo = {
   label?: string;
   tokenId?: string;
   metadata?: Record<string, any>;
+  baseURI?: string;
 };
 
 export const detectLSP = async (
@@ -94,7 +95,11 @@ export const detectLSP = async (
     doesSupportInterface = await contract.supportsInterface(
       lspTypeOptions[lspType].interfaceId
     );
-    console.log('doesSupportInterface', lspTypeOptions[lspType].interfaceId, doesSupportInterface);
+    console.log(
+      'doesSupportInterface',
+      lspTypeOptions[lspType].interfaceId,
+      doesSupportInterface
+    );
   } catch (error) {
     doesSupportInterface = false;
   }
@@ -121,7 +126,19 @@ export const detectLSP = async (
     }
     // ERC725 detection
     const erc725js = new ERC725(
-      lsp3ProfileSchema.concat(lsp4Schema, lsp9Schema) as ERC725JSONSchema[],
+      lsp3ProfileSchema.concat(
+        lsp4Schema,
+        [
+          {
+            name: 'LSP8TokenMetadataBaseURI',
+            key: '0x1a7628600c3bac7101f53697f48df381ddc36b9015e7d7c9c5633d1252aa2843',
+            keyType: 'Singleton',
+            valueType: 'string', // note that LSP8 schema seems to have incorrect valueType type so we've modified it
+            valueContent: 'URL', // note that LSP8 schema seems to have incorrect valueContent type so we've modified it
+          },
+        ],
+        lsp9Schema
+      ) as ERC725JSONSchema[],
       contractAddress,
       window.lukso,
       {
@@ -129,12 +146,17 @@ export const detectLSP = async (
       }
     );
 
-    let [{ value: name }, { value: symbol }, { value: LSP4Metadata }] =
-      await erc725js.fetchData([
-        'LSP4TokenName',
-        'LSP4TokenSymbol',
-        'LSP4Metadata',
-      ]);
+    let [
+      { value: name },
+      { value: symbol },
+      { value: LSP4Metadata },
+      { value: LSP8BaseURI },
+    ] = await erc725js.fetchData([
+      'LSP4TokenName',
+      'LSP4TokenSymbol',
+      'LSP4Metadata',
+      'LSP8TokenMetadataBaseURI',
+    ]);
     if (typeof name !== 'string') {
       try {
         name = (await contract.name().call()) as string;
@@ -166,6 +188,7 @@ export const detectLSP = async (
       balance,
       decimals: currentDecimals,
       metadata: LSP4Metadata as Record<string, any>,
+      baseURI: LSP8BaseURI as string,
       label: `${shortType} ${name} (sym) ${contractAddress.substring(
         0,
         10

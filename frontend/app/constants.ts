@@ -1,6 +1,4 @@
-import {
-  PERMISSIONS,
-} from '@lukso/lsp-smart-contracts';
+import { PERMISSIONS } from '@lukso/lsp-smart-contracts';
 export const constants = {
   UNIVERSAL_GRAVE_FORWARDER: '0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3',
   LSP1_URD_VAULT_TESTNET: '0xBc7b3980614215c8090dF310661685Cc393B601A',
@@ -106,4 +104,3 @@ export const DEFAULT_UP_URD_PERMISSIONS = {
   [PERMISSIONS.SUPER_SETDATA]: true,
   [PERMISSIONS.SETDATA]: true,
 };
-

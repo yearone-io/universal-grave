@@ -10,7 +10,11 @@ import {
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
-import { DEFAULT_UP_CONTROLLER_PERMISSIONS, GRAVE_CONTROLLER_PERMISSIONS, constants } from '@/app/constants';
+import {
+  DEFAULT_UP_CONTROLLER_PERMISSIONS,
+  GRAVE_CONTROLLER_PERMISSIONS,
+  constants,
+} from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
@@ -197,12 +201,12 @@ export default function JoinGraveBtn({
       }
       // 3. Set the vault in the forwarder contract
       try {
-        console.log('starting step 2 setGraveInForwarder')
+        console.log('starting step 2 setGraveInForwarder');
         // need to allow controller to interact with the forwarder using AllowedCalls
         // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
         // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
         await setGraveInForwarder(provider, signer, vaultAddress);
-        console.log('finished 2 setGraveInForwarder')
+        console.log('finished 2 setGraveInForwarder');
         setJoiningStep(3);
         console.log('step 3');
       } catch (err: any) {
@@ -337,7 +341,7 @@ export default function JoinGraveBtn({
         keyName: 'AddressPermissions:Permissions:<address>',
         dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
         value: newPermissions,
-      }
+      },
     ]);
 
     const setDataBatchTx = await UP.connect(signer).setDataBatch(

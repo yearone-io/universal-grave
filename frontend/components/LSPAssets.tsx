@@ -9,10 +9,6 @@ import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
-import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
-import lsp8Schema from '@erc725/erc725.js/schemas/LSP8IdentifiableDigitalAsset.json';
-import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json';
 
 export default function LSPAssets() {
   const walletContext = useContext(WalletContext);
@@ -24,45 +20,6 @@ export default function LSPAssets() {
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-
-  // ERC725 detection
-  const nftData = new ERC725(
-    [
-      {
-        "name": "LSP8TokenIdType",
-        "key": "0x715f248956de7ce65e94d9d836bfead479f7e70d69b718d47bfe7b00e05b4fe4",
-        "keyType": "Singleton",
-        "valueType": "uint256",
-        "valueContent": "Number"
-      },
-      {
-        "name": "LSP8TokenMetadataBaseURI",
-        "key": "0x1a7628600c3bac7101f53697f48df381ddc36b9015e7d7c9c5633d1252aa2843",
-        "keyType": "Singleton",
-        "valueType": "string",
-        "valueContent": "URL"
-      },
-      {
-        "name": "LSP8ReferenceContract",
-        "key": "0x708e7b881795f2e6b6c2752108c177ec89248458de3bf69d0d43480b3e5034e6",
-        "keyType": "Singleton",
-        "valueType": "address",
-        "valueContent": "Address"
-      }
-    ] as ERC725JSONSchema[],
-    "0xeB8a27dBA6a1b66614DB886A9651e9373E4579D5",
-    window.lukso,
-    {
-      ipfsGateway: constants.IPFS,
-    }
-  );
-  nftData.fetchData([
-    "LSP8TokenMetadataBaseURI",
-    "LSP8TokenIdType",
-    "LSP8ReferenceContract"
-  ]).then((res) => {
-    console.log("LSP8 data", res)
-  }).catch((err) => {console.log(err  as {message: string })});
 
   const { account, graveVault } = walletContext;
 
@@ -89,7 +46,6 @@ export default function LSPAssets() {
       const receivedAssetsResults = await erc725js.fetchData(
         'LSP5ReceivedAssets[]'
       );
-      console.log("Received assets", receivedAssetsResults);
       const lsp7Results: TokenInfo[] = [];
       const lsp8Results: TokenInfo[] = [];
       const detectAssetCalls: Promise<TokenInfo | undefined>[] = [];
@@ -108,7 +64,6 @@ export default function LSPAssets() {
       }
 
       const receivedAssetsWithTypes = await Promise.all(detectAssetCalls);
-      console.log("Received assets with types", receivedAssetsWithTypes);
       for (const asset of receivedAssetsWithTypes) {
         if (!asset) continue;
 
@@ -182,8 +137,6 @@ export default function LSPAssets() {
   if (loading) {
     return <div>Loading...</div>;
   }
-
-  console.log("LSP8 assets", lsp8Assets);
 
   return (
     <Flex justifyContent="space-between">

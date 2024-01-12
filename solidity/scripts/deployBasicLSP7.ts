@@ -13,7 +13,7 @@ const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
 async function deployAndSetLSP8MetadataBaseURI() {
     const tokenName = 'LSP7 Token Name';
     const tokenTicker = 'LSP7 TKN';
-    const tokenOwner = "0x46c4234d089b8b098617ce323a11cF90C63410b2";
+    const tokenOwner = CONTROLLER_PUBLIC_KEY;
     const tokenNondivisible = false;
     // setup provider
     const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
