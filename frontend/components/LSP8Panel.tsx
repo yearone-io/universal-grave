@@ -10,11 +10,12 @@ import {
   Avatar,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import { ContractInterface, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
+import { formatAddress } from '@/utils/tokenUtils';
 
 interface LSP8PanelProps {
   tokenName: string;
@@ -34,8 +35,6 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   onReviveSuccess,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const explorerURL =
-    'https://explorer.execution.testnet.lukso.network/address/';
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -54,10 +53,6 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   const interestsBgColor = useColorModeValue('light.white', 'dark.white');
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
-  // Helper function to format the blockchain address
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 5)}...${address.slice(-4)}`;
-  };
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
   const toast = useToast();
@@ -207,7 +202,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               size="sm"
               variant="ghost"
               onClick={() =>
-                window.open(`${explorerURL}${tokenAddress}`, '_blank')
+                window.open(`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${tokenAddress}`, '_blank')
               }
             />
           </Flex>

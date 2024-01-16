@@ -4,14 +4,13 @@ import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProf
 import {
   ERC725YDataKeys,
   LSP1_TYPE_IDS,
-  CALLTYPE,
-  INTERFACE_IDS,
 } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
+  DEFAULT_UP_URD_PERMISSIONS,
   GRAVE_CONTROLLER_PERMISSIONS,
   constants,
 } from '@/app/constants';
@@ -179,7 +178,7 @@ export default function JoinGraveBtn({
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
-      await updateBECPermissions(provider, signer); // ? along w/ permissions, should also set allowed calls?
+      await updateBECPermissions(provider, signer);
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
@@ -442,8 +441,8 @@ export default function JoinGraveBtn({
     const allControllers = permissionsResult[0].value as string[];
     let formattedControllers = [] as string[];
     const permissions = erc725.encodePermissions({
-      SUPER_CALL: true, // TODO: CAN this be done better???
-      REENTRANCY: true,
+      SUPER_CALL: true,
+      ...DEFAULT_UP_URD_PERMISSIONS,
     });
 
     // 2 - remove the forwarder from the list of controllers for sanity check
@@ -524,10 +523,7 @@ export default function JoinGraveBtn({
     const permissionsResult = await erc725.getData();
     const allControllers = permissionsResult[0].value as string[];
     // remove permissions if leaving the Grave and reducing the number of controllers
-    const permissions = erc725.encodePermissions({
-      SUPER_CALL: false,
-      REENTRANCY: false,
-    });
+    const permissions = '0x';
     // Remove the forwarder from the list of controllers.
     // Note: check sum case address to avoid issues with case sensitivity
     const formattedControllers = allControllers.filter((controller: any) => {

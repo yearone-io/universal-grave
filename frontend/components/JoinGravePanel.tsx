@@ -165,7 +165,7 @@ const JoinGravePanel: React.FC = () => {
                     <Flex>
                       <Box mr="2px">{step.instructions2.text}</Box>
                       <a
-                        href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.instructions2.address}`}
+                        href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${step.instructions2.address}`}
                         style={{ textDecoration: 'underline' }}
                         target="_blank"
                       >
@@ -180,7 +180,7 @@ const JoinGravePanel: React.FC = () => {
                     {step.completeText.text}
                     {step.completeText.address && (
                       <a
-                        href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.completeText.address}`}
+                        href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${step.completeText.address}`}
                         style={{ textDecoration: 'underline' }}
                         target="_blank"
                       >

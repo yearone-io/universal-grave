@@ -8,8 +8,11 @@ import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json';
 import { constants } from '@/app/constants';
 
-//most functions below are copied from https://github.com/lukso-network/universalprofile-test-dapp/blob/main/src/helpers/tokenUtils.ts
+export const formatAddress = (address: string) => {
+  return `${address.slice(0, 5)}...${address.slice(-4)}`;
+};
 
+//most functions below are copied from https://github.com/lukso-network/universalprofile-test-dapp/blob/main/src/helpers/tokenUtils.ts
 export enum LSPType {
   LSP7DigitalAsset = 'LSP7DigitalAsset',
   LSP8IdentifiableDigitalAsset = 'LSP8IdentifiableDigitalAsset',

@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';

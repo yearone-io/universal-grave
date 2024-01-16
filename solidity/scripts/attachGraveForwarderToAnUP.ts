@@ -6,6 +6,25 @@ import { OPERATION_TYPES, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7Mintable from '@lukso/lsp-smart-contracts/artifacts/LSP7Mintable.json';
 
+/**
+ * Thi script does the following:
+ *    Deploys the LSP1 Grave Forwarder URD (Universal Receiver Delegate)
+ *    Logs the deployment status and provides a verification command
+ *    Registers the deployed LSP1 Grave Forwarder in the UP for LSP7 and LSP8 assets
+ *    Sets up necessary data keys and values for the registration
+ *    Executes the transaction to register the URD in the UP
+ *    Deploys a Grave Vault using the LSP9Vault contract
+ *    Logs the deployment address
+ *    Sets up the Grave Vault on the Forwarder
+ *    Encodes and executes a transaction to attach the Grave Vault to the UP
+ *    Deploys a token using the LSP7Mintable contract
+ *    Mints tokens to the UP address and logs the transaction hash
+ *    Transfers tokens from the Grave Vault back to the UP
+ *    Adds the token to a whitelist and executes the transfer
+ *    Catches and logs any errors during execution
+ *    Exits the process on error
+*/
+
 
 // load env vars
 dotenv.config();
