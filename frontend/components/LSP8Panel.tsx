@@ -202,7 +202,10 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               size="sm"
               variant="ghost"
               onClick={() =>
-                window.open(`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${tokenAddress}`, '_blank')
+                window.open(
+                  `${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${tokenAddress}`,
+                  '_blank'
+                )
               }
             />
           </Flex>

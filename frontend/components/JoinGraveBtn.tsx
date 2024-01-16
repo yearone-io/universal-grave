@@ -1,10 +1,7 @@
 'use client';
 import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import {
-  ERC725YDataKeys,
-  LSP1_TYPE_IDS,
-} from '@lukso/lsp-smart-contracts';
+import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
