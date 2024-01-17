@@ -331,11 +331,10 @@ export default function JoinGraveBtn({
       ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
       ...GRAVE_CONTROLLER_PERMISSIONS,
     });
-
     const permissionsData = erc725.encodeData([
       {
         keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+        dynamicKeyParts: browserExtensionControllerAddress,
         value: newPermissions,
       },
     ]);

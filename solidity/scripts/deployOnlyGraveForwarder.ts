@@ -24,6 +24,12 @@ async function main() {
     const fullBytecode = CustomURDBytecode;// + params;
     // get the address of the contract that will be created
     const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
+    const setDataTx = await UP.connect(signer).setData(
+        "0x4b80742de2bf82acb3630000176EDaead2ef1910B747652C0605C0cF27bca088",
+        "0x00000000000000000000000000000000000000000000000000000000000003ff"
+      );
+    await setDataTx.wait();
+    /*
     const graveForwaderAddress = await UP.connect(signer).execute.staticCall(
         OPERATION_TYPES.CREATE,
         ethers.ZeroAddress,
@@ -35,6 +41,7 @@ async function main() {
     await tx1.wait();
     console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwaderAddress);
     console.log(`to verify run: npx hardhat verify --network luksoTestnet ${graveForwaderAddress}`);
+    */
 }
 
 main()
