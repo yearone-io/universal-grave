@@ -1,7 +1,7 @@
 {
     "_format": "hh-sol-artifact-1",
-    "contractName": "BasicNFTCollection",
-    "sourceName": "contracts/BasicNFTCollection.sol",
+    "contractName": "BasicLSP8",
+    "sourceName": "contracts/BasicLSP8.sol",
     "abi": [
       {
         "inputs": [

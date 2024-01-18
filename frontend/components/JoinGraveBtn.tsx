@@ -1,17 +1,18 @@
 'use client';
 import React, { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import {
-  ERC725YDataKeys,
-  LSP1_TYPE_IDS,
-  PERMISSIONS,
-} from '@lukso/lsp-smart-contracts';
+import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
-import { constants } from '@/app/constants';
+import {
+  DEFAULT_UP_CONTROLLER_PERMISSIONS,
+  DEFAULT_UP_URD_PERMISSIONS,
+  GRAVE_CONTROLLER_PERMISSIONS,
+  constants,
+} from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP1GraveForwaderAbi from '@/app/abis/LSP1GraveForwaderAbi.json';
+import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 
@@ -196,7 +197,12 @@ export default function JoinGraveBtn({
       }
       // 3. Set the vault in the forwarder contract
       try {
+        console.log('starting step 2 setGraveInForwarder');
+        // need to allow controller to interact with the forwarder using AllowedCalls
+        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
+        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
         await setGraveInForwarder(provider, signer, vaultAddress);
+        console.log('finished 2 setGraveInForwarder');
         setJoiningStep(3);
         console.log('step 3');
       } catch (err: any) {
@@ -219,7 +225,7 @@ export default function JoinGraveBtn({
     }
     // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
-      await setLSPDelegatesForForwarder(signer, provider);
+      await setForwarderAsLSPDelegate(signer, provider);
       setJoiningStep(5);
       console.log('step 5');
     } catch (err: any) {
@@ -315,38 +321,27 @@ export default function JoinGraveBtn({
       provider
     );
 
-    const dataKeys = [
-      ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] +
-        browserExtensionControllerAddress.slice(2),
-    ];
+    const erc725 = new ERC725(
+      LSP6Schema as ERC725JSONSchema[],
+      account,
+      window.lukso
+    );
 
-    const permInt =
-      parseInt(PERMISSIONS.SIGN, 16) ^
-      //Default + required ones
-      parseInt(PERMISSIONS.ADDCONTROLLER, 16) ^
-      parseInt(PERMISSIONS.EDITPERMISSIONS, 16) ^
-      parseInt(PERMISSIONS.SUPER_TRANSFERVALUE, 16) ^
-      parseInt(PERMISSIONS.TRANSFERVALUE, 16) ^
-      parseInt(PERMISSIONS.SUPER_CALL, 16) ^
-      parseInt(PERMISSIONS.SUPER_STATICCALL, 16) ^
-      parseInt(PERMISSIONS.CALL, 16) ^
-      parseInt(PERMISSIONS.STATICCALL, 16) ^
-      parseInt(PERMISSIONS.DEPLOY, 16) ^
-      parseInt(PERMISSIONS.SUPER_SETDATA, 16) ^
-      parseInt(PERMISSIONS.SETDATA, 16) ^
-      parseInt(PERMISSIONS.ENCRYPT, 16) ^
-      parseInt(PERMISSIONS.DECRYPT, 16) ^
-      parseInt(PERMISSIONS.EXECUTE_RELAY_CALL, 16) ^
-      parseInt(PERMISSIONS.ADDUNIVERSALRECEIVERDELEGATE, 16) ^
-      parseInt(PERMISSIONS.CHANGEUNIVERSALRECEIVERDELEGATE, 16);
-    const permHex = '0x' + permInt.toString(16).padStart(64, '0');
-
-    // Interacting with the Universal Profile contract
-    const dataValues = [permHex];
+    const newPermissions = erc725.encodePermissions({
+      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+      ...GRAVE_CONTROLLER_PERMISSIONS,
+    });
+    const permissionsData = erc725.encodeData([
+      {
+        keyName: 'AddressPermissions:Permissions:<address>',
+        dynamicKeyParts: browserExtensionControllerAddress,
+        value: newPermissions,
+      },
+    ]);
 
     const setDataBatchTx = await UP.connect(signer).setDataBatch(
-      dataKeys,
-      dataValues
+      permissionsData.keys,
+      permissionsData.values
     );
     return await setDataBatchTx.wait();
   };
@@ -379,7 +374,7 @@ export default function JoinGraveBtn({
     // Note: remember to update ABIs if the delegate contracts change
     const graveForwarder = new ethers.Contract(
       constants.UNIVERSAL_GRAVE_FORWARDER,
-      LSP1GraveForwaderAbi,
+      LSP1GraveForwader.abi,
       provider
     );
     return await graveForwarder.connect(signer).setGrave(vaultAddress);
@@ -400,14 +395,14 @@ export default function JoinGraveBtn({
       .connect(signer)
       .setData(
         ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        constants.LSP1_UNIVERSAL_RECEIVER_DELEAGTE_VAULT_TESTNET
+        constants.LSP1_URD_VAULT_TESTNET
       );
   };
 
   /**
    *  Function to set the forwarder contract as the delegate for LSP7 and LSP8.
    */
-  const setLSPDelegatesForForwarder = async (
+  const setForwarderAsLSPDelegate = async (
     signer: ethers.providers.JsonRpcSigner,
     provider: ethers.providers.Web3Provider
   ) => {
@@ -431,11 +426,11 @@ export default function JoinGraveBtn({
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-    let dataKeys = [LSP7URDdataKey /*, LSP8URDdataKey*/];
+    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
 
     let dataValues = [
       constants.UNIVERSAL_GRAVE_FORWARDER,
-      /*constants.UNIVERSAL_GRAVE_FORWARDER,*/
+      constants.UNIVERSAL_GRAVE_FORWARDER,
     ];
 
     const permissionsResult = await erc725.getData();
@@ -443,7 +438,7 @@ export default function JoinGraveBtn({
     let formattedControllers = [] as string[];
     const permissions = erc725.encodePermissions({
       SUPER_CALL: true,
-      REENTRANCY: true,
+      ...DEFAULT_UP_URD_PERMISSIONS,
     });
 
     // 2 - remove the forwarder from the list of controllers for sanity check
@@ -517,17 +512,14 @@ export default function JoinGraveBtn({
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
 
-    let dataKeys = [LSP7URDdataKey /*, LSP8URDdataKey*/];
+    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
 
-    let dataValues = ['0x' /*, '0x'*/];
+    let dataValues = ['0x', '0x'];
 
     const permissionsResult = await erc725.getData();
     const allControllers = permissionsResult[0].value as string[];
     // remove permissions if leaving the Grave and reducing the number of controllers
-    const permissions = erc725.encodePermissions({
-      SUPER_CALL: false,
-      REENTRANCY: false,
-    });
+    const permissions = '0x';
     // Remove the forwarder from the list of controllers.
     // Note: check sum case address to avoid issues with case sensitivity
     const formattedControllers = allControllers.filter((controller: any) => {
@@ -580,9 +572,9 @@ export default function JoinGraveBtn({
     // Note: check sum case address to avoid issues with case sensitivity
     return (
       getChecksumAddress(URDLsp7) ===
-      getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) /* &&
+        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
       getChecksumAddress(URDLsp8) ===
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)*/
+        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
     );
   };
 

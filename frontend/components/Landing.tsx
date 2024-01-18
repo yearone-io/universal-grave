@@ -23,10 +23,6 @@ export default function Landing() {
     'light.black',
     'var(--chakra-colors-dark-purple-500)'
   );
-  const customBorder = useColorModeValue(
-    '1px solid black',
-    '1px solid var(--chakra-colors-dark-purple-500)'
-  );
   const borderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-200)'
@@ -251,7 +247,7 @@ export default function Landing() {
             />
             <LSPExplainer
               title={'LSP8 Identifiable Digital Assets'}
-              description={'(coming soon) Non-fungible tokens reimagined'}
+              description={'Non-fungible tokens reimagined'}
               learnURL={
                 'https://docs.lukso.tech/standards/tokens/LSP8-Identifiable-Digital-Asset'
               }

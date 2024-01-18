@@ -1,10 +1,4 @@
-import {
-  Flex,
-  useColorModeValue,
-  Container,
-  Image,
-  Box,
-} from '@chakra-ui/react';
+import { Flex, useColorModeValue, Container, Image } from '@chakra-ui/react';
 import React from 'react';
 import WalletConnector from './wallet/WalletConnector';
 

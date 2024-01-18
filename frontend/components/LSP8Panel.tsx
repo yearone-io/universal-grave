@@ -13,22 +13,22 @@ import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { formatAddress } from '@/utils/tokenUtils';
 
-interface LSP7PanelProps {
+interface LSP8PanelProps {
   tokenName: string;
-  tokenAmount: string;
+  tokenId: string;
   tokenAddress: string;
   vaultAddress: string;
   tokenMetadata: Record<string, any>; //LSP4Metadata
   onReviveSuccess: () => void;
 }
 
-const LSP7Panel: React.FC<LSP7PanelProps> = ({
+const LSP8Panel: React.FC<LSP8PanelProps> = ({
   tokenName,
-  tokenAmount,
+  tokenId,
   tokenAddress,
   tokenMetadata,
   vaultAddress,
@@ -86,14 +86,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
-        LSP7DigitalAsset.abi,
+        LSP8IdentifiableDigitalAsset.abi,
         signer
       );
-      const lsp7 = tokenContract.connect(signer);
-      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+      const lsp8 = tokenContract.connect(signer);
+      const lsp8Tx = lsp8.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        tokenAmount,
+        tokenId,
         false,
         '0x',
       ]);
@@ -106,7 +106,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const lsp9 = vaultContract.connect(signer);
       await lsp9
         .connect(signer)
-        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+        .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
       setIsProcessing(false);
       onReviveSuccess();
@@ -133,7 +133,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const getTokenIconUrl = () => {
     let tokenIcon = (
       <Box padding={1} fontWeight={'bold'}>
-        LSP7
+        LSP8
       </Box>
     );
     if (tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.startsWith('ipfs://')) {
@@ -180,7 +180,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             {tokenName}
           </Text>
           <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {tokenAmount}
+            {formatAddress(tokenId)}
           </Text>
         </Flex>
         <Flex
@@ -226,4 +226,4 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   );
 };
 
-export default LSP7Panel;
+export default LSP8Panel;

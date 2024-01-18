@@ -89,7 +89,6 @@ const JoinGravePanel: React.FC = () => {
 
         // Special handling for step 1
         if (step === 1 && newStep > 1 && data[1]) {
-          const address1 = displayTruncatedAddress(data[1]);
           modifiedSteps[1].completeText.address = data[1];
         }
       } else {
@@ -166,7 +165,7 @@ const JoinGravePanel: React.FC = () => {
                     <Flex>
                       <Box mr="2px">{step.instructions2.text}</Box>
                       <a
-                        href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.instructions2.address}`}
+                        href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${step.instructions2.address}`}
                         style={{ textDecoration: 'underline' }}
                         target="_blank"
                       >
@@ -176,12 +175,12 @@ const JoinGravePanel: React.FC = () => {
                   )}
                 </Box>
               ) : (
-                <StepDescription>
+                <StepDescription as={'div'}>
                   <Flex alignItems="center" gap={1}>
                     {step.completeText.text}
                     {step.completeText.address && (
                       <a
-                        href={`${constants.LUKSO_TESTNET_EXPLORER}/address/${step.completeText.address}`}
+                        href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${step.completeText.address}`}
                         style={{ textDecoration: 'underline' }}
                         target="_blank"
                       >

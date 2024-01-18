@@ -34,6 +34,14 @@ const config: HardhatUserConfig = {
         },
       ],
     },
+
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
+    external: "./node_modules/[npm-package]/contracts"
+  },
   };
   
   export default config;
