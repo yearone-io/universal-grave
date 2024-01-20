@@ -1,33 +1,27 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { ethers } from 'ethers';
-import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
+import React, {useEffect, useState} from 'react';
+import {ethers} from 'ethers';
+import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
+import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
+import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
-import { constants } from '@/app/constants';
+import {constants} from '@/app/constants';
+import {getGraveVaultFor} from '@/utils/universalProfile';
 
-export default function LSPAssets() {
-  const walletContext = useContext(WalletContext);
+export default function LSPAssets({ account }: { account: string | null }) {
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenInfo[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenInfo[]>([]);
+  const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
   const toast = useToast();
-
-  if (!walletContext) {
-    throw new Error('WalletConnector must be used within a WalletProvider.');
-  }
-
-  const { account, graveVault } = walletContext;
 
   /**
    * Fetch assets from the grave vault.
    * This function is called when the page loads and when an asset is revived
    */
-  const fetchAssets = useCallback(async () => {
+  const fetchAssets = async () => {
     if (!graveVault || graveVault === constants.ZERO_ADDRESS) {
       setLoading(false);
       return;
@@ -99,16 +93,21 @@ export default function LSPAssets() {
     } finally {
       setLoading(false);
     }
-  }, [graveVault, toast]);
+  };
 
   /**
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (account && graveVault) {
-      fetchAssets();
+    if (account) {
+      getGraveVaultFor(account).then(graveVault => {
+        setGraveVault(graveVault);
+        fetchAssets();
+      });
+    } else {
+      setGraveVault(constants.ZERO_ADDRESS);
     }
-  }, [account, graveVault, fetchAssets]);
+  }, [account]);
 
   const emptyLS7PAssets = () => {
     return (

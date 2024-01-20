@@ -1,10 +1,9 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
-import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
-import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
+import { getGraveVaultFor } from '@/utils/universalProfile';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -46,21 +45,9 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
-      // // Initialize a new Web3 instance using the LUKSO provider.
-      const provider = new ethers.providers.Web3Provider(window.lukso);
-      const signer = provider.getSigner();
-
-      const graveForwarder = new ethers.Contract(
-        constants.UNIVERSAL_GRAVE_FORWARDER,
-        LSP1GraveForwader.abi,
-        provider
-      );
-      graveForwarder
-        .connect(signer)
-        .graveVaults(account)
-        .then((graveVault: string) => {
-          setGraveVault(graveVault);
-        });
+      getGraveVaultFor(account).then(graveVault => {
+        setGraveVault(graveVault);
+      });
     }
   }, [account]);
 
