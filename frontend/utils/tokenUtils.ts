@@ -107,7 +107,12 @@ export const detectLSP = async (
     doesSupportInterface = false;
   }
   if (!doesSupportInterface) {
-    return undefined;
+    return {
+      type: LSPType.Unknown,
+      address: contractAddress,
+      name: "unrecognised",
+      metadata: {},
+    };
   }
 
   try {
@@ -125,7 +130,7 @@ export const detectLSP = async (
         balance = BigNumber.from(_balance).toNumber();
       }
     } catch (err) {
-      console.error(err);
+      console.error("error getting balance", err);
     }
     // ERC725 detection
     const erc725js = new ERC725(
@@ -199,6 +204,11 @@ export const detectLSP = async (
     };
   } catch (err) {
     console.error(contractAddress, lspType, err);
-    return undefined;
+    return {
+      type: LSPType.Unknown,
+      address: contractAddress,
+      name: "unrecognised",
+      metadata: {},
+    };
   }
 };
