@@ -1,21 +1,7 @@
-import { useState } from 'react';
-import {
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Text,
-  useColorModeValue,
-  useToast,
-  Avatar,
-} from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
-import { ethers } from 'ethers';
-import { constants } from '@/app/constants';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
-import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
-import { formatAddress } from '@/utils/tokenUtils';
+import {Avatar, Box, Flex, IconButton, Text, useColorModeValue, useToast,} from '@chakra-ui/react';
+import {FaExternalLinkAlt} from 'react-icons/fa';
+import {constants} from '@/app/constants';
+import {formatAddress} from '@/utils/tokenUtils';
 
 interface LSPPanelProps {
   tokenName: string;
@@ -23,7 +9,6 @@ interface LSPPanelProps {
   tokenAddress: string;
   vaultAddress: string;
   tokenMetadata: Record<string, any>; //LSP4Metadata
-  onReviveSuccess: () => void;
 }
 
 const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
@@ -31,104 +16,19 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
   tokenAmount,
   tokenAddress,
   tokenMetadata,
-  vaultAddress,
-  onReviveSuccess,
 }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
   );
   const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
 
-  const createButtonBg = useColorModeValue('light.green.brand', 'dark.white');
-  const createButtonColor = useColorModeValue(
-    'light.black',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const createButtonBorder = useColorModeValue(
-    '1px solid black',
-    '1px solid var(--chakra-colors-dark-purple-500)'
-  );
   const interestsBgColor = useColorModeValue('light.white', 'dark.white');
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
   const toast = useToast();
-
-  const transferTokenToUP = async (tokenAddress: string) => {
-    if (isProcessing) {
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      const provider = new ethers.providers.Web3Provider(window.lukso);
-      const signer = provider.getSigner();
-
-      const LSP1GraveForwaderContract = new ethers.Contract(
-        constants.UNIVERSAL_GRAVE_FORWARDER,
-        LSP1GraveForwader.abi,
-        signer
-      );
-
-      const upAddress = await signer.getAddress();
-      if (
-        !(await LSP1GraveForwaderContract.tokenAllowlist(
-          upAddress,
-          tokenAddress
-        ))
-      ) {
-        await LSP1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
-          gasLimit: 400_00,
-        });
-      }
-
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        LSP7DigitalAsset.abi,
-        signer
-      );
-      const lsp = tokenContract.connect(signer);
-      const lspTx = lsp.interface.encodeFunctionData('transfer', [
-        vaultAddress,
-        await signer.getAddress(),
-        tokenAmount,
-        false,
-        '0x',
-      ]);
-
-      const vaultContract = new ethers.Contract(
-        vaultAddress,
-        LSP9Vault.abi,
-        signer
-      );
-      const lsp9 = vaultContract.connect(signer);
-      await lsp9
-        .connect(signer)
-        .execute(0, tokenAddress, 0, lspTx, { gasLimit: 400_00 });
-
-      setIsProcessing(false);
-      onReviveSuccess();
-      toast({
-        title: `it's alive! ⚡`,
-        status: 'success',
-        position: 'bottom-left',
-        duration: 9000,
-        isClosable: true,
-      });
-    } catch (error: any) {
-      setIsProcessing(false);
-      console.error(error);
-      toast({
-        title: `Error fetching UP data. ${error.message}`,
-        status: 'error',
-        position: 'bottom-left',
-        duration: 9000,
-        isClosable: true,
-      });
-    }
-  };
 
   const getTokenIconUrl = () => {
     let tokenIcon = (
@@ -209,17 +109,6 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
               }
             />
           </Flex>
-          <Button
-            px={3}
-            color={createButtonColor}
-            bg={createButtonBg}
-            _hover={{ bg: createButtonBg }}
-            border={createButtonBorder}
-            size={'xs'}
-            onClick={() => transferTokenToUP(tokenAddress)}
-          >
-            {isProcessing ? 'Reviving...' : `Revive Tokens`}
-          </Button>
         </Flex>
       </Flex>
     </Flex>

@@ -201,7 +201,7 @@ export default function LSPAssets() {
                 : emptyAssets()}
           </Box>
         </Flex>
-        <Box>
+        <Box width={"50%"}>
           <Text
               color="white"
               fontWeight={400}
@@ -219,7 +219,6 @@ export default function LSPAssets() {
                         tokenAddress={asset.address!}
                         tokenMetadata={asset.metadata!}
                         vaultAddress={graveVault!}
-                        onReviveSuccess={fetchAssets}
                         tokenAmount={""}
                     />
                   </Box>
