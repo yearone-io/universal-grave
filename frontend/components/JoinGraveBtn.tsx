@@ -363,9 +363,7 @@ export default function JoinGraveBtn({
   /**
    * Function to create a vault for the UP.
    */
-  const createUpVault = async (
-    signer: ethers.providers.JsonRpcSigner
-  ) => {
+  const createUpVault = async (signer: ethers.providers.JsonRpcSigner) => {
     // create an factory for the LSP9Vault contract
     let vaultFactory = new ethers.ContractFactory(
       LSP9Vault.abi,
