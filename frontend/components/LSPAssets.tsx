@@ -9,12 +9,14 @@ import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
+import UnrecognisedPanel from "@/components/UnrecognisedPanel";
 
 export default function LSPAssets() {
   const walletContext = useContext(WalletContext);
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenInfo[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenInfo[]>([]);
+  const [unrecognisedAssets, setUnrecognisedAssets] = useState<TokenInfo[]>([]);
   const toast = useToast();
 
   if (!walletContext) {
@@ -48,6 +50,7 @@ export default function LSPAssets() {
       );
       const lsp7Results: TokenInfo[] = [];
       const lsp8Results: TokenInfo[] = [];
+      const unrecognisedAssetResults: TokenInfo[] = [];
       const detectAssetCalls: Promise<TokenInfo | undefined>[] = [];
 
       for (const assetAddress of receivedAssetsResults.value as string[]) {
@@ -68,8 +71,10 @@ export default function LSPAssets() {
         if (!asset) continue;
 
         if (asset.type === LSPType.LSP7DigitalAsset) {
+          console.log("lsp7", asset);
           lsp7Results.push(asset);
         } else if (asset.type === LSPType.LSP8IdentifiableDigitalAsset) {
+          console.log("lsp8", asset);
           const contract = new ethers.Contract(
             asset.address as string,
             LSP8IdentifiableDigitalAsset.abi,
@@ -82,11 +87,15 @@ export default function LSPAssets() {
               tokenId: tokenId.toString(),
             });
           });
+        } else {
+          console.log("Unrecognised asset: ", asset);
+          unrecognisedAssetResults.push(asset);
         }
       }
 
       setLsp7Assets(lsp7Results);
       setLsp8Assets(lsp8Results);
+      setUnrecognisedAssets(unrecognisedAssetResults);
     } catch (error: any) {
       console.error(error);
       toast({
@@ -110,7 +119,7 @@ export default function LSPAssets() {
     }
   }, [account, graveVault, fetchAssets]);
 
-  const emptyLS7PAssets = () => {
+  const emptyAssets = () => {
     return (
       <Box>
         <Image
@@ -139,57 +148,83 @@ export default function LSPAssets() {
   }
 
   return (
-    <Flex justifyContent="space-between">
       <Box>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-        >
-          LSP7 Assets
-        </Text>
-        {lsp7Assets.length
-          ? lsp7Assets.map((asset, index) => (
-              <Box key={'lsp7-' + index}>
-                <LSP7Panel
-                  tokenName={asset.name!}
-                  tokenAmount={asset.balance!.toString()}
-                  tokenAddress={asset.address!}
-                  tokenMetadata={asset.metadata!}
-                  vaultAddress={graveVault!}
-                  onReviveSuccess={fetchAssets}
-                />
-              </Box>
-            ))
-          : emptyLS7PAssets()}
+        <Flex justifyContent="space-between">
+          <Box>
+            <Text
+                color="white"
+                fontWeight={400}
+                fontSize="16px"
+                fontFamily="Bungee"
+                mb="20px"
+            >
+              LSP7 Assets
+            </Text>
+            {lsp7Assets.length
+                ? lsp7Assets.map((asset, index) => (
+                    <Box key={'lsp7-' + index}>
+                      <LSP7Panel
+                          tokenName={asset.name!}
+                          tokenAmount={asset.balance!.toString()}
+                          tokenAddress={asset.address!}
+                          tokenMetadata={asset.metadata!}
+                          vaultAddress={graveVault!}
+                          onReviveSuccess={fetchAssets}
+                      />
+                    </Box>
+                ))
+                : emptyAssets()}
+          </Box>
+          <Box>
+            <Text
+                color="white"
+                fontWeight={400}
+                fontSize="16px"
+                fontFamily="Bungee"
+                mb="20px"
+            >
+              LSP8 Assets
+            </Text>
+            {lsp8Assets.length
+                ? lsp8Assets.map((asset, index) => (
+                    <Box key={'lsp8-' + index}>
+                      <LSP8Panel
+                          tokenName={asset.name!}
+                          tokenId={asset.tokenId!}
+                          tokenAddress={asset.address!}
+                          tokenMetadata={asset.metadata!}
+                          vaultAddress={graveVault!}
+                          onReviveSuccess={fetchAssets}
+                      />
+                    </Box>
+                ))
+                : emptyAssets()}
+          </Box>
+        </Flex>
+        <Box width={"50%"}>
+          <Text
+              color="white"
+              fontWeight={400}
+              fontSize="16px"
+              fontFamily="Bungee"
+              mb="20px"
+          >
+            Unrecognised Assets
+          </Text>
+          {unrecognisedAssets.length
+              ? unrecognisedAssets.map((asset, index) => (
+                  <Box key={'unrecognised-' + index}>
+                    <UnrecognisedPanel
+                        tokenName={asset.name!}
+                        tokenAddress={asset.address!}
+                        tokenMetadata={asset.metadata!}
+                        vaultAddress={graveVault!}
+                        tokenAmount={""}
+                    />
+                  </Box>
+              ))
+              : emptyAssets()}
+        </Box>
       </Box>
-      <Box>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-        >
-          LSP8 Assets
-        </Text>
-        {lsp8Assets.length
-          ? lsp8Assets.map((asset, index) => (
-              <Box key={'lsp8-' + index}>
-                <LSP8Panel
-                  tokenName={asset.name!}
-                  tokenId={asset.tokenId!}
-                  tokenAddress={asset.address!}
-                  tokenMetadata={asset.metadata!}
-                  vaultAddress={graveVault!}
-                  onReviveSuccess={fetchAssets}
-                />
-              </Box>
-            ))
-          : emptyLS7PAssets()}
-      </Box>
-    </Flex>
   );
 }
