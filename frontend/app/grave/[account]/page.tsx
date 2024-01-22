@@ -1,8 +1,8 @@
-import {Metadata} from 'next';
-import {Box, Container, Image, Stack, Text} from '@chakra-ui/react';
-import React from "react";
-import GravePagePanel from "@/components/GravePagePanel";
-import GravePageAssets from "@/components/GravePageAssets";
+import { Metadata } from 'next';
+import { Box, Container, Image, Stack, Text } from '@chakra-ui/react';
+import React from 'react';
+import GravePagePanel from '@/components/GravePagePanel';
+import GravePageAssets from '@/components/GravePageAssets';
 
 export const metadata: Metadata = {
   title: 'GRAVEYARD',
@@ -23,18 +23,18 @@ export default function Grave({ params }: { params: { account: string } }) {
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
       <Stack
-          direction={{ base: 'column', md: 'row' }}
-          justify="space-between"
-          align="center"
-          w="100%"
-          pt="50px"
+        direction={{ base: 'column', md: 'row' }}
+        justify="space-between"
+        align="center"
+        w="100%"
+        pt="50px"
       >
         <GravePagePanel account={params.account} />
         <Image
-            mx={'40px'}
-            src={logoPath}
-            alt="Universal-Grave-logo"
-            width={'300px'}
+          mx={'40px'}
+          src={logoPath}
+          alt="Universal-Grave-logo"
+          width={'300px'}
         />
       </Stack>
       <Box>

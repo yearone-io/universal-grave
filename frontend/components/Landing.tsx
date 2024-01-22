@@ -6,6 +6,9 @@ import {
   Flex,
   Icon,
   Image,
+  Input,
+  InputGroup,
+  InputRightElement,
   Stack,
   Text,
   useColorModeValue,
@@ -14,6 +17,7 @@ import Link from 'next/link';
 import { BsActivity, BsArrow90DegRight } from 'react-icons/bs';
 import { RiAuctionLine } from 'react-icons/ri';
 import LSPExplainer from '@/components/LSPExplainer';
+import { ChangeEvent, useState } from 'react';
 
 export default function Landing() {
   const logoPath = '/images/logo-full.png';
@@ -36,6 +40,16 @@ export default function Landing() {
     '1px solid black',
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
+  const [inputValue, setInputValue] = useState<string>();
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleClick = () => {
+    console.log('inputValue', inputValue);
+    window.location.href = `/grave/${inputValue}`;
+  };
 
   return (
     <Container
@@ -94,6 +108,24 @@ export default function Landing() {
                 {`Connect a GRAVE to your 🆙`}
               </Button>
             </Link>
+            <Text>Or view an Universal Profile's grave</Text>
+            <InputGroup size="md">
+              <Input
+                placeholder="UP profile address"
+                value={inputValue}
+                onChange={handleInputChange}
+              ></Input>
+              <InputRightElement width="4.5rem">
+                <Button
+                  h="1.75rem"
+                  size="sm"
+                  isDisabled={!inputValue}
+                  onClick={handleClick}
+                >
+                  Go
+                </Button>
+              </InputRightElement>
+            </InputGroup>
           </Flex>
           <Flex
             flexDirection={'column'}

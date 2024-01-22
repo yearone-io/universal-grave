@@ -1,16 +1,20 @@
 'use client';
-import React, {useEffect, useState} from 'react';
-import {ethers} from 'ethers';
-import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
-import ERC725, {ERC725JSONSchema} from '@erc725/erc725.js';
+import React, { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
+import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
+import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
+import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
-import {constants} from '@/app/constants';
+import { constants } from '@/app/constants';
 
-export default function LSPAssets({ graveVault }: { graveVault: string | null }) {
+export default function LSPAssets({
+  graveVault,
+}: {
+  graveVault: string | null;
+}) {
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenInfo[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenInfo[]>([]);
@@ -100,7 +104,7 @@ export default function LSPAssets({ graveVault }: { graveVault: string | null })
    */
   useEffect(() => {
     if (graveVault) {
-        fetchAssets();
+      fetchAssets();
     }
   }, [graveVault]);
 
