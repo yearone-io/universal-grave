@@ -2,28 +2,32 @@
 import LSPAssets from '@/components/LSPAssets';
 import { useEffect, useState } from 'react';
 import { getGraveVaultFor } from '@/utils/universalProfile';
-import { useToast } from '@chakra-ui/react';
+import { Text } from '@chakra-ui/react';
 
 export default function GravePageAssets({ account }: { account: string }) {
-  const [graveVault, setGraveVault] = useState<string | null>(null);
-  const toast = useToast();
+  const [graveVault, setGraveVault] = useState<string>();
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     if (!graveVault) {
       getGraveVaultFor(account)
         .then(graveVault => {
-          setGraveVault(graveVault);
+          if (!graveVault) {
+            setError('No grave vault found for this account');
+          } else {
+            setGraveVault(graveVault);
+          }
         })
         .catch(reason => {
-          toast({
-            title: 'Error',
-            description: reason.message,
-            status: 'error',
-            duration: 9000,
-            isClosable: true,
-          });
+          console.error(reason);
+          setError(reason.message);
         });
     }
   }, [account]);
-  return <LSPAssets graveVault={graveVault} />;
+
+  if (error) {
+    return <Text>{error}</Text>;
+  }
+
+  return graveVault ? <LSPAssets graveVault={graveVault} /> : <>Loading...</>;
 }

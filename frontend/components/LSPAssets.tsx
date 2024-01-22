@@ -136,6 +136,10 @@ export default function LSPAssets({
     return <div>Loading...</div>;
   }
 
+  if (!graveVault) {
+    return <></>;
+  }
+
   return (
     <Flex justifyContent="space-between">
       <Box>
