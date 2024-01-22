@@ -119,7 +119,7 @@ const JoinGravePanel: React.FC = () => {
     console.log('new leaving step', leavingStep);
     let modifiedSteps = [...initialLeavingSteps];
 
-    if (leavingStep < -1 || leavingStep > 2) {
+    if (leavingStep < -1 || leavingStep > 1) {
       console.error('Invalid step');
       return;
     }

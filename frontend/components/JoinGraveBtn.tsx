@@ -166,7 +166,6 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
 
-  // TODO on click join, reset leave step to 0
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
