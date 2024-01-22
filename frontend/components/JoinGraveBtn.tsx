@@ -296,7 +296,6 @@ export default function JoinGraveBtn({
       //       The UP should still have access to the vault, but no more assets should be redirected.
       //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
       //       Something wrong like renouncing ownership.
-      setLeavingStep(2);
     } catch (err: any) {
       console.error('Error: ', err);
       toast({
