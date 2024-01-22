@@ -46,7 +46,9 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
       getGraveVaultFor(account).then(graveVault => {
-        setGraveVault(graveVault);
+        if(graveVault) {
+          setGraveVault(graveVault);
+        }
       });
     }
   }, [account]);
