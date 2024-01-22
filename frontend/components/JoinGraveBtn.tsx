@@ -38,8 +38,10 @@ import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { 
  */
 export default function JoinGraveBtn({
   onJoiningStepChange,
+  onLeavingStepChange,
 }: {
   onJoiningStepChange: (newStep: number, data?: any) => void;
+  onLeavingStepChange?: (newStep: number, data?: any) => void;
 }) {
   const [loading, setLoading] = useState(false);
   const walletContext = useContext(WalletContext);
@@ -50,6 +52,7 @@ export default function JoinGraveBtn({
     setBrowserExtensionControllerAddress,
   ] = useState<string>('');
   const [joiningStep, setJoiningStep] = useState<number>(0);
+  const [leavingStep, setLeavingStep] = useState<number>(-1);
   const toast = useToast();
 
   // Checking if the walletContext is available
@@ -81,6 +84,11 @@ export default function JoinGraveBtn({
 
     onJoiningStepChange(joiningStep, transactionsData);
   }, [joiningStep, browserExtensionControllerAddress, graveVault]);
+
+  // Notify the parent component when the leaving step changes
+  useEffect(() => {
+    onLeavingStepChange && onLeavingStepChange(leavingStep);
+  }, [leavingStep]);
 
   // TODOS after V1:
   // 0 - Add a batch call or wrapper contract so  on page load it gets URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions
@@ -158,6 +166,7 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
 
+  // TODO on click join, reset leave step to 0
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -185,7 +194,7 @@ export default function JoinGraveBtn({
     if (graveVault === constants.ZERO_ADDRESS) {
       // 2. Create a vault for the UP. (if needed)
       try {
-        const vaultTranx = await createUpVault(provider, signer);
+        const vaultTranx = await createUpVault(signer);
         vaultAddress = vaultTranx.contractAddress;
         // add the vault to the provider store
         addGraveVault(vaultAddress);
@@ -260,12 +269,14 @@ export default function JoinGraveBtn({
       });
       return;
     }
+    setLeavingStep(0);
     const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
 
     // 1- Set Permissions on Browser Extension Controller
     try {
       await updateBECPermissions(provider, signer);
+      setLeavingStep(1);
     } catch (err: any) {
       console.error('Error: ', err);
       toast({
@@ -275,6 +286,7 @@ export default function JoinGraveBtn({
         duration: 9000,
         isClosable: true,
       });
+      setLeavingStep(-1);
       return err;
     }
     // 2- Set the URD for LSP7 and LSP8 to the zero address
@@ -284,6 +296,7 @@ export default function JoinGraveBtn({
       //       The UP should still have access to the vault, but no more assets should be redirected.
       //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
       //       Something wrong like renouncing ownership.
+      setLeavingStep(2);
     } catch (err: any) {
       console.error('Error: ', err);
       toast({
@@ -293,9 +306,11 @@ export default function JoinGraveBtn({
         duration: 9000,
         isClosable: true,
       });
+      setLeavingStep(-1);
       return err;
     }
     setJoiningStep(0);
+    setLeavingStep(-1); // reset the leaving step
     fetchProfile();
     toast({
       title: `Your UP left the grave. 👻🪦`,
@@ -350,7 +365,6 @@ export default function JoinGraveBtn({
    * Function to create a vault for the UP.
    */
   const createUpVault = async (
-    provider: ethers.providers.Web3Provider,
     signer: ethers.providers.JsonRpcSigner
   ) => {
     // create an factory for the LSP9Vault contract
