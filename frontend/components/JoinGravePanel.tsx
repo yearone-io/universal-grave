@@ -128,7 +128,7 @@ const JoinGravePanel: React.FC = () => {
     for (let step = 0; step < modifiedSteps.length; step++) {
       if (step < leavingStep) {
         modifiedSteps[step].complete = true;
-      } else {
+       } else {
         modifiedSteps[step].complete = false;
         // Reset completeText for steps after newStep, if needed
       }
@@ -217,6 +217,18 @@ const JoinGravePanel: React.FC = () => {
   </Step>);
   }
 
+  const displayMainTitle = () => {
+    if (activeLeavingStep > -1) {
+      return 'STOP SENDING UNWANTED ASSETS TO GRAVE';
+    } else {
+      if (steps[4].complete) {
+        return 'YOU HAVE A GRAVE SPAMBOX!';
+      } else {
+        return 'SET UP YOUR GRAVE SPAMBOX';
+      }
+    }
+  }
+
   return (
     <VStack
       spacing={4}
@@ -235,9 +247,7 @@ const JoinGravePanel: React.FC = () => {
         fontFamily="Bungee"
         color="dark.purple.400"
       >
-        {!steps[4].complete
-          ? `SET UP YOUR GRAVE SPAMBOX`
-          : `YOU HAVE A GRAVE SPAMBOX!`}
+        {displayMainTitle()}
       </Text>
       <JoinGraveBtn onJoiningStepChange={handleNewStep} onLeavingStepChange={handleLeavingStep} />
 
