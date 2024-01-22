@@ -1,11 +1,20 @@
 'use client';
-import { Box, Container, Flex, Image, Stack, Text } from '@chakra-ui/react';
+import {
+  Box,
+  Container,
+  Flex,
+  IconButton,
+  Image,
+  Stack,
+  Text,
+} from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import LSPAssets from '@/components/LSPAssets';
 import { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import { constants } from '@/app/constants';
+import { FaExternalLinkAlt } from 'react-icons/fa';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
@@ -53,15 +62,18 @@ export default function MyGrave() {
       </Stack>
       {account && graveVault && graveVault !== constants.ZERO_ADDRESS ? (
         <Box>
-          <Text
-            fontSize="20px"
-            color="white"
-            fontFamily="Bungee"
-            mb="30px"
-            mt="30px"
-          >
-            YOUR GRAVEYARD
-          </Text>
+          <Stack mb="30px" mt="30px" direction={'row'}>
+            <Text fontSize="m" color="white" fontFamily="Bungee">
+              YOUR GRAVEYARD
+            </Text>
+            <IconButton
+              size="m"
+              aria-label={'View Graveyard'}
+              icon={<FaExternalLinkAlt />}
+              variant="ghost"
+              onClick={() => window.open(`/grave/${account}`, '_blank')}
+            />
+          </Stack>
           <LSPAssets graveVault={graveVault} />
         </Box>
       ) : (
