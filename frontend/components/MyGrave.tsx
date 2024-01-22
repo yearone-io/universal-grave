@@ -62,7 +62,7 @@ export default function MyGrave() {
           >
             YOUR GRAVEYARD
           </Text>
-          <LSPAssets account={account} />
+          <LSPAssets graveVault={graveVault} />
         </Box>
       ) : (
         <></>

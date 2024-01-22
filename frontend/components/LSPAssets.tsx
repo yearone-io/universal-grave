@@ -1,3 +1,4 @@
+'use client';
 import React, {useEffect, useState} from 'react';
 import {ethers} from 'ethers';
 import {Box, Flex, Image, Text, useToast} from '@chakra-ui/react';
@@ -8,13 +9,12 @@ import {detectLSP, LSPType, TokenInfo} from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import {constants} from '@/app/constants';
-import {getGraveVaultFor} from '@/utils/universalProfile';
 
-export default function LSPAssets({ account }: { account: string | null }) {
+export default function LSPAssets({ graveVault }: { graveVault: string | null }) {
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenInfo[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenInfo[]>([]);
-  const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
+
   const toast = useToast();
 
   /**
@@ -99,15 +99,10 @@ export default function LSPAssets({ account }: { account: string | null }) {
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (account) {
-      getGraveVaultFor(account).then(graveVault => {
-        setGraveVault(graveVault);
+    if (graveVault) {
         fetchAssets();
-      });
-    } else {
-      setGraveVault(constants.ZERO_ADDRESS);
     }
-  }, [account]);
+  }, [graveVault]);
 
   const emptyLS7PAssets = () => {
     return (
