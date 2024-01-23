@@ -17,11 +17,7 @@ import { _TYPEID_LSP8_TOKENSRECIPIENT } from "@lukso/lsp-smart-contracts/contrac
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import "./ILSP1GraveForwarder.sol";
-
-bytes4 constant _INTERFACEID_LSP1_GRAVE_FORWARDER = 0xa245bbda;
-
-contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP, ILSP1GraveForwarder {
+contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
     mapping (address => address) public graveVaults;
     mapping(address => mapping (address => bool)) public tokenAllowlist;
 
@@ -119,11 +115,5 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP, ILSP1GraveForwar
         }
         
         return "";
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(LSP1UniversalReceiverDelegateUP) returns (bool)
-    {
-        return interfaceId == type(ILSP1GraveForwarder).interfaceId ||
-            super.supportsInterface(interfaceId);
     }
 }

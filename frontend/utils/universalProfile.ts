@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
+import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { AddressZero } from '@ethersproject/constants';
 
 export const getGraveVaultFor = async (
@@ -11,7 +11,7 @@ export const getGraveVaultFor = async (
 
   const graveForwarder = new ethers.Contract(
     constants.UNIVERSAL_GRAVE_FORWARDER,
-    LSP1GraveForwarder.abi,
+    LSP1GraveForwader.abi,
     provider
   );
   const graveYardAddress = await graveForwarder

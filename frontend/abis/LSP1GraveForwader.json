@@ -1,6 +1,6 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "LSP1GraveForwarder",
+  "contractName": "LSP1GraveForwader",
   "sourceName": "contracts/LSP1GraveForwarder.sol",
   "abi": [
     {
