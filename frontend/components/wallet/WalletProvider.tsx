@@ -27,7 +27,7 @@ interface Props {
 export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
-  const [mainUPController, setMainUPController] = useState<string | null>(null);
+  const [mainUPController, setMainUPController] = useState<string>();
   const [graveVault, setGraveVault] = useState<string>();
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast();
@@ -100,7 +100,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         const signature = await web3.eth.sign(hashedMessage, accounts[0]);
         const signerAddress = web3.eth.accounts.recover(
           hashedMessage,
-          signature
+          signature as string
         );
         setMainUPController(signerAddress);
         console.log('The Main Controller address is:', signerAddress);
