@@ -115,7 +115,7 @@ const JoinGravePanel: React.FC = () => {
     setActiveStep(newStep);
   };
 
-  const handleLeavingStep = (leavingStep: number, data: any) => {
+  const handleLeavingStep = (leavingStep: number) => {
     console.log('new leaving step', leavingStep);
     let modifiedSteps = [...initialLeavingSteps];
 
