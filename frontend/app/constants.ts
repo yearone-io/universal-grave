@@ -1,9 +1,7 @@
-import { PERMISSIONS } from '@lukso/lsp-smart-contracts';
 export const constants = {
   UNIVERSAL_GRAVE_FORWARDER: '0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3',
   LSP1_URD_VAULT_TESTNET: '0xBc7b3980614215c8090dF310661685Cc393B601A',
   IPFS: 'https://api.universalprofile.cloud/ipfs',
-  ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
   LUKSO_EXPLORER: {
     TESTNET: {
       ADDRESS: 'https://explorer.execution.testnet.lukso.network/address/',

@@ -109,7 +109,7 @@ export const detectLSP = async (
   const unrecognisedLsp = {
     type: LSPType.Unknown,
     address: contractAddress,
-    name: "unrecognised",
+    name: 'unrecognised',
     metadata: {},
   };
   if (!doesSupportInterface) {
@@ -131,7 +131,7 @@ export const detectLSP = async (
         balance = BigNumber.from(_balance).toNumber();
       }
     } catch (err) {
-      console.error("error getting balance", err);
+      console.error('error getting balance', err);
     }
     // ERC725 detection
     const erc725js = new ERC725(
