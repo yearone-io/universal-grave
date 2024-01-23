@@ -43,7 +43,7 @@ const SignInBox: React.FC = () => {
         border={'1px solid var(--chakra-colors-dark-purple-500)'}
       >
         <Flex alignItems="center" justifyContent="space-between">
-          <Image src="images/LYX-logo.svg" alt="Sign In" />
+          <Image src="/images/LYX-logo.svg" alt="Sign In" />
           <Box
             ml="10px"
             fontSize="14px"
