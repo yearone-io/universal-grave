@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import {
   Box,
   Button,
@@ -16,6 +16,7 @@ import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { formatAddress } from '@/utils/tokenUtils';
+import { WalletContext } from '@/components/wallet/WalletContext';
 
 interface LSP7PanelProps {
   tokenName: string;
@@ -34,6 +35,8 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   vaultAddress,
   onReviveSuccess,
 }) => {
+  const walletContext = useContext(WalletContext);
+  const { graveVault: connectedGraveValue } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -209,17 +212,19 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               }
             />
           </Flex>
-          <Button
-            px={3}
-            color={createButtonColor}
-            bg={createButtonBg}
-            _hover={{ bg: createButtonBg }}
-            border={createButtonBorder}
-            size={'xs'}
-            onClick={() => transferTokenToUP(tokenAddress)}
-          >
-            {isProcessing ? 'Reviving...' : `Revive Tokens`}
-          </Button>
+          {vaultAddress === connectedGraveValue && (
+            <Button
+              px={3}
+              color={createButtonColor}
+              bg={createButtonBg}
+              _hover={{ bg: createButtonBg }}
+              border={createButtonBorder}
+              size={'xs'}
+              onClick={() => transferTokenToUP(tokenAddress)}
+            >
+              {isProcessing ? 'Reviving...' : `Revive Tokens`}
+            </Button>
+          )}
         </Flex>
       </Flex>
     </Flex>

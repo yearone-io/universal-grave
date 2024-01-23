@@ -3,7 +3,7 @@ import React from 'react';
 
 interface WalletContextType {
   account: string | null;
-  graveVault: string | null;
+  graveVault: string | undefined;
   connect: () => Promise<void>;
   disconnect: () => void;
   addGraveVault: (graveVault: string) => void;
@@ -12,7 +12,7 @@ interface WalletContextType {
 
 const defaultImplementation: WalletContextType = {
   account: null,
-  graveVault: null,
+  graveVault: undefined,
   isLoadingAccount: true,
   connect: async () => {
     // Default connect implementation
