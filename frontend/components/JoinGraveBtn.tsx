@@ -599,6 +599,10 @@ export default function JoinGraveBtn({
     );
   };
 
+  const hasExistingNonGraveDelegates = () => {
+    return !hasJoinedTheGrave() && (URDLsp8 != null || URDLsp7 != null);
+  };
+
   // ========================= UI =========================
   /**
    * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
@@ -697,7 +701,7 @@ export default function JoinGraveBtn({
           </AlertDialog>
           <Button
             onClick={() => {
-              if (URDLsp7 != null || URDLsp8 != null) {
+              if (hasExistingNonGraveDelegates()) {
                 onOpen();
               } else {
                 handleJoin();
