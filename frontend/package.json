@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test": "jest",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -41,9 +42,11 @@
   },
   "devDependencies": {
     "@typechain/ethers-v5": "^11.1.2",
+    "@types/jest": "^29.5.11",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
     "prettier": "^3.1.0",
+    "ts-jest": "^29.1.2",
     "typechain": "^8.3.2"
   }
 }
