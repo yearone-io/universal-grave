@@ -150,7 +150,7 @@ export default function JoinGraveBtn({
         // Set the URD for LSP7 and LSP8 to what is returned from the UP.
         // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
         console.log('UPData: ', UPData);
-        setURDLsp7('0x2270dc8C5B28a19e12Adc79C7a9eE4fAFE319DAA');
+        setURDLsp7(getChecksumAddress(UPData[0]));
         setURDLsp8(getChecksumAddress(UPData[1]));
         if (UPData.length === 3 && window.lukso.isUniversalProfileExtension) {
           // sanity check we get the Browser Extension controller address
