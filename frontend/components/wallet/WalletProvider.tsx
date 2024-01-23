@@ -27,7 +27,7 @@ interface Props {
 export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
-  const [graveVault, setGraveVault] = useState<string>(constants.ZERO_ADDRESS);
+  const [graveVault, setGraveVault] = useState<string>();
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast();
 
@@ -46,7 +46,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
       getGraveVaultFor(account).then(graveVault => {
-        if(graveVault) {
+        if (graveVault) {
           setGraveVault(graveVault);
         }
       });
@@ -63,7 +63,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
       try {
         // Reset the graveVault address when connecting
-        setGraveVault(constants.ZERO_ADDRESS);
+        setGraveVault(undefined);
         // Request accounts from the wallet.
         const accounts = await web3.eth.requestAccounts();
         console.log('Connected with', accounts[0]);
@@ -107,7 +107,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     // Clear the account address from state.
     setAccount(null);
     // reset the graveVault address
-    setGraveVault(constants.ZERO_ADDRESS);
+    setGraveVault(undefined);
     // Remove the stored account from localStorage.
     localStorage.removeItem('connectedAccount');
     // If additional logic is needed for disconnecting, it should be added here.

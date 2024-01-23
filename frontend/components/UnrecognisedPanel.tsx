@@ -1,7 +1,15 @@
-import {Avatar, Box, Flex, IconButton, Text, useColorModeValue, useToast,} from '@chakra-ui/react';
-import {FaExternalLinkAlt} from 'react-icons/fa';
-import {constants} from '@/app/constants';
-import {formatAddress} from '@/utils/tokenUtils';
+import {
+  Avatar,
+  Box,
+  Flex,
+  IconButton,
+  Text,
+  useColorModeValue,
+  useToast,
+} from '@chakra-ui/react';
+import { FaExternalLinkAlt } from 'react-icons/fa';
+import { constants } from '@/app/constants';
+import { formatAddress } from '@/utils/tokenUtils';
 
 interface LSPPanelProps {
   tokenName: string;

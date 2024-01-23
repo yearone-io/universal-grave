@@ -60,7 +60,7 @@ export default function MyGrave() {
           width={'300px'}
         />
       </Stack>
-      {account && graveVault && graveVault !== constants.ZERO_ADDRESS ? (
+      {account && graveVault ? (
         <Box>
           <Stack mb="30px" mt="30px" direction={'row'}>
             <Text fontSize="m" color="white" fontFamily="Bungee">
