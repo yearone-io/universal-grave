@@ -75,7 +75,7 @@ export default function MyGrave() {
               onClick={() => window.open(`/grave/${account}`, '_blank')}
             />
           </Stack>
-          <Accordion mb={"4"}>
+          <Accordion mb={"4"} allowToggle>
             <AccordionItem>
               <h2>
                 <AccordionButton>
