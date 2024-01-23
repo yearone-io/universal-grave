@@ -2,118 +2,148 @@
 pragma solidity ^0.8.4;
 
 // interfaces
-import { LSP1UniversalReceiverDelegateUP } from "@lukso/lsp-smart-contracts/contracts/LSP1UniversalReceiver/LSP1UniversalReceiverDelegateUP/LSP1UniversalReceiverDelegateUP.sol";
-import { IERC725X } from "@erc725/smart-contracts/contracts/interfaces/IERC725X.sol";
-import { ILSP7DigitalAsset } from "@lukso/lsp-smart-contracts/contracts/LSP7DigitalAsset/ILSP7DigitalAsset.sol";
-import {ILSP8IdentifiableDigitalAsset} from "@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/ILSP8IdentifiableDigitalAsset.sol";
+import { LSP1UniversalReceiverDelegateUP } from '@lukso/lsp-smart-contracts/contracts/LSP1UniversalReceiver/LSP1UniversalReceiverDelegateUP/LSP1UniversalReceiverDelegateUP.sol';
+import { IERC725X } from '@erc725/smart-contracts/contracts/interfaces/IERC725X.sol';
+import { ILSP7DigitalAsset } from '@lukso/lsp-smart-contracts/contracts/LSP7DigitalAsset/ILSP7DigitalAsset.sol';
+import { ILSP8IdentifiableDigitalAsset } from '@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/ILSP8IdentifiableDigitalAsset.sol';
 
 // constants
-import { _INTERFACEID_LSP0 } from "@lukso/lsp-smart-contracts/contracts/LSP0ERC725Account/LSP0Constants.sol";
-import { _INTERFACEID_LSP1_DELEGATE } from "@lukso/lsp-smart-contracts/contracts/LSP1UniversalReceiver/LSP1Constants.sol";
-import { _TYPEID_LSP7_TOKENSRECIPIENT } from "@lukso/lsp-smart-contracts/contracts/LSP7DigitalAsset/LSP7Constants.sol";
-import { _TYPEID_LSP8_TOKENSRECIPIENT } from "@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/LSP8Constants.sol";
+import { _INTERFACEID_LSP0 } from '@lukso/lsp-smart-contracts/contracts/LSP0ERC725Account/LSP0Constants.sol';
+import { _INTERFACEID_LSP1_DELEGATE } from '@lukso/lsp-smart-contracts/contracts/LSP1UniversalReceiver/LSP1Constants.sol';
+import { _TYPEID_LSP7_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contracts/LSP7DigitalAsset/LSP7Constants.sol';
+import { _TYPEID_LSP8_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/LSP8Constants.sol';
 
 // modules
-import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { ERC165 } from '@openzeppelin/contracts/utils/introspection/ERC165.sol';
+import { ERC165Checker } from '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
+
+interface IVault {
+  function setDelegate(address _delegate) external;
+}
+
+interface IUniversalProfile {
+  function setData(bytes32[] memory _keys, bytes[] memory _values) external;
+}
 
 contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
-    mapping (address => address) public graveVaults;
-    mapping(address => mapping (address => bool)) public tokenAllowlist;
+  mapping(address => address) public graveVaults;
+  mapping(address => mapping(address => bool)) public tokenAllowlist;
 
-    // todo: For each UP, we manage a trusted tokenAllowlist of LSP7/LSP8 assets
-    // mapping (address => address) public tokenListContract;
+  // todo: For each UP, we manage a trusted tokenAllowlist of LSP7/LSP8 assets
+  // mapping (address => address) public tokenListContract;
 
-    function setGrave(address grave) public {
-        graveVaults[msg.sender] = grave;
+  function setGrave(address grave) public {
+    graveVaults[msg.sender] = grave;
+  }
+
+  function getGrave() public view returns (address) {
+    return graveVaults[msg.sender];
+  }
+
+  function addTokenToAllowlist(address token) public {
+    tokenAllowlist[msg.sender][token] = true;
+  }
+
+  function removeTokenFromAllowlist(address token) public {
+    tokenAllowlist[msg.sender][token] = false;
+  }
+
+  function getAddressStatus(address token) public view returns (bool) {
+    return tokenAllowlist[msg.sender][token];
+  }
+
+  // 1- Create vault for UP
+  // 2- setGrave
+  // 3 - Set delegate in Vault
+  // 4 - set URD and permissions`
+
+  function joinGrave() public {
+    // 1 - create vault for UP
+    address newVaultAddress = vaultFactory.createVault(msg.sender);
+    // Step 2: Link UP with its vault
+    graveVaults[msg.sender] = newVaultAddress;
+    // 3 - Set delegate in Vault
+    IVault(newVaultAddress).setDelegate(delegateAddress);
+
+    // Step 5: Set URD and permissions
+    // bytes32[] memory keys = new bytes32[](2); // Adjust size as per requirement
+    // bytes[] memory values = new bytes[](2); // Adjust size as per requirement
+
+    // // Populate keys and values with the appropriate data
+    // // ...
+    // IUniversalProfile(msg.sender).setData(keys, values);
+  }
+
+  function universalReceiverDelegate(
+    address notifier,
+    uint256 value,
+    bytes32 typeId,
+    bytes memory data
+  )
+    public
+    virtual
+    override(LSP1UniversalReceiverDelegateUP)
+    returns (bytes memory)
+  {
+    // CHECK that the address of the LSP7/LSP8 is whitelisted
+    if (tokenAllowlist[msg.sender][notifier]) {
+      return super.universalReceiverDelegate(notifier, value, typeId, data);
     }
+    require(
+      graveVaults[msg.sender] != address(0),
+      'LSP1GraveForwader: user vault not set'
+    );
 
-    function getGrave() public view returns (address) {
-        return graveVaults[msg.sender];
+    // CHECK that the caller is a LSP0 (UniversalProfile)
+    // by checking its interface support
+    if (
+      !ERC165Checker.supportsERC165InterfaceUnchecked(
+        msg.sender,
+        _INTERFACEID_LSP0
+      )
+    ) {
+      return 'LSP1GraveForwader: caller is not a LSP0';
     }
-
-    function addTokenToAllowlist(address token) public {
-        tokenAllowlist[msg.sender][token] = true;
-    }
-
-    function removeTokenFromAllowlist(address token) public {
-        tokenAllowlist[msg.sender][token] = false;
-    }
-
-    function getAddressStatus(address token) public view returns (bool) {
-        return tokenAllowlist[msg.sender][token];
-    }
-
-    function universalReceiverDelegate(
-        address notifier,
-        uint256 value,
-        bytes32 typeId,
-        bytes memory data
-    ) public virtual override(LSP1UniversalReceiverDelegateUP) returns (bytes memory) {
-        // CHECK that the address of the LSP7/LSP8 is whitelisted
-        if (tokenAllowlist[msg.sender][notifier]) {
-            return super.universalReceiverDelegate(notifier, value, typeId, data);
+    // CHECK that notifier is a contract with a `balanceOf` method
+    // and that msg.sender (the UP) has a positive balance
+    if (notifier.code.length > 0) {
+      try ILSP7DigitalAsset(notifier).balanceOf(msg.sender) returns (
+        uint256 balance
+      ) {
+        if (balance == 0) {
+          return 'LSP1GraveForwader: UP balance is zero';
         }
-        require(graveVaults[msg.sender] != address(0), "LSP1GraveForwader: user vault not set");
-
-        // CHECK that the caller is a LSP0 (UniversalProfile)
-        // by checking its interface support
-        if (
-            !ERC165Checker.supportsERC165InterfaceUnchecked(
-                msg.sender,
-                _INTERFACEID_LSP0
-            )
-        ) {
-            return "LSP1GraveForwader: caller is not a LSP0";
-        }
-        // CHECK that notifier is a contract with a `balanceOf` method
-        // and that msg.sender (the UP) has a positive balance
-        if (notifier.code.length > 0) {
-            try ILSP7DigitalAsset(notifier).balanceOf(msg.sender) returns (
-                uint256 balance
-            ) {
-                if (balance == 0) {
-                    return "LSP1GraveForwader: UP balance is zero";
-                }
-            } catch {
-                return "LSP1GraveForwader: `balanceOf(address)` function not found";
-            }
-        }
-        
-        if (typeId == _TYPEID_LSP7_TOKENSRECIPIENT) {
-            // extract data (we only need the amount that was transfered / minted)
-            (, , , uint256 amount, ) = abi.decode(
-                data,
-                (address, address, address, uint256, bytes)
-            );
-             bytes memory encodedLSP7Tx = abi.encodeCall(
-                ILSP7DigitalAsset.transfer,
-                (msg.sender,
-                graveVaults[msg.sender],
-                amount,
-                false,
-                data)
-            );
-            // 0 = CALL
-            return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
-        } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
-            // extract data (we only need the amount that was transfered / minted)
-            (, , , bytes32 tokenId, ) = abi.decode(
-                data,
-                (address, address, address, bytes32, bytes)
-            );
-            bytes memory encodedLSP8Tx = abi.encodeCall(
-                ILSP8IdentifiableDigitalAsset.transfer,
-                (msg.sender,
-                graveVaults[msg.sender],
-                tokenId,
-                false,
-                data)
-            );
-            // 0 = CALL
-            return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
-        }
-        
-        return "";
+      } catch {
+        return 'LSP1GraveForwader: `balanceOf(address)` function not found';
+      }
     }
+
+    if (typeId == _TYPEID_LSP7_TOKENSRECIPIENT) {
+      // extract data (we only need the amount that was transfered / minted)
+      (, , , uint256 amount, ) = abi.decode(
+        data,
+        (address, address, address, uint256, bytes)
+      );
+      bytes memory encodedLSP7Tx = abi.encodeCall(
+        ILSP7DigitalAsset.transfer,
+        (msg.sender, graveVaults[msg.sender], amount, false, data)
+      );
+      // 0 = CALL
+      return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
+    } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
+      // extract data (we only need the amount that was transfered / minted)
+      (, , , bytes32 tokenId, ) = abi.decode(
+        data,
+        (address, address, address, bytes32, bytes)
+      );
+      bytes memory encodedLSP8Tx = abi.encodeCall(
+        ILSP8IdentifiableDigitalAsset.transfer,
+        (msg.sender, graveVaults[msg.sender], tokenId, false, data)
+      );
+      // 0 = CALL
+      return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
+    }
+
+    return '';
+  }
 }
