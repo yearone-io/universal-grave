@@ -27,7 +27,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
   const [graveVault, setGraveVault] = useState<string>();
-  const [URDLsp7, setURDLsp7] = useState<string | null>( null);
+  const [URDLsp7, setURDLsp7] = useState<string | null>(null);
   const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast();

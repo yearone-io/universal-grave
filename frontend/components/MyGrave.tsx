@@ -1,6 +1,10 @@
 'use client';
 import {
-  Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel,
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Container,
   Flex,
@@ -15,7 +19,7 @@ import LSPAssets from '@/components/LSPAssets';
 import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import {constants} from "@/app/constants";
+import { constants } from '@/app/constants';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
@@ -75,11 +79,11 @@ export default function MyGrave() {
               onClick={() => window.open(`/grave/${account}`, '_blank')}
             />
           </Stack>
-          <Accordion mb={"4"} allowToggle>
+          <Accordion mb={'4'} allowToggle>
             <AccordionItem>
               <h2>
                 <AccordionButton>
-                  <Box as="span" flex='1' textAlign='left'>
+                  <Box as="span" flex="1" textAlign="left">
                     Advanced info
                   </Box>
                   <AccordionIcon />
@@ -88,27 +92,27 @@ export default function MyGrave() {
               <AccordionPanel pb={4}>
                 <Text>LSP7 Universal Receiver Delegate</Text>
                 <a
-                    href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp7}`}
-                    style={{textDecoration: 'underline'}}
-                    target="_blank"
+                  href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp7}`}
+                  style={{ textDecoration: 'underline' }}
+                  target="_blank"
                 >
                   {URDLsp7}
                 </a>
                 <Text>LSP8 Universal Receiver Delegate</Text>
                 <a
-                    href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp8}`}
-                    style={{textDecoration: 'underline'}}
-                    target="_blank"
+                  href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp8}`}
+                  style={{ textDecoration: 'underline' }}
+                  target="_blank"
                 >
                   {URDLsp8}
                 </a>
               </AccordionPanel>
             </AccordionItem>
           </Accordion>
-          <LSPAssets graveVault={graveVault}/>
+          <LSPAssets graveVault={graveVault} />
         </Box>
       ) : (
-          <></>
+        <></>
       )}
     </Container>
   );

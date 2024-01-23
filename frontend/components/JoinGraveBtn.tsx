@@ -1,9 +1,20 @@
 'use client';
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Button, useToast } from '@chakra-ui/react';
+import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogCloseButton,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Button,
+  useDisclosure,
+  useToast,
+} from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
@@ -15,6 +26,7 @@ import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
+import { FocusableElement } from '@chakra-ui/utils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -49,13 +61,23 @@ export default function JoinGraveBtn({
   ] = useState<string>('');
   const [joiningStep, setJoiningStep] = useState<number>(0);
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = useRef<FocusableElement>(null);
 
   // Checking if the walletContext is available
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
 
-  const { account, graveVault, addGraveVault, setURDLsp7, setURDLsp8, URDLsp7, URDLsp8 } = walletContext;
+  const {
+    account,
+    graveVault,
+    addGraveVault,
+    setURDLsp7,
+    setURDLsp8,
+    URDLsp7,
+    URDLsp8,
+  } = walletContext;
 
   // ========================= HOOKS =========================
 
@@ -128,7 +150,7 @@ export default function JoinGraveBtn({
         // Set the URD for LSP7 and LSP8 to what is returned from the UP.
         // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
         console.log('UPData: ', UPData);
-        setURDLsp7(getChecksumAddress(UPData[0]));
+        setURDLsp7('0x2270dc8C5B28a19e12Adc79C7a9eE4fAFE319DAA');
         setURDLsp8(getChecksumAddress(UPData[1]));
         if (UPData.length === 3 && window.lukso.isUniversalProfileExtension) {
           // sanity check we get the Browser Extension controller address
@@ -637,16 +659,59 @@ export default function JoinGraveBtn({
       );
     } else {
       return (
-        <Button
-          onClick={handleJoin}
-          disabled={loading}
-          mb="10px"
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-        >
-          {loading ? 'Processing...' : 'START'}
-        </Button>
+        <>
+          <AlertDialog
+            motionPreset="slideInBottom"
+            leastDestructiveRef={cancelRef}
+            onClose={() => {
+              setLoading(false);
+              onClose();
+            }}
+            isOpen={isOpen}
+            isCentered
+          >
+            <AlertDialogOverlay />
+            <AlertDialogContent>
+              <AlertDialogHeader>Found existing URDs</AlertDialogHeader>
+              <AlertDialogCloseButton />
+              <AlertDialogBody>
+                You currently have a Universal Receiver Delegate set for LSP7 (
+                {URDLsp7}) and/or LSP8 ({URDLsp8}). Joining the Grave in this
+                state will overwrite the current URD and will affect
+                functionality of your UP profile that relay on them.
+              </AlertDialogBody>
+              <AlertDialogFooter>
+                <Button onClick={onClose}>Cancel</Button>
+                <Button
+                  colorScheme="red"
+                  ml={3}
+                  onClick={() => {
+                    onClose();
+                    handleJoin();
+                  }}
+                >
+                  Continue
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button
+            onClick={() => {
+              if (URDLsp7 != null || URDLsp8 != null) {
+                onOpen();
+              } else {
+                handleJoin();
+              }
+            }}
+            disabled={loading}
+            mb="10px"
+            fontFamily="Bungee"
+            fontSize="16px"
+            fontWeight="400"
+          >
+            {loading ? 'Processing...' : 'START'}
+          </Button>
+        </>
       );
     }
   };
