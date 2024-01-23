@@ -2,7 +2,6 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
-import { constants } from '@/app/constants';
 import { getGraveVaultFor } from '@/utils/universalProfile';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
@@ -28,6 +27,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   // State to hold the connected account's address.
   const [account, setAccount] = useState<string | null>(null);
   const [graveVault, setGraveVault] = useState<string>();
+  const [URDLsp7, setURDLsp7] = useState<string | null>( null);
+  const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast();
 
@@ -125,9 +126,13 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
       value={{
         account,
         graveVault,
+        URDLsp8,
+        URDLsp7,
         connect,
         disconnect,
         isLoadingAccount,
+        setURDLsp7,
+        setURDLsp8,
         addGraveVault,
       }}
     >

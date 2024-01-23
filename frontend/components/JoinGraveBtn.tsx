@@ -43,8 +43,6 @@ export default function JoinGraveBtn({
 }) {
   const [loading, setLoading] = useState(false);
   const walletContext = useContext(WalletContext);
-  const [URDLsp7, setURDLsp7] = useState<string | null>(null);
-  const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [
     browserExtensionControllerAddress,
     setBrowserExtensionControllerAddress,
@@ -56,7 +54,8 @@ export default function JoinGraveBtn({
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-  const { account, graveVault, addGraveVault } = walletContext;
+
+  const { account, graveVault, addGraveVault, setURDLsp7, setURDLsp8, URDLsp7, URDLsp8 } = walletContext;
 
   // ========================= HOOKS =========================
 
