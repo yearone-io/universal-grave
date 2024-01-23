@@ -190,7 +190,7 @@ export default function JoinGraveBtn({
       handleError(err);
       return err;
     }
-    if (graveVault === constants.ZERO_ADDRESS) {
+    if (!graveVault) {
       // 2. Create a vault for the UP. (if needed)
       try {
         const vaultTranx = await createUpVault(signer);

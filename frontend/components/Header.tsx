@@ -1,6 +1,7 @@
 import { Flex, useColorModeValue, Container, Image } from '@chakra-ui/react';
 import React from 'react';
 import WalletConnector from './wallet/WalletConnector';
+import Link from "next/link";
 
 export default function Header() {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.300');
@@ -28,18 +29,17 @@ export default function Header() {
         justifyContent={'space-between'}
         alignItems={'center'}
       >
-        <Flex ml={2} alignItems={'center'} justifyContent={'center'}>
-          <Image
-            cursor="pointer"
-            onClick={() => {
-              window.location.href = '/';
-            }}
-            src={logoPath}
-            alt="Universal-Grave-logo"
-            width={'70px'}
-          />
-          <Image src={testnetPath} alt="Universal-Grave-logo" width={'70px'} />
-        </Flex>
+        <Link href="/">
+          <Flex ml={2} alignItems={'center'} justifyContent={'center'}>
+            <Image
+                cursor="pointer"
+                src={logoPath}
+                alt="Universal-Grave-logo"
+                width={'70px'}
+            />
+            <Image src={testnetPath} alt="Universal-Grave-logo" width={'70px'} />
+          </Flex>
+        </Link>
         <Flex justifyContent={'flex-end'}>
           <WalletConnector />
         </Flex>
