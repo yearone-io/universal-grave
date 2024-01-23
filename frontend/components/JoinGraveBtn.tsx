@@ -55,7 +55,8 @@ export default function JoinGraveBtn({
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-  const { account, graveVault, mainUPController, addGraveVault } = walletContext;
+  const { account, graveVault, mainUPController, addGraveVault } =
+    walletContext;
 
   // ========================= HOOKS =========================
 

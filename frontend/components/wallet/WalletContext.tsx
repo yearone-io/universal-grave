@@ -17,7 +17,6 @@ const defaultImplementation: WalletContextType = {
   isLoadingAccount: true,
   connect: async () => {
     // Default connect implementation
-
   },
   disconnect: () => {
     // Default disconnect implementation

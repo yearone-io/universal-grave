@@ -54,8 +54,6 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     }
   }, [account]);
 
-
-
   /**
    * Disconnects the wallet, removes the account address from state and localStorage.
    */
@@ -88,23 +86,24 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
         const siweMessage = new SiweMessage({
           domain: window.location.host, // Domain requesting the signing
-          address: accounts[0],           // Address performing the signing
-          statement: "By logging in you agree to the terms and conditions.", // a human-readable assertion user signs
-          uri: window.location.origin,  // URI from the resource that is the subject of the signing
-          version: '1',                 // Current version of the SIWE Message
-          chainId: 4201,              // Chain ID to which the session is bound, 4201 is LUKSO Testnet
+          address: accounts[0], // Address performing the signing
+          statement: 'By logging in you agree to the terms and conditions.', // a human-readable assertion user signs
+          uri: window.location.origin, // URI from the resource that is the subject of the signing
+          version: '1', // Current version of the SIWE Message
+          chainId: 4201, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
           resources: ['https://terms.website.com'], // Information the user wishes to have resolved as part of authentication by the relying party
         }).prepareMessage();
-        const hashedMessage = web3.eth.accounts.hashMessage(
-          siweMessage
-        );
+        const hashedMessage = web3.eth.accounts.hashMessage(siweMessage);
 
         // Request the user to sign the login message with his Universal Profile
         // The UP Browser Extension will sign the message with the controller key used by the extension (a smart contract can't sign)
-        const signature = await web3.eth.sign(hashedMessage , accounts[0]);
-        const signerAddress = web3.eth.accounts.recover(hashedMessage, signature);
+        const signature = await web3.eth.sign(hashedMessage, accounts[0]);
+        const signerAddress = web3.eth.accounts.recover(
+          hashedMessage,
+          signature
+        );
         setMainUPController(signerAddress);
-        console.log("The Main Controller address is:", signerAddress);
+        console.log('The Main Controller address is:', signerAddress);
         localStorage.setItem('connectedAccount', accounts[0]);
       } catch (error: any) {
         // Log any connection errors.
