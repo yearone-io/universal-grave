@@ -4,6 +4,7 @@ import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
 import { getGraveVaultFor } from '@/utils/universalProfile';
+import { NETWORKS } from '@/constants/networks';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -80,6 +81,9 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         setGraveVault(undefined);
         // Request accounts from the wallet.
         accounts = await web3.eth.requestAccounts();
+        if (!accounts.length) {
+          throw new Error('No user accounts found');
+        }
         console.log('Connected with', accounts[0]);
         // Update state and localStorage with the first account address.
         setAccount(accounts[0]);
@@ -90,8 +94,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           statement: 'By logging in you agree to the terms and conditions.', // a human-readable assertion user signs
           uri: window.location.origin, // URI from the resource that is the subject of the signing
           version: '1', // Current version of the SIWE Message
-          chainId: 4201, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
-          resources: ['https://terms.website.com'], // Information the user wishes to have resolved as part of authentication by the relying party
+          chainId: NETWORKS.testnet.chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
+          resources: [`${window.location.host}/terms`], // Information the user wishes to have resolved as part of authentication by the relying party
         }).prepareMessage();
         const hashedMessage = web3.eth.accounts.hashMessage(siweMessage);
 
@@ -115,7 +119,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
             ? error.error.message
             : 'An unknown error occurred';
         const toastMessage = `Connection error: ${message}`;
-        console.log(toastMessage);
+        console.error(toastMessage);
         toast({
           title: toastMessage,
           status: 'error',
