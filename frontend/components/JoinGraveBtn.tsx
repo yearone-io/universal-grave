@@ -1,32 +1,21 @@
 'use client';
-import { useContext, useEffect, useState, useRef } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogCloseButton,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Button,
-  useDisclosure,
-  useToast,
-} from '@chakra-ui/react';
+import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
+  constants,
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
   GRAVE_CONTROLLER_PERMISSIONS,
-  constants,
 } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
-import { FocusableElement } from '@chakra-ui/utils';
+import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -61,8 +50,6 @@ export default function JoinGraveBtn({
   const [leavingStep, setLeavingStep] = useState<number>(-1);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const cancelRef = useRef<FocusableElement>(null);
-
   // Checking if the walletContext is available
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
@@ -656,41 +643,12 @@ export default function JoinGraveBtn({
     } else {
       return (
         <>
-          <AlertDialog
-            motionPreset="slideInBottom"
-            leastDestructiveRef={cancelRef}
-            onClose={() => {
-              setLoading(false);
-              onClose();
-            }}
+          <ExistingURDAlert
+            handleJoin={handleJoin}
             isOpen={isOpen}
-            isCentered
-          >
-            <AlertDialogOverlay />
-            <AlertDialogContent>
-              <AlertDialogHeader>Found existing URDs</AlertDialogHeader>
-              <AlertDialogCloseButton />
-              <AlertDialogBody>
-                You currently have a Universal Receiver Delegate set for LSP7 (
-                {URDLsp7}) and/or LSP8 ({URDLsp8}). Joining the Grave in this
-                state will overwrite the current URD and will affect
-                functionality of your UP profile that relay on them.
-              </AlertDialogBody>
-              <AlertDialogFooter>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button
-                  colorScheme="red"
-                  ml={3}
-                  onClick={() => {
-                    onClose();
-                    handleJoin();
-                  }}
-                >
-                  Continue
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            onClose={onClose}
+            setLoading={setLoading}
+          />
           <Button
             onClick={() => {
               if (hasExistingNonGraveDelegates()) {
