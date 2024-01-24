@@ -1,9 +1,9 @@
-'use client';
 import React from 'react';
 
 interface WalletContextType {
   account: string | null;
   graveVault: string | undefined;
+  mainUPController: string | undefined;
   URDLsp7: string | null;
   URDLsp8: string | null;
   connect: () => Promise<void>;
@@ -17,6 +17,7 @@ interface WalletContextType {
 const defaultImplementation: WalletContextType = {
   account: null,
   graveVault: undefined,
+  mainUPController: undefined,
   URDLsp7: null,
   URDLsp8: null,
   isLoadingAccount: true,
