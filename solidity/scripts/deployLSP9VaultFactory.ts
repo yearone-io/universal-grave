@@ -23,7 +23,6 @@ async function main() {
         'contracts/LSP9VaultFactory.sol:LSP9VaultFactory',
       ).bytecode;
 
-
     const factoryAddress = await UP.connect(signer).execute.staticCall(
         OPERATION_TYPES.CREATE,
         ethers.ZeroAddress,
@@ -45,6 +44,7 @@ async function main() {
     } catch (error) {
         console.log(error)
         console.error("Contract verification might have failed");
+        console.log(`to verify run: npx hardhat verify --network luksoTestnet ${factoryAddress}`);
     }
     console.log('✅ LSP9 Vault Factory successfully deployed at address: ', factoryAddress);
 }

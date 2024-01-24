@@ -57,22 +57,22 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
   // 3 - Set delegate in Vault
   // 4 - set URD and permissions`
 
-  function joinGrave() public {
-    // 1 - create vault for UP
-    address newVaultAddress = vaultFactory.createVault(msg.sender);
-    // Step 2: Link UP with its vault
-    graveVaults[msg.sender] = newVaultAddress;
-    // 3 - Set delegate in Vault
-    IVault(newVaultAddress).setDelegate(delegateAddress);
+  // function joinGrave() public {
+  //   // 1 - create vault for UP
+  //   address newVaultAddress = vaultFactory.createVault(msg.sender);
+  //   // Step 2: Link UP with its vault
+  //   graveVaults[msg.sender] = newVaultAddress;
+  //   // 3 - Set delegate in Vault
+  //   IVault(newVaultAddress).setDelegate(delegateAddress);
 
-    // Step 5: Set URD and permissions
-    // bytes32[] memory keys = new bytes32[](2); // Adjust size as per requirement
-    // bytes[] memory values = new bytes[](2); // Adjust size as per requirement
+  //   // Step 5: Set URD and permissions
+  //   // bytes32[] memory keys = new bytes32[](2); // Adjust size as per requirement
+  //   // bytes[] memory values = new bytes[](2); // Adjust size as per requirement
 
-    // // Populate keys and values with the appropriate data
-    // // ...
-    // IUniversalProfile(msg.sender).setData(keys, values);
-  }
+  //   // // Populate keys and values with the appropriate data
+  //   // // ...
+  //   // IUniversalProfile(msg.sender).setData(keys, values);
+  // }
 
   function universalReceiverDelegate(
     address notifier,
