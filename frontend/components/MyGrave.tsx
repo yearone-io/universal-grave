@@ -13,7 +13,6 @@ import SignInBox from '@/components/SignInBox';
 import LSPAssets from '@/components/LSPAssets';
 import { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
-import { constants } from '@/app/constants';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 
 export default function MyGrave() {

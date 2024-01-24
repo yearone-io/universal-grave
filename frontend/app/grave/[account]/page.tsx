@@ -22,21 +22,6 @@ const logoPath = '/images/logo-full.png';
 export default function Grave({ params }: { params: { account: string } }) {
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
-      <Stack
-        direction={{ base: 'column', md: 'row' }}
-        justify="space-between"
-        align="center"
-        w="100%"
-        pt="50px"
-      >
-        <GravePagePanel account={params.account} />
-        <Image
-          mx={'40px'}
-          src={logoPath}
-          alt="Universal-Grave-logo"
-          width={'300px'}
-        />
-      </Stack>
       <Box>
         <Text
           fontSize="20px"

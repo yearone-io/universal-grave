@@ -121,7 +121,8 @@ export default function LSPAssets({
     return (
       <Box>
         <Image
-          w="300px"
+          w="250px"
+          p="20px"
           src="/images/empty-grave.png"
           alt="empty-grave"
           borderRadius="10px"
@@ -129,13 +130,12 @@ export default function LSPAssets({
         <Text
           color="white"
           fontWeight={400}
-          fontSize="16px"
+          fontSize="12px"
           fontFamily="Bungee"
           mb="20px"
-          mt="20px"
           textAlign="center"
         >
-          Your Graveyard is empty
+          Empty
         </Text>
       </Box>
     );
