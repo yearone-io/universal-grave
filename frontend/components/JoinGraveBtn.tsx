@@ -190,47 +190,57 @@ export default function JoinGraveBtn({
       handleError(err);
       return err;
     }
-    if (!graveVault) {
-      // 2. Create a vault for the UP. (if needed)
-      try {
-        const vaultTranx = await createUpVault(signer);
-        vaultAddress = vaultTranx.contractAddress;
-        // add the vault to the provider store
-        addGraveVault(vaultAddress);
-        setJoiningStep(2);
-        console.log('step 2');
-      } catch (err: any) {
-        handleError(err);
-        return err;
-      }
-      // 3. Set the vault in the forwarder contract
-      try {
-        console.log('starting step 2 setGraveInForwarder');
-        // need to allow controller to interact with the forwarder using AllowedCalls
-        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
-        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
-        await setGraveInForwarder(provider, signer, vaultAddress);
-        console.log('finished 2 setGraveInForwarder');
-        setJoiningStep(3);
-        console.log('step 3');
-      } catch (err: any) {
-        handleError(err);
-        return err;
-      }
-    } else {
-      setJoiningStep(3);
-      console.log('step 2 and 3 skipped, vault already exists');
-    }
 
-    // 4. Enable grave to keep assets inventory
-    try {
-      await setDelegateInVault(vaultAddress as string);
-      setJoiningStep(4);
-      console.log('step 4');
-    } catch (err: any) {
-      handleError(err);
-      return err;
-    }
+
+    const joinTrx = new ethers.Contract(
+      constants.UNIVERSAL_GRAVE_FORWARDER,
+      LSP1GraveForwader.abi,
+      signer
+    );
+    const a = await joinTrx.joinGrave();      
+    console.log(a);
+    setJoiningStep(4);
+    // if (!graveVault) {
+    //   // 2. Create a vault for the UP. (if needed)
+    //   try {
+    //     const vaultTranx = await createUpVault(signer);
+    //     vaultAddress = vaultTranx.contractAddress;
+    //     // add the vault to the provider store
+    //     addGraveVault(vaultAddress);
+    //     setJoiningStep(2);
+    //     console.log('step 2');
+    //   } catch (err: any) {
+    //     handleError(err);
+    //     return err;
+    //   }
+    //   // 3. Set the vault in the forwarder contract
+    //   try {
+    //     console.log('starting step 2 setGraveInForwarder');
+    //     // need to allow controller to interact with the forwarder using AllowedCalls
+    //     // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
+    //     // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
+    //     await setGraveInForwarder(provider, signer, vaultAddress);
+    //     console.log('finished 2 setGraveInForwarder');
+    //     setJoiningStep(3);
+    //     console.log('step 3');
+    //   } catch (err: any) {
+    //     handleError(err);
+    //     return err;
+    //   }
+    // } else {
+    //   setJoiningStep(3);
+    //   console.log('step 2 and 3 skipped, vault already exists');
+    // }
+
+    // // 4. Enable grave to keep assets inventory
+    // try {
+    //   await setDelegateInVault(vaultAddress as string);
+    //   setJoiningStep(4);
+    //   console.log('step 4');
+    // } catch (err: any) {
+    //   handleError(err);
+    //   return err;
+    // }
     // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
       await setForwarderAsLSPDelegate(signer, provider);
