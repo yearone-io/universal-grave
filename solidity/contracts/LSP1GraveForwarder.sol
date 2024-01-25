@@ -16,9 +16,12 @@ import { _TYPEID_LSP8_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contrac
 // modules
 import { ERC165 } from '@openzeppelin/contracts/utils/introspection/ERC165.sol';
 import { ERC165Checker } from '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
+import './GraveDataForwarder.sol';
 
 interface IVault {
   function setDelegate(address _delegate) external;
+
+  function setData(bytes32 key, bytes calldata value) external;
 }
 
 interface IUniversalProfile {
@@ -30,13 +33,28 @@ interface IVaultFactory {
 }
 
 contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
+  // GraveDataForwarder public dataForwarder;
   mapping(address => address) public graveVaults;
   mapping(address => mapping(address => bool)) public tokenAllowlist;
   address public vaultFactoryAddress =
     address(0x121828ece3Cc0f8Cd30fe612FAE12a72A9595943); // todo: make it configurable
 
+  bytes public LSP1_URD_VAULT_TESTNET =
+    abi.encodePacked(address(0xBc7b3980614215c8090dF310661685Cc393B601A));
+
+  // todo make  ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate configurable
+
+  bytes32 public LSP1UniversalReceiverDelegate_KEY =
+    0x0cfc51aec37c55a4d0b1a65c6255c4bf2fbdf6277f3cc0730c45b828b6db8b47;
+
+  event VaultCreated(address indexed newVaultAddress);
+
   // todo: For each UP, we manage a trusted tokenAllowlist of LSP7/LSP8 assets
   // mapping (address => address) public tokenListContract;
+
+  // constructor(address _dataForwarderAddress) {
+  //   dataForwarder = GraveDataForwarder(_dataForwarderAddress);
+  // }
 
   function setGrave(address grave) public {
     graveVaults[msg.sender] = grave;
@@ -63,7 +81,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
   // 3 - Set delegate in Vault
   // 4 - set URD and permissions`
 
-  function joinGrave() public {
+  function joinGrave() public returns (address) {
     // 1 - create vault for UP
     // TODO make it optional if there is already a vault for this UP
     address newVaultAddress = IVaultFactory(vaultFactoryAddress)
@@ -71,13 +89,26 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
     // Step 2: Link UP with its vault
     graveVaults[msg.sender] = newVaultAddress;
     // 3 - Set delegate in Vault
-    // IVault(newVaultAddress).setDelegate(delegateAddress);
+    // IVault(newVaultAddress).setData(
+    //   LSP1UniversalReceiverDelegate_KEY,
+    //   LSP1_URD_VAULT_TESTNET
+    // );
+
+    // Instead of calling setData directly, use the forwarder
+    // dataForwarder.forwardSetData(
+    //   newVaultAddress,
+    //   LSP1UniversalReceiverDelegate_KEY,
+    //   LSP1_URD_VAULT_TESTNET
+    // );
+
     // Step 5: Set URD and permissions
     //   // bytes32[] memory keys = new bytes32[](2); // Adjust size as per requirement
     //   // bytes[] memory values = new bytes[](2); // Adjust size as per requirement
     //   // // Populate keys and values with the appropriate data
     //   // // ...
     //   // IUniversalProfile(msg.sender).setData(keys, values);
+    emit VaultCreated(newVaultAddress);
+    return newVaultAddress;
   }
 
   function universalReceiverDelegate(

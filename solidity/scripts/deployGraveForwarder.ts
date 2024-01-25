@@ -1,7 +1,8 @@
 import hre, { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
 import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
+import { ERC725YDataKeys, OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
+import LSP1GraveForwader from "../artifacts/contracts/LSP1GraveForwarder.sol/LSP1GraveForwader.json";
 
 // load env vars
 dotenv.config();
@@ -23,26 +24,38 @@ async function main() {
     const fullBytecode = CustomURDBytecode;// + params;
     // get the address of the contract that will be created
     const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
-    const graveForwaderAddress = await UP.connect(signer).execute.staticCall(
-        OPERATION_TYPES.CREATE,
-        ethers.ZeroAddress,
-        0,
-        fullBytecode,
+    // const graveForwaderAddress = await UP.connect(signer).execute.staticCall(
+    //     OPERATION_TYPES.CREATE,
+    //     ethers.ZeroAddress,
+    //     0,
+    //     fullBytecode,
+    // );
+    // // deploy LSP1URDForwarder as the UP (signed by the browser extension controller)
+    // const forwarderDeploymentTx = await UP.connect(signer).execute(OPERATION_TYPES.CREATE, ethers.ZeroAddress, 0, fullBytecode);
+    // await forwarderDeploymentTx.wait();
+
+    const graveForwarder = new ethers.ContractFactory(
+        LSP1GraveForwader.abi,
+        LSP1GraveForwader.bytecode,
     );
-    // deploy LSP1URDForwarder as the UP (signed by the browser extension controller)
-    const forwarderDeploymentTx = await UP.connect(signer).execute(OPERATION_TYPES.CREATE, ethers.ZeroAddress, 0, fullBytecode);
-    await forwarderDeploymentTx.wait();
+
+    const deploymentArguments = [];//'0xd7c7d9ef72e5b595d02129aabdd4219814cc9c6b'];
+
+    const deployTx = await graveForwarder.connect(signer).deploy(...deploymentArguments);
+    await deployTx.waitForDeployment();
+
+
     try {
         await hre.run("verify:verify", {
-            address: graveForwaderAddress,
+            address: deployTx.target,
             network: "luksoTestnet",
-            constructorArguments: [],
+            constructorArguments: deploymentArguments,
         });
         console.log("Contract verified");
     } catch (error) {
         console.error("Contract verification might have failed");
     }
-    console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwaderAddress);
+    console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ',  deployTx.target);
 }
 
 

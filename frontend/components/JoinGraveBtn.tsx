@@ -197,9 +197,16 @@ export default function JoinGraveBtn({
       LSP1GraveForwader.abi,
       signer
     );
-    const a = await joinTrx.joinGrave();      
-    console.log(a);
-    setJoiningStep(4);
+ 
+    // const a = await joinGraveTrans.wait();    
+    // console.log(a);
+    const joinGraveTrans = await joinTrx.joinGrave({ gasLimit: 400_00 });
+    const receipt = await joinGraveTrans.wait();
+    const vaultCreatedEvent = receipt.events.find(event => event.event === 'VaultCreated');
+    const newVaultAddress = vaultCreatedEvent.args.newVaultAddress;
+    addGraveVault(newVaultAddress);
+
+    setJoiningStep(3);
     // if (!graveVault) {
     //   // 2. Create a vault for the UP. (if needed)
     //   try {
@@ -232,15 +239,16 @@ export default function JoinGraveBtn({
     //   console.log('step 2 and 3 skipped, vault already exists');
     // }
 
-    // // 4. Enable grave to keep assets inventory
-    // try {
-    //   await setDelegateInVault(vaultAddress as string);
-    //   setJoiningStep(4);
-    //   console.log('step 4');
-    // } catch (err: any) {
-    //   handleError(err);
-    //   return err;
-    // }
+    // 4. Enable grave to keep assets inventory
+    try {
+      console.log('uuu', vaultAddress)
+      await setDelegateInVault(vaultAddress as string);
+      setJoiningStep(4);
+      console.log('step 4');
+    } catch (err: any) {
+      handleError(err);
+      return err;
+    }
     // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
       await setForwarderAsLSPDelegate(signer, provider);

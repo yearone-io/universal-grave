@@ -20,22 +20,22 @@ async function main() {
     const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
 
     const fullBytecode = hre.artifacts.readArtifactSync(
-        'contracts/LSP9VaultFactory.sol:LSP9VaultFactory',
+        'contracts/GraveDataForwarder.sol:GraveDataForwarder',
       ).bytecode;
 
-    const factoryAddress = await UP.connect(signer).execute.staticCall(
+    const contractAddress = await UP.connect(signer).execute.staticCall(
         OPERATION_TYPES.CREATE,
         ethers.ZeroAddress,
         0,
         fullBytecode,
     );
       
-    const factoryDeployment = await UP.connect(signer).execute(OPERATION_TYPES.CREATE, ethers.ZeroAddress, 0, fullBytecode);
-    await factoryDeployment.wait();
+    const contractDeployment = await UP.connect(signer).execute(OPERATION_TYPES.CREATE, ethers.ZeroAddress, 0, fullBytecode);
+    await contractDeployment.wait();
 
     try {
         await hre.run("verify:verify", {
-            address: factoryAddress,
+            address: contractAddress,
             network: "luksoTestnet",
             constructorArguments: [],
         });
@@ -43,9 +43,9 @@ async function main() {
     } catch (error) {
         console.log(error)
         console.error("Contract verification might have failed");
-        console.log(`to verify run: npx hardhat verify --network luksoTestnet ${factoryAddress}`);
+        console.log(`to verify run: npx hardhat verify --network luksoTestnet ${contractAddress}`);
     }
-    console.log('✅ LSP9 Vault Factory successfully deployed at address: ', factoryAddress);
+    console.log('✅ LSP9 Vault Factory successfully deployed at address: ', contractAddress);
 }
 
 
@@ -54,26 +54,3 @@ main()
         console.error(error);
         process.exit(1);
     });
-
-// // Import ethers from Hardhat package
-// const { ethers } = require("hardhat");
-
-// async function main() {
-//     // Fetching the contract factory
-//     const LSP9VaultFactory = await ethers.getContractFactory("LSP9VaultFactory");
-
-//     // Deploying the contract
-//     const lsp9VaultFactory = await LSP9VaultFactory.deployTransaction; // Include constructor args if needed
-//     console.log(lsp9VaultFactory)
-
-//     // console.log("LSP9VaultFactory deployed to:", lsp9VaultFactory.address);
-// }
-
-// main()
-//     .then(() => process.exit(0))
-//     .catch(error => {
-//         console.error(error);
-//         process.exit(1);
-//     });
-
-
