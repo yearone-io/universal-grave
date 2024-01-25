@@ -5,11 +5,12 @@ import {
   IconButton,
   Text,
   useColorModeValue,
-  useToast,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { constants } from '@/app/constants';
 import { formatAddress } from '@/utils/tokenUtils';
+import { useContext } from 'react';
+import { WalletContext } from '@/components/wallet/WalletContext';
 
 interface LSPPanelProps {
   tokenName: string;
@@ -25,6 +26,9 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
   tokenAddress,
   tokenMetadata,
 }) => {
+  const walletContext = useContext(WalletContext);
+  const { networkConfig } = walletContext;
+
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -36,7 +40,6 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
-  const toast = useToast();
 
   const getTokenIconUrl = () => {
     let tokenIcon = (
@@ -111,7 +114,7 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${tokenAddress}`,
+                  `${networkConfig.LUKSO_EXPLORER}${tokenAddress}`,
                   '_blank'
                 )
               }
