@@ -1,20 +1,21 @@
 'use client';
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
-import { Button, useToast } from '@chakra-ui/react';
+import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
+  constants,
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
   GRAVE_CONTROLLER_PERMISSIONS,
-  constants,
 } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
+import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -45,18 +46,25 @@ export default function JoinGraveBtn({
 }) {
   const [loading, setLoading] = useState(false);
   const walletContext = useContext(WalletContext);
-  const [URDLsp7, setURDLsp7] = useState<string | null>(null);
-  const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [joiningStep, setJoiningStep] = useState<number>(0);
   const [leavingStep, setLeavingStep] = useState<number>(-1);
   const toast = useToast();
-
+  const { isOpen, onOpen, onClose } = useDisclosure();
   // Checking if the walletContext is available
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-  const { account, graveVault, mainUPController, addGraveVault } =
-    walletContext;
+
+  const {
+    account,
+    graveVault,
+    mainUPController,
+    addGraveVault,
+    setURDLsp7,
+    setURDLsp8,
+    URDLsp7,
+    URDLsp8,
+  } = walletContext;
 
   // ========================= HOOKS =========================
 
@@ -570,6 +578,10 @@ export default function JoinGraveBtn({
     );
   };
 
+  const hasExistingNonGraveDelegates = () => {
+    return !hasJoinedTheGrave() && (URDLsp8 != null || URDLsp7 != null);
+  };
+
   // ========================= UI =========================
   /**
    * When the user clicks the "Leave the Grave" button, the sub-URD is reset to the zero address.
@@ -630,16 +642,30 @@ export default function JoinGraveBtn({
       );
     } else {
       return (
-        <Button
-          onClick={handleJoin}
-          disabled={loading}
-          mb="10px"
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-        >
-          {loading ? 'Processing...' : 'START'}
-        </Button>
+        <>
+          <ExistingURDAlert
+            handleJoin={handleJoin}
+            isOpen={isOpen}
+            onClose={onClose}
+            setLoading={setLoading}
+          />
+          <Button
+            onClick={() => {
+              if (hasExistingNonGraveDelegates()) {
+                onOpen();
+              } else {
+                handleJoin();
+              }
+            }}
+            disabled={loading}
+            mb="10px"
+            fontFamily="Bungee"
+            fontSize="16px"
+            fontWeight="400"
+          >
+            {loading ? 'Processing...' : 'START'}
+          </Button>
+        </>
       );
     }
   };

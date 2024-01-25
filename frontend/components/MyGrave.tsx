@@ -1,5 +1,10 @@
 'use client';
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Container,
   Flex,
@@ -11,15 +16,15 @@ import {
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import LSPAssets from '@/components/LSPAssets';
-import { useContext } from 'react';
+import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
-import { constants } from '@/app/constants';
 import { FaExternalLinkAlt } from 'react-icons/fa';
+import { constants } from '@/app/constants';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
-  const { account, graveVault } = walletContext;
+  const { account, graveVault, URDLsp7, URDLsp8 } = walletContext;
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -74,6 +79,36 @@ export default function MyGrave() {
               onClick={() => window.open(`/grave/${account}`, '_blank')}
             />
           </Stack>
+          <Accordion mb={'4'} allowToggle>
+            <AccordionItem>
+              <h2>
+                <AccordionButton>
+                  <Box as="span" flex="1" textAlign="left">
+                    Advanced info
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+              </h2>
+              <AccordionPanel pb={4}>
+                <Text>LSP7 Universal Receiver Delegate</Text>
+                <a
+                  href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp7}`}
+                  style={{ textDecoration: 'underline' }}
+                  target="_blank"
+                >
+                  {URDLsp7}
+                </a>
+                <Text>LSP8 Universal Receiver Delegate</Text>
+                <a
+                  href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp8}`}
+                  style={{ textDecoration: 'underline' }}
+                  target="_blank"
+                >
+                  {URDLsp8}
+                </a>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
           <LSPAssets graveVault={graveVault} />
         </Box>
       ) : (

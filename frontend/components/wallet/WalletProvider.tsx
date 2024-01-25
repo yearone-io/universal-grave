@@ -30,6 +30,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null);
   const [mainUPController, setMainUPController] = useState<string>();
   const [graveVault, setGraveVault] = useState<string>();
+  const [URDLsp7, setURDLsp7] = useState<string | null>(null);
+  const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
   const toast = useToast();
 
@@ -156,9 +158,13 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         account,
         graveVault,
         mainUPController,
+        URDLsp8,
+        URDLsp7,
         connect,
         disconnect,
         isLoadingAccount,
+        setURDLsp7,
+        setURDLsp8,
         addGraveVault,
       }}
     >
