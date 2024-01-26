@@ -70,7 +70,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const signer = provider.getSigner();
 
       const LSP1GraveForwaderContract = new ethers.Contract(
-        networkConfig.UNIVERSAL_GRAVE_FORWARDER,
+        networkConfig.universalGraveForwarder,
         LSP1GraveForwader.abi,
         signer
       );
@@ -206,7 +206,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.LUKSO_EXPLORER}${tokenAddress}`,
+                  `${networkConfig.luksoExplorer}${tokenAddress}`,
                   '_blank'
                 )
               }

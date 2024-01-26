@@ -1,9 +1,9 @@
 'use client';
 import LSPAssets from '@/components/LSPAssets';
-import {useContext, useEffect, useState} from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { getGraveVaultFor } from '@/utils/universalProfile';
 import { Text } from '@chakra-ui/react';
-import {WalletContext} from "@/components/wallet/WalletContext";
+import { WalletContext } from '@/components/wallet/WalletContext';
 
 export default function GravePageAssets({ account }: { account: string }) {
   const walletContext = useContext(WalletContext);
@@ -13,7 +13,7 @@ export default function GravePageAssets({ account }: { account: string }) {
 
   useEffect(() => {
     if (!graveVault) {
-      getGraveVaultFor(account, networkConfig.UNIVERSAL_GRAVE_FORWARDER)
+      getGraveVaultFor(account, networkConfig.universalGraveForwarder)
         .then(graveVault => {
           if (!graveVault) {
             setError('No grave vault found for this account');

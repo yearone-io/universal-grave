@@ -33,9 +33,10 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const [URDLsp7, setURDLsp7] = useState<string | null>(null);
   const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
-  const networkConfig = getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!);
+  const networkConfig = getNetworkConfig(
+    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
+  );
   const toast = useToast();
-
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
   useEffect(() => {
@@ -51,11 +52,13 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
-      getGraveVaultFor(account, networkConfig.UNIVERSAL_GRAVE_FORWARDER).then(graveVault => {
-        if (graveVault) {
-          setGraveVault(graveVault);
+      getGraveVaultFor(account, networkConfig.universalGraveForwarder).then(
+        graveVault => {
+          if (graveVault) {
+            setGraveVault(graveVault);
+          }
         }
-      });
+      );
     }
   }, [account]);
 
@@ -98,7 +101,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           statement: 'By logging in you agree to the terms and conditions.', // a human-readable assertion user signs
           uri: window.location.origin, // URI from the resource that is the subject of the signing
           version: '1', // Current version of the SIWE Message
-          chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!).chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
+          chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
+            .chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
           resources: [`${window.location.host}/terms`], // Information the user wishes to have resolved as part of authentication by the relying party
         }).prepareMessage();
         const hashedMessage = web3.eth.accounts.hashMessage(siweMessage);

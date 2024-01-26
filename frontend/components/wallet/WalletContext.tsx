@@ -1,5 +1,5 @@
 import React from 'react';
-import {getNetworkConfig} from "@/constants/networks";
+import { getNetworkConfig } from '@/constants/networks';
 
 interface WalletContextType {
   networkConfig: any;
