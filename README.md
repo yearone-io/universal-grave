@@ -22,4 +22,3 @@ The LSP1GraveForwarder is a Universal Receiver Delegate, gets attached to a user
 
 You can deploy a new forwarder using /solidity/scripts/deployGraveForwarder.ts
 
-
