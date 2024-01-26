@@ -211,7 +211,7 @@ export default function LSPAssets({
           fontFamily="Bungee"
           mb="20px"
         >
-          Unrecognised Assets
+          Unrecognized LSP Assets
         </Text>
         {unrecognisedAssets.length
           ? unrecognisedAssets.map((asset, index) => (

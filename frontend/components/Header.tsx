@@ -1,10 +1,15 @@
-import { Flex, useColorModeValue, Container, Image, Icon } from '@chakra-ui/react';
+import {
+  Flex,
+  useColorModeValue,
+  Container,
+  Image,
+  Icon,
+} from '@chakra-ui/react';
 import React, { useContext } from 'react';
 import { FaCog } from 'react-icons/fa';
 import WalletConnector from './wallet/WalletConnector';
 import Link from 'next/link';
 import { WalletContext } from '@/components/wallet/WalletContext';
-
 
 export default function Header() {
   const walletContext = useContext(WalletContext);
@@ -50,13 +55,11 @@ export default function Header() {
           </Flex>
         </Link>
         <Flex justifyContent={'flex-end'} alignItems={'center'} gap={2}>
-          {
-            account && (
-              <Link href="/grave" passHref>
-                <Icon as={FaCog} color={'light.white'} h={5} w={6} />
-              </Link>
-            )
-          }
+          {account && (
+            <Link href="/grave" passHref>
+              <Icon as={FaCog} color={'light.white'} h={5} w={6} />
+            </Link>
+          )}
           <WalletConnector />
         </Flex>
       </Container>

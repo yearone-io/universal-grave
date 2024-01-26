@@ -42,14 +42,15 @@ export const ExistingURDAlert = ({
     >
       <AlertDialogOverlay />
       <AlertDialogContent>
-        <AlertDialogHeader>Whoops! not so fast!</AlertDialogHeader>
+        <AlertDialogHeader>Whoops! Not so fast!</AlertDialogHeader>
         <AlertDialogCloseButton />
         <AlertDialogBody>
-          "Hey, just a heads up! You've got a Universal Receiver Delegate set up
-          for LSP7 ({URDLsp7}) and maybe for LSP8 ({URDLsp8}) too. If you jump
-          into the Grave, it's gonna switch up your current URD. This could mess
-          with some stuff on your UP profile, especially the parts that rely on
-          these."
+          Hey, just a heads up! We've detected that you have a Universal
+          Receiver Delegate set up for LSP7 ({URDLsp7}) and/or for LSP8 (
+          {URDLsp8}) assets. If you join the Grave your current URD
+          functionality will be replaced and it could affect your UP profile's
+          existing functionality, such as any dApps or flows that rely on these
+          values.
         </AlertDialogBody>
         <AlertDialogFooter>
           <Button onClick={onClose}>Cancel</Button>
@@ -61,7 +62,7 @@ export const ExistingURDAlert = ({
               handleJoin();
             }}
           >
-            Continue
+            Proceed Anyway
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

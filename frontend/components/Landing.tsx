@@ -45,14 +45,16 @@ export default function Landing() {
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
   const [inputValue, setInputValue] = useState<string>();
-  const defaultGraveButtonText = "Connect a GRAVE to your 🆙";
-  const [graveButtonText, setGraveButtonText] = useState<string>(defaultGraveButtonText);
+  const defaultGraveButtonText = 'Connect a GRAVE to your 🆙';
+  const [graveButtonText, setGraveButtonText] = useState<string>(
+    defaultGraveButtonText
+  );
 
   useEffect(() => {
     if (!graveVault) {
       setGraveButtonText(defaultGraveButtonText);
     } else {
-      setGraveButtonText("Manage assets in you 🆙 Grave");
+      setGraveButtonText('Manage the assets in your 🆙 Grave');
     }
   }, [graveVault, account]);
 
@@ -110,7 +112,7 @@ export default function Landing() {
             >
               {`GRAVE - the Global Reserve For Abandoned Virtual Entities. A cemetery for unwanted digital assets. But given that one man's trash is another man's treasure, all assets have a chance at revival.`}
             </Text>
-            <Link href={"/grave"} passHref>
+            <Link href={'/grave'} passHref>
               <Button
                 px={6}
                 color={createButtonColor}
@@ -131,11 +133,7 @@ export default function Landing() {
                 borderColor={borderColor}
               ></Input>
               <InputRightElement width="4.5rem">
-                <Button
-                  h="1.75rem"
-                  size="sm"
-                  onClick={handleClick}
-                >
+                <Button h="1.75rem" size="sm" onClick={handleClick}>
                   Go
                 </Button>
               </InputRightElement>
