@@ -1,3 +1,15 @@
+
+export interface Network {
+    chainId: number;
+    symbol: string;
+    rpcUrl: string;
+    fallbackRpcUrl: string;
+    explorerURL: string;
+    universalGraveForwarder: string;
+    lsp1UrdVault: string;
+    luksoExplorer: string;
+}
+
 const NETWORKS = {
   mainnet: {
     chainId: 42,
@@ -19,6 +31,8 @@ const NETWORKS = {
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
     luksoExplorer: 'https://explorer.execution.testnet.lukso.network/address/',
   },
+} as {
+    [key: string]: Network;
 };
 
 export const getNetworkConfig = (name: string) => {
