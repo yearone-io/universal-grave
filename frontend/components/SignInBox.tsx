@@ -1,19 +1,9 @@
-import React, { useContext } from 'react';
-import {
-  Box,
-  Button,
-  Flex,
-  Image,
-  Text,
-  VStack,
-  useColorModeValue,
-} from '@chakra-ui/react';
-import { WalletContext } from './wallet/WalletContext';
+import React from 'react';
+import { Text, useColorModeValue, VStack } from '@chakra-ui/react';
+import SignInButton from '@/components/SignInButton';
 
 const SignInBox: React.FC = () => {
-  const walletContext = useContext(WalletContext);
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200'); // Adjusts color based on the theme
-  const { connect, isLoadingAccount } = walletContext;
 
   return (
     <VStack
@@ -38,24 +28,7 @@ const SignInBox: React.FC = () => {
       >
         Please sign in with your Universal Profile to connect a GRAVE spambox.
       </Text>
-      <Button
-        onClick={connect}
-        border={'1px solid var(--chakra-colors-dark-purple-500)'}
-      >
-        <Flex alignItems="center" justifyContent="space-between">
-          <Image src="/images/LYX-logo.svg" alt="Sign In" />
-          <Box
-            ml="10px"
-            fontSize="14px"
-            lineHeight="14px"
-            fontFamily="Bungee"
-            fontWeight="400"
-            color={'dark.purple.500'}
-          >
-            {isLoadingAccount ? '...' : 'Sign In'}
-          </Box>
-        </Flex>
-      </Button>
+      <SignInButton />
     </VStack>
   );
 };

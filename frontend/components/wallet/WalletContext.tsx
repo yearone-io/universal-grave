@@ -1,5 +1,5 @@
 import React from 'react';
-import {getNetworkConfig, Network} from '@/constants/networks';
+import { getNetworkConfig, Network } from '@/constants/networks';
 
 interface WalletContextType {
   networkConfig: Network;
@@ -36,7 +36,7 @@ const defaultImplementation: WalletContextType = {
   addGraveVault: () => {
     // Default addGraveVault implementation
   },
-  connectedChainId: undefined
+  connectedChainId: undefined,
 };
 
 export const WalletContext = React.createContext<WalletContextType>(

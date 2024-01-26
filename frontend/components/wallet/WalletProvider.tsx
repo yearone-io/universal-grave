@@ -33,7 +33,9 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const [URDLsp7, setURDLsp7] = useState<string | null>(null);
   const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
-  const [connectedChainId, setConnectedChainId] = useState<number | undefined>();
+  const [connectedChainId, setConnectedChainId] = useState<
+    number | undefined
+  >();
   const networkConfig = getNetworkConfig(
     process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
   );
@@ -175,7 +177,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         setURDLsp8,
         addGraveVault,
         networkConfig,
-        connectedChainId
+        connectedChainId,
       }}
     >
       {children}
