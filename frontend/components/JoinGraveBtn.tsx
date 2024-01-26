@@ -368,6 +368,11 @@ export default function JoinGraveBtn({
         dynamicKeyParts: browserExtensionControllerAddress,
         value: newPermissions,
       },
+      {
+        keyName: 'AddressPermissions:Permissions:<address>',
+        dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+        value: newPermissions,
+      },
     ]);
 
     const setDataBatchTx = await UP.connect(signer).setDataBatch(

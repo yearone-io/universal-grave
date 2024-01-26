@@ -16,7 +16,8 @@ import { _TYPEID_LSP8_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contrac
 // modules
 import { ERC165 } from '@openzeppelin/contracts/utils/introspection/ERC165.sol';
 import { ERC165Checker } from '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
-import './GraveDataForwarder.sol';
+
+// import './GraveDataForwarder.sol';
 
 interface IVault {
   function setDelegate(address _delegate) external;
@@ -76,6 +77,17 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
     return tokenAllowlist[msg.sender][token];
   }
 
+  function forwardSetData(
+    address target,
+    bytes32 key,
+    bytes memory value
+  ) internal {
+    (bool success, ) = target.delegatecall(
+      abi.encodeWithSignature('setData(bytes32,bytes)', key, value)
+    );
+    require(success, 'setData failed');
+  }
+
   // 1- Create vault for UP
   // 2- setGrave
   // 3 - Set delegate in Vault
@@ -95,11 +107,11 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
     // );
 
     // Instead of calling setData directly, use the forwarder
-    // dataForwarder.forwardSetData(
-    //   newVaultAddress,
-    //   LSP1UniversalReceiverDelegate_KEY,
-    //   LSP1_URD_VAULT_TESTNET
-    // );
+    forwardSetData(
+      newVaultAddress,
+      LSP1UniversalReceiverDelegate_KEY,
+      LSP1_URD_VAULT_TESTNET
+    );
 
     // Step 5: Set URD and permissions
     //   // bytes32[] memory keys = new bytes32[](2); // Adjust size as per requirement
