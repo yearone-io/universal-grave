@@ -8,6 +8,14 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import { formatAddress } from '@/utils/tokenUtils';
 import Link from 'next/link';
 
+/**
+ *  GraveContents: Renders the main content for a user's "graveyard" page.
+ *  Utilizes WalletContext for user account and vault data.
+ *  Props:
+ *   - account (optional): Identifier for the currently viewed account's graveyard.
+ *  Returns a layout with the graveyard title, a settings icon (for the owner's graveyard),
+ *  a share button, and the GravePageAssets component showing the graveyard's LSP7s & LSP8s
+ */
 export default function GraveContents({
   account = null,
 }: {
