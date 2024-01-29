@@ -18,6 +18,7 @@ import {
 import JoinGraveBtn from './JoinGraveBtn';
 import { FaCheckCircle } from 'react-icons/fa';
 import { constants } from '@/app/constants';
+import { formatAddress } from '@/utils/tokenUtils';
 
 const initialSteps = [
   {
@@ -67,11 +68,6 @@ const JoinGravePanel: React.FC = () => {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   const [steps, setSteps] = React.useState([...initialSteps]);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
-  const displayTruncatedAddress = (address: string) => {
-    return `${address.substring(0, 5)}...${address.substring(
-      address.length - 4
-    )}`;
-  };
 
   /**
    * Update the data in the steps according to the step number
@@ -183,7 +179,7 @@ const JoinGravePanel: React.FC = () => {
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >
-                    ({displayTruncatedAddress(step.instructions2.address)})
+                    ({formatAddress(step.instructions2.address)})
                   </a>
                 </Flex>
               )}
@@ -198,7 +194,7 @@ const JoinGravePanel: React.FC = () => {
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >
-                    {displayTruncatedAddress(step.completeText.address)}
+                    {formatAddress(step.completeText.address)}
                   </a>
                 )}
                 {step.complete ? <FaCheckCircle /> : <></>}

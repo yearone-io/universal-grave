@@ -18,8 +18,12 @@ import { BsActivity, BsArrow90DegRight } from 'react-icons/bs';
 import { RiAuctionLine } from 'react-icons/ri';
 import LSPExplainer from '@/components/LSPExplainer';
 import { ChangeEvent, useState } from 'react';
+import { WalletContext } from '@/components/wallet/WalletContext';
+import { useContext, useEffect } from 'react';
 
 export default function Landing() {
+  const walletContext = useContext(WalletContext);
+  const { graveVault, account } = walletContext;
   const logoPath = '/images/logo-full.png';
   const subheadingColor = useColorModeValue('light.black', 'dark.white');
   const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
@@ -41,6 +45,18 @@ export default function Landing() {
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
   const [inputValue, setInputValue] = useState<string>();
+  const defaultGraveButtonText = 'Connect a GRAVE to your 🆙';
+  const [graveButtonText, setGraveButtonText] = useState<string>(
+    defaultGraveButtonText
+  );
+
+  useEffect(() => {
+    if (!graveVault) {
+      setGraveButtonText(defaultGraveButtonText);
+    } else {
+      setGraveButtonText('Manage the assets in your 🆙 Grave');
+    }
+  }, [graveVault, account]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -96,7 +112,7 @@ export default function Landing() {
             >
               {`GRAVE - the Global Reserve For Abandoned Virtual Entities. A cemetery for unwanted digital assets. But given that one man's trash is another man's treasure, all assets have a chance at revival.`}
             </Text>
-            <Link href="/grave" passHref>
+            <Link href={'/grave'} passHref>
               <Button
                 px={6}
                 color={createButtonColor}
@@ -105,23 +121,19 @@ export default function Landing() {
                 border={createButtonBorder}
                 size={['sm', 'sm', 'md', 'md']}
               >
-                {`Connect a GRAVE to your 🆙`}
+                {graveButtonText}
               </Button>
             </Link>
-            <Text>Or view an Universal Profile's grave</Text>
+            <Text>Or view any Universal Profile's GRAVE</Text>
             <InputGroup size="md">
               <Input
-                placeholder="UP profile address"
+                placeholder="Paste UP profile address"
                 value={inputValue}
                 onChange={handleInputChange}
+                borderColor={borderColor}
               ></Input>
               <InputRightElement width="4.5rem">
-                <Button
-                  h="1.75rem"
-                  size="sm"
-                  isDisabled={!inputValue}
-                  onClick={handleClick}
-                >
+                <Button h="1.75rem" size="sm" onClick={handleClick}>
                   Go
                 </Button>
               </InputRightElement>
