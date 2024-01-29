@@ -16,7 +16,7 @@ const NETWORKS = {
     rpcUrl: process.env.NEXT_PUBLIC_MAINNET_RPC_URL,
     fallbackRpcUrl: 'https://rpc.lukso.gateway.fm',
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
-    universalGraveForwarder: '',
+    universalGraveForwarder: '0xa5467dfe7019bf2c7c5f7a707711b9d4cad118c8',
     lsp1UrdVault: '',
     luksoExplorer: 'https://explorer.execution.testnet.lukso.network/address/',
   },
