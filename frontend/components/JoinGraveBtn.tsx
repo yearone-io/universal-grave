@@ -170,17 +170,32 @@ export default function JoinGraveBtn({
       provider
     );
 
-    const permissionsData = await getDataToUpdateBECPermissions();
-    const encodedUpdatePermissions = UP.interface.encodeFunctionData("setDataBatch", [permissionsData.keys, permissionsData.values]);
+    // permittions
+    // const permissionsData = await getDataToUpdateBECPermissions();
+    // const encodedUpdatePermissions = UP.interface.encodeFunctionData("setDataBatch", [permissionsData.keys, permissionsData.values]);
 
-    console.log('encodedUpdatePermissions: ', encodedUpdatePermissions);
+    // console.log('encodedUpdatePermissions: ', encodedUpdatePermissions);
 
-    const operationsType = [0];
-    const targets = [account];
+    // const operationsType = [0];
+    // const targets = [account];
+    // const values = [0];
+    // const datas = [encodedUpdatePermissions];
+
+    // create vault
+    const vaultFactory = new ethers.ContractFactory(LSP9Vault.abi, LSP9Vault.bytecode, signer);
+    const deployTransactionObject = vaultFactory.getDeployTransaction(account);
+    const encodedData = deployTransactionObject.data;
+
+    const zeroAddress = "0x0000000000000000000000000000000000000000";
+
+    const operationsType = [1];
+    const targets = [zeroAddress];
     const values = [0];
-    const datas = [encodedUpdatePermissions];
+    const datas = [encodedData];
+
 
     const batchTx = await UP.connect(signer).executeBatch(operationsType, targets, values, datas, { gasLimit: 10000000 });
+    debugger
   }
 
   const initJoinProcess = async () => {
