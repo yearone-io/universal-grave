@@ -6,6 +6,7 @@ declare global {
 import React, { useContext } from 'react';
 import { WalletContext } from './WalletContext';
 import { Box, Button, Flex, Image } from '@chakra-ui/react';
+import { formatAddress } from '@/utils/tokenUtils';
 
 /**
  * The WalletConnector component allows users to connect or disconnect their LUKSO wallets.
@@ -19,12 +20,6 @@ const WalletConnector: React.FC = () => {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
   const { account, connect, disconnect, isLoadingAccount } = walletContext;
-
-  const displayTruncatedAddress = (address: string) => {
-    return `${address.substring(0, 5)}...${address.substring(
-      address.length - 4
-    )}`;
-  };
 
   const displayConnectButton = () => {
     if (isLoadingAccount) {
@@ -57,7 +52,7 @@ const WalletConnector: React.FC = () => {
           border={'1px solid var(--chakra-colors-dark-purple-500)'}
           onClick={disconnect}
         >
-          {displayTruncatedAddress(account)}
+          {formatAddress(account)}
         </Button>
       );
     }

@@ -4,13 +4,19 @@ import { useEffect, useState } from 'react';
 import { getGraveVaultFor } from '@/utils/universalProfile';
 import { Text } from '@chakra-ui/react';
 
-export default function GravePageAssets({ account }: { account: string }) {
-  const [graveVault, setGraveVault] = useState<string>();
+export default function GravePageAssets({
+  pageAccount,
+  pageGraveVault = null,
+}: {
+  pageAccount: string | null;
+  pageGraveVault?: string | null;
+}) {
+  const [graveVault, setGraveVault] = useState<string | null>(pageGraveVault);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!graveVault) {
-      getGraveVaultFor(account)
+    if (!graveVault && pageAccount) {
+      getGraveVaultFor(pageAccount)
         .then(graveVault => {
           if (!graveVault) {
             setError('No grave vault found for this account');
@@ -23,7 +29,7 @@ export default function GravePageAssets({ account }: { account: string }) {
           setError(reason.message);
         });
     }
-  }, [account]);
+  }, [pageAccount]);
 
   if (error) {
     return <Text>{error}</Text>;

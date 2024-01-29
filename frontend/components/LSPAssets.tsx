@@ -119,9 +119,10 @@ export default function LSPAssets({
 
   const emptyAssets = () => {
     return (
-      <Box>
+      <Flex flexDirection={'column'} alignItems={'center'}>
         <Image
-          w="300px"
+          w="250px"
+          p="20px"
           src="/images/empty-grave.png"
           alt="empty-grave"
           borderRadius="10px"
@@ -129,15 +130,14 @@ export default function LSPAssets({
         <Text
           color="white"
           fontWeight={400}
-          fontSize="16px"
+          fontSize="12px"
           fontFamily="Bungee"
           mb="20px"
-          mt="20px"
           textAlign="center"
         >
-          Your Graveyard is empty
+          Empty
         </Text>
-      </Box>
+      </Flex>
     );
   };
 
@@ -151,8 +151,8 @@ export default function LSPAssets({
 
   return (
     <Box>
-      <Flex justifyContent="space-between">
-        <Box>
+      <Flex justifyContent="space-between" flexWrap={'wrap'}>
+        <Box minWidth={'500px'}>
           <Text
             color="white"
             fontWeight={400}
@@ -177,7 +177,7 @@ export default function LSPAssets({
               ))
             : emptyAssets()}
         </Box>
-        <Box>
+        <Box minWidth={'500px'}>
           <Text
             color="white"
             fontWeight={400}
@@ -202,31 +202,31 @@ export default function LSPAssets({
               ))
             : emptyAssets()}
         </Box>
+        <Box minWidth={'500px'}>
+          <Text
+            color="white"
+            fontWeight={400}
+            fontSize="16px"
+            fontFamily="Bungee"
+            mb="20px"
+          >
+            Unrecognized LSP Assets
+          </Text>
+          {unrecognisedAssets.length
+            ? unrecognisedAssets.map((asset, index) => (
+                <Box key={'unrecognised-' + index}>
+                  <UnrecognisedPanel
+                    tokenName={asset.name!}
+                    tokenAddress={asset.address!}
+                    tokenMetadata={asset.metadata!}
+                    vaultAddress={graveVault!}
+                    tokenAmount={''}
+                  />
+                </Box>
+              ))
+            : emptyAssets()}
+        </Box>
       </Flex>
-      <Box width={'50%'}>
-        <Text
-          color="white"
-          fontWeight={400}
-          fontSize="16px"
-          fontFamily="Bungee"
-          mb="20px"
-        >
-          Unrecognised Assets
-        </Text>
-        {unrecognisedAssets.length
-          ? unrecognisedAssets.map((asset, index) => (
-              <Box key={'unrecognised-' + index}>
-                <UnrecognisedPanel
-                  tokenName={asset.name!}
-                  tokenAddress={asset.address!}
-                  tokenMetadata={asset.metadata!}
-                  vaultAddress={graveVault!}
-                  tokenAmount={''}
-                />
-              </Box>
-            ))
-          : emptyAssets()}
-      </Box>
     </Box>
   );
 }

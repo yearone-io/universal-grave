@@ -646,7 +646,11 @@ export default function JoinGraveBtn({
   };
 
   const hasExistingNonGraveDelegates = () => {
-    return !hasJoinedTheGrave() && (URDLsp8 != null || URDLsp7 != null);
+    return (
+      !hasJoinedTheGrave() &&
+      (URDLsp8 != null || URDLsp7 != null) &&
+      !(URDLsp8 === '0x' || URDLsp7 === '0x')
+    );
   };
 
   // ========================= UI =========================
