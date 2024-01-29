@@ -17,7 +17,7 @@ export default function Header() {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.300');
   const color = useColorModeValue('light.black', 'dark.black');
   const logoPath = '/images/logo-text.png';
-  const testnetPath = '/images/testnet.png';
+  const betaPath = '/images/beta.png';
 
   return (
     <Flex
@@ -41,11 +41,7 @@ export default function Header() {
       >
         <Link href="/">
           <Flex ml={2} gap={2} alignItems={'center'} justifyContent={'center'}>
-            <Image
-              src={testnetPath}
-              alt="Universal-Grave-logo"
-              height={'60px'}
-            />
+            <Image src={betaPath} alt="Universal-Grave-logo" height={'60px'} />
             <Image
               cursor="pointer"
               src={logoPath}
