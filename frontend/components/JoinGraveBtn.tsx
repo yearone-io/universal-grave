@@ -156,6 +156,33 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
 
+  const batchJoin = async (
+    provider: ethers.providers.Web3Provider,
+    signer: ethers.providers.JsonRpcSigner
+  ) => {
+    // const operationsType = [0, 0, 0, 0, 0];
+    // const targets = [upAddress, vaultFactoryAddress, forwarderAddress, vaultAddress, upAddress];
+    // const values = [0, 0, 0, 0, 0];
+    // const datas = [encodedUpdatePermissions, encodedCreateVault, encodedSetVault, encodedEnableInventory, encodedSetDelegate];
+    const UP = new ethers.Contract(
+      account as string,
+      UniversalProfile.abi,
+      provider
+    );
+
+    const permissionsData = await getDataToUpdateBECPermissions();
+    const encodedUpdatePermissions = UP.interface.encodeFunctionData("setDataBatch", [permissionsData.keys, permissionsData.values]);
+
+    console.log('encodedUpdatePermissions: ', encodedUpdatePermissions);
+
+    const operationsType = [0];
+    const targets = [account];
+    const values = [0];
+    const datas = [encodedUpdatePermissions];
+
+    const batchTx = await UP.connect(signer).executeBatch(operationsType, targets, values, datas, { gasLimit: 10000000 });
+  }
+
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -173,7 +200,8 @@ export default function JoinGraveBtn({
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
-      await updateBECPermissions(provider, signer);
+      // await updateBECPermissions(provider, signer);
+      await batchJoin(provider, signer)
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
@@ -348,6 +376,30 @@ export default function JoinGraveBtn({
     );
     return await setDataBatchTx.wait();
   };
+
+  const getDataToUpdateBECPermissions = async (
+  ) => {
+    const erc725 = new ERC725(
+      LSP6Schema as ERC725JSONSchema[],
+      account,
+      window.lukso
+    );
+
+    const newPermissions = erc725.encodePermissions({
+      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+      ...GRAVE_CONTROLLER_PERMISSIONS,
+    });
+    const permissionsData = erc725.encodeData([
+      {
+        keyName: 'AddressPermissions:Permissions:<address>',
+        dynamicKeyParts: mainUPController,
+        value: newPermissions,
+      },
+    ]);
+
+    return  permissionsData;
+  };
+
 
   /**
    * Function to create a vault for the UP.
