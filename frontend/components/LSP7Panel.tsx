@@ -206,7 +206,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.luksoExplorer}${tokenAddress}`,
+                  `${networkConfig.explorerURL}/address/${tokenAddress}`,
                   '_blank'
                 )
               }

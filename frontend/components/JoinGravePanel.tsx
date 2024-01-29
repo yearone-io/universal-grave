@@ -182,7 +182,7 @@ const JoinGravePanel: React.FC = () => {
                 <Flex>
                   <Box mr="2px">{step.instructions2.text}</Box>
                   <a
-                    href={`${networkConfig.luksoExplorer}${step.instructions2.address}`}
+                    href={`${networkConfig.explorerURL}/address/${step.instructions2.address}`}
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >
@@ -197,7 +197,7 @@ const JoinGravePanel: React.FC = () => {
                 {step.completeText.text}
                 {step.completeText.address && (
                   <a
-                    href={`${networkConfig.luksoExplorer}${step.completeText.address}`}
+                    href={`${networkConfig.explorerURL}/address/${step.completeText.address}`}
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >

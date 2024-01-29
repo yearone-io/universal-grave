@@ -93,7 +93,7 @@ export default function MyGrave() {
               <AccordionPanel pb={4}>
                 <Text>LSP7 Universal Receiver Delegate</Text>
                 <a
-                  href={`${networkConfig.luksoExplorer}${URDLsp7}`}
+                  href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
                   style={{ textDecoration: 'underline' }}
                   target="_blank"
                 >
@@ -101,7 +101,7 @@ export default function MyGrave() {
                 </a>
                 <Text>LSP8 Universal Receiver Delegate</Text>
                 <a
-                  href={`${networkConfig.luksoExplorer}${URDLsp8}`}
+                  href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
                   style={{ textDecoration: 'underline' }}
                   target="_blank"
                 >

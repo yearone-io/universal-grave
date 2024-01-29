@@ -114,7 +114,7 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.luksoExplorer}${tokenAddress}`,
+                  `${networkConfig.explorerURL}/address/${tokenAddress}`,
                   '_blank'
                 )
               }

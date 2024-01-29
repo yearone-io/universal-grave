@@ -6,7 +6,6 @@ export interface Network {
   explorerURL: string;
   universalGraveForwarder: string;
   lsp1UrdVault: string;
-  luksoExplorer: string;
 }
 
 const NETWORKS = {
@@ -18,7 +17,6 @@ const NETWORKS = {
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
     universalGraveForwarder: '0xa5467dfe7019bf2c7c5f7a707711b9d4cad118c8',
     lsp1UrdVault: '',
-    luksoExplorer: 'https://explorer.execution.mainnet.lukso.network/address/',
   },
   testnet: {
     chainId: 4201,
@@ -28,7 +26,6 @@ const NETWORKS = {
     explorerURL: 'https://explorer.execution.testnet.lukso.network',
     universalGraveForwarder: '0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
-    luksoExplorer: 'https://explorer.execution.testnet.lukso.network/address/',
   },
 } as {
   [key: string]: Network;
