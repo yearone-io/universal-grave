@@ -187,25 +187,28 @@ export default function JoinGraveBtn({
     const firstCreateEncodedData = deployTransactionObject.data;
 
     const nonce = await provider.getTransactionCount(account as string);
-    const predictedAddress = ethers.utils.getContractAddress({
+    const predictedVaultAddress = ethers.utils.getContractAddress({
       from: account as string,
       nonce: nonce
     }); 
-
-    // ============ IMPORTANT ============
-    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH. 
-    // PREDICTED ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER
-    // ============ IMPORTANT ============
-
-    console.log('Predicted Address for Vault: ', predictedAddress);
-
     const zeroAddress = "0x0000000000000000000000000000000000000000";
 
-    const operationsType = [1];
-    const targets = [zeroAddress];
-    const values = [0];
-    const datas = [firstCreateEncodedData];
+    //  Set the vault in the forwarder contract
+    const graveForwarderContract = new ethers.Contract(constants.UNIVERSAL_GRAVE_FORWARDER, LSP1GraveForwader.abi, signer);
+    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData("setGrave", [predictedVaultAddress]);
 
+    // In order:
+    // 1. Create the vault
+    // 2. Set the vault in the forwarder contract
+    console.log('Predicted Address for Vault: ', predictedVaultAddress);
+    // ============ IMPORTANT ============
+    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH. 
+    // PREDICTED VAULT ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER
+    // ============ IMPORTANT ============
+    const operationsType = [1, 0];
+    const targets = [zeroAddress, constants.UNIVERSAL_GRAVE_FORWARDER];
+    const values = [0, 0];
+    const datas = [firstCreateEncodedData, encodedSetGrave];
 
     const batchTx = await UP.connect(signer).executeBatch(operationsType, targets, values, datas, { gasLimit: 10000000 });
     const receipt = await batchTx.wait();
@@ -213,10 +216,10 @@ export default function JoinGraveBtn({
     for (const event of receipt.events) {
       if (event.event === "ContractCreated") {
           const createdContractAddress = event.args.contractAddress;
-          if (createdContractAddress.toLowerCase() === predictedAddress.toLowerCase()) {
+          if (createdContractAddress.toLowerCase() === predictedVaultAddress.toLowerCase()) {
               console.log("Address matches: ", createdContractAddress);
           } else {
-              console.error("Mismatch in predicted Vault addresses: ", createdContractAddress, predictedAddress);
+              console.error("Mismatch in predicted Vault addresses: ", createdContractAddress, predictedVaultAddress);
           }
       }
   }
