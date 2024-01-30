@@ -1,12 +1,5 @@
 export const constants = {
-  UNIVERSAL_GRAVE_FORWARDER: '0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3',
-  LSP1_URD_VAULT_TESTNET: '0xBc7b3980614215c8090dF310661685Cc393B601A',
   IPFS: 'https://api.universalprofile.cloud/ipfs',
-  LUKSO_EXPLORER: {
-    TESTNET: {
-      ADDRESS: 'https://explorer.execution.testnet.lukso.network/address/',
-    },
-  },
   IPFS_GATEWAY: 'https://gateway.pinata.cloud/ipfs/',
   METADATA: {
     TITLE: 'GRAVE | Digital Spambox',

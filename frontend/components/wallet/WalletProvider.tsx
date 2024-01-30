@@ -4,7 +4,7 @@ import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
 import { getGraveVaultFor } from '@/utils/universalProfile';
-import { NETWORKS } from '@/constants/networks';
+import { getNetworkConfig } from '@/constants/networks';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -33,6 +33,12 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const [URDLsp7, setURDLsp7] = useState<string | null>(null);
   const [URDLsp8, setURDLsp8] = useState<string | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState<boolean>(true);
+  const [connectedChainId, setConnectedChainId] = useState<
+    number | undefined
+  >();
+  const networkConfig = getNetworkConfig(
+    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
+  );
   const toast = useToast();
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
@@ -49,11 +55,13 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
-      getGraveVaultFor(account).then(graveVault => {
-        if (graveVault) {
-          setGraveVault(graveVault);
+      getGraveVaultFor(account, networkConfig.universalGraveForwarder).then(
+        graveVault => {
+          if (graveVault) {
+            setGraveVault(graveVault);
+          }
         }
-      });
+      );
     }
   }, [account]);
 
@@ -77,6 +85,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     if (typeof window !== 'undefined' && window.lukso) {
       // Initialize a new Web3 instance using the LUKSO provider.
       const web3 = new Web3(window.lukso);
+      setConnectedChainId(Number(await web3.eth.getChainId()));
       let accounts: string[] = [];
       try {
         // Reset the graveVault address when connecting
@@ -96,7 +105,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           statement: 'By logging in you agree to the terms and conditions.', // a human-readable assertion user signs
           uri: window.location.origin, // URI from the resource that is the subject of the signing
           version: '1', // Current version of the SIWE Message
-          chainId: NETWORKS.testnet.chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
+          chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
+            .chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
           resources: [`${window.location.host}/terms`], // Information the user wishes to have resolved as part of authentication by the relying party
         }).prepareMessage();
         const hashedMessage = web3.eth.accounts.hashMessage(siweMessage);
@@ -166,6 +176,8 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         setURDLsp7,
         setURDLsp8,
         addGraveVault,
+        networkConfig,
+        connectedChainId,
       }}
     >
       {children}
