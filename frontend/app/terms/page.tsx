@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Heading, Text, List, ListItem, Box } from '@chakra-ui/react';
+import { Container, Heading, Text, List, ListItem, Box, Link } from '@chakra-ui/react';
 
 export const metadata = {
   title: 'GRAVEYARD - Terms of Service',
@@ -18,9 +18,20 @@ export const metadata = {
 export default function TermsOfService() {
     return (
         <Container maxW="container.md">
+            {/* Navigation Links (Optional) */}
+            <Box as="nav" my={4} flexWrap={"wrap"}>
+                <Link href="#terms-of-service" mr={4}>Terms of Service</Link>
+                <Link href="#fees-for-services" mr={4}>Fees for Services</Link>
+                <Link href="#privacy-policy" mr={4}>Privacy Policy</Link>
+                <Link href="#intellectual-property-rights" mr={4}>IP Rights</Link>
+                <Link href="#limitations-of-liability" mr={4}>Limitations of Liability</Link>
+                <Link href="#modification-and-termination" mr={4}>Modification and Termination</Link>
+                <Link href="#dispute-resolution" mr={4}>Dispute Resolution</Link>
+                <Link href="#final-provisions" mr={4}>Final Provisions</Link>
+            </Box>
             <Box my={8}>
                 {/* TOS */}
-                <Heading as="h1" size="lg" mb={6}>Terms of Service</Heading>
+                <Heading id="terms-of-service" as="h1" size="lg" mb={6}>Terms of Service</Heading>
                 {/* Introduction */}
                 <Heading as="h2" size="md" mt={10}>1. Introduction</Heading>
                 <Text mt={4}>Welcome to Universal Grave - the Global Reserve for Abandoned Virtual Entities. These Terms of Service ("Terms") govern your use of our decentralized application ("dApp") and services ("Services"). By interacting with Universal Grave, you agree to be bound by these Terms. If you disagree with any part of the terms, then you may not access the Service.</Text>
@@ -32,7 +43,7 @@ export default function TermsOfService() {
                 <Text mt={4}>You agree to use Universal Grave in compliance with all applicable laws and regulations and not for any unlawful purposes. The functionality of retrieving and forwarding assets is subject to the rules and conditions set forth in these Terms.</Text>
 
                 {/* Fees for Services */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Fees for Services</Heading>
+                <Heading id="fees-for-services" as="h1" size="lg" mb={4} mt={20}>Fees for Services</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Asset Revival Fees</Heading>
                 <Text mt={4}>The revival of assets from the GRAVE back to your Universal Profile is subject to a fee. The specific fee structure is as follows:</Text>
                 <List spacing={2} mt={4}>
@@ -43,14 +54,14 @@ export default function TermsOfService() {
                 <Text mt={4}>Please ensure that you are aware of and agree to the applicable fees before using the service to revive assets from the GRAVE.</Text>
 
                 {/* Risk Disclaimer */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Risk Disclaimer</Heading>
+                <Heading id="risk-disclaimer" as="h1" size="lg" mb={4} mt={20}>Risk Disclaimer</Heading>
                 <Heading as="h2" size="md" mt={10}>1. General Risks</Heading>
                 <Text mt={4}>You acknowledge that interacting with blockchain technology and digital assets involves significant risks including, but not limited to, the risk of financial loss, the volatility of digital assets, and the risk of unforeseen legal implications. You agree to assume all such risks associated with the use of Universal Grave.</Text>
                 <Heading as="h2" size="md" mt={10}>2. No Warranty</Heading>
                 <Text mt={4}>Universal Grave is provided "as is" and "as available" without any warranties, express or implied. We do not guarantee the continuous, uninterrupted, or error-free operability of the services.</Text>
 
                 {/* Privacy Policy */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Privacy Policy</Heading>
+                <Heading id="privacy-policy" as="h1" size="lg" mb={4} mt={20}>Privacy Policy</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Data Collection and Use</Heading>
                 <Text mt={4}>
                     While Universal Grave operates on blockchain technology and does not directly collect personal data, 
@@ -58,7 +69,7 @@ export default function TermsOfService() {
                 </Text>
 
                 {/* Intellectual Property Rights */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Intellectual Property Rights</Heading>
+                <Heading id="intellectual-property-rights" as="h1" size="lg" mb={4} mt={20}>Intellectual Property Rights</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Ownership</Heading>
                 <Text mt={4}>
                     Universal Grave, its original content, features, and functionality are and will remain the exclusive property of [Your Company Name] and its licensors. 
@@ -66,7 +77,7 @@ export default function TermsOfService() {
                 </Text>
 
                 {/* Limitation of Liability */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Limitation of Liability</Heading>
+                <Heading id="limitations-of-liability" as="h1" size="lg" mb={4} mt={20}>Limitation of Liability</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Limitation Clause</Heading>
                 <Text mt={4}>
                     In no event shall [Your Company Name], nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential, 
@@ -76,7 +87,7 @@ export default function TermsOfService() {
                 </Text>
 
                 {/* Modification and Termination */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Modification and Termination</Heading>
+                <Heading id="modification-and-termination" as="h1" size="lg" mb={4} mt={20}>Modification and Termination</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Right to Modify or Discontinue</Heading>
                 <Text mt={4}>
                     We reserve the right to modify or discontinue, temporarily or permanently, the Service (or any part thereof) with or without notice at any time. 
@@ -84,7 +95,7 @@ export default function TermsOfService() {
                 </Text>
 
                 {/* Dispute Resolution */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Dispute Resolution</Heading>
+                <Heading id="dispute-resolution" as="h1" size="lg" mb={4} mt={20}>Dispute Resolution</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Governing Law</Heading>
                 <Text mt={4}>
                     These Terms shall be governed and construed in accordance with the laws of the United Arab Emirates, without regard to its conflict of law provisions.
@@ -95,7 +106,7 @@ export default function TermsOfService() {
                 </Text>
 
                 {/* Final Provisions */}
-                <Heading as="h1" size="lg" mb={4} mt={20}>Final Provisions</Heading>
+                <Heading id="final-provisions" as="h1" size="lg" mb={4} mt={20}>Final Provisions</Heading>
                 <Heading as="h2" size="md" mt={10}>1. Entire Agreement</Heading>
                 <Text mt={4}>
                     These Terms constitute the entire agreement between us regarding our Service, and supersede and replace any prior agreements we might have between us regarding the Service.
