@@ -181,7 +181,7 @@ export default function JoinGraveBtn({
     // const values = [0];
     // const datas = [encodedUpdatePermissions];
 
-    // create vault
+    // 1.create vault
     const vaultFactory = new ethers.ContractFactory(LSP9Vault.abi, LSP9Vault.bytecode, signer);
     const deployTransactionObject = vaultFactory.getDeployTransaction(account);
     const firstCreateEncodedData = deployTransactionObject.data;
@@ -193,22 +193,31 @@ export default function JoinGraveBtn({
     }); 
     const zeroAddress = "0x0000000000000000000000000000000000000000";
 
-    //  Set the vault in the forwarder contract
+    //  2.Set the vault in the forwarder contract
     const graveForwarderContract = new ethers.Contract(constants.UNIVERSAL_GRAVE_FORWARDER, LSP1GraveForwader.abi, signer);
     const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData("setGrave", [predictedVaultAddress]);
+
+    // 3. Enable grave to keep assets inventory
+    const vaultContract = new ethers.Contract(predictedVaultAddress, LSP9Vault.abi, signer);
+    const encodedGraveSetData = vaultContract.interface.encodeFunctionData("setData", [ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, constants.LSP1_URD_VAULT_TESTNET]);
+
+
+
+    // TODO: Flow for already existing vault
 
     // In order:
     // 1. Create the vault
     // 2. Set the vault in the forwarder contract
+    // 3. Enable grave to keep assets inventory
     console.log('Predicted Address for Vault: ', predictedVaultAddress);
     // ============ IMPORTANT ============
     // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH. 
     // PREDICTED VAULT ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER
     // ============ IMPORTANT ============
-    const operationsType = [1, 0];
-    const targets = [zeroAddress, constants.UNIVERSAL_GRAVE_FORWARDER];
-    const values = [0, 0];
-    const datas = [firstCreateEncodedData, encodedSetGrave];
+    const operationsType = [1, 0, 0];
+    const targets = [zeroAddress, constants.UNIVERSAL_GRAVE_FORWARDER, predictedVaultAddress];
+    const values = [0, 0, 0];
+    const datas = [firstCreateEncodedData, encodedSetGrave, encodedGraveSetData];
 
     const batchTx = await UP.connect(signer).executeBatch(operationsType, targets, values, datas, { gasLimit: 10000000 });
     const receipt = await batchTx.wait();
