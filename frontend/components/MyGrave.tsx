@@ -18,6 +18,7 @@ import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import { constants } from '@/app/constants';
+import ManageAllowList from '@/components/ManageAllowList';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
@@ -80,6 +81,7 @@ export default function MyGrave() {
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
+                <ManageAllowList />
               </Box>
             </Box>
           ) : (
