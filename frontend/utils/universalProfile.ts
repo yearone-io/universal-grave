@@ -1,16 +1,16 @@
 import { ethers } from 'ethers';
-import { constants } from '@/app/constants';
 import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
 import { AddressZero } from '@ethersproject/constants';
 
 export const getGraveVaultFor = async (
-  account: string
+  account: string,
+  universalGraveForwarder: string
 ): Promise<string | null> => {
   const provider = new ethers.providers.Web3Provider(window.lukso);
   const signer = provider.getSigner();
 
   const graveForwarder = new ethers.Contract(
-    constants.UNIVERSAL_GRAVE_FORWARDER,
+    universalGraveForwarder,
     LSP1GraveForwader.abi,
     provider
   );

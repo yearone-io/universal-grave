@@ -36,7 +36,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   onReviveSuccess,
 }) => {
   const walletContext = useContext(WalletContext);
-  const { graveVault: connectedGraveValue } = walletContext;
+  const { graveVault: connectedGraveValue, networkConfig } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -70,7 +70,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
       const signer = provider.getSigner();
 
       const LSP1GraveForwaderContract = new ethers.Contract(
-        constants.UNIVERSAL_GRAVE_FORWARDER,
+        networkConfig.universalGraveForwarder,
         LSP1GraveForwader.abi,
         signer
       );
@@ -206,7 +206,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${tokenAddress}`,
+                  `${networkConfig.explorerURL}/address/${tokenAddress}`,
                   '_blank'
                 )
               }
