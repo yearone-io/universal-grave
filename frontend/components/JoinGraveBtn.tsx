@@ -184,18 +184,42 @@ export default function JoinGraveBtn({
     // create vault
     const vaultFactory = new ethers.ContractFactory(LSP9Vault.abi, LSP9Vault.bytecode, signer);
     const deployTransactionObject = vaultFactory.getDeployTransaction(account);
-    const encodedData = deployTransactionObject.data;
+    const firstCreateEncodedData = deployTransactionObject.data;
+
+    const nonce = await provider.getTransactionCount(account as string);
+    const predictedAddress = ethers.utils.getContractAddress({
+      from: account as string,
+      nonce: nonce
+    }); 
+
+    // ============ IMPORTANT ============
+    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH. 
+    // PREDICTED ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER
+    // ============ IMPORTANT ============
+
+    console.log('Predicted Address for Vault: ', predictedAddress);
 
     const zeroAddress = "0x0000000000000000000000000000000000000000";
 
     const operationsType = [1];
     const targets = [zeroAddress];
     const values = [0];
-    const datas = [encodedData];
+    const datas = [firstCreateEncodedData];
 
 
     const batchTx = await UP.connect(signer).executeBatch(operationsType, targets, values, datas, { gasLimit: 10000000 });
-    debugger
+    const receipt = await batchTx.wait();
+    // Verify that the Vault predicted address is the same as the one emitted by the event
+    for (const event of receipt.events) {
+      if (event.event === "ContractCreated") {
+          const createdContractAddress = event.args.contractAddress;
+          if (createdContractAddress.toLowerCase() === predictedAddress.toLowerCase()) {
+              console.log("Address matches: ", createdContractAddress);
+          } else {
+              console.error("Mismatch in predicted Vault addresses: ", createdContractAddress, predictedAddress);
+          }
+      }
+  }
   }
 
   const initJoinProcess = async () => {
