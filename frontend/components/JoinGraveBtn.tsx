@@ -183,8 +183,15 @@ export default function JoinGraveBtn({
     const zeroAddress = '0x0000000000000000000000000000000000000000';
 
     //  2.Set the vault in the forwarder contract
-    const graveForwarderContract = new ethers.Contract(networkConfig.universalGraveForwarder, LSP1GraveForwader.abi, signer);
-    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData("setGrave", [predictedVaultAddress]);
+    const graveForwarderContract = new ethers.Contract(
+      networkConfig.universalGraveForwarder,
+      LSP1GraveForwader.abi,
+      signer
+    );
+    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData(
+      'setGrave',
+      [predictedVaultAddress]
+    );
 
     // 3. Enable grave to keep assets inventory
     const vaultContract = new ethers.Contract(
@@ -192,7 +199,13 @@ export default function JoinGraveBtn({
       LSP9Vault.abi,
       signer
     );
-    const encodedGraveSetData = vaultContract.interface.encodeFunctionData("setData", [ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, networkConfig.lsp1UrdVault]);
+    const encodedGraveSetData = vaultContract.interface.encodeFunctionData(
+      'setData',
+      [
+        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+        networkConfig.lsp1UrdVault,
+      ]
+    );
 
     // TODO: Flow for already existing vault
 
