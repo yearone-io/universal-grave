@@ -9,6 +9,7 @@ import {
   FormControl,
   FormLabel,
   Input,
+  Stack,
   Text,
 } from '@chakra-ui/react';
 import React, { useContext, useState } from 'react';
@@ -120,45 +121,49 @@ export default function ManageAllowList() {
         </h2>
         <AccordionPanel pb={4}>
           <Text mb={4}>
-            If you expect to receive certain LSP7 or LSP8 tokens you can add them
-            to the whitelist beforehand so that they do not get redirected to your
-            Grave vault
+            If you expect to receive certain LSP7 or LSP8 tokens you can add
+            them to the whitelist beforehand so that they do not get redirected
+            to your Grave vault
           </Text>
           <FormControl>
             <FormLabel>Token Address</FormLabel>
             <Input value={tokenAddress} onChange={handleChange} />
           </FormControl>
-          {actionText && <Text mt={4}>{actionText}</Text>}
-          <Button
-            mt={4}
-            isDisabled={isSubmitting}
-            isLoading={isCheckingStatus}
-            loadingText="Checking status"
-            onClick={fetchTokenAllowListStatus}
-            type="submit"
-          >
-            Check status
-          </Button>
-          <Button
-            mt={4}
-            isDisabled={isSubmitting}
-            isLoading={isAddingToAllowList}
-            loadingText="Adding to allow list"
-            onClick={addTokenToAllowList}
-            type="submit"
-          >
-            Add to allow list
-          </Button>
-          <Button
-            mt={4}
-            isDisabled={isSubmitting}
-            loadingText="Removing from allow list"
-            isLoading={isRemovingFromAllowList}
-            onClick={removeTokenFromAllowList}
-            type="submit"
-          >
-            Remove from allow list
-          </Button>
+          <Text mt={4} minH={6}>
+            {actionText}
+          </Text>
+          <Stack direction={'column'}>
+            <Button
+              mt={4}
+              isDisabled={isSubmitting}
+              isLoading={isCheckingStatus}
+              loadingText="Checking status"
+              onClick={fetchTokenAllowListStatus}
+              type="submit"
+            >
+              Check status
+            </Button>
+            <Button
+              mt={4}
+              isDisabled={isSubmitting}
+              isLoading={isAddingToAllowList}
+              loadingText="Adding to allow list"
+              onClick={addTokenToAllowList}
+              type="submit"
+            >
+              Add to allow list
+            </Button>
+            <Button
+              mt={4}
+              isDisabled={isSubmitting}
+              loadingText="Removing from allow list"
+              isLoading={isRemovingFromAllowList}
+              onClick={removeTokenFromAllowList}
+              type="submit"
+            >
+              Remove from allow list
+            </Button>
+          </Stack>
         </AccordionPanel>
       </AccordionItem>
     </Accordion>
