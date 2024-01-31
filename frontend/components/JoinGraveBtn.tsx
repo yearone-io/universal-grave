@@ -185,7 +185,7 @@ export default function JoinGraveBtn({
     //  2.Set the vault in the forwarder contract
     const graveForwarderContract = new ethers.Contract(
       networkConfig.universalGraveForwarder,
-      LSP1GraveForwader.abi,
+      LSP1GraveForwarder.abi,
       signer
     );
     const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData(
