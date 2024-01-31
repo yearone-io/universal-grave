@@ -11,7 +11,7 @@ import {
   GRAVE_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
+import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
