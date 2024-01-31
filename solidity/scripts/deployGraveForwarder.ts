@@ -18,12 +18,12 @@ async function main() {
     // DEPLOYING GRAVE FORWARDER URD
     console.log('⏳ Deploying the LSP1 Grave Forwarder URD');
     const CustomURDBytecode = hre.artifacts.readArtifactSync(
-        'contracts/LSP1GraveForwarder.sol:LSP1GraveForwader',
+        'contracts/LSP1GraveForwarder.sol:LSP1GraveForwarder',
       ).bytecode;
     const fullBytecode = CustomURDBytecode;// + params;
     // get the address of the contract that will be created
     const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
-    const graveForwaderAddress = await UP.connect(signer).execute.staticCall(
+    const graveForwarderAddress = await UP.connect(signer).execute.staticCall(
         OPERATION_TYPES.CREATE,
         ethers.ZeroAddress,
         0,
@@ -34,7 +34,7 @@ async function main() {
     await forwarderDeploymentTx.wait();
     try {
         await hre.run("verify:verify", {
-            address: graveForwaderAddress,
+            address: graveForwarderAddress,
             network: "luksoTestnet",
             constructorArguments: [],
         });
@@ -42,7 +42,7 @@ async function main() {
     } catch (error) {
         console.error("Contract verification might have failed");
     }
-    console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwaderAddress);
+    console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwarderAddress);
 }
 
 

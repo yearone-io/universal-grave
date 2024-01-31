@@ -55,7 +55,7 @@ async function deployAndSetLSP8MetadataBaseURI() {
     const setDataTx = await lsp7Mintable.setData(dataKey,dataValue,{gasLimit: 400_000});
     console.log('✅ Data set. Tx:', setDataTx.hash);
     const mintTx = await lsp7Mintable.mint(signer.address, 69, true, "0x", { gasLimit: 400_000 });
-    console.log('✅ Token minted to vault through UP Grave Vault Forwader. Tx:', mintTx.hash);
+    console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
 }
 
 deployAndSetLSP8MetadataBaseURI().catch((error) => {

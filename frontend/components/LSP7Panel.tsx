@@ -14,7 +14,7 @@ import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
-import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
+import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 
@@ -69,20 +69,20 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const provider = new ethers.providers.Web3Provider(window.lukso);
       const signer = provider.getSigner();
 
-      const LSP1GraveForwaderContract = new ethers.Contract(
+      const LSP1GraveForwarderContract = new ethers.Contract(
         networkConfig.universalGraveForwarder,
-        LSP1GraveForwader.abi,
+        LSP1GraveForwarder.abi,
         signer
       );
 
       const upAddress = await signer.getAddress();
       if (
-        !(await LSP1GraveForwaderContract.tokenAllowlist(
+        !(await LSP1GraveForwarderContract.tokenAllowlist(
           upAddress,
           tokenAddress
         ))
       ) {
-        await LSP1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
+        await LSP1GraveForwarderContract.addTokenToAllowlist(tokenAddress, {
           gasLimit: 400_00,
         });
       }

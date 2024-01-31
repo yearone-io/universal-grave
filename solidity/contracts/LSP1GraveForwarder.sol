@@ -17,12 +17,9 @@ import { _TYPEID_LSP8_TOKENSRECIPIENT } from "@lukso/lsp-smart-contracts/contrac
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
+contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
     mapping (address => address) public graveVaults;
     mapping(address => mapping (address => bool)) public tokenAllowlist;
-
-    // todo: For each UP, we manage a trusted tokenAllowlist of LSP7/LSP8 assets
-    // mapping (address => address) public tokenListContract;
 
     function setGrave(address grave) public {
         graveVaults[msg.sender] = grave;
@@ -37,7 +34,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
     }
 
     function removeTokenFromAllowlist(address token) public {
-        tokenAllowlist[msg.sender][token] = false;
+        delete tokenAllowlist[msg.sender][token];
     }
 
     function getAddressStatus(address token) public view returns (bool) {
@@ -54,7 +51,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
         if (tokenAllowlist[msg.sender][notifier]) {
             return super.universalReceiverDelegate(notifier, value, typeId, data);
         }
-        require(graveVaults[msg.sender] != address(0), "LSP1GraveForwader: user vault not set");
+        require(graveVaults[msg.sender] != address(0), "LSP1GraveForwarder: user vault not set");
 
         // CHECK that the caller is a LSP0 (UniversalProfile)
         // by checking its interface support
@@ -64,7 +61,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
                 _INTERFACEID_LSP0
             )
         ) {
-            return "LSP1GraveForwader: caller is not a LSP0";
+            return ": caller is not a LSP0";
         }
         // CHECK that notifier is a contract with a `balanceOf` method
         // and that msg.sender (the UP) has a positive balance
@@ -73,15 +70,15 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
                 uint256 balance
             ) {
                 if (balance == 0) {
-                    return "LSP1GraveForwader: UP balance is zero";
+                    return ": UP balance is zero";
                 }
             } catch {
-                return "LSP1GraveForwader: `balanceOf(address)` function not found";
+                return ": `balanceOf(address)` function not found";
             }
         }
         
         if (typeId == _TYPEID_LSP7_TOKENSRECIPIENT) {
-            // extract data (we only need the amount that was transfered / minted)
+            // extract data (we only need the amount that was transferred / minted)
             (, , , uint256 amount, ) = abi.decode(
                 data,
                 (address, address, address, uint256, bytes)
@@ -97,7 +94,7 @@ contract LSP1GraveForwader is LSP1UniversalReceiverDelegateUP {
             // 0 = CALL
             return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
         } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
-            // extract data (we only need the amount that was transfered / minted)
+            // extract data (we only need the amount that was transferred / minted)
             (, , , bytes32 tokenId, ) = abi.decode(
                 data,
                 (address, address, address, bytes32, bytes)
