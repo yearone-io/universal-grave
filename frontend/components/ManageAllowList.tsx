@@ -5,35 +5,107 @@ import {
   AccordionItem,
   AccordionPanel,
   Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Text,
 } from '@chakra-ui/react';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import {ethers} from "ethers";
-import {constants} from "@/app/constants";
-import LSP1GraveForwader from "@/abis/LSP1GraveForwader.json";
+import { ethers } from 'ethers';
+import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
+import { LSP1GraveForwarder } from '@/contracts';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
+  const { networkConfig } = walletContext;
 
-  const { account } = walletContext;
+  const provider = new ethers.providers.Web3Provider(window.lukso);
+  const signer = provider.getSigner();
+  const graveForwarder = new ethers.Contract(
+    networkConfig.universalGraveForwarder,
+    LSP1GraveForwarderAbi.abi,
+    provider
+  ) as LSP1GraveForwarder;
 
-  const [allowListAddresses, setAllowListAddresses] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+  const [isAddingToAllowList, setIsAddingToAllowList] =
+    useState<boolean>(false);
+  const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
+    useState<boolean>(false);
+  const [tokenAddress, setTokenAddress] = useState<string>('');
 
-  const fetchAllowList = async () => {
-    const provider = new ethers.providers.Web3Provider(window.lukso);
-    const signer = provider.getSigner();
+  const [actionText, setActionText] = useState<string>('');
 
-    const graveForwarder = new ethers.Contract(
-        constants.UNIVERSAL_GRAVE_FORWARDER,
-        LSP1GraveForwader.abi,
-        provider
-    );
-    return await graveForwarder.connect(signer).g;
+  const handleChange = (event: {
+    target: { value: React.SetStateAction<string> };
+  }) => setTokenAddress(event.target.value);
+
+  const fetchTokenAllowListStatus = async () => {
+    setIsSubmitting(true);
+    setIsCheckingStatus(true);
+    graveForwarder
+      .connect(signer)
+      .tokenAllowlist(await signer.getAddress(), tokenAddress)
+      .then(value => {
+        setActionText(
+          value
+            ? `${tokenAddress} is allowed`
+            : `${tokenAddress} is not allowed`
+        );
+      })
+      .catch(reason => {
+        setActionText(
+          `Error checking status of ${tokenAddress}: ${reason.message}`
+        );
+      })
+      .finally(() => {
+        setIsCheckingStatus(false);
+        setIsSubmitting(false);
+      });
   };
 
-  useEffect(() => {
+  const addTokenToAllowList = async () => {
+    setIsSubmitting(true);
+    setIsAddingToAllowList(true);
+    return graveForwarder
+      .connect(signer)
+      .addTokenToAllowlist(tokenAddress)
+      .then(() => {
+        setActionText(`${tokenAddress} has been added to allow list`);
+      })
+      .catch(reason => {
+        setActionText(
+          `Error adding ${tokenAddress} to allow list: ${reason.message}`
+        );
+      })
+      .finally(() => {
+        setIsAddingToAllowList(false);
+        setIsSubmitting(false);
+      });
+  };
 
-  }, []);
+  const removeTokenFromAllowList = async () => {
+    setIsSubmitting(true);
+    setIsRemovingFromAllowList(true);
+    return graveForwarder
+      .connect(signer)
+      .removeTokenFromAllowlist(tokenAddress)
+      .then(() => {
+        setActionText(`${tokenAddress} has been removed from allow list`);
+      })
+      .catch(reason => {
+        setActionText(
+          `Error removing ${tokenAddress} from allow list: ${reason.message}`
+        );
+      })
+      .finally(() => {
+        setIsRemovingFromAllowList(false);
+        setIsSubmitting(false);
+      });
+  };
 
   return (
     <Accordion mb={'4'} allowToggle>
@@ -47,11 +119,41 @@ export default function ManageAllowList() {
           </AccordionButton>
         </h2>
         <AccordionPanel pb={4}>
-          <ul>
-            {allowListAddresses.map((address, index) => {
-              return <li key={index}>{address}</li>;
-            })}
-          </ul>
+          <FormControl>
+            <FormLabel>Token Address</FormLabel>
+            <Input value={tokenAddress} onChange={handleChange} />
+          </FormControl>
+          {actionText && <Text>{actionText}</Text>}
+          <Button
+            mt={4}
+            isDisabled={isSubmitting}
+            isLoading={isCheckingStatus}
+            loadingText="Checking status"
+            onClick={fetchTokenAllowListStatus}
+            type="submit"
+          >
+            Check status
+          </Button>
+          <Button
+            mt={4}
+            isDisabled={isSubmitting}
+            isLoading={isAddingToAllowList}
+            loadingText="Adding to allow list"
+            onClick={addTokenToAllowList}
+            type="submit"
+          >
+            Add to allow list
+          </Button>
+          <Button
+            mt={4}
+            isDisabled={isSubmitting}
+            loadingText="Removing from allow list"
+            isLoading={isRemovingFromAllowList}
+            onClick={removeTokenFromAllowList}
+            type="submit"
+          >
+            Remove from allow list
+          </Button>
         </AccordionPanel>
       </AccordionItem>
     </Accordion>
