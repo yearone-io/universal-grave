@@ -29,18 +29,8 @@ const initialSteps = [
     complete: false,
   },
   {
-    title: 'Create your GRAVE spambox',
+    title: 'Set your GRAVE spambox',
     completeText: { text: 'ADDRESS: ', address: null },
-    complete: false,
-  },
-  {
-    title: 'Link GRAVE to your 🆙',
-    completeText: { text: 'GRAVE LINKED', address: null },
-    complete: false,
-  },
-  {
-    title: 'Enable GRAVE to keep assets inventory',
-    completeText: { text: 'INVENTORY TRACKED', address: null },
     complete: false,
   },
   {
@@ -216,7 +206,7 @@ const JoinGravePanel: React.FC = () => {
     if (activeLeavingStep > -1) {
       return 'STOP SENDING UNWANTED ASSETS TO GRAVE';
     } else {
-      if (steps[4].complete) {
+      if (steps[2].complete) {
         return 'YOU HAVE A GRAVE SPAMBOX!';
       } else {
         return 'SET UP YOUR GRAVE SPAMBOX';
@@ -234,7 +224,7 @@ const JoinGravePanel: React.FC = () => {
       textAlign="center"
       color={'dark.purple.500'}
       width={'555px'}
-      minHeight={'435px'}
+      minHeight={'335px'}
     >
       <Text
         fontSize="20px"

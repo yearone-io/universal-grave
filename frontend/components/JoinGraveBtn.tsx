@@ -159,88 +159,108 @@ export default function JoinGraveBtn({
   const batchJoin = async (
     provider: ethers.providers.Web3Provider,
     signer: ethers.providers.JsonRpcSigner
-  ) => {
-    // const operationsType = [0, 0, 0, 0, 0];
-    // const targets = [upAddress, vaultFactoryAddress, forwarderAddress, vaultAddress, upAddress];
-    // const values = [0, 0, 0, 0, 0];
-    // const datas = [encodedUpdatePermissions, encodedCreateVault, encodedSetVault, encodedEnableInventory, encodedSetDelegate];
+  ): Promise<{ vaultAddress: string | null }> => {
     const UP = new ethers.Contract(
       account as string,
       UniversalProfile.abi,
       provider
     );
 
-    // permittions
-    // const permissionsData = await getDataToUpdateBECPermissions();
-    // const encodedUpdatePermissions = UP.interface.encodeFunctionData("setDataBatch", [permissionsData.keys, permissionsData.values]);
-
-    // console.log('encodedUpdatePermissions: ', encodedUpdatePermissions);
-
-    // const operationsType = [0];
-    // const targets = [account];
-    // const values = [0];
-    // const datas = [encodedUpdatePermissions];
-
     // 1.create vault
-    const vaultFactory = new ethers.ContractFactory(LSP9Vault.abi, LSP9Vault.bytecode, signer);
+    const vaultFactory = new ethers.ContractFactory(
+      LSP9Vault.abi,
+      LSP9Vault.bytecode,
+      signer
+    );
     const deployTransactionObject = vaultFactory.getDeployTransaction(account);
     const firstCreateEncodedData = deployTransactionObject.data;
 
     const nonce = await provider.getTransactionCount(account as string);
     const predictedVaultAddress = ethers.utils.getContractAddress({
       from: account as string,
-      nonce: nonce
-    }); 
-    const zeroAddress = "0x0000000000000000000000000000000000000000";
+      nonce: nonce,
+    });
+    const zeroAddress = '0x0000000000000000000000000000000000000000';
 
     //  2.Set the vault in the forwarder contract
-    const graveForwarderContract = new ethers.Contract(constants.UNIVERSAL_GRAVE_FORWARDER, LSP1GraveForwader.abi, signer);
-    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData("setGrave", [predictedVaultAddress]);
+    const graveForwarderContract = new ethers.Contract(
+      constants.UNIVERSAL_GRAVE_FORWARDER,
+      LSP1GraveForwader.abi,
+      signer
+    );
+    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData(
+      'setGrave',
+      [predictedVaultAddress]
+    );
 
     // 3. Enable grave to keep assets inventory
-    const vaultContract = new ethers.Contract(predictedVaultAddress, LSP9Vault.abi, signer);
+    const vaultContract = new ethers.Contract(
+      predictedVaultAddress,
+      LSP9Vault.abi,
+      signer
+    );
     // TODO: TESNET VALUE???
-    const encodedGraveSetData = vaultContract.interface.encodeFunctionData("setData", [ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, constants.LSP1_URD_VAULT_TESTNET]);
-
-    // 4. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
-    const UPContract = new ethers.Contract(account as string, UniversalProfile.abi, signer);
-    const stepKeyValue = await getURDLS7AndLSP8DataKeysAndValues();
-    const encodedLS7LS8SetDataBatch = UPContract.interface.encodeFunctionData("setDataBatch", [stepKeyValue.dataKeys, stepKeyValue.dataValues]);
-
-    // TODO: Flow for already existing vault
+    const encodedGraveSetData = vaultContract.interface.encodeFunctionData(
+      'setData',
+      [
+        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+        constants.LSP1_URD_VAULT_TESTNET,
+      ]
+    );
 
     // In order:
     // 1. Create the vault
     // 2. Set the vault in the forwarder contract
     // 3. Enable grave to keep assets inventory
-    // 4. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     console.log('Predicted Address for Vault: ', predictedVaultAddress);
     // ============ IMPORTANT ============
-    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH. 
+    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH.
     // PREDICTED VAULT ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER.
-    
+
     // TODO: CREATE FUNCTION FOR VAULT ADDRESS IN THE FORWARDER
     // ============ IMPORTANT ============
-    const operationsType = [1, 0, 0, 0];
-    const targets = [zeroAddress, constants.UNIVERSAL_GRAVE_FORWARDER, predictedVaultAddress, account];
-    const values = [0, 0, 0, 0];
-    const datas = [firstCreateEncodedData, encodedSetGrave, encodedGraveSetData, encodedLS7LS8SetDataBatch];
-
-    const batchTx = await UP.connect(signer).executeBatch(operationsType, targets, values, datas, { gasLimit: 10000000 });
-
+    const operationsType = [1, 0, 0];
+    const targets = [
+      zeroAddress,
+      constants.UNIVERSAL_GRAVE_FORWARDER,
+      predictedVaultAddress,
+    ];
+    const values = [0, 0, 0];
+    const datas = [
+      firstCreateEncodedData,
+      encodedSetGrave,
+      encodedGraveSetData,
+    ];
+    const batchTx = await UP.connect(signer).executeBatch(
+      operationsType,
+      targets,
+      values,
+      datas,
+      { gasLimit: 10000000 }
+    );
     const receipt = await batchTx.wait();
+    let result = { vaultAddress: null };
+
     // Verify that the Vault predicted address is the same as the one emitted by the event
     for (const event of receipt.events) {
-      if (event.event === "ContractCreated") {
-          const createdContractAddress = event.args.contractAddress;
-          if (createdContractAddress.toLowerCase() === predictedVaultAddress.toLowerCase()) {
-              console.log("Address matches: ", createdContractAddress);
-          } else {
-              console.error("Mismatch in predicted Vault addresses: ", createdContractAddress, predictedVaultAddress);
-          }
+      if (event.event === 'ContractCreated') {
+        const vaultAddress = event.args.contractAddress;
+        if (
+          vaultAddress.toLowerCase() === predictedVaultAddress.toLowerCase()
+        ) {
+          console.log('Address matches: ', vaultAddress);
+          result = { vaultAddress };
+        } else {
+          console.error(
+            'Mismatch in predicted Vault addresses: ',
+            vaultAddress,
+            predictedVaultAddress
+          );
+        }
       }
-  }
-  }
+    }
+    return result;
+  };
 
   const initJoinProcess = async () => {
     if (!window.lukso) {
@@ -259,8 +279,7 @@ export default function JoinGraveBtn({
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
-      // await updateBECPermissions(provider, signer);
-      await batchJoin(provider, signer)
+      await updateBECPermissions(provider, signer);
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
@@ -268,51 +287,39 @@ export default function JoinGraveBtn({
       return err;
     }
     if (!graveVault) {
-      // 2. Create a vault for the UP. (if needed)
+      // 2.A Create a vault for the UP in batch transaction. (if needed)
       try {
-        const vaultTranx = await createUpVault(signer);
-        vaultAddress = vaultTranx.contractAddress;
+        const batchJoinTrax = await batchJoin(provider, signer);
+        if (!batchJoinTrax.vaultAddress) {
+          // todo test flow
+          throw new Error('There was a problem setting up your Vault.');
+        }
         // add the vault to the provider store
-        addGraveVault(vaultAddress);
+        addGraveVault(batchJoinTrax.vaultAddress);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
         handleError(err);
         return err;
       }
-      // 3. Set the vault in the forwarder contract
+    } else {
+      console.log('batch join skipped, vault already exists');
+      //2.B Enable grave to keep assets inventory (this done in 2.A too but as part of a batch call)
       try {
-        console.log('starting step 2 setGraveInForwarder');
-        // need to allow controller to interact with the forwarder using AllowedCalls
-        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
-        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
-        await setGraveInForwarder(provider, signer, vaultAddress);
-        console.log('finished 2 setGraveInForwarder');
-        setJoiningStep(3);
-        console.log('step 3');
+        await setDelegateInVault(vaultAddress as string);
+        setJoiningStep(2);
+        console.log('step 2');
       } catch (err: any) {
         handleError(err);
         return err;
       }
-    } else {
-      setJoiningStep(3);
-      console.log('step 2 and 3 skipped, vault already exists');
     }
 
-    // 4. Enable grave to keep assets inventory
-    try {
-      await setDelegateInVault(vaultAddress as string);
-      setJoiningStep(4);
-      console.log('step 4');
-    } catch (err: any) {
-      handleError(err);
-      return err;
-    }
-    // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
+    // 3. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
       await setForwarderAsLSPDelegate(signer, provider);
-      setJoiningStep(5);
-      console.log('step 5');
+      setJoiningStep(3);
+      console.log('step 3');
     } catch (err: any) {
       handleError(err);
       return err;
@@ -325,7 +332,7 @@ export default function JoinGraveBtn({
       isClosable: true,
     });
 
-    // 6. Update the UI
+    // 4. Update the UI
     fetchProfile();
   };
 
@@ -436,61 +443,6 @@ export default function JoinGraveBtn({
     return await setDataBatchTx.wait();
   };
 
-  const getDataToUpdateBECPermissions = async (
-  ) => {
-    const erc725 = new ERC725(
-      LSP6Schema as ERC725JSONSchema[],
-      account,
-      window.lukso
-    );
-
-    const newPermissions = erc725.encodePermissions({
-      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-      ...GRAVE_CONTROLLER_PERMISSIONS,
-    });
-    const permissionsData = erc725.encodeData([
-      {
-        keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: mainUPController,
-        value: newPermissions,
-      },
-    ]);
-
-    return  permissionsData;
-  };
-
-
-  /**
-   * Function to create a vault for the UP.
-   */
-  const createUpVault = async (signer: ethers.providers.JsonRpcSigner) => {
-    // create an factory for the LSP9Vault contract
-    let vaultFactory = new ethers.ContractFactory(
-      LSP9Vault.abi,
-      LSP9Vault.bytecode
-    );
-    const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-    return await vaultTransaction.deployTransaction.wait();
-  };
-
-  /**
-   * Function to set the vault address in the forwarder contract.
-   */
-  const setGraveInForwarder = async (
-    provider: ethers.providers.Web3Provider,
-    signer: ethers.providers.JsonRpcSigner,
-    vaultAddress: string
-  ) => {
-    // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-    // Note: remember to update ABIs if the delegate contracts change
-    const graveForwarder = new ethers.Contract(
-      constants.UNIVERSAL_GRAVE_FORWARDER,
-      LSP1GraveForwader.abi,
-      provider
-    );
-    return await graveForwarder.connect(signer).setGrave(vaultAddress);
-  };
-
   /**
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
@@ -509,73 +461,6 @@ export default function JoinGraveBtn({
         constants.LSP1_URD_VAULT_TESTNET
       );
   };
-
-  const getURDLS7AndLSP8DataKeysAndValues = async() => {
-    const erc725 = new ERC725(
-      LSP6Schema as ERC725JSONSchema[],
-      account,
-      window.lukso
-    );
-    // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
-    const LSP7URDdataKey =
-    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-    LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-    const LSP8URDdataKey =
-    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-    LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
-
-    let dataValues = [
-      constants.UNIVERSAL_GRAVE_FORWARDER,
-      constants.UNIVERSAL_GRAVE_FORWARDER,
-    ];
-
-    const permissionsResult = await erc725.getData();
-    const allControllers = permissionsResult[0].value as string[];
-    let formattedControllers = [] as string[];
-    const permissions = erc725.encodePermissions({
-      SUPER_CALL: true,
-      ...DEFAULT_UP_URD_PERMISSIONS,
-    });
-
-    // 2 - remove the forwarder from the list of controllers for sanity check
-    // Note: check sum case address to avoid issues with case sensitivity
-    formattedControllers = allControllers.filter((controller: any) => {
-      return (
-        getChecksumAddress(controller) !==
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
-      );
-    });
-
-    // 3- add the forwarder to the list of controllers
-    formattedControllers = [
-      ...formattedControllers,
-      constants.UNIVERSAL_GRAVE_FORWARDER,
-    ];
-
-    const data = erc725.encodeData([
-      // the permission of the beneficiary address
-      {
-        keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
-        value: permissions,
-      },
-      // the new list controllers addresses (= addresses with permissions set on the UP)
-      // + or -  1 in the `AddressPermissions[]` array length
-      {
-        keyName: 'AddressPermissions[]',
-        value: formattedControllers,
-      },
-    ]);
-    dataKeys = [...dataKeys, ...data.keys];
-    dataValues = [...dataValues, ...data.values];
-
-    return {
-      dataKeys,
-      dataValues
-    }
-  }
 
   /**
    *  Function to set the forwarder contract as the delegate for LSP7 and LSP8.
