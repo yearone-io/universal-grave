@@ -14,7 +14,7 @@ import { ethers } from 'ethers';
 import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import LSP1GraveForwader from '@/abis/LSP1GraveForwader.json';
+import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 
@@ -36,7 +36,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   onReviveSuccess,
 }) => {
   const walletContext = useContext(WalletContext);
-  const { graveVault: connectedGraveValue } = walletContext;
+  const { graveVault: connectedGraveValue, networkConfig } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -69,20 +69,20 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
       const provider = new ethers.providers.Web3Provider(window.lukso);
       const signer = provider.getSigner();
 
-      const LSP1GraveForwaderContract = new ethers.Contract(
-        constants.UNIVERSAL_GRAVE_FORWARDER,
-        LSP1GraveForwader.abi,
+      const LSP1GraveForwarderContract = new ethers.Contract(
+        networkConfig.universalGraveForwarder,
+        LSP1GraveForwarder.abi,
         signer
       );
 
       const upAddress = await signer.getAddress();
       if (
-        !(await LSP1GraveForwaderContract.tokenAllowlist(
+        !(await LSP1GraveForwarderContract.tokenAllowlist(
           upAddress,
           tokenAddress
         ))
       ) {
-        await LSP1GraveForwaderContract.addTokenToAllowlist(tokenAddress, {
+        await LSP1GraveForwarderContract.addTokenToAllowlist(tokenAddress, {
           gasLimit: 400_00,
         });
       }
@@ -206,7 +206,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${tokenAddress}`,
+                  `${networkConfig.explorerURL}/address/${tokenAddress}`,
                   '_blank'
                 )
               }
