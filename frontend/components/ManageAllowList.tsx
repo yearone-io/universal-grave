@@ -119,11 +119,16 @@ export default function ManageAllowList() {
           </AccordionButton>
         </h2>
         <AccordionPanel pb={4}>
+          <Text mb={4}>
+            If you expect to receive certain LSP7 or LSP8 tokens you can add them
+            to the whitelist beforehand so that they do not get redirected to your
+            Grave vault
+          </Text>
           <FormControl>
             <FormLabel>Token Address</FormLabel>
             <Input value={tokenAddress} onChange={handleChange} />
           </FormControl>
-          {actionText && <Text>{actionText}</Text>}
+          {actionText && <Text mt={4}>{actionText}</Text>}
           <Button
             mt={4}
             isDisabled={isSubmitting}
