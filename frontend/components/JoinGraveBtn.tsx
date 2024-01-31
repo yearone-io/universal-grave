@@ -6,7 +6,6 @@ import { WalletContext } from './wallet/WalletContext';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
-  constants,
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
   GRAVE_CONTROLLER_PERMISSIONS,
@@ -64,6 +63,7 @@ export default function JoinGraveBtn({
     setURDLsp8,
     URDLsp7,
     URDLsp8,
+    networkConfig,
   } = walletContext;
 
   // ========================= HOOKS =========================
@@ -183,15 +183,8 @@ export default function JoinGraveBtn({
     const zeroAddress = '0x0000000000000000000000000000000000000000';
 
     //  2.Set the vault in the forwarder contract
-    const graveForwarderContract = new ethers.Contract(
-      constants.UNIVERSAL_GRAVE_FORWARDER,
-      LSP1GraveForwader.abi,
-      signer
-    );
-    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData(
-      'setGrave',
-      [predictedVaultAddress]
-    );
+    const graveForwarderContract = new ethers.Contract(networkConfig.universalGraveForwarder, LSP1GraveForwader.abi, signer);
+    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData("setGrave", [predictedVaultAddress]);
 
     // 3. Enable grave to keep assets inventory
     const vaultContract = new ethers.Contract(
@@ -199,14 +192,9 @@ export default function JoinGraveBtn({
       LSP9Vault.abi,
       signer
     );
-    // TODO: TESNET VALUE???
-    const encodedGraveSetData = vaultContract.interface.encodeFunctionData(
-      'setData',
-      [
-        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        constants.LSP1_URD_VAULT_TESTNET,
-      ]
-    );
+    const encodedGraveSetData = vaultContract.interface.encodeFunctionData("setData", [ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, networkConfig.lsp1UrdVault]);
+
+    // TODO: Flow for already existing vault
 
     // In order:
     // 1. Create the vault
@@ -222,7 +210,7 @@ export default function JoinGraveBtn({
     const operationsType = [1, 0, 0];
     const targets = [
       zeroAddress,
-      constants.UNIVERSAL_GRAVE_FORWARDER,
+      networkConfig.universalGraveForwarder,
       predictedVaultAddress,
     ];
     const values = [0, 0, 0];
@@ -458,7 +446,7 @@ export default function JoinGraveBtn({
       .connect(signer)
       .setData(
         ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        constants.LSP1_URD_VAULT_TESTNET
+        networkConfig.lsp1UrdVault
       );
   };
 
@@ -492,8 +480,8 @@ export default function JoinGraveBtn({
     let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
 
     let dataValues = [
-      constants.UNIVERSAL_GRAVE_FORWARDER,
-      constants.UNIVERSAL_GRAVE_FORWARDER,
+      networkConfig.universalGraveForwarder,
+      networkConfig.universalGraveForwarder,
     ];
 
     const permissionsResult = await erc725.getData();
@@ -509,21 +497,21 @@ export default function JoinGraveBtn({
     formattedControllers = allControllers.filter((controller: any) => {
       return (
         getChecksumAddress(controller) !==
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        getChecksumAddress(networkConfig.universalGraveForwarder)
       );
     });
 
     // 3- add the forwarder to the list of controllers
     formattedControllers = [
       ...formattedControllers,
-      constants.UNIVERSAL_GRAVE_FORWARDER,
+      networkConfig.universalGraveForwarder,
     ];
 
     const data = erc725.encodeData([
       // the permission of the beneficiary address
       {
         keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+        dynamicKeyParts: networkConfig.universalGraveForwarder,
         value: permissions,
       },
       // the new list controllers addresses (= addresses with permissions set on the UP)
@@ -588,7 +576,7 @@ export default function JoinGraveBtn({
     const formattedControllers = allControllers.filter((controller: any) => {
       return (
         getChecksumAddress(controller) !==
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        getChecksumAddress(networkConfig.universalGraveForwarder)
       );
     });
 
@@ -596,7 +584,7 @@ export default function JoinGraveBtn({
       // the permission of the beneficiary address
       {
         keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: constants.UNIVERSAL_GRAVE_FORWARDER,
+        dynamicKeyParts: networkConfig.universalGraveForwarder,
         value: permissions,
       },
       // the new list controllers addresses (= addresses with permissions set on the UP)
@@ -635,9 +623,9 @@ export default function JoinGraveBtn({
     // Note: check sum case address to avoid issues with case sensitivity
     return (
       getChecksumAddress(URDLsp7) ===
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER) &&
+        getChecksumAddress(networkConfig.universalGraveForwarder) &&
       getChecksumAddress(URDLsp8) ===
-        getChecksumAddress(constants.UNIVERSAL_GRAVE_FORWARDER)
+        getChecksumAddress(networkConfig.universalGraveForwarder)
     );
   };
 
