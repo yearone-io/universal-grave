@@ -18,12 +18,12 @@ import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import { constants } from '@/app/constants';
+import ManageAllowList from '@/components/ManageAllowList';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig } =
-    walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -81,6 +81,7 @@ export default function MyGrave() {
                     </AccordionPanel>
                   </AccordionItem>
                 </Accordion>
+                <ManageAllowList />
               </Box>
             </Box>
           ) : (
