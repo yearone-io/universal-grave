@@ -41,12 +41,12 @@ async function main() {
     // DEPLOYING GRAVE FORWARDER URD
     console.log('⏳ Deploying the LSP1 Grave Forwarder URD');
     const CustomURDBytecode = hre.artifacts.readArtifactSync(
-        'contracts/LSP1GraveForwarder.sol:LSP1GraveForwader',
+        'contracts/LSP1GraveForwarder.sol:LSP1GraveForwarder',
       ).bytecode;
     const fullBytecode = CustomURDBytecode;// + params;
     // get the address of the contract that will be created
     const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
-    const graveForwaderAddress = await UP.connect(signer).execute.staticCall(
+    const graveForwarderAddress = await UP.connect(signer).execute.staticCall(
         OPERATION_TYPES.CREATE,
         ethers.ZeroAddress,
         0,
@@ -55,8 +55,8 @@ async function main() {
     // deploy LSP1URDForwarder as the UP (signed by the browser extension controller)
     const tx1 = await UP.connect(signer).execute(OPERATION_TYPES.CREATE, ethers.ZeroAddress, 0, fullBytecode);
     await tx1.wait();
-    console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwaderAddress);
-    console.log(`to verify run: npx hardhat verify --network luksoTestnet ${graveForwaderAddress}`);
+    console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwarderAddress);
+    console.log(`to verify run: npx hardhat verify --network luksoTestnet ${graveForwarderAddress}`);
     
     // ADDING URD TO UP LSP7 RECIPIENT NOTIFICATION
     console.log('⏳ Registering LSP1 Grave Forwarder on the UP for LSP7 and LSP8 assets');
@@ -69,7 +69,7 @@ async function main() {
     const dataKeys = [
         URDdataKeyLSP7,
         URDdataKeyLSP8,
-        ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + graveForwaderAddress.slice(2),
+        ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + graveForwarderAddress.slice(2),
       ];
     
     // Calculate the correct permission (SUPER_CALL + REENTRANCY)
@@ -77,8 +77,8 @@ async function main() {
     const permHex = '0x' + permInt.toString(16).padStart(64, '0');
 
     const dataValues = [
-        graveForwaderAddress,
-        graveForwaderAddress,
+        graveForwarderAddress,
+        graveForwarderAddress,
         permHex
     ];
 
@@ -103,13 +103,13 @@ async function main() {
     // Setup Grave on Forwarder
     console.log('⏳ Set GRAVE Vault on Forwarder');
     const GraveForwarderAbi = hre.artifacts.readArtifactSync(
-        'contracts/LSP1GraveForwarder.sol:LSP1GraveForwader',
+        'contracts/LSP1GraveForwarder.sol:LSP1GraveForwarder',
       ).abi
     // First, create a transaction object representing the interaction with the graveForwarder
     const graveForwarderInteraction = {
-        to: graveForwaderAddress, // Address of the graveForwarder contract
+        to: graveForwarderAddress, // Address of the graveForwarder contract
         data: new ethers.Contract(
-            graveForwaderAddress,
+            graveForwarderAddress,
             GraveForwarderAbi,
             provider // signer to encode tx
         ).interface.encodeFunctionData("setGrave", [graveVaultAddress]) // Encoding the setGrave function call
@@ -144,14 +144,14 @@ async function main() {
     console.log('✅ Token deployed. Address:', tokenAddress);
     const LSP7TokenContract = new ethers.Contract(tokenAddress, LSP7Mintable.abi, provider);
     const mintTx = await LSP7TokenContract.connect(signer).mint(UP_ADDR, 69, 0, "0x", { gasLimit: 400_000 });
-    console.log('✅ Token minted to vault through UP Grave Vault Forwader. Tx:', mintTx.hash);
+    console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
 
     // transfer from grave vault to elsewhere
     console.log('⏳ Transferring token from Vault back to UP :)');
     const graveForwarderWhitelist = {
-        to: graveForwaderAddress, // Address of the graveForwarder contract
+        to: graveForwarderAddress, // Address of the graveForwarder contract
         data: new ethers.Contract(
-            graveForwaderAddress,
+            graveForwarderAddress,
             GraveForwarderAbi,
             provider // signer to encode tx
         ).interface.encodeFunctionData("addTokenToAllowlist", [tokenAddress]) // Encoding the setGrave function call
