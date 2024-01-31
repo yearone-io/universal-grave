@@ -22,8 +22,7 @@ import { constants } from '@/app/constants';
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig } =
-    walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
