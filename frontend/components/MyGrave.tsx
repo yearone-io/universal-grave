@@ -23,7 +23,8 @@ import ManageAllowList from '@/components/ManageAllowList';
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8 } = walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig } =
+    walletContext;
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -64,7 +65,7 @@ export default function MyGrave() {
                     <AccordionPanel pb={4}>
                       <Text>LSP7 Universal Receiver Delegate</Text>
                       <a
-                        href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp7}`}
+                        href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
                         style={{ textDecoration: 'underline' }}
                         target="_blank"
                       >
@@ -72,7 +73,7 @@ export default function MyGrave() {
                       </a>
                       <Text>LSP8 Universal Receiver Delegate</Text>
                       <a
-                        href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${URDLsp8}`}
+                        href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
                         style={{ textDecoration: 'underline' }}
                         target="_blank"
                       >
