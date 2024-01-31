@@ -207,8 +207,6 @@ export default function JoinGraveBtn({
       ]
     );
 
-    // TODO: Flow for already existing vault
-
     // In order:
     // 1. Create the vault
     // 2. Set the vault in the forwarder contract
@@ -217,8 +215,6 @@ export default function JoinGraveBtn({
     // ============ IMPORTANT ============
     // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH.
     // PREDICTED VAULT ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER.
-
-    // TODO: CREATE FUNCTION FOR VAULT ADDRESS IN THE FORWARDER
     // ============ IMPORTANT ============
     const operationsType = [1, 0, 0];
     const targets = [
@@ -288,7 +284,7 @@ export default function JoinGraveBtn({
       return err;
     }
     if (!graveVault) {
-      // 2.A Create a vault for the UP in batch transaction. (if needed)
+      // 2.A. Create a vault for the UP in batch transaction. (if needed)
       try {
         const batchJoinTrax = await batchJoin(provider, signer);
         if (!batchJoinTrax.vaultAddress) {
@@ -305,7 +301,7 @@ export default function JoinGraveBtn({
       }
     } else {
       console.log('batch join skipped, vault already exists');
-      //2.B Enable grave to keep assets inventory (this done in 2.A too but as part of a batch call)
+      //2.B. Enable grave to keep assets inventory (this done in 2.A too but as part of a batch call)
       try {
         await setDelegateInVault(vaultAddress as string);
         setJoiningStep(2);
