@@ -1,3 +1,5 @@
+import SignInButton from '@/components/SignInButton';
+
 declare global {
   interface Window {
     lukso: any;
@@ -25,26 +27,7 @@ const WalletConnector: React.FC = () => {
     if (isLoadingAccount) {
       return <button disabled>Loading...</button>;
     } else if (!account) {
-      return (
-        <Button
-          onClick={connect}
-          border={'1px solid var(--chakra-colors-dark-purple-500)'}
-        >
-          <Flex alignItems="center" justifyContent="space-between">
-            <Image src="/images/LYX-logo.svg" alt="Sign In" />
-            <Box
-              ml="10px"
-              fontSize="14px"
-              lineHeight="14px"
-              fontFamily="Bungee"
-              fontWeight="400"
-              color={'dark.purple.500'}
-            >
-              Sign In
-            </Box>
-          </Flex>
-        </Button>
-      );
+      return <SignInButton />;
     } else {
       return (
         <Button

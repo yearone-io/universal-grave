@@ -1,6 +1,8 @@
 import React from 'react';
+import { getNetworkConfig, Network } from '@/constants/networks';
 
 interface WalletContextType {
+  networkConfig: Network;
   account: string | null;
   graveVault: string | undefined;
   mainUPController: string | undefined;
@@ -12,9 +14,11 @@ interface WalletContextType {
   setURDLsp8: (urd: string | null) => void;
   addGraveVault: (graveVault: string) => void;
   isLoadingAccount: boolean;
+  connectedChainId: number | undefined;
 }
 
 const defaultImplementation: WalletContextType = {
+  networkConfig: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!),
   account: null,
   graveVault: undefined,
   mainUPController: undefined,
@@ -32,6 +36,7 @@ const defaultImplementation: WalletContextType = {
   addGraveVault: () => {
     // Default addGraveVault implementation
   },
+  connectedChainId: undefined,
 };
 
 export const WalletContext = React.createContext<WalletContextType>(

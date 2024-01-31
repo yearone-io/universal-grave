@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   Box,
   Flex,
@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import JoinGraveBtn from './JoinGraveBtn';
 import { FaCheckCircle } from 'react-icons/fa';
-import { constants } from '@/app/constants';
+import { WalletContext } from '@/components/wallet/WalletContext';
 import { formatAddress } from '@/utils/tokenUtils';
 
 const initialSteps = [
@@ -65,6 +65,9 @@ const initialLeavingSteps = [
 ];
 
 const JoinGravePanel: React.FC = () => {
+  const walletContext = useContext(WalletContext);
+  const { networkConfig } = walletContext;
+
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   const [steps, setSteps] = React.useState([...initialSteps]);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
@@ -175,7 +178,7 @@ const JoinGravePanel: React.FC = () => {
                 <Flex>
                   <Box mr="2px">{step.instructions2.text}</Box>
                   <a
-                    href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${step.instructions2.address}`}
+                    href={`${networkConfig.explorerURL}/address/${step.instructions2.address}`}
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >
@@ -190,7 +193,7 @@ const JoinGravePanel: React.FC = () => {
                 {step.completeText.text}
                 {step.completeText.address && (
                   <a
-                    href={`${constants.LUKSO_EXPLORER.TESTNET.ADDRESS}${step.completeText.address}`}
+                    href={`${networkConfig.explorerURL}/address/${step.completeText.address}`}
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >
