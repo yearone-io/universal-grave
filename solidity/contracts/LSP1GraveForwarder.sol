@@ -20,7 +20,7 @@ import { ERC165Checker } from '@openzeppelin/contracts/utils/introspection/ERC16
 contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   mapping(address => address) public graveVaults;
   mapping(address => mapping(address => bool)) public tokenAllowlist;
-  mapping(address => bool) private hasInteracted;
+  mapping(address => bool) private hasJoined;
 
   // Counters
   uint256 public lsp7RedirectedCounter;
@@ -28,6 +28,7 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   uint256 public graveUserCounter;
 
   function setGrave(address grave) public {
+    updateGraveUserCounter(msg.sender);
     graveVaults[msg.sender] = grave;
   }
 
@@ -48,9 +49,9 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   }
 
   function updateGraveUserCounter(address up) internal {
-    if (!hasInteracted[up]) {
-      hasInteracted[up] = true;
-      uniqueUserCounter++;
+    if (!hasJoined[up]) {
+      hasJoined[up] = true;
+      graveUserCounter++;
     }
   }
 
@@ -65,7 +66,6 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
     override(LSP1UniversalReceiverDelegateUP)
     returns (bytes memory)
   {
-    updateGraveUserCounter(msg.sender);
     // CHECK that the address of the LSP7/LSP8 is whitelisted
     if (tokenAllowlist[msg.sender][notifier]) {
       return super.universalReceiverDelegate(notifier, value, typeId, data);
