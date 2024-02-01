@@ -11,6 +11,7 @@ import {
   Image,
 } from '@chakra-ui/react';
 import { FaTwitter, FaMoon, FaGithub } from 'react-icons/fa';
+import Link from 'next/link';
 
 const SocialButton = ({
   children,
@@ -85,6 +86,9 @@ export default function SmallWithLogoLeft() {
           <SocialButton label={'Github'} href={'https://github.com/yearone-io'}>
             <FaGithub />
           </SocialButton>
+          <Link href={'/terms'}>Terms</Link>
+          <Link href={'/terms#privacy'}>Privacy</Link>
+          <Link href={'/terms#fees'}>Fees</Link>
         </Stack>
       </Container>
     </Box>
