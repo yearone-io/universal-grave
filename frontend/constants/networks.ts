@@ -16,7 +16,7 @@ const NETWORKS = {
     fallbackRpcUrl: 'https://rpc.lukso.gateway.fm',
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
     universalGraveForwarder: '0xa5467dfe7019bf2c7c5f7a707711b9d4cad118c8',
-    lsp1UrdVault: '0x',
+    lsp1UrdVault: '',
   },
   testnet: {
     chainId: 4201,
