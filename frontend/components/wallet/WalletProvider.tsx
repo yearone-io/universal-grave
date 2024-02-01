@@ -46,8 +46,12 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     if (typeof window !== 'undefined' && window.lukso) {
       // Retrieve the account from localStorage if it exists.
       const storedAccount = localStorage.getItem('connectedAccount');
+      const storedMainUPController = localStorage.getItem('mainUPController');
       if (storedAccount) {
         setAccount(storedAccount);
+      }
+      if (storedMainUPController) {
+        setMainUPController(storedMainUPController);
       }
       setIsLoadingAccount(false);
     }
@@ -75,6 +79,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     setGraveVault(undefined);
     // Remove the stored account from localStorage.
     localStorage.removeItem('connectedAccount');
+    localStorage.removeItem('mainUPController');
     // If additional logic is needed for disconnecting, it should be added here.
   };
 
@@ -100,27 +105,37 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         setAccount(accounts[0]);
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
         const siweMessage = new SiweMessage({
-          domain: window.location.host, // Domain requesting the signing
+          domain: window.location.host, // required, Domain requesting the signing
+          uri: window.location.origin, // required, URI from the resource that is the subject of the signing
           address: accounts[0], // Address performing the signing
-          statement: 'By logging in you agree to the terms and conditions.', // a human-readable assertion user signs
-          uri: window.location.origin, // URI from the resource that is the subject of the signing
+          statement:
+            'Welcome to the Universal GRAVE! Tired of being spammed by unwanted LSP7 and LSP8 assets. Send theem to the GRAVE! Before you use our service, please make sure you have read and understood our terms of service and conditions and privacy policy. By signing in, you confirm that you have read and agree to these documents and will use the platform in accordance with their provisions. Thank you for using Universal GRAVE, and we hope we solve all your spam problems once and for all.', // a human-readable assertion user signs
           version: '1', // Current version of the SIWE Message
           chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
             .chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
-          resources: [`${window.location.host}/terms`], // Information the user wishes to have resolved as part of authentication by the relying party
+          resources: [
+            `${window.location.host}/terms`,
+            `${window.location.host}/terms#disclaimer`,
+            `${window.location.host}/terms#privacy`,
+            `${window.location.host}/terms#fees`,
+          ], // Information the user wishes to have resolved as part of authentication by the relying party
         }).prepareMessage();
-        const hashedMessage = web3.eth.accounts.hashMessage(siweMessage);
-
+        const signature = await web3.eth.personal.sign(
+          siweMessage,
+          accounts[0],
+          ''
+        );
         // Request the user to sign the login message with his Universal Profile
         // The UP Browser Extension will sign the message with the controller key used by the extension (a smart contract can't sign)
-        const signature = await web3.eth.sign(hashedMessage, accounts[0]);
         const signerAddress = web3.eth.accounts.recover(
-          hashedMessage,
+          siweMessage,
           signature as string
         );
         setMainUPController(signerAddress);
         console.log('The Main Controller address is:', signerAddress);
+
         localStorage.setItem('connectedAccount', accounts[0]);
+        localStorage.setItem('mainUPController', signerAddress);
       } catch (error: any) {
         // Log any connection errors.
         if (accounts.length) {
