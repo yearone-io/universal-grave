@@ -24,6 +24,7 @@ export const metadata = {
 };
 
 export default function TermsOfService() {
+  const companyName = '[Your Company Name]';
   return (
     <Container maxW="container.md">
       {/* Navigation Links (Optional) */}
@@ -110,7 +111,7 @@ export default function TermsOfService() {
           </ListItem>
           <ListItem>
             Fees are subject to change at our discretion. We will endeavor to
-            notify you of any fee changes in a timely manner.
+            notify you of any fee changes in a through our application.
           </ListItem>
           <ListItem>
             Fees are non-refundable except as required by law or as explicitly
@@ -167,10 +168,10 @@ export default function TermsOfService() {
         </Heading>
         <Text mt={4}>
           Universal Grave, its original content, features, and functionality are
-          and will remain the exclusive property of [Your Company Name] and its
+          and will remain the exclusive property of {companyName} and its
           licensors. Our trademarks and trade dress may not be used in
           connection with any product or service without the prior written
-          consent of [Your Company Name].
+          consent of {companyName}.
         </Text>
 
         {/* Limitation of Liability */}
@@ -181,7 +182,7 @@ export default function TermsOfService() {
           1. Limitation Clause
         </Heading>
         <Text mt={4}>
-          In no event shall [Your Company Name], nor its directors, employees,
+          In no event shall {companyName}, nor its directors, employees,
           partners, agents, suppliers, or affiliates, be liable for any
           indirect, incidental, special, consequential, or punitive damages,
           including without limitation, loss of profits, data, or other
@@ -212,8 +213,8 @@ export default function TermsOfService() {
         <Text mt={4}>
           We reserve the right to modify or discontinue, temporarily or
           permanently, the Service (or any part thereof) with or without notice
-          at any time. You agree that [Your Company Name] shall not be liable to
-          you or to any third party for any modification, suspension, or
+          at any time. You agree that {companyName} shall not be liable to you
+          or to any third party for any modification, suspension, or
           discontinuance of the Service.
         </Text>
 

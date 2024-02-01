@@ -123,7 +123,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         const signature = await web3.eth.personal.sign(
           siweMessage,
           accounts[0],
-          'test password!'
+          ''
         );
         // Request the user to sign the login message with his Universal Profile
         // The UP Browser Extension will sign the message with the controller key used by the extension (a smart contract can't sign)
