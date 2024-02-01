@@ -7,7 +7,7 @@ declare global {
 }
 import React, { useContext } from 'react';
 import { WalletContext } from './WalletContext';
-import { Box, Button, Flex, Image } from '@chakra-ui/react';
+import { Button } from '@chakra-ui/react';
 import { formatAddress } from '@/utils/tokenUtils';
 
 /**
@@ -21,7 +21,7 @@ const WalletConnector: React.FC = () => {
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-  const { account, connect, disconnect, isLoadingAccount } = walletContext;
+  const { account, disconnect, isLoadingAccount } = walletContext;
 
   const displayConnectButton = () => {
     if (isLoadingAccount) {
