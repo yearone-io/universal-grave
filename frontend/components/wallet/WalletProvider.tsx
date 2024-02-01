@@ -73,6 +73,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     setAccount(null);
     // reset the graveVault address
     setGraveVault(undefined);
+    setConnectedChainId(undefined);
     // Remove the stored account from localStorage.
     localStorage.removeItem('connectedAccount');
     // If additional logic is needed for disconnecting, it should be added here.
