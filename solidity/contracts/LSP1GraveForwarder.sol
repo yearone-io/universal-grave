@@ -17,6 +17,10 @@ import { _TYPEID_LSP8_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contrac
 import { ERC165 } from '@openzeppelin/contracts/utils/introspection/ERC165.sol';
 import { ERC165Checker } from '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 
+interface IVault {
+  function owner() external view returns (address);
+}
+
 contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   mapping(address => address) public graveVaults;
   mapping(address => mapping(address => bool)) public tokenAllowlist;
@@ -28,6 +32,11 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   uint256 public graveUserCounter;
 
   function setGrave(address grave) public {
+    IVault vaultContract = IVault(grave);
+    require(
+      vaultContract.owner() == msg.sender,
+      'Caller is not the owner of the vault contract.'
+    );
     updateGraveUserCounter(msg.sender);
     graveVaults[msg.sender] = grave;
   }
