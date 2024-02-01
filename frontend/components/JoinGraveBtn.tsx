@@ -15,6 +15,7 @@ import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
+import { AddressZero } from '@ethersproject/constants';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -180,7 +181,6 @@ export default function JoinGraveBtn({
       from: account as string,
       nonce: nonce,
     });
-    const zeroAddress = '0x0000000000000000000000000000000000000000';
 
     //  2.Set the vault in the forwarder contract
     const graveForwarderContract = new ethers.Contract(
@@ -218,7 +218,7 @@ export default function JoinGraveBtn({
     // ============ IMPORTANT ============
     const operationsType = [1, 0, 0];
     const targets = [
-      zeroAddress,
+      AddressZero,
       networkConfig.universalGraveForwarder,
       predictedVaultAddress,
     ];
