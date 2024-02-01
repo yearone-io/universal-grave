@@ -377,9 +377,7 @@ export default function JoinGraveBtn({
       LSP1GraveForwarder.abi,
       provider
     );
-    return await graveForwarder.connect(signer).setGrave(vaultAddress, {
-      gasLimit: 1000000,
-    });
+    return await graveForwarder.connect(signer).setGrave(vaultAddress);
   };
 
   /**
