@@ -115,10 +115,6 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
             .chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
           resources: [
-            `${window.location.host}/terms`,
-            `${window.location.host}/terms#disclaimer`,
-            `${window.location.host}/terms#privacy`,
-            `${window.location.host}/terms#fees`,
           ], // Information the user wishes to have resolved as part of authentication by the relying party
         }).prepareMessage();
         const signature = await web3.eth.personal.sign(
