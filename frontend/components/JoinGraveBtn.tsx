@@ -444,6 +444,8 @@ export default function JoinGraveBtn({
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
   const setDelegateInVault = async (vaultAddress: string) => {
+    // Check if it is neccessary to set the delegate in the vault
+    
     const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
     const vault = new ethers.Contract(
