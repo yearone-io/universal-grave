@@ -105,8 +105,6 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         // Update state and localStorage with the first account address.
         setAccount(accounts[0]);
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
-        console.log("window.location.host", window.location.host);
-        console.log("window.location.origin", window.location.origin);
         const siweMessage = new SiweMessage({
           domain: window.location.host, // required, Domain requesting the signing
           uri: window.location.origin, // required, URI from the resource that is the subject of the signing
@@ -126,7 +124,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         const signature = await web3.eth.personal.sign(
           siweMessage,
           accounts[0],
-          ''
+          'foobar'
         );
         // Request the user to sign the login message with his Universal Profile
         // The UP Browser Extension will sign the message with the controller key used by the extension (a smart contract can't sign)
