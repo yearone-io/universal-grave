@@ -105,7 +105,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         // Update state and localStorage with the first account address.
         setAccount(accounts[0]);
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
-        console.log("0");
+        console.log("0", process.env.NEXT_PUBLIC_DEFAULT_NETWORK);
         const siweMessage = new SiweMessage({
           domain: window.location.host, // required, Domain requesting the signing
           uri: window.location.origin, // required, URI from the resource that is the subject of the signing
