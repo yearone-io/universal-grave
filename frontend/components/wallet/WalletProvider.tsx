@@ -138,6 +138,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         localStorage.setItem('connectedAccount', accounts[0]);
         localStorage.setItem('mainUPController', signerAddress);
       } catch (error: any) {
+        console.error(error);
         // Log any connection errors.
         if (accounts.length) {
           disconnect();
