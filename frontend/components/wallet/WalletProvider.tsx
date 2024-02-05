@@ -1,9 +1,8 @@
 import React, { ReactNode, useEffect, useState } from 'react';
-import { SiweMessage } from 'siwe';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
-import { getGraveVaultFor } from '@/utils/universalProfile';
+import { buildSIWEMessage, getGraveVaultFor } from '@/utils/universalProfile';
 import { getNetworkConfig } from '@/constants/networks';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
@@ -105,22 +104,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         // Update state and localStorage with the first account address.
         setAccount(accounts[0]);
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
-        const siweMessage = new SiweMessage({
-          domain: window.location.host, // required, Domain requesting the signing
-          uri: window.location.origin, // required, URI from the resource that is the subject of the signing
-          address: accounts[0], // Address performing the signing
-          statement:
-            'Welcome to the Universal GRAVE! Tired of being spammed by unwanted LSP7 and LSP8 assets. Send theem to the GRAVE! Before you use our service, please make sure you have read and understood our terms of service and conditions and privacy policy. By signing in, you confirm that you have read and agree to these documents and will use the platform in accordance with their provisions. Thank you for using Universal GRAVE, and we hope we solve all your spam problems once and for all.', // a human-readable assertion user signs
-          version: '1', // Current version of the SIWE Message
-          chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
-            .chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
-          resources: [
-            `${window.location.host}/terms`,
-            `${window.location.host}/terms#disclaimer`,
-            `${window.location.host}/terms#privacy`,
-            `${window.location.host}/terms#fees`,
-          ], // Information the user wishes to have resolved as part of authentication by the relying party
-        }).prepareMessage();
+        const siweMessage = buildSIWEMessage(accounts[0]);
         const signature = await web3.eth.personal.sign(
           siweMessage,
           accounts[0],
