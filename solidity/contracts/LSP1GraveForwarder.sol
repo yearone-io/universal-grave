@@ -18,9 +18,18 @@ import { _TYPEID_LSP8_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contrac
 import { ERC165 } from '@openzeppelin/contracts/utils/introspection/ERC165.sol';
 import { ERC165Checker } from '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 
+interface IVault {
+  function owner() external view returns (address);
+}
+
 contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   mapping(address => address) public graveVaults;
   mapping(address => mapping(address => bool)) public tokenAllowlist;
+
+  // Counters
+  uint256 public lsp7RedirectedCounter;
+  uint256 public lsp8RedirectedCounter;
+  uint256 public graveUserCounter;
 
   function setGrave(address grave) public {
     // Check if the provided address implements the LSP9Vault interface
@@ -28,7 +37,15 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
       ERC165Checker.supportsInterface(grave, _INTERFACEID_LSP9),
       'Provided address does not implement LSP9Vault interface'
     );
+    IVault vaultContract = IVault(grave);
+    require(
+      vaultContract.owner() == msg.sender,
+      'Caller is not the owner of the vault contract.'
+    );
 
+    if (graveVaults[msg.sender] == address(0)) {
+        graveUserCounter++;
+    } 
     graveVaults[msg.sender] = grave;
   }
 
@@ -102,6 +119,7 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
         ILSP7DigitalAsset.transfer,
         (msg.sender, graveVaults[msg.sender], amount, false, data)
       );
+      lsp7RedirectedCounter++;
       // 0 = CALL
       return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
     } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
@@ -114,6 +132,7 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
         ILSP8IdentifiableDigitalAsset.transfer,
         (msg.sender, graveVaults[msg.sender], tokenId, false, data)
       );
+      lsp8RedirectedCounter++;
       // 0 = CALL
       return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
     }
