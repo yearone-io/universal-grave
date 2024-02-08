@@ -64,10 +64,9 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   }
 
   function updateGraveUserCounter(address up) internal {
-    if (!hasJoined[up]) {
-      hasJoined[up] = true;
-      graveUserCounter++;
-    }
+    if (graveVaults[up] == address(0)) {
+        graveUserCounter++;
+    } 
   }
 
   function universalReceiverDelegate(
