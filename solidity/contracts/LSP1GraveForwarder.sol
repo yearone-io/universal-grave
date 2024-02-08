@@ -42,7 +42,10 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
       vaultContract.owner() == msg.sender,
       'Caller is not the owner of the vault contract.'
     );
-    updateGraveUserCounter(msg.sender);
+
+    if (graveVaults[msg.sender] == address(0)) {
+        graveUserCounter++;
+    } 
     graveVaults[msg.sender] = grave;
   }
 
@@ -60,12 +63,6 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
 
   function getAddressStatus(address token) public view returns (bool) {
     return tokenAllowlist[msg.sender][token];
-  }
-
-  function updateGraveUserCounter(address up) internal {
-    if (graveVaults[up] == address(0)) {
-        graveUserCounter++;
-    } 
   }
 
   function universalReceiverDelegate(
