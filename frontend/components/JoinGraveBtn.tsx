@@ -160,7 +160,7 @@ export default function JoinGraveBtn({
   const batchJoin = async (
     provider: ethers.providers.Web3Provider,
     signer: ethers.providers.JsonRpcSigner
-  ): Promise<{ vaultAddress: string | null }> => {
+  ): Promise<{ vaultAddress: string }> => {
     const UP = new ethers.Contract(
       account as string,
       UniversalProfile.abi,
@@ -233,10 +233,8 @@ export default function JoinGraveBtn({
       targets,
       values,
       datas,
-      { gasLimit: 10000000 }
     );
     const receipt = await batchTx.wait();
-    let result = { vaultAddress: null };
 
     // Verify that the Vault predicted address is the same as the one emitted by the event
     for (const event of receipt.events) {
@@ -246,17 +244,15 @@ export default function JoinGraveBtn({
           vaultAddress.toLowerCase() === predictedVaultAddress.toLowerCase()
         ) {
           console.log('Address matches: ', vaultAddress);
-          result = { vaultAddress };
+          return { vaultAddress };
         } else {
-          console.error(
-            'Mismatch in predicted Vault addresses: ',
-            vaultAddress,
-            predictedVaultAddress
-          );
+          //'Mismatch in predicted Vault '
+          console.log('Mismatch in predicted Vault: ', vaultAddress);
         }
       }
     }
-    return result;
+    // If no matching event is found, throw an error to ensure the function does not exit without returning a value
+    throw new Error('No Vault creation event found, failed to create the vault.');
   };
 
   const initJoinProcess = async () => {
@@ -287,10 +283,7 @@ export default function JoinGraveBtn({
       // 2.A. Create a vault for the UP in batch transaction. (if needed)
       try {
         const batchJoinTrax = await batchJoin(provider, signer);
-        if (!batchJoinTrax.vaultAddress) {
-          // todo test flow
-          throw new Error('There was a problem setting up your Vault.');
-        }
+
         // add the vault to the provider store
         addGraveVault(batchJoinTrax.vaultAddress);
         setJoiningStep(2);
