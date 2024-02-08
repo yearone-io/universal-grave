@@ -17,7 +17,6 @@ import SignInBox from '@/components/SignInBox';
 import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
-import { constants } from '@/app/constants';
 import ManageAllowList from '@/components/ManageAllowList';
 
 export default function MyGrave() {
@@ -30,7 +29,7 @@ export default function MyGrave() {
       <Stack
         direction={{ base: 'column', md: 'row' }}
         justify="space-between"
-        align="center"
+        alignItems='flex-start'
         w="100%"
         pt="50px"
       >
@@ -51,7 +50,8 @@ export default function MyGrave() {
                     <JoinGravePanel />
                   </Flex>
                 </Box>
-                <Accordion mb={'4'} allowToggle>
+                <Box maxW={'550px'}>
+                <Accordion mb={'4'} allowToggle >
                   <AccordionItem>
                     <h2>
                       <AccordionButton>
@@ -82,6 +82,7 @@ export default function MyGrave() {
                   </AccordionItem>
                 </Accordion>
                 <ManageAllowList />
+                </Box>
               </Box>
             </Box>
           ) : (

@@ -24,7 +24,7 @@ const NETWORKS = {
     rpcUrl: process.env.NEXT_PUBLIC_TESTNET_RPC_URL,
     fallbackRpcUrl: 'https://rpc.testnet.lukso.network',
     explorerURL: 'https://explorer.execution.testnet.lukso.network',
-    universalGraveForwarder: '0x2c4a19c6cc34d6c1bf68d2559a45ff7dc88be087',
+    universalGraveForwarder: '0xc0ffc9ca39e79c6fdbb89c3d0528f112e54e7b31',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
   },
 } as {

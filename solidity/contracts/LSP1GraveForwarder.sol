@@ -8,6 +8,7 @@ import { ILSP7DigitalAsset } from '@lukso/lsp-smart-contracts/contracts/LSP7Digi
 import { ILSP8IdentifiableDigitalAsset } from '@lukso/lsp-smart-contracts/contracts/LSP8IdentifiableDigitalAsset/ILSP8IdentifiableDigitalAsset.sol';
 
 // constants
+import { _INTERFACEID_LSP9 } from '@lukso/lsp-smart-contracts/contracts/LSP9Vault/LSP9Constants.sol';
 import { _INTERFACEID_LSP0 } from '@lukso/lsp-smart-contracts/contracts/LSP0ERC725Account/LSP0Constants.sol';
 import { _INTERFACEID_LSP1_DELEGATE } from '@lukso/lsp-smart-contracts/contracts/LSP1UniversalReceiver/LSP1Constants.sol';
 import { _TYPEID_LSP7_TOKENSRECIPIENT } from '@lukso/lsp-smart-contracts/contracts/LSP7DigitalAsset/LSP7Constants.sol';
@@ -32,6 +33,11 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   uint256 public graveUserCounter;
 
   function setGrave(address grave) public {
+    // Check if the provided address implements the LSP9Vault interface
+    require(
+      ERC165Checker.supportsInterface(grave, _INTERFACEID_LSP9),
+      'Provided address does not implement LSP9Vault interface'
+    );
     IVault vaultContract = IVault(grave);
     require(
       vaultContract.owner() == msg.sender,
