@@ -41,6 +41,8 @@ async function main() {
         console.log("Contract verified");
     } catch (error) {
         console.error("Contract verification might have failed");
+        console.error(error);
+        console.error("run: npx hardhat verify --network luksoTestnet " + graveForwarderAddress + "");
     }
     console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwarderAddress);
 }

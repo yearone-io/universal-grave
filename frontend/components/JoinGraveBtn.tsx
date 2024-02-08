@@ -15,6 +15,7 @@ import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
+import { AddressZero } from '@ethersproject/constants';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -156,6 +157,104 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
 
+  const batchJoin = async (
+    provider: ethers.providers.Web3Provider,
+    signer: ethers.providers.JsonRpcSigner
+  ): Promise<{ vaultAddress: string }> => {
+    const UP = new ethers.Contract(
+      account as string,
+      UniversalProfile.abi,
+      provider
+    );
+
+    // 1.create vault
+    const vaultFactory = new ethers.ContractFactory(
+      LSP9Vault.abi,
+      LSP9Vault.bytecode,
+      signer
+    );
+    const deployTransactionObject = vaultFactory.getDeployTransaction(account);
+    const firstCreateEncodedData = deployTransactionObject.data;
+
+    const nonce = await provider.getTransactionCount(account as string);
+    const predictedVaultAddress = ethers.utils.getContractAddress({
+      from: account as string,
+      nonce: nonce,
+    });
+
+    //  2.Set the vault in the forwarder contract
+    const graveForwarderContract = new ethers.Contract(
+      networkConfig.universalGraveForwarder,
+      LSP1GraveForwarder.abi,
+      signer
+    );
+    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData(
+      'setGrave',
+      [predictedVaultAddress]
+    );
+
+    // 3. Enable grave to keep assets inventory
+    const vaultContract = new ethers.Contract(
+      predictedVaultAddress,
+      LSP9Vault.abi,
+      signer
+    );
+    const encodedGraveSetData = vaultContract.interface.encodeFunctionData(
+      'setData',
+      [
+        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+        networkConfig.lsp1UrdVault,
+      ]
+    );
+
+    // In order:
+    // 1. Create the vault
+    // 2. Set the vault in the forwarder contract
+    // 3. Enable grave to keep assets inventory
+    console.log('Predicted Address for Vault: ', predictedVaultAddress);
+    // ============ IMPORTANT ============
+    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH.
+    // PREDICTED VAULT ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER.
+    // ============ IMPORTANT ============
+    const operationsType = [1, 0, 0];
+    const targets = [
+      AddressZero,
+      networkConfig.universalGraveForwarder,
+      predictedVaultAddress,
+    ];
+    const values = [0, 0, 0];
+    const datas = [
+      firstCreateEncodedData,
+      encodedSetGrave,
+      encodedGraveSetData,
+    ];
+    const batchTx = await UP.connect(signer).executeBatch(
+      operationsType,
+      targets,
+      values,
+      datas,
+    );
+    const receipt = await batchTx.wait();
+
+    // Verify that the Vault predicted address is the same as the one emitted by the event
+    for (const event of receipt.events) {
+      if (event.event === 'ContractCreated') {
+        const vaultAddress = event.args.contractAddress;
+        if (
+          vaultAddress.toLowerCase() === predictedVaultAddress.toLowerCase()
+        ) {
+          console.log('Address matches: ', vaultAddress);
+          return { vaultAddress };
+        } else {
+          //'Mismatch in predicted Vault '
+          console.log('Mismatch in predicted Vault: ', vaultAddress);
+        }
+      }
+    }
+    // If no matching event is found, throw an error to ensure the function does not exit without returning a value
+    throw new Error('No Vault creation event found, failed to create the vault.');
+  };
+
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -181,51 +280,36 @@ export default function JoinGraveBtn({
       return err;
     }
     if (!graveVault) {
-      // 2. Create a vault for the UP. (if needed)
+      // 2.A. Create a vault for the UP in batch transaction. (if needed)
       try {
-        const vaultTranx = await createUpVault(signer);
-        vaultAddress = vaultTranx.contractAddress;
+        const batchJoinTrax = await batchJoin(provider, signer);
+
         // add the vault to the provider store
-        addGraveVault(vaultAddress);
+        addGraveVault(batchJoinTrax.vaultAddress);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
         handleError(err);
         return err;
       }
-      // 3. Set the vault in the forwarder contract
+    } else {
+      console.log('batch join skipped, vault already exists');
+      //2.B. Enable grave to keep assets inventory (this done in 2.A too but as part of a batch call)
       try {
-        console.log('starting step 2 setGraveInForwarder');
-        // need to allow controller to interact with the forwarder using AllowedCalls
-        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
-        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
-        await setGraveInForwarder(provider, signer, vaultAddress);
-        console.log('finished 2 setGraveInForwarder');
-        setJoiningStep(3);
-        console.log('step 3');
+        await setDelegateInVault(vaultAddress as string);
+        setJoiningStep(2);
+        console.log('step 2');
       } catch (err: any) {
         handleError(err);
         return err;
       }
-    } else {
-      setJoiningStep(3);
-      console.log('step 2 and 3 skipped, vault already exists');
     }
 
-    // 4. Enable grave to keep assets inventory
-    try {
-      await setDelegateInVault(vaultAddress as string);
-      setJoiningStep(4);
-      console.log('step 4');
-    } catch (err: any) {
-      handleError(err);
-      return err;
-    }
-    // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
+    // 3. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
       await setForwarderAsLSPDelegate(signer, provider);
-      setJoiningStep(5);
-      console.log('step 5');
+      setJoiningStep(3);
+      console.log('step 3');
     } catch (err: any) {
       handleError(err);
       return err;
@@ -238,7 +322,7 @@ export default function JoinGraveBtn({
       isClosable: true,
     });
 
-    // 6. Update the UI
+    // 4. Update the UI
     fetchProfile();
   };
 
@@ -350,40 +434,9 @@ export default function JoinGraveBtn({
   };
 
   /**
-   * Function to create a vault for the UP.
-   */
-  const createUpVault = async (signer: ethers.providers.JsonRpcSigner) => {
-    // create an factory for the LSP9Vault contract
-    let vaultFactory = new ethers.ContractFactory(
-      LSP9Vault.abi,
-      LSP9Vault.bytecode
-    );
-    const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-    return await vaultTransaction.deployTransaction.wait();
-  };
-
-  /**
-   * Function to set the vault address in the forwarder contract.
-   */
-  const setGraveInForwarder = async (
-    provider: ethers.providers.Web3Provider,
-    signer: ethers.providers.JsonRpcSigner,
-    vaultAddress: string
-  ) => {
-    // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-    // Note: remember to update ABIs if the delegate contracts change
-    const graveForwarder = new ethers.Contract(
-      networkConfig.universalGraveForwarder,
-      LSP1GraveForwarder.abi,
-      provider
-    );
-    return await graveForwarder.connect(signer).setGrave(vaultAddress);
-  };
-
-  /**
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
-  const setDelegateInVault = async (vaultAddress: string) => {
+  const setDelegateInVault = async (vaultAddress: string) => {    
     const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
     const vault = new ethers.Contract(
@@ -391,6 +444,16 @@ export default function JoinGraveBtn({
       LSP9Vault.abi,
       signer
     );
+    try {
+    //1. Check if it is neccessary to set the delegate in the vault
+       const lsp1 = await vault.connect(signer).getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+      if (lsp1.toLocaleLowerCase() === networkConfig.lsp1UrdVault.toLocaleLowerCase()) {
+        return;
+      }
+    } catch (err: any) {
+      console.error('Error setDelegateInVault: ', err);
+    }
+    //2. Set the delegate in the vault if neccesary
     return await vault
       .connect(signer)
       .setData(
