@@ -89,6 +89,7 @@ export default function SmallWithLogoLeft() {
           <Link href={'/terms'}>Terms</Link>
           <Link href={'/terms#privacy'}>Privacy</Link>
           <Link href={'/terms#fees'}>Fees</Link>
+          <Link href={'/feedback'}>Feedback</Link>
         </Stack>
       </Container>
     </Box>
