@@ -86,9 +86,9 @@ export default function SmallWithLogoLeft() {
           <SocialButton label={'Github'} href={'https://github.com/yearone-io'}>
             <FaGithub />
           </SocialButton>
+          <Link href={'/about'}>About</Link>
           <Link href={'/terms'}>Terms</Link>
           <Link href={'/terms#privacy'}>Privacy</Link>
-          <Link href={'/terms#fees'}>Fees</Link>
           <Link href={'/feedback'}>Feedback</Link>
         </Stack>
       </Container>
