@@ -25,7 +25,6 @@ interface IVault {
 contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   mapping(address => address) public graveVaults;
   mapping(address => mapping(address => bool)) public tokenAllowlist;
-  mapping(address => bool) private hasJoined;
 
   // Counters
   uint256 public lsp7RedirectedCounter;
