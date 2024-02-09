@@ -36,7 +36,6 @@ export const buildSIWEMessage = (upAddress: string): string => {
       `${window.location.origin}/terms`,
       `${window.location.origin}/terms#disclaimer`,
       `${window.location.origin}/terms#privacy`,
-      `${window.location.origin}/terms#fees`,
     ], // Information the user wishes to have resolved as part of authentication by the relying party
   };
   return new SiweMessage(siweParams).prepareMessage();
