@@ -12,19 +12,6 @@ const getChecksumAddress = (address: string | null) => {
   return ethers.utils.getAddress(address);
 };
 
-const hasJoinedTheGrave = (URDLsp7: string | null, URDLsp8: string | null) => {
-  // Note: check sum case address to avoid issues with case sensitivity
-  let networkConfig = getNetworkConfig(
-    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
-  );
-  return (
-    getChecksumAddress(URDLsp7) ===
-      getChecksumAddress(networkConfig.universalGraveForwarder) &&
-    getChecksumAddress(URDLsp8) ===
-      getChecksumAddress(networkConfig.universalGraveForwarder)
-  );
-};
-
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
   URDLsp8: string | null
