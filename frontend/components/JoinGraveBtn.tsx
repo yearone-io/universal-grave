@@ -232,7 +232,7 @@ export default function JoinGraveBtn({
       operationsType,
       targets,
       values,
-      datas,
+      datas
     );
     const receipt = await batchTx.wait();
 
@@ -252,7 +252,9 @@ export default function JoinGraveBtn({
       }
     }
     // If no matching event is found, throw an error to ensure the function does not exit without returning a value
-    throw new Error('No Vault creation event found, failed to create the vault.');
+    throw new Error(
+      'No Vault creation event found, failed to create the vault.'
+    );
   };
 
   const initJoinProcess = async () => {
@@ -436,7 +438,7 @@ export default function JoinGraveBtn({
   /**
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
-  const setDelegateInVault = async (vaultAddress: string) => {    
+  const setDelegateInVault = async (vaultAddress: string) => {
     const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
     const vault = new ethers.Contract(
@@ -445,9 +447,14 @@ export default function JoinGraveBtn({
       signer
     );
     try {
-    //1. Check if it is neccessary to set the delegate in the vault
-       const lsp1 = await vault.connect(signer).getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-      if (lsp1.toLocaleLowerCase() === networkConfig.lsp1UrdVault.toLocaleLowerCase()) {
+      //1. Check if it is neccessary to set the delegate in the vault
+      const lsp1 = await vault
+        .connect(signer)
+        .getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+      if (
+        lsp1.toLocaleLowerCase() ===
+        networkConfig.lsp1UrdVault.toLocaleLowerCase()
+      ) {
         return;
       }
     } catch (err: any) {

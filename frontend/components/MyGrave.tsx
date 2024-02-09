@@ -29,7 +29,7 @@ export default function MyGrave() {
       <Stack
         direction={{ base: 'column', md: 'row' }}
         justify="space-between"
-        alignItems='flex-start'
+        alignItems="flex-start"
         w="100%"
         pt="50px"
       >
@@ -51,37 +51,37 @@ export default function MyGrave() {
                   </Flex>
                 </Box>
                 <Box maxW={'550px'}>
-                <Accordion mb={'4'} allowToggle >
-                  <AccordionItem>
-                    <h2>
-                      <AccordionButton>
-                        <Box as="span" flex="1" textAlign="left">
-                          Advanced info
-                        </Box>
-                        <AccordionIcon />
-                      </AccordionButton>
-                    </h2>
-                    <AccordionPanel pb={4}>
-                      <Text>LSP7 Universal Receiver Delegate</Text>
-                      <a
-                        href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
-                        style={{ textDecoration: 'underline' }}
-                        target="_blank"
-                      >
-                        {URDLsp7}
-                      </a>
-                      <Text>LSP8 Universal Receiver Delegate</Text>
-                      <a
-                        href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
-                        style={{ textDecoration: 'underline' }}
-                        target="_blank"
-                      >
-                        {URDLsp8}
-                      </a>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-                <ManageAllowList />
+                  <Accordion mb={'4'} allowToggle>
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton>
+                          <Box as="span" flex="1" textAlign="left">
+                            Advanced info
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4}>
+                        <Text>LSP7 Universal Receiver Delegate</Text>
+                        <a
+                          href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
+                          style={{ textDecoration: 'underline' }}
+                          target="_blank"
+                        >
+                          {URDLsp7}
+                        </a>
+                        <Text>LSP8 Universal Receiver Delegate</Text>
+                        <a
+                          href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
+                          style={{ textDecoration: 'underline' }}
+                          target="_blank"
+                        >
+                          {URDLsp8}
+                        </a>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                  <ManageAllowList />
                 </Box>
               </Box>
             </Box>
