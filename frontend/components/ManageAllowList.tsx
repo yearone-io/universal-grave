@@ -113,7 +113,7 @@ export default function ManageAllowList() {
       <AccordionItem>
         <h2>
           <AccordionButton>
-            <Box as="span" flex="1" textAlign="left" > 
+            <Box as="span" flex="1" textAlign="left">
               Manage allow list
             </Box>
             <AccordionIcon />

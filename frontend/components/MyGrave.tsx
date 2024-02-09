@@ -14,22 +14,29 @@ import {
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import ManageAllowList from '@/components/ManageAllowList';
+import { hasOlderGraveDelegate } from '@/utils/urdUtils';
+import { UpgradeURD } from '@/components/UpgradeURD';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const [oldForwarderAddress, setOldForwarderAddress] = useState<string | null>();
+
+  useEffect(() => {
+    setOldForwarderAddress(hasOlderGraveDelegate(URDLsp7, URDLsp8));
+  }, [URDLsp7, URDLsp8]);
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
       <Stack
         direction={{ base: 'column', md: 'row' }}
         justify="space-between"
-        alignItems='flex-start'
+        alignItems="flex-start"
         w="100%"
         pt="50px"
       >
@@ -47,41 +54,45 @@ export default function MyGrave() {
                 </Text>
                 <Box>
                   <Flex justifyContent="center">
-                    <JoinGravePanel />
+                    {oldForwarderAddress ? (
+                      <UpgradeURD oldForwarderAddress={oldForwarderAddress} />
+                    ) : (
+                      <JoinGravePanel />
+                    )}
                   </Flex>
                 </Box>
                 <Box maxW={'550px'}>
-                <Accordion mb={'4'} allowToggle >
-                  <AccordionItem>
-                    <h2>
-                      <AccordionButton>
-                        <Box as="span" flex="1" textAlign="left">
-                          Advanced info
-                        </Box>
-                        <AccordionIcon />
-                      </AccordionButton>
-                    </h2>
-                    <AccordionPanel pb={4}>
-                      <Text>LSP7 Universal Receiver Delegate</Text>
-                      <a
-                        href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
-                        style={{ textDecoration: 'underline' }}
-                        target="_blank"
-                      >
-                        {URDLsp7}
-                      </a>
-                      <Text>LSP8 Universal Receiver Delegate</Text>
-                      <a
-                        href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
-                        style={{ textDecoration: 'underline' }}
-                        target="_blank"
-                      >
-                        {URDLsp8}
-                      </a>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-                <ManageAllowList />
+                  <Accordion mb={'4'} allowToggle>
+                    <AccordionItem>
+                      <h2>
+                        <AccordionButton>
+                          <Box as="span" flex="1" textAlign="left">
+                            Advanced info
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </h2>
+                      <AccordionPanel pb={4}>
+                        <Text>LSP7 Universal Receiver Delegate</Text>
+                        <a
+                          href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
+                          style={{ textDecoration: 'underline' }}
+                          target="_blank"
+                        >
+                          {URDLsp7}
+                        </a>
+                        <Text>LSP8 Universal Receiver Delegate</Text>
+                        <a
+                          href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
+                          style={{ textDecoration: 'underline' }}
+                          target="_blank"
+                        >
+                          {URDLsp8}
+                        </a>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                  <ManageAllowList />
                 </Box>
               </Box>
             </Box>
