@@ -32,9 +32,6 @@ export default function TermsOfService() {
         <Link href="#terms-of-service" mr={4}>
           Terms of Service
         </Link>
-        <Link href="#fees-for-services" mr={4}>
-          Fees for Services
-        </Link>
         <Link href="#privacy-policy" mr={4}>
           Privacy Policy
         </Link>
@@ -80,8 +77,7 @@ export default function TermsOfService() {
           enabling Universal Profile (LSP0) accounts to redirect unwanted LSP7
           and LSP8 digital assets to a specialized Vault, termed the Universal
           Grave. Users can 'revive' desired assets from the GRAVE back to their
-          Universal Profile. Note that the revival of assets is subject to a fee
-          as outlined in the "Fees for Services" section below.
+          Universal Profile.
         </Text>
         {/* Use of Service */}
         <Heading as="h2" size="md" mt={10}>
@@ -92,35 +88,6 @@ export default function TermsOfService() {
           laws and regulations and not for any unlawful purposes. The
           functionality of retrieving and forwarding assets is subject to the
           rules and conditions set forth in these Terms.
-        </Text>
-
-        {/* Fees for Services */}
-        <Heading id="fees" as="h1" size="lg" mb={4} mt={20}>
-          Fees for Services
-        </Heading>
-        <Heading as="h2" size="md" mt={10}>
-          1. Asset Revival Fees
-        </Heading>
-        <Text mt={4}>
-          The revival of assets from the GRAVE back to your Universal Profile is
-          subject to a fee. The specific fee structure is as follows:
-        </Text>
-        <List spacing={2} mt={4}>
-          <ListItem>
-            A fixed fee of 0.005 LYX is charged per revival action.
-          </ListItem>
-          <ListItem>
-            Fees are subject to change at our discretion. We will endeavor to
-            notify you of any fee changes in a through our application.
-          </ListItem>
-          <ListItem>
-            Fees are non-refundable except as required by law or as explicitly
-            set forth in these Terms.
-          </ListItem>
-        </List>
-        <Text mt={4}>
-          Please ensure that you are aware of and agree to the applicable fees
-          before using the service to revive assets from the GRAVE.
         </Text>
 
         {/* Risk Disclaimer */}
