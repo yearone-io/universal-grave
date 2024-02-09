@@ -38,10 +38,10 @@ export default function TermsOfService() {
         </Heading>
         <Text mt={4}>
           Spam presents a significant challenge in the Web3 space. Due to the
-          public and pemrmissionless nature of these networks there is an
+          public and permissionless nature of these networks there is an
           overwhelming volume of content being transferred across blockchain
           wallets and contracts. Attention curation and information filtering
-          become essentialb in such circumstances in order to maintain a healthy
+          become essential in such circumstances in order to maintain a healthy
           blockchain ecosystem.
         </Text>
         <Text mt={4}>
@@ -50,7 +50,7 @@ export default function TermsOfService() {
           This lack of opt-out options diminishes the signal-to-noise ratio in
           the ecosystem. Many examples of this can be seen on Ethereum accounts
           believed to belong to prominent figures, frequently inundated with
-          numerous spam token transfers airdrops, meme coins, NFTs, and
+          numerous spam token transfers, airdrops, meme coins, NFTs, and
           seemingly outright scams, without any ability to reject or protect
           themselves from those threats.
         </Text>
@@ -63,7 +63,7 @@ export default function TermsOfService() {
           web3 spam problem is possible on the Lukso network. We've built the
           GRAVE through an innovative application of the LUKSO's LSP0 and LSP1
           standards, offering the first viable blockchain solution to spam. A
-          proof of concept this idea handling LSP7 (tokens) and LSP8 (NFTs)
+          proof of concept of this idea handling LSP7 (tokens) and LSP8 (NFTs)
           digital assets was the winner of the LUKSO BuildUP Hackathon hosted in
           November of 2023.
         </Text>
