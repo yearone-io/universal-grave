@@ -20,8 +20,6 @@ export const hasOlderGraveDelegate = (
     process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
   );
   if (!URDLsp7 || !URDLsp8) return null;
-  console.log(getChecksumAddress('0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3'));
-  console.log(getChecksumAddress('0x9c27a05310dc8af53b60124b244cc9d12f202cdf'));
   const urd7 = getChecksumAddress(URDLsp7)!;
   const urd8 = getChecksumAddress(URDLsp8)!;
   let urd7Index = networkConfig.previousGraveForwarders.indexOf(urd7);
