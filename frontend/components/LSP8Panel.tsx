@@ -17,6 +17,7 @@ import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/L
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
+import { getProvider } from '@/utils/provider';
 
 interface LSP8PanelProps {
   tokenName: string;
@@ -66,7 +67,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     }
     setIsProcessing(true);
     try {
-      const provider = new ethers.providers.Web3Provider(window.lukso);
+      const provider = getProvider();
       const signer = provider.getSigner();
 
       const LSP1GraveForwarderContract = new ethers.Contract(
