@@ -73,16 +73,7 @@ export const detectLSP = async (
   addressToCheck: string,
   lspType: Exclude<LSPType, LSPType.Unknown>,
   owned = false
-): Promise<TokenInfo | undefined> => {
-  if (
-    lspType in
-    {
-      [LSPType.Unknown]: true,
-    }
-  ) {
-    return undefined;
-  }
-
+): Promise<TokenInfo> => {
   const provider = new ethers.providers.Web3Provider(window.lukso);
 
   // EIP-165 detection

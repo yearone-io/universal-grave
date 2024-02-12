@@ -49,23 +49,31 @@ export default function LSPAssets({
       const lsp7Results: TokenInfo[] = [];
       const lsp8Results: TokenInfo[] = [];
       const unrecognisedAssetResults: TokenInfo[] = [];
-      const detectAssetCalls: Promise<TokenInfo | undefined>[] = [];
-
+      const detectAssetCalls: TokenInfo[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
-        detectAssetCalls.push(
-          detectLSP(assetAddress, graveVault, LSPType.LSP7DigitalAsset)
+        const possibleLsp7Item = await detectLSP(
+          assetAddress,
+          graveVault,
+          LSPType.LSP7DigitalAsset
         );
-        detectAssetCalls.push(
-          detectLSP(
-            assetAddress,
-            graveVault,
-            LSPType.LSP8IdentifiableDigitalAsset
-          )
+        if (possibleLsp7Item.type === LSPType.LSP7DigitalAsset) {
+          detectAssetCalls.push(possibleLsp7Item);
+          continue;
+        }
+        const possibleLsp8Item = await detectLSP(
+          assetAddress,
+          graveVault,
+          LSPType.LSP8IdentifiableDigitalAsset
         );
+        if (possibleLsp8Item.type === LSPType.LSP7DigitalAsset) {
+          detectAssetCalls.push(possibleLsp8Item);
+          continue;
+        }
+        //must be unknown so push either of them
+        detectAssetCalls.push(possibleLsp8Item);
       }
 
-      const receivedAssetsWithTypes = await Promise.all(detectAssetCalls);
-      for (const asset of receivedAssetsWithTypes) {
+      for (const asset of detectAssetCalls) {
         if (!asset) continue;
 
         if (asset.type === LSPType.LSP7DigitalAsset) {
