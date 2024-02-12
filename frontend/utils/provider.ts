@@ -12,8 +12,12 @@ export const getProvider = () => {
 };
 
 export const getLuksoProvider = () => {
+  const rpcUrl = getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!).rpcUrl;
   if (window.lukso && window.lukso.chainId === UNKNOWN_LUKSO_NETWORK) {
-    return getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!).rpcUrl;
+    return rpcUrl;
   }
-  return window.lukso || window.ethereum;
+  if(window.lukso) {
+    return window.lukso;
+  }
+  return rpcUrl;
 };
