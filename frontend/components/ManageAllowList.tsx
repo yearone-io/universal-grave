@@ -1,9 +1,4 @@
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Button,
   FormControl,
@@ -109,65 +104,51 @@ export default function ManageAllowList() {
   };
 
   return (
-    // <Accordion mb={'4'} allowToggle>
-    //   <AccordionItem>
-    //     <h2>
-    //       <AccordionButton>
-    //         <Box as="span" flex="1" textAlign="left">
-    //           Manage allow list
-    //         </Box>
-    //         <AccordionIcon />
-    //       </AccordionButton>
-    //     </h2>
-    //     <AccordionPanel pb={4}>
-      <Box>
-          <Text mb={4}>
-            If you expect to receive certain LSP7 or LSP8 tokens you can add
-            them to the whitelist beforehand so that they do not get redirected
-            to your Grave vault
-          </Text>
-          <FormControl>
-            <FormLabel>Token Address</FormLabel>
-            <Input value={tokenAddress} onChange={handleChange} />
-          </FormControl>
-          <Text mt={4} minH={6}>
-            {actionText}
-          </Text>
-          <Stack direction={'column'}>
-            <Button
-              mt={4}
-              isDisabled={isSubmitting}
-              isLoading={isCheckingStatus}
-              loadingText="Checking status"
-              onClick={fetchTokenAllowListStatus}
-              type="submit"
-            >
-              Check status
-            </Button>
-            <Button
-              mt={4}
-              isDisabled={isSubmitting}
-              isLoading={isAddingToAllowList}
-              loadingText="Adding to allow list"
-              onClick={addTokenToAllowList}
-              type="submit"
-            >
-              Add to allow list
-            </Button>
-            <Button
-              mt={4}
-              isDisabled={isSubmitting}
-              loadingText="Removing from allow list"
-              isLoading={isRemovingFromAllowList}
-              onClick={removeTokenFromAllowList}
-              type="submit"
-            >
-              Remove from allow list
-            </Button>
-          </Stack>
-        {/* </AccordionPanel>
-      </AccordionItem>
-    </Accordion> */}
+    <Box>
+      <Text mb={4}>
+        If you expect to receive certain LSP7 or LSP8 tokens you can add
+        them to the whitelist beforehand so that they do not get redirected
+        to your Grave vault
+      </Text>
+      <FormControl>
+        <FormLabel>Token Address</FormLabel>
+        <Input value={tokenAddress} onChange={handleChange} />
+      </FormControl>
+      <Text mt={4} minH={6}>
+        {actionText}
+      </Text>
+      <Stack direction={'column'}>
+        <Button
+          mt={4}
+          isDisabled={isSubmitting}
+          isLoading={isCheckingStatus}
+          loadingText="Checking status"
+          onClick={fetchTokenAllowListStatus}
+          type="submit"
+        >
+          Check status
+        </Button>
+        <Button
+          mt={4}
+          isDisabled={isSubmitting}
+          isLoading={isAddingToAllowList}
+          loadingText="Adding to allow list"
+          onClick={addTokenToAllowList}
+          type="submit"
+        >
+          Add to allow list
+        </Button>
+        <Button
+          mt={4}
+          isDisabled={isSubmitting}
+          loadingText="Removing from allow list"
+          isLoading={isRemovingFromAllowList}
+          onClick={removeTokenFromAllowList}
+          type="submit"
+        >
+          Remove from allow list
+        </Button>
+      </Stack>
     </Box>
   );
 }

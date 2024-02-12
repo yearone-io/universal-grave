@@ -1,10 +1,5 @@
 'use client';
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Button,
   Container,
@@ -34,14 +29,13 @@ export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
-  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const { isOpen: isOpenAdvance, onOpen: onOpenAdvace, onClose: onCloseAdvance } = useDisclosure();
   const { isOpen: isOpenAllowList, onOpen: onOpenAllowList, onClose: onCloseAllowList } = useDisclosure();
 
 
-  const btnAdvance = React.useRef()
-  const btnAllowList = React.useRef()
+  const btnAdvance = React.useRef<HTMLButtonElement>(null);
+  const btnAllowList = React.useRef<HTMLButtonElement>(null);
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
