@@ -10,6 +10,7 @@ import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
+import { getLuksoProvider, getProvider } from '@/utils/provider';
 
 export default function LSPAssets({
   graveVault,
@@ -36,7 +37,7 @@ export default function LSPAssets({
     const erc725js = new ERC725(
       LSP3ProfileSchema as ERC725JSONSchema[],
       graveVault,
-      window.lukso,
+      getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
       }
@@ -84,7 +85,7 @@ export default function LSPAssets({
           const contract = new ethers.Contract(
             asset.address as string,
             LSP8IdentifiableDigitalAsset.abi,
-            new ethers.providers.Web3Provider(window.lukso)
+            getProvider()
           );
           const tokenIds = await contract.tokenIdsOf(graveVault);
           tokenIds.forEach((tokenId: string) => {
