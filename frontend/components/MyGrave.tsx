@@ -6,11 +6,21 @@ import {
   AccordionItem,
   AccordionPanel,
   Box,
+  Button,
   Container,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
   Flex,
   Image,
+  Input,
   Stack,
   Text,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
@@ -18,11 +28,20 @@ import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import ManageAllowList from '@/components/ManageAllowList';
+import { formatAddress } from '@/utils/tokenUtils';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const { isOpen: isOpenAdvance, onOpen: onOpenAdvace, onClose: onCloseAdvance } = useDisclosure();
+  const { isOpen: isOpenAllowList, onOpen: onOpenAllowList, onClose: onCloseAllowList } = useDisclosure();
+
+
+  const btnAdvance = React.useRef()
+  const btnAllowList = React.useRef()
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -50,38 +69,72 @@ export default function MyGrave() {
                     <JoinGravePanel />
                   </Flex>
                 </Box>
-                <Box maxW={'550px'}>
-                  <Accordion mb={'4'} allowToggle>
-                    <AccordionItem>
-                      <h2>
-                        <AccordionButton>
-                          <Box as="span" flex="1" textAlign="left">
-                            Advanced info
+                <Box maxW={'550px'} mt='20px'>
+                 <Box display='flex'>
+                  <Button ref={btnAdvance} colorScheme='teal' mr='20px' onClick={onOpenAdvace}>
+                    Advance info
+                  </Button>
+                    <Button ref={btnAllowList} colorScheme='teal' onClick={onOpenAllowList}>
+                      Manage Allow List
+                    </Button>
+                  </Box>
+                  <Drawer
+                    isOpen={isOpenAdvance}
+                    placement='right'
+                    onClose={onCloseAdvance}
+                    finalFocusRef={btnAdvance}
+                  >
+                    <DrawerOverlay />
+                      <DrawerContent>
+                        <DrawerCloseButton />
+                        <DrawerHeader >Advance info</DrawerHeader>
+
+                        <DrawerBody color='white'>
+                          <Box mb='20px'>
+                            <Text><strong>LSP7</strong> Universal Receiver Delegate</Text>
+                            <a
+                              href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
+                              style={{ textDecoration: 'underline' }}
+                              target="_blank"
+                            >
+                              {URDLsp7 ? formatAddress(URDLsp7) : ""}
+                            </a>
                           </Box>
-                          <AccordionIcon />
-                        </AccordionButton>
-                      </h2>
-                      <AccordionPanel pb={4}>
-                        <Text>LSP7 Universal Receiver Delegate</Text>
-                        <a
-                          href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
-                          style={{ textDecoration: 'underline' }}
-                          target="_blank"
-                        >
-                          {URDLsp7}
-                        </a>
-                        <Text>LSP8 Universal Receiver Delegate</Text>
-                        <a
-                          href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
-                          style={{ textDecoration: 'underline' }}
-                          target="_blank"
-                        >
-                          {URDLsp8}
-                        </a>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
-                  <ManageAllowList />
+                          <Box mb='20px'>
+                            <Text><strong>LSP8</strong> Universal Receiver Delegate</Text>
+                            <a
+                              href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
+                              style={{ textDecoration: 'underline' }}
+                              target="_blank"
+                            >
+                              { URDLsp8 ? formatAddress(URDLsp8) :  ""}
+                            </a>  
+                            </Box>                    
+                        </DrawerBody>
+
+                        <DrawerFooter>
+                          <Button variant='outline' mr={3} onClick={onCloseAdvance}>
+                            Close
+                          </Button>
+                        </DrawerFooter>
+                      </DrawerContent>
+                    </Drawer>
+                    <Drawer
+                    isOpen={isOpenAllowList}
+                    placement='right'
+                    onClose={onCloseAllowList}
+                    finalFocusRef={btnAllowList}
+                  >
+                    <DrawerOverlay />
+                      <DrawerContent>
+                        <DrawerCloseButton />
+                        <DrawerHeader >Manage Allow List</DrawerHeader>
+
+                        <DrawerBody color='white'>
+                         <ManageAllowList />
+                        </DrawerBody>
+                      </DrawerContent>
+                    </Drawer>
                 </Box>
               </Box>
             </Box>

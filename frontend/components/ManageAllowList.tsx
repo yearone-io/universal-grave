@@ -109,17 +109,18 @@ export default function ManageAllowList() {
   };
 
   return (
-    <Accordion mb={'4'} allowToggle>
-      <AccordionItem>
-        <h2>
-          <AccordionButton>
-            <Box as="span" flex="1" textAlign="left">
-              Manage allow list
-            </Box>
-            <AccordionIcon />
-          </AccordionButton>
-        </h2>
-        <AccordionPanel pb={4}>
+    // <Accordion mb={'4'} allowToggle>
+    //   <AccordionItem>
+    //     <h2>
+    //       <AccordionButton>
+    //         <Box as="span" flex="1" textAlign="left">
+    //           Manage allow list
+    //         </Box>
+    //         <AccordionIcon />
+    //       </AccordionButton>
+    //     </h2>
+    //     <AccordionPanel pb={4}>
+      <Box>
           <Text mb={4}>
             If you expect to receive certain LSP7 or LSP8 tokens you can add
             them to the whitelist beforehand so that they do not get redirected
@@ -164,8 +165,9 @@ export default function ManageAllowList() {
               Remove from allow list
             </Button>
           </Stack>
-        </AccordionPanel>
+        {/* </AccordionPanel>
       </AccordionItem>
-    </Accordion>
+    </Accordion> */}
+    </Box>
   );
 }
