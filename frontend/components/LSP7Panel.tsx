@@ -17,6 +17,7 @@ import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAs
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
+import { getProvider } from '@/utils/provider';
 
 interface LSP7PanelProps {
   tokenName: string;

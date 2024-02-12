@@ -7,32 +7,30 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 
 export default function GravePageAssets({
   pageAccount,
-  pageGraveVault = null,
 }: {
-  pageAccount: string | null;
-  pageGraveVault?: string | null;
+  pageAccount: string;
 }) {
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
-  const [graveVault, setGraveVault] = useState<string | null>(pageGraveVault);
+  const [graveVault, setGraveVault] = useState<string | null>();
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!graveVault && pageAccount) {
+    if (!graveVault) {
       getGraveVaultFor(pageAccount, networkConfig.universalGraveForwarder)
         .then(graveVault => {
-          if (!graveVault) {
+          if (graveVault == null) {
             setError('No grave vault found for this account');
           } else {
             setGraveVault(graveVault);
           }
         })
         .catch(reason => {
-          console.error(reason);
+          console.error('error fetching grave vault', reason);
           setError(reason.message);
         });
     }
-  }, [pageAccount]);
+  }, []);
 
   if (error) {
     return <Text>{error}</Text>;

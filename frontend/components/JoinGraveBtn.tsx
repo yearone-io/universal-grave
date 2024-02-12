@@ -121,7 +121,7 @@ export default function JoinGraveBtn({
    * Function to get the UP data and set the URD for LSP7 and LSP8.
    */
   const getUPData = async (
-    provider: ethers.providers.Web3Provider,
+    provider: ethers.providers.JsonRpcProvider,
     signer: ethers.providers.JsonRpcSigner
   ) => {
     try {
@@ -413,7 +413,7 @@ export default function JoinGraveBtn({
     const erc725 = new ERC725(
       LSP6Schema as ERC725JSONSchema[],
       account,
-      window.lukso
+      getLuksoProvider()
     );
 
     const newPermissions = erc725.encodePermissions({
@@ -486,7 +486,7 @@ export default function JoinGraveBtn({
     const erc725 = new ERC725(
       LSP6Schema as ERC725JSONSchema[],
       account,
-      window.lukso
+      getLuksoProvider()
     );
     // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
     const LSP7URDdataKey =
@@ -569,7 +569,7 @@ export default function JoinGraveBtn({
     const erc725 = new ERC725(
       LSP6Schema as ERC725JSONSchema[],
       account,
-      window.lukso
+      getLuksoProvider()
     );
 
     // LSP7 data key to set the forwarder as the delegate

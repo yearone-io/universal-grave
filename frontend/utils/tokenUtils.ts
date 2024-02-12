@@ -149,7 +149,7 @@ export const detectLSP = async (
         lsp9Schema
       ) as ERC725JSONSchema[],
       contractAddress,
-      window.lukso,
+      getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
       }
