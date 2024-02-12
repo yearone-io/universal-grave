@@ -16,6 +16,7 @@ import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
+import { getLuksoProvider, getProvider } from '@/utils/provider';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -106,7 +107,7 @@ export default function JoinGraveBtn({
    * Function to fetch the profile data.
    */
   const fetchProfile = async () => {
-    const provider = new ethers.providers.Web3Provider(window.lukso);
+    const provider = getProvider();
     const signer = provider.getSigner();
 
     //1- GET LSP7 and LSP8 URD
@@ -158,7 +159,7 @@ export default function JoinGraveBtn({
   // ========================= JOINING FLOW =========================
 
   const batchJoin = async (
-    provider: ethers.providers.Web3Provider,
+    provider: ethers.providers.JsonRpcProvider,
     signer: ethers.providers.JsonRpcSigner
   ): Promise<{ vaultAddress: string }> => {
     const UP = new ethers.Contract(
@@ -268,7 +269,7 @@ export default function JoinGraveBtn({
       });
       return;
     }
-    const provider = new ethers.providers.Web3Provider(window.lukso);
+    const provider = getProvider();
     const signer = provider.getSigner();
     let vaultAddress = graveVault;
     // 1. Give the Browser Extension Controller the necessary permissions
@@ -345,7 +346,7 @@ export default function JoinGraveBtn({
       return;
     }
     setLeavingStep(0);
-    const provider = new ethers.providers.Web3Provider(window.lukso);
+    const provider = getProvider();
     const signer = provider.getSigner();
 
     // 1- Set Permissions on Browser Extension Controller
@@ -401,7 +402,7 @@ export default function JoinGraveBtn({
    * Function to update the permissions of the Browser Extension controller.
    */
   const updateBECPermissions = async (
-    provider: ethers.providers.Web3Provider,
+    provider: ethers.providers.JsonRpcProvider,
     signer: ethers.providers.JsonRpcSigner
   ) => {
     const UP = new ethers.Contract(
@@ -439,7 +440,7 @@ export default function JoinGraveBtn({
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
   const setDelegateInVault = async (vaultAddress: string) => {
-    const provider = new ethers.providers.Web3Provider(window.lukso);
+    const provider = getProvider();
     const signer = provider.getSigner();
     const vault = new ethers.Contract(
       vaultAddress as string,
@@ -474,7 +475,7 @@ export default function JoinGraveBtn({
    */
   const setForwarderAsLSPDelegate = async (
     signer: ethers.providers.JsonRpcSigner,
-    provider: ethers.providers.Web3Provider
+    provider: ethers.providers.JsonRpcProvider
   ) => {
     // Interacting with the Universal Profile contract
     const UP = new ethers.Contract(
@@ -556,7 +557,7 @@ export default function JoinGraveBtn({
    */
   const resetLSPDelegates = async (
     signer: ethers.providers.JsonRpcSigner,
-    provider: ethers.providers.Web3Provider
+    provider: ethers.providers.JsonRpcProvider
   ) => {
     const account = await signer.getAddress();
     // Interacting with the Universal Profile contract

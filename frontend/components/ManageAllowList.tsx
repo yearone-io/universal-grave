@@ -23,7 +23,7 @@ export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
 
-  const provider = new ethers.providers.Web3Provider(window.lukso);
+  const provider = getProvider();
   const signer = provider.getSigner();
   const graveForwarder = new ethers.Contract(
     networkConfig.universalGraveForwarder,

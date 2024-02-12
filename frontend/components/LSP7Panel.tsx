@@ -67,7 +67,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     }
     setIsProcessing(true);
     try {
-      const provider = new ethers.providers.Web3Provider(window.lukso);
+      const provider = getProvider();
       const signer = provider.getSigner();
 
       const LSP1GraveForwarderContract = new ethers.Contract(
