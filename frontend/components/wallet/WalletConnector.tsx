@@ -3,6 +3,7 @@ import SignInButton from '@/components/SignInButton';
 declare global {
   interface Window {
     lukso: any;
+    ethereum: any;
   }
 }
 import React, { useContext } from 'react';
