@@ -6,6 +6,7 @@ import {
   Input,
   Stack,
   Text,
+  useToast,
 } from '@chakra-ui/react';
 import React, { useContext, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
@@ -16,6 +17,7 @@ import { LSP1GraveForwarder } from '@/contracts';
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
+  const toast = useToast();
 
   const provider = new ethers.providers.Web3Provider(window.lukso);
   const signer = provider.getSigner();
@@ -33,8 +35,6 @@ export default function ManageAllowList() {
     useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
 
-  const [actionText, setActionText] = useState<string>('');
-
   const handleChange = (event: {
     target: { value: React.SetStateAction<string> };
   }) => setTokenAddress(event.target.value);
@@ -46,16 +46,25 @@ export default function ManageAllowList() {
       .connect(signer)
       .tokenAllowlist(await signer.getAddress(), tokenAddress)
       .then(value => {
-        setActionText(
-          value
-            ? `${tokenAddress} is allowed`
-            : `${tokenAddress} is not allowed`
-        );
+        const message =  value
+        ? `${tokenAddress} is allowed`
+        : `${tokenAddress} is not allowed`;
+        toast({
+          title: message,
+          status: 'warning',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .catch(reason => {
-        setActionText(
-          `Error checking status of ${tokenAddress}: ${reason.message}`
-        );
+        toast({
+          title: `Error checking status of ${tokenAddress}: ${reason.message}`,
+          status: 'error',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .finally(() => {
         setIsCheckingStatus(false);
@@ -70,12 +79,22 @@ export default function ManageAllowList() {
       .connect(signer)
       .addTokenToAllowlist(tokenAddress)
       .then(() => {
-        setActionText(`${tokenAddress} has been added to allow list`);
+        toast({
+          title: `${tokenAddress} has been added to allow list`,
+          status: 'success',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .catch(reason => {
-        setActionText(
-          `Error adding ${tokenAddress} to allow list: ${reason.message}`
-        );
+        toast({
+          title: `Error adding ${tokenAddress} to allow list: ${reason.message}`,
+          status: 'error',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .finally(() => {
         setIsAddingToAllowList(false);
@@ -90,12 +109,22 @@ export default function ManageAllowList() {
       .connect(signer)
       .removeTokenFromAllowlist(tokenAddress)
       .then(() => {
-        setActionText(`${tokenAddress} has been removed from allow list`);
+        toast({
+          title: `${tokenAddress} has been removed from allow list`,
+          status: 'success',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .catch(reason => {
-        setActionText(
-          `Error removing ${tokenAddress} from allow list: ${reason.message}`
-        );
+        toast({
+          title: `Error removing ${tokenAddress} from allow list: ${reason.message}`,
+          status: 'error',
+          position: 'bottom-left',
+          duration: 9000,
+          isClosable: true,
+        });
       })
       .finally(() => {
         setIsRemovingFromAllowList(false);
@@ -123,9 +152,9 @@ export default function ManageAllowList() {
             }}
            value={tokenAddress} onChange={handleChange} />
         </FormControl>
-        <Text  minH={6}>
+        {/* <Text  minH={6}>
           {actionText}
-        </Text>
+        </Text> */}
         <Stack direction={'column'}>
           <Button
             mt={4}
