@@ -16,6 +16,7 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
+import GraveContents from '@/components/GraveContents';
 import ManageAllowList from '@/components/ManageAllowList';
 
 export default function MyGrave() {
@@ -90,6 +91,7 @@ export default function MyGrave() {
         </Box>
         <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'} />
       </Stack>
+      {account && <GraveContents account={account} />}
     </Container>
   );
 }
