@@ -16,6 +16,7 @@ export const getLuksoProvider = () => {
     process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
   ).rpcUrl;
   if (window.lukso && window.lukso.chainId === UNKNOWN_LUKSO_NETWORK) {
+    //this ID comes back when you have an UP extension installed but have not no created/recovered any profiles yet
     return rpcUrl;
   }
   if (window.lukso) {
