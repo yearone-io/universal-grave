@@ -152,9 +152,6 @@ export default function ManageAllowList() {
             }}
            value={tokenAddress} onChange={handleChange} />
         </FormControl>
-        {/* <Text  minH={6}>
-          {actionText}
-        </Text> */}
         <Stack direction={'column'}>
           <Button
             mt={4}
