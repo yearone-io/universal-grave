@@ -12,12 +12,13 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import { LSP1GraveForwarder } from '@/contracts';
+import { getProvider } from '@/utils/provider';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
 
-  const provider = new ethers.providers.Web3Provider(window.lukso);
+  const provider = getProvider();
   const signer = provider.getSigner();
   const graveForwarder = new ethers.Contract(
     networkConfig.universalGraveForwarder,

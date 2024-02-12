@@ -10,6 +10,7 @@ import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
+import { getLuksoProvider, getProvider } from '@/utils/provider';
 
 export default function LSPAssets({
   graveVault,
@@ -36,7 +37,7 @@ export default function LSPAssets({
     const erc725js = new ERC725(
       LSP3ProfileSchema as ERC725JSONSchema[],
       graveVault,
-      window.lukso,
+      getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
       }
@@ -49,23 +50,31 @@ export default function LSPAssets({
       const lsp7Results: TokenInfo[] = [];
       const lsp8Results: TokenInfo[] = [];
       const unrecognisedAssetResults: TokenInfo[] = [];
-      const detectAssetCalls: Promise<TokenInfo | undefined>[] = [];
-
+      const detectAssetCalls: TokenInfo[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
-        detectAssetCalls.push(
-          detectLSP(assetAddress, graveVault, LSPType.LSP7DigitalAsset)
+        const possibleLsp7Item = await detectLSP(
+          assetAddress,
+          graveVault,
+          LSPType.LSP7DigitalAsset
         );
-        detectAssetCalls.push(
-          detectLSP(
-            assetAddress,
-            graveVault,
-            LSPType.LSP8IdentifiableDigitalAsset
-          )
+        if (possibleLsp7Item.type === LSPType.LSP7DigitalAsset) {
+          detectAssetCalls.push(possibleLsp7Item);
+          continue;
+        }
+        const possibleLsp8Item = await detectLSP(
+          assetAddress,
+          graveVault,
+          LSPType.LSP8IdentifiableDigitalAsset
         );
+        if (possibleLsp8Item.type === LSPType.LSP7DigitalAsset) {
+          detectAssetCalls.push(possibleLsp8Item);
+          continue;
+        }
+        //must be unknown so push either of them
+        detectAssetCalls.push(possibleLsp8Item);
       }
 
-      const receivedAssetsWithTypes = await Promise.all(detectAssetCalls);
-      for (const asset of receivedAssetsWithTypes) {
+      for (const asset of detectAssetCalls) {
         if (!asset) continue;
 
         if (asset.type === LSPType.LSP7DigitalAsset) {
@@ -76,7 +85,7 @@ export default function LSPAssets({
           const contract = new ethers.Contract(
             asset.address as string,
             LSP8IdentifiableDigitalAsset.abi,
-            new ethers.providers.Web3Provider(window.lukso)
+            getProvider()
           );
           const tokenIds = await contract.tokenIdsOf(graveVault);
           tokenIds.forEach((tokenId: string) => {
