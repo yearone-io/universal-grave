@@ -1,15 +1,15 @@
 'use client';
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Container,
   Flex,
   Image,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
@@ -18,6 +18,7 @@ import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import ManageAllowList from '@/components/ManageAllowList';
+import { formatAddress } from '@/utils/tokenUtils';
 
 export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
@@ -50,38 +51,60 @@ export default function MyGrave() {
                     <JoinGravePanel />
                   </Flex>
                 </Box>
-                <Box maxW={'550px'}>
-                  <Accordion mb={'4'} allowToggle>
-                    <AccordionItem>
-                      <h2>
-                        <AccordionButton>
-                          <Box as="span" flex="1" textAlign="left">
-                            Advanced info
-                          </Box>
-                          <AccordionIcon />
-                        </AccordionButton>
-                      </h2>
-                      <AccordionPanel pb={4}>
-                        <Text>LSP7 Universal Receiver Delegate</Text>
-                        <a
-                          href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
-                          style={{ textDecoration: 'underline' }}
-                          target="_blank"
-                        >
-                          {URDLsp7}
-                        </a>
-                        <Text>LSP8 Universal Receiver Delegate</Text>
-                        <a
-                          href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
-                          style={{ textDecoration: 'underline' }}
-                          target="_blank"
-                        >
-                          {URDLsp8}
-                        </a>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
-                  <ManageAllowList />
+                <Box maxW={'550px'} mt='20px'>
+                <Tabs isFitted >
+                  <TabList pb='2px'>
+                    <Tab 
+                      borderTopLeftRadius={'var(--chakra-radii-lg)'}
+                      _selected={{ 
+                      color: 'var(--chakra-colors-dark-purple-500)', 
+                      bg: 'var(--chakra-colors-dark-purple-200)',
+                      fontWeight: 500
+                    }}>Advanced info</Tab>
+                    <Tab 
+                      borderTopRightRadius={'var(--chakra-radii-lg)'}
+                      _selected={{ 
+                        color: 'var(--chakra-colors-dark-purple-500)', 
+                        bg: 'var(--chakra-colors-dark-purple-200)',
+                        fontWeight: 500
+                      }}>Manage Allow List</Tab>
+                  </TabList>
+                  <TabPanels
+                    bg='var(--chakra-colors-dark-purple-200)'
+                    color='var(--chakra-colors-dark-purple-500)'
+                    borderBottomRadius={'var(--chakra-radii-lg)'}
+
+                  >
+                  <TabPanel 
+                      bg='var(--chakra-colors-dark-purple-200)'
+                      color='var(--chakra-colors-dark-purple-500)'
+                    >
+                    <Box>
+                      <Text><strong>LSP7</strong> Universal Receiver Delegate</Text>
+                      <a
+                        href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
+                        style={{ textDecoration: 'underline' }}
+                        target="_blank"
+                      >
+                        {URDLsp7 ? formatAddress(URDLsp7): URDLsp7}
+                      </a>
+                    </Box>
+                    <Box mt='20px'>
+                      <Text><strong>LSP8</strong> Universal Receiver Delegate</Text>
+                      <a
+                        href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
+                        style={{ textDecoration: 'underline' }}
+                        target="_blank"
+                      >
+                        {URDLsp8 ? formatAddress(URDLsp8): URDLsp8}
+                      </a>
+                    </Box>
+                    </TabPanel>
+                    <TabPanel>
+                      <ManageAllowList />
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
                 </Box>
               </Box>
             </Box>
