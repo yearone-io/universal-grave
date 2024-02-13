@@ -11,8 +11,13 @@ const config: HardhatUserConfig = {
     // public LUKSO Testnet
     networks: {
       luksoTestnet: {
-        url: "https://rpc.testnet.lukso.network",
+        url: "https://lukso-testnet.rpc.thirdweb.com",
         chainId: 4201,
+        accounts: [process.env.EOA_PRIVATE_KEY as string] // your private key here
+      },
+      luksoMain: {
+        url: "https://lukso.rpc.thirdweb.com",
+        chainId: 42,
         accounts: [process.env.EOA_PRIVATE_KEY as string] // your private key here
       },
     },
@@ -30,6 +35,14 @@ const config: HardhatUserConfig = {
           urls: {
             apiURL: "https://api.explorer.execution.testnet.lukso.network/api",
             browserURL: "https://explorer.execution.testnet.lukso.network",
+          },
+        },
+        {
+          network: "luksoMain",
+          chainId: 42,
+          urls: {
+            apiURL: "https://explorer.execution.mainnet.lukso.network/api",
+            browserURL: "https://explorer.execution.mainnet.lukso.network",
           },
         },
       ],

@@ -2,16 +2,18 @@ import hre, { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
 import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
+import config from '../hardhat.config';
 
 // load env vars
 dotenv.config();
 
 // Update those values in the .env file
-const { UP_ADDR, EOA_PRIVATE_KEY } = process.env;
+const { UP_ADDR, EOA_PRIVATE_KEY, NETWORK } = process.env;
+const network = NETWORK as string || 'luksoTestnet';
 
 async function main() {
     // setup provider
-    const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+    const provider = new ethers.JsonRpcProvider(config.networks[network].url);
     // setup signer (the browser extension controller)
     const signer = new ethers.Wallet(EOA_PRIVATE_KEY as string, provider);
 
@@ -35,7 +37,7 @@ async function main() {
     try {
         await hre.run("verify:verify", {
             address: graveForwarderAddress,
-            network: "luksoTestnet",
+            network,
             constructorArguments: [],
         });
         console.log("Contract verified");
