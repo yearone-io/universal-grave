@@ -18,15 +18,12 @@ import SignInBox from '@/components/SignInBox';
 import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
-import ManageAllowList from '@/components/ManageAllowList';
-import { formatAddress } from '@/utils/tokenUtils';
-import SettingsNav from './SettingsNav';
 import ManageAllowListPanel from './ManageAllowListPanel';
-import AdvanceInfoPanel from './AdvanceInfoPanel';
+import AdvancedInfoPanel from './AdvancedInfoPanel';
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const { account } = walletContext;
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
 
   return (
@@ -123,7 +120,7 @@ export default function MyGrave() {
                           borderRadius: 'lg',
                         }}
                       >
-                        Advance Info
+                        Advanced Info
                       </Tab>
                     </TabList>
                     <TabPanels p="0">
@@ -163,7 +160,7 @@ export default function MyGrave() {
                           height={'450px'}
                           padding="20px"
                         >
-                          <AdvanceInfoPanel />
+                          <AdvancedInfoPanel />
                         </Box>
                       </TabPanel>
                     </TabPanels>

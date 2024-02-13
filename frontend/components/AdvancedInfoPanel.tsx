@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Box, Image, Text, VStack } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 
-const AdvanceInfoPanel = () => {
+const AdvancedInfoPanel = () => {
   const walletContext = useContext(WalletContext);
   const { URDLsp7, URDLsp8, networkConfig } = walletContext;
   const logoPath = '/images/logo-full.png';
@@ -56,4 +56,4 @@ const AdvanceInfoPanel = () => {
   );
 };
 
-export default AdvanceInfoPanel;
+export default AdvancedInfoPanel;

@@ -143,14 +143,20 @@ export default function ManageAllowList() {
       >
         Manage Assets Allowlist
       </Text>
-      <Text mb={4} mt={4} fontWeight={600} fontFamily="Montserrat">
+      <Text mb={4} mt={4} fontWeight={600} fontFamily="Montserrat" textAlign='start'>
         If you want to mint, receive, or swap certain LSP7 or LSP8 tokens you
         can add them to the allowlist beforehand so that they don’t get
         automatically redirected to your Grave.
       </Text>
       <FormControl>
-        <FormLabel>Token Address</FormLabel>
+        <FormLabel
+        fontFamily="Bungee"
+        fontWeight={400}
+          fontSize={'14px'}
+        >ASSET ADDRESS</FormLabel>
         <Input
+          fontFamily={'Bungee'}
+          backgroundColor='white'
           borderColor={'var(--chakra-colors-dark-purple-500)'}
           _hover={{
             borderColor: 'var(--chakra-colors-dark-purple-500)',
@@ -161,6 +167,10 @@ export default function ManageAllowList() {
           }}
           value={tokenAddress}
           onChange={handleChange}
+          placeholder='PASTE ASSET ADDRESS'
+          _placeholder={{ fontWeight: 'bold',
+          color: 'var(--chakra-colors-dark-purple-200)'
+         }}
         />
       </FormControl>
       <Stack direction={'column'}>
