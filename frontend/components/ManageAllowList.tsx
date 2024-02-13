@@ -46,12 +46,12 @@ export default function ManageAllowList() {
       .connect(signer)
       .tokenAllowlist(await signer.getAddress(), tokenAddress)
       .then(value => {
-        const message =  value
-        ? `${tokenAddress} is allowed`
-        : `${tokenAddress} is not allowed`;
+        const message = value
+          ? `${tokenAddress} is allowed`
+          : `${tokenAddress} is not allowed`;
         toast({
           title: message,
-          status: 'warning',
+          status: 'success',
           position: 'bottom-left',
           duration: 9000,
           isClosable: true,
@@ -133,57 +133,59 @@ export default function ManageAllowList() {
   };
 
   return (
-      <Box>
-        <Text mb={4}>
-          If you expect to receive certain LSP7 or LSP8 tokens you can add
-          them to the whitelist beforehand so that they do not get redirected
-          to your Grave vault.
-        </Text>
-        <FormControl>
-          <FormLabel>Token Address</FormLabel>
-          <Input
-            borderColor={'var(--chakra-colors-dark-purple-500)'}
-            _hover={{
-              borderColor: 'var(--chakra-colors-dark-purple-500)'
-            }}            
-            _focus={{
-              borderColor: 'var(--chakra-colors-dark-purple-500)',
-              boxShadow: 'none'
-            }}
-           value={tokenAddress} onChange={handleChange} />
-        </FormControl>
-        <Stack direction={'column'}>
-          <Button
-            mt={4}
-            isDisabled={isSubmitting}
-            isLoading={isCheckingStatus}
-            loadingText="Checking status"
-            onClick={fetchTokenAllowListStatus}
-            type="submit"
-          >
-            Check status
-          </Button>
-          <Button
-            mt={4}
-            isDisabled={isSubmitting}
-            isLoading={isAddingToAllowList}
-            loadingText="Adding to allow list"
-            onClick={addTokenToAllowList}
-            type="submit"
-          >
-            Add to allow list
-          </Button>
-          <Button
-            mt={4}
-            isDisabled={isSubmitting}
-            loadingText="Removing from allow list"
-            isLoading={isRemovingFromAllowList}
-            onClick={removeTokenFromAllowList}
-            type="submit"
-          >
-            Remove from allow list
-          </Button>
-        </Stack>
+    <Box>
+      <Text mb={4}>
+        If you expect to receive certain LSP7 or LSP8 tokens you can add them to
+        the whitelist beforehand so that they do not get redirected to your
+        Grave vault.
+      </Text>
+      <FormControl>
+        <FormLabel>Token Address</FormLabel>
+        <Input
+          borderColor={'var(--chakra-colors-dark-purple-500)'}
+          _hover={{
+            borderColor: 'var(--chakra-colors-dark-purple-500)',
+          }}
+          _focus={{
+            borderColor: 'var(--chakra-colors-dark-purple-500)',
+            boxShadow: 'none',
+          }}
+          value={tokenAddress}
+          onChange={handleChange}
+        />
+      </FormControl>
+      <Stack direction={'column'}>
+        <Button
+          mt={4}
+          isDisabled={isSubmitting}
+          isLoading={isCheckingStatus}
+          loadingText="Checking status"
+          onClick={fetchTokenAllowListStatus}
+          type="submit"
+        >
+          Check status
+        </Button>
+        <Button
+          mt={4}
+          isDisabled={isSubmitting}
+          isLoading={isAddingToAllowList}
+          loadingText="Adding to allow list"
+          onClick={addTokenToAllowList}
+          type="submit"
+        >
+          Add to allow list
+        </Button>
+        <Button
+          mt={4}
+          isDisabled={isSubmitting}
+          loadingText="Removing from allow list"
+          isLoading={isRemovingFromAllowList}
+          onClick={removeTokenFromAllowList}
+          type="submit"
+        >
+          Remove from allow list
+        </Button>
+      </Stack>
     </Box>
   );
 }
