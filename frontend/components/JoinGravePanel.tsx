@@ -220,13 +220,7 @@ const JoinGravePanel: React.FC = () => {
   };
 
   return (
-    <Box
-      display="flex"
-      borderRadius="lg"
-      boxShadow="md"
-      backgroundColor={bgColor}
-      color={'dark.purple.500'}
-    >
+    <Box display="flex">
       <VStack
         spacing={4}
         p={10}

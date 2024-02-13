@@ -11,6 +11,7 @@ import {
   TabPanels,
   Tabs,
   Text,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
@@ -24,6 +25,7 @@ import SettingsNav from './SettingsNav';
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -51,26 +53,61 @@ export default function MyGrave() {
                 <Box display="flex">
                   <Tabs display="flex" flexDirection="row">
                     <TabList display="flex" flexDirection="column">
-                      <Tab fontSize="16px" color={'white'} fontFamily="Bungee">
+                      <Tab
+                        fontSize="16px"
+                        color={'white'}
+                        fontFamily="Bungee"
+                        textAlign="left"
+                      >
                         Subscriptions
                       </Tab>
-                      <Tab fontSize="16px" color={'white'} fontFamily="Bungee">
+                      <Tab
+                        fontSize="16px"
+                        color={'white'}
+                        fontFamily="Bungee"
+                        textAlign="left"
+                      >
                         Manage Allow List
                       </Tab>
-                      <Tab fontSize="16px" color={'white'} fontFamily="Bungee">
+                      <Tab
+                        fontSize="16px"
+                        color={'white'}
+                        fontFamily="Bungee"
+                        textAlign="left"
+                      >
                         Advance Info
                       </Tab>
                     </TabList>
-
                     <TabPanels>
                       <TabPanel>
-                        <JoinGravePanel />
+                        <Box
+                          borderRadius="lg"
+                          boxShadow="md"
+                          backgroundColor={bgColor}
+                          color={'dark.purple.500'}
+                        >
+                          <JoinGravePanel />
+                        </Box>
                       </TabPanel>
                       <TabPanel>
+                      <Box
+                          borderRadius="lg"
+                          boxShadow="md"
+                          backgroundColor={bgColor}
+                          color={'dark.purple.500'}
+                        >
                         <p>two!</p>
+                        </Box>
                       </TabPanel>
                       <TabPanel>
+                      <Box
+                          borderRadius="lg"
+                          boxShadow="md"
+                          backgroundColor={bgColor}
+                          color={'dark.purple.500'}
+                        >
                         <p>three!</p>
+                        </Box>
                       </TabPanel>
                     </TabPanels>
                   </Tabs>
