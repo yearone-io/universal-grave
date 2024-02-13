@@ -8,7 +8,13 @@ const ManageAllowListPanel = () => {
   return (
     <Box display="flex">
       <ManageAllowList />
-      <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'} />
+      <Image
+        src={logoPath}
+        alt="Universal-Grave-logo"
+        height={'410px'}
+        width="266px"
+        padding="25px"
+      />
     </Box>
   );
 };

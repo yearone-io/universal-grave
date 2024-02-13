@@ -66,9 +66,9 @@ export default function MyGrave() {
                         fontFamily="Montserrat"
                         p="6px"
                         m="0"
-                        gap='10px'
+                        gap="10px"
                         fontWeight={600}
-                        _selected={{ 
+                        _selected={{
                           backgroundColor: 'dark.purple.200',
                           color: 'dark.purple.500',
                           borderRadius: 'lg',
@@ -88,9 +88,9 @@ export default function MyGrave() {
                         fontFamily="Montserrat"
                         p="6px"
                         m="0"
-                        gap='10px'
+                        gap="10px"
                         fontWeight={600}
-                        _selected={{ 
+                        _selected={{
                           backgroundColor: 'dark.purple.200',
                           color: 'dark.purple.500',
                           borderRadius: 'lg',
@@ -110,9 +110,9 @@ export default function MyGrave() {
                         fontFamily="Montserrat"
                         p="6px"
                         m="0"
-                        gap='10px'
+                        gap="10px"
                         fontWeight={600}
-                        _selected={{ 
+                        _selected={{
                           backgroundColor: 'dark.purple.200',
                           color: 'dark.purple.500',
                           borderRadius: 'lg',
@@ -122,21 +122,20 @@ export default function MyGrave() {
                           color: 'dark.purple.500',
                           borderRadius: 'lg',
                         }}
-
                       >
                         Advance Info
                       </Tab>
                     </TabList>
-                    <TabPanels>
+                    <TabPanels p="0">
                       <TabPanel>
                         <Box
                           borderRadius="lg"
                           boxShadow="md"
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
-                          width='100%'
-                          height={'400px'}
-                          padding='20px'
+                          width="900px"
+                          height={'450px'}
+                          padding="20px"
                         >
                           <JoinGravePanel />
                         </Box>
@@ -147,9 +146,9 @@ export default function MyGrave() {
                           boxShadow="md"
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
-                          width='100%'
-                          height={'400px'}
-                          padding='20px'
+                          width="900px"
+                          height={'450px'}
+                          padding="20px"
                         >
                           <ManageAllowListPanel />
                         </Box>
@@ -160,9 +159,9 @@ export default function MyGrave() {
                           boxShadow="md"
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
-                          width='100%'
-                          height={'400px'}
-                          padding='20px'
+                          width="900px"
+                          height={'450px'}
+                          padding="20px"
                         >
                           <AdvanceInfoPanel />
                         </Box>
