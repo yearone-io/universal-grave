@@ -11,7 +11,7 @@ import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
 dotenv.config();
 
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, UP_ADDR, CONTROLLER_PUBLIC_KEY, RECEIVER_UP_ADDR } = process.env;
+const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY, RECEIVER_UP_ADDR } = process.env;
 
 async function main() {
     const lspFactory = new LSPFactory('https://rpc.testnet.lukso.network/', {

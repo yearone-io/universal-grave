@@ -1,9 +1,8 @@
 import React, { ReactNode, useEffect, useState } from 'react';
-import { SiweMessage } from 'siwe';
 import { WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
-import { getGraveVaultFor } from '@/utils/universalProfile';
+import { buildSIWEMessage, getGraveVaultFor } from '@/utils/universalProfile';
 import { getNetworkConfig } from '@/constants/networks';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
@@ -46,8 +45,12 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     if (typeof window !== 'undefined' && window.lukso) {
       // Retrieve the account from localStorage if it exists.
       const storedAccount = localStorage.getItem('connectedAccount');
+      const storedMainUPController = localStorage.getItem('mainUPController');
       if (storedAccount) {
         setAccount(storedAccount);
+      }
+      if (storedMainUPController) {
+        setMainUPController(storedMainUPController);
       }
       setIsLoadingAccount(false);
     }
@@ -73,8 +76,10 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     setAccount(null);
     // reset the graveVault address
     setGraveVault(undefined);
+    setConnectedChainId(undefined);
     // Remove the stored account from localStorage.
     localStorage.removeItem('connectedAccount');
+    localStorage.removeItem('mainUPController');
     // If additional logic is needed for disconnecting, it should be added here.
   };
 
@@ -99,28 +104,23 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         // Update state and localStorage with the first account address.
         setAccount(accounts[0]);
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
-        const siweMessage = new SiweMessage({
-          domain: window.location.host, // Domain requesting the signing
-          address: accounts[0], // Address performing the signing
-          statement: 'By logging in you agree to the terms and conditions.', // a human-readable assertion user signs
-          uri: window.location.origin, // URI from the resource that is the subject of the signing
-          version: '1', // Current version of the SIWE Message
-          chainId: getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
-            .chainId, // Chain ID to which the session is bound, 4201 is LUKSO Testnet
-          resources: [`${window.location.host}/terms`], // Information the user wishes to have resolved as part of authentication by the relying party
-        }).prepareMessage();
-        const hashedMessage = web3.eth.accounts.hashMessage(siweMessage);
-
+        const siweMessage = buildSIWEMessage(accounts[0]);
+        const signature = await web3.eth.personal.sign(
+          siweMessage,
+          accounts[0],
+          ''
+        );
         // Request the user to sign the login message with his Universal Profile
         // The UP Browser Extension will sign the message with the controller key used by the extension (a smart contract can't sign)
-        const signature = await web3.eth.sign(hashedMessage, accounts[0]);
         const signerAddress = web3.eth.accounts.recover(
-          hashedMessage,
+          siweMessage,
           signature as string
         );
         setMainUPController(signerAddress);
         console.log('The Main Controller address is:', signerAddress);
+
         localStorage.setItem('connectedAccount', accounts[0]);
+        localStorage.setItem('mainUPController', signerAddress);
       } catch (error: any) {
         // Log any connection errors.
         if (accounts.length) {

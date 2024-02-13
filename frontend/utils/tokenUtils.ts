@@ -7,6 +7,7 @@ import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.jso
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json';
 import { constants } from '@/app/constants';
+import { getLuksoProvider, getProvider } from '@/utils/provider';
 
 export const formatAddress = (address: string) => {
   return `${address.slice(0, 5)}...${address.slice(-4)}`;
@@ -73,17 +74,8 @@ export const detectLSP = async (
   addressToCheck: string,
   lspType: Exclude<LSPType, LSPType.Unknown>,
   owned = false
-): Promise<TokenInfo | undefined> => {
-  if (
-    lspType in
-    {
-      [LSPType.Unknown]: true,
-    }
-  ) {
-    return undefined;
-  }
-
-  const provider = new ethers.providers.Web3Provider(window.lukso);
+): Promise<TokenInfo> => {
+  const provider = getProvider();
 
   // EIP-165 detection
   const contract = new ethers.Contract(
@@ -149,7 +141,7 @@ export const detectLSP = async (
         lsp9Schema
       ) as ERC725JSONSchema[],
       contractAddress,
-      window.lukso,
+      getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
       }
