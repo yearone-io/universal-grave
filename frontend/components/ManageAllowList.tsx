@@ -14,7 +14,7 @@ import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import { LSP1GraveForwarder } from '@/contracts';
 import { getProvider } from '@/utils/provider';
-import { CheckCircleIcon } from '@chakra-ui/icons';
+import { BiSolidCheckCircle } from 'react-icons/bi';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
@@ -163,7 +163,17 @@ export default function ManageAllowList() {
       return (
         <Flex alignItems="center">
           <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-            {tokenCheckMessage} <CheckCircleIcon mr={2} />
+            {tokenCheckMessage + ' '}
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                position: 'relative',
+                top: '1px',
+              }}
+            >
+              <BiSolidCheckCircle />
+            </span>
           </Text>
         </Flex>
       );
