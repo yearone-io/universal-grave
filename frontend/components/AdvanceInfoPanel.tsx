@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Box, Image, Text } from '@chakra-ui/react';
+import { Box, Image, Text, VStack } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 
 const AdvanceInfoPanel = () => {
@@ -8,8 +8,8 @@ const AdvanceInfoPanel = () => {
   const logoPath = '/images/logo-full.png';
 
   return (
-    <Box display="flex">
-      <Box width='70%'>
+    <Box display="flex" padding='0 20px'>
+      <VStack spacing={4} p={10} textAlign="center" width="65%">
         <Text
           fontSize="20px"
           fontWeight="bold"
@@ -42,8 +42,8 @@ const AdvanceInfoPanel = () => {
             {URDLsp8}
           </a>
         </Box>
-      </Box>
-      <Box width="30%">
+      </VStack>
+      <Box width="35%">
         <Image
           src={logoPath}
           alt="Universal-Grave-logo"
