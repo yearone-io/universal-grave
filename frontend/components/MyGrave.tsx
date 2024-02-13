@@ -49,10 +49,31 @@ export default function MyGrave() {
                   </Text>
                 </Box>
                 <Box display="flex">
-                  <SettingsNav />
-                  <Flex justifyContent="center">
-                    <JoinGravePanel />
-                  </Flex>
+                  <Tabs display="flex" flexDirection="row">
+                    <TabList display="flex" flexDirection="column">
+                      <Tab fontSize="16px" color={'white'} fontFamily="Bungee">
+                        Subscriptions
+                      </Tab>
+                      <Tab fontSize="16px" color={'white'} fontFamily="Bungee">
+                        Manage Allow List
+                      </Tab>
+                      <Tab fontSize="16px" color={'white'} fontFamily="Bungee">
+                        Advance Info
+                      </Tab>
+                    </TabList>
+
+                    <TabPanels>
+                      <TabPanel>
+                        <JoinGravePanel />
+                      </TabPanel>
+                      <TabPanel>
+                        <p>two!</p>
+                      </TabPanel>
+                      <TabPanel>
+                        <p>three!</p>
+                      </TabPanel>
+                    </TabPanels>
+                  </Tabs>
                 </Box>
               </Box>
             </Box>
