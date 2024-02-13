@@ -1,10 +1,10 @@
 import {
   Box,
   Button,
+  Flex,
   FormControl,
   FormLabel,
   Input,
-  Stack,
   Text,
   useToast,
 } from '@chakra-ui/react';
@@ -14,6 +14,7 @@ import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import { LSP1GraveForwarder } from '@/contracts';
 import { getProvider } from '@/utils/provider';
+import { CheckCircleIcon } from '@chakra-ui/icons';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
@@ -35,12 +36,17 @@ export default function ManageAllowList() {
   const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
     useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
+  const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
 
   const handleChange = (event: {
     target: { value: React.SetStateAction<string> };
   }) => setTokenAddress(event.target.value);
 
   const fetchTokenAllowListStatus = async () => {
+    setTokenCheckMessage('');
+    if (!tokenAddress) {
+      return;
+    }
     setIsSubmitting(true);
     setIsCheckingStatus(true);
     graveForwarder
@@ -48,15 +54,9 @@ export default function ManageAllowList() {
       .tokenAllowlist(await signer.getAddress(), tokenAddress)
       .then(value => {
         const message = value
-          ? `${tokenAddress} is allowed`
-          : `${tokenAddress} is not allowed`;
-        toast({
-          title: message,
-          status: 'success',
-          position: 'bottom-left',
-          duration: 9000,
-          isClosable: true,
-        });
+          ? `Allow asset dettected`
+          : `Disallowed asset dettected`;
+        setTokenCheckMessage(message);
       })
       .catch(reason => {
         toast({
@@ -80,6 +80,7 @@ export default function ManageAllowList() {
       .connect(signer)
       .addTokenToAllowlist(tokenAddress)
       .then(() => {
+        setTokenCheckMessage('');
         toast({
           title: `${tokenAddress} has been added to allow list`,
           status: 'success',
@@ -110,6 +111,7 @@ export default function ManageAllowList() {
       .connect(signer)
       .removeTokenFromAllowlist(tokenAddress)
       .then(() => {
+        setTokenCheckMessage('');
         toast({
           title: `${tokenAddress} has been removed from allow list`,
           status: 'success',
@@ -133,6 +135,42 @@ export default function ManageAllowList() {
       });
   };
 
+  const FieldMessage = () => {
+    // Conditional rendering based on the state flags
+    if (isCheckingStatus) {
+      return (
+        <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
+          Checking status...
+        </Text>
+      );
+    }
+    if (isAddingToAllowList) {
+      return (
+        <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
+          Adding to allow list...
+        </Text>
+      );
+    }
+    if (isRemovingFromAllowList) {
+      return (
+        <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
+          Removing from allow list...
+        </Text>
+      );
+    }
+    // When there is a token check message, show it with the CheckCircleIcon
+    if (tokenCheckMessage) {
+      return (
+        <Flex alignItems="center">
+          <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
+            {tokenCheckMessage} <CheckCircleIcon mr={2} />
+          </Text>
+        </Flex>
+      );
+    }
+    return null; // Return null if there's no specific message to display
+  };
+
   return (
     <Box>
       <Text
@@ -143,68 +181,77 @@ export default function ManageAllowList() {
       >
         Manage Assets Allowlist
       </Text>
-      <Text mb={4} mt={4} fontWeight={600} fontFamily="Montserrat" textAlign='start'>
+      <Text
+        mb={4}
+        mt={4}
+        fontWeight={600}
+        fontFamily="Montserrat"
+        textAlign="start"
+      >
         If you want to mint, receive, or swap certain LSP7 or LSP8 tokens you
         can add them to the allowlist beforehand so that they don’t get
         automatically redirected to your Grave.
       </Text>
-      <FormControl>
-        <FormLabel
-        fontFamily="Bungee"
-        fontWeight={400}
-          fontSize={'14px'}
-        >ASSET ADDRESS</FormLabel>
-        <Input
-          fontFamily={'Bungee'}
-          backgroundColor='white'
-          borderColor={'var(--chakra-colors-dark-purple-500)'}
-          _hover={{
-            borderColor: 'var(--chakra-colors-dark-purple-500)',
-          }}
-          _focus={{
-            borderColor: 'var(--chakra-colors-dark-purple-500)',
-            boxShadow: 'none',
-          }}
-          value={tokenAddress}
-          onChange={handleChange}
-          placeholder='PASTE ASSET ADDRESS'
-          _placeholder={{ fontWeight: 'bold',
-          color: 'var(--chakra-colors-dark-purple-200)'
-         }}
-        />
+      <FormControl textAlign="start">
+        <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
+          ASSET ADDRESS
+        </FormLabel>
+        <Box display="flex" alignItems="center" h='50px'>
+          <Input
+            width="314px"
+            height="25px"
+            fontFamily={'Bungee'}
+            backgroundColor="white"
+            borderColor={'var(--chakra-colors-dark-purple-500)'}
+            _hover={{
+              borderColor: 'var(--chakra-colors-dark-purple-500)',
+            }}
+            _focus={{
+              borderColor: 'var(--chakra-colors-dark-purple-500)',
+              boxShadow: 'none',
+            }}
+            value={tokenAddress}
+            onChange={handleChange}
+            placeholder="PASTE ASSET ADDRESS"
+            _placeholder={{
+              fontWeight: 'bold',
+              color: 'var(--chakra-colors-dark-purple-200)',
+            }}
+            onBlur={fetchTokenAllowListStatus}
+          />
+          <Text
+            fontFamily="Bungee"
+            fontWeight={400}
+            fontSize={'14px'}
+            ml="20px"
+          >
+            {FieldMessage()}
+          </Text>
+        </Box>
       </FormControl>
-      <Stack direction={'column'}>
+      <Flex>
         <Button
-          mt={4}
-          isDisabled={isSubmitting}
-          isLoading={isCheckingStatus}
-          loadingText="Checking status"
-          onClick={fetchTokenAllowListStatus}
-          type="submit"
-        >
-          Check status
-        </Button>
-        <Button
-          mt={4}
+          mt={2}
+          h={'33px'}
+          mr="10px"
           isDisabled={isSubmitting}
           isLoading={isAddingToAllowList}
-          loadingText="Adding to allow list"
           onClick={addTokenToAllowList}
           type="submit"
         >
-          Add to allow list
+          ALLOW ASSET
         </Button>
         <Button
-          mt={4}
+          mt={2}
+          h={'33px'}
           isDisabled={isSubmitting}
-          loadingText="Removing from allow list"
           isLoading={isRemovingFromAllowList}
           onClick={removeTokenFromAllowList}
           type="submit"
         >
-          Remove from allow list
+          DISALLOW ASSET
         </Button>
-      </Stack>
+      </Flex>
     </Box>
   );
 }

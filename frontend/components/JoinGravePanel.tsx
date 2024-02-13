@@ -13,7 +13,6 @@ import {
   Stepper,
   Text,
   VStack,
-  useColorModeValue,
   useSteps,
 } from '@chakra-ui/react';
 import JoinGraveBtn from './JoinGraveBtn';

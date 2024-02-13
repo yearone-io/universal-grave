@@ -124,7 +124,7 @@ export default function MyGrave() {
                       </Tab>
                     </TabList>
                     <TabPanels p="0">
-                      <TabPanel>
+                      <TabPanel p="0 20px">
                         <Box
                           borderRadius="lg"
                           boxShadow="md"
@@ -137,7 +137,7 @@ export default function MyGrave() {
                           <JoinGravePanel />
                         </Box>
                       </TabPanel>
-                      <TabPanel>
+                      <TabPanel p="0 20px">
                         <Box
                           borderRadius="lg"
                           boxShadow="md"
@@ -150,7 +150,7 @@ export default function MyGrave() {
                           <ManageAllowListPanel />
                         </Box>
                       </TabPanel>
-                      <TabPanel>
+                      <TabPanel p="0 20px">
                         <Box
                           borderRadius="lg"
                           boxShadow="md"
