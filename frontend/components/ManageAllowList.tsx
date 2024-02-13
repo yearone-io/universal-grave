@@ -196,7 +196,7 @@ export default function ManageAllowList() {
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
           ASSET ADDRESS
         </FormLabel>
-        <Box display="flex" alignItems="center" h='50px'>
+        <Box display="flex" alignItems="center" h="50px">
           <Input
             width="314px"
             height="25px"

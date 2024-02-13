@@ -34,6 +34,7 @@ export default function MyGrave() {
         alignItems="flex-start"
         w="100%"
         pt="50px"
+        mb={2}
       >
         <Box>
           {account ? (
@@ -55,6 +56,7 @@ export default function MyGrave() {
                       display="flex"
                       flexDirection="column"
                       alignItems="start"
+                      border={'none'}
                     >
                       <Tab
                         fontSize="16px"
