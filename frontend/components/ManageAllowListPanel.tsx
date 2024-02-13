@@ -6,8 +6,8 @@ const ManageAllowListPanel = () => {
   const logoPath = '/images/logo-full.png';
 
   return (
-    <Box display="flex" padding='0 20px'>
-      <VStack spacing={4} p={10} textAlign="center" width="65%">
+    <Box display="flex" padding="0 20px">
+      <VStack spacing={4} textAlign="center" width="65%" padding="0 20px">
         <ManageAllowList />
       </VStack>
       <Box width="35%">

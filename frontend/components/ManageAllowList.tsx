@@ -135,10 +135,18 @@ export default function ManageAllowList() {
 
   return (
     <Box>
-      <Text mb={4}>
-        If you expect to receive certain LSP7 or LSP8 tokens you can add them to
-        the whitelist beforehand so that they do not get redirected to your
-        Grave vault.
+      <Text
+        fontSize="20px"
+        fontWeight="bold"
+        fontFamily="Bungee"
+        color="dark.purple.400"
+      >
+        Manage Assets Allowlist
+      </Text>
+      <Text mb={4} mt={4} fontWeight={600} fontFamily="Montserrat">
+        If you want to mint, receive, or swap certain LSP7 or LSP8 tokens you
+        can add them to the allowlist beforehand so that they don’t get
+        automatically redirected to your Grave.
       </Text>
       <FormControl>
         <FormLabel>Token Address</FormLabel>

@@ -101,7 +101,7 @@ export default function MyGrave() {
                           borderRadius: 'lg',
                         }}
                       >
-                        Manage Allow List
+                        Manage Allowlist
                       </Tab>
                       <Tab
                         fontSize="16px"
