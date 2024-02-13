@@ -9,7 +9,7 @@ const AdvanceInfoPanel = () => {
 
   return (
     <Box display="flex">
-      <Box>
+      <Box width='70%'>
         <Text
           fontSize="20px"
           fontWeight="bold"
@@ -43,13 +43,15 @@ const AdvanceInfoPanel = () => {
           </a>
         </Box>
       </Box>
-      <Image
-        src={logoPath}
-        alt="Universal-Grave-logo"
-        height={'410px'}
-        width="266px"
-        padding="25px"
-      />
+      <Box width="30%">
+        <Image
+          src={logoPath}
+          alt="Universal-Grave-logo"
+          height={'410px'}
+          width="266px"
+          padding="25px"
+        />
+      </Box>
     </Box>
   );
 };

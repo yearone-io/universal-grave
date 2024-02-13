@@ -220,7 +220,7 @@ const JoinGravePanel: React.FC = () => {
 
   return (
     <Box display="flex">
-      <VStack spacing={4} p={10} textAlign="center">
+      <VStack spacing={4} p={10} textAlign="center" width="70%">
         <Text
           fontSize="20px"
           fontWeight="bold"
@@ -254,13 +254,15 @@ const JoinGravePanel: React.FC = () => {
           </Stepper>
         )}
       </VStack>
-      <Image
-        src={logoPath}
-        alt="Universal-Grave-logo"
-        height={'410px'}
-        width="266px"
-        padding="25px"
-      />
+      <Box width="30%">
+        <Image
+          src={logoPath}
+          alt="Universal-Grave-logo"
+          height={'410px'}
+          width="266px"
+          padding="25px"
+        />
+      </Box>
     </Box>
   );
 };
