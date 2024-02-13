@@ -60,7 +60,6 @@ const JoinGravePanel: React.FC = () => {
   const { networkConfig } = walletContext;
   const logoPath = '/images/logo-full.png';
 
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   const [steps, setSteps] = React.useState([...initialSteps]);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
 
@@ -225,8 +224,6 @@ const JoinGravePanel: React.FC = () => {
         spacing={4}
         p={10}
         textAlign="center"
-        width={'555px'}
-        minHeight={'335px'}
       >
         <Text
           fontSize="20px"

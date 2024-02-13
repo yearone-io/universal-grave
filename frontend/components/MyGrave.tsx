@@ -54,28 +54,75 @@ export default function MyGrave() {
                 </Box>
                 <Box display="flex">
                   <Tabs display="flex" flexDirection="row">
-                    <TabList display="flex" flexDirection="column">
+                    <TabList
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="start"
+                    >
                       <Tab
                         fontSize="16px"
                         color={'white'}
-                        fontFamily="Bungee"
-                        textAlign="left"
+                        whiteSpace="nowrap"
+                        fontFamily="Montserrat"
+                        p="6px"
+                        m="0"
+                        gap='10px'
+                        fontWeight={600}
+                        _selected={{ 
+                          backgroundColor: 'dark.purple.200',
+                          color: 'dark.purple.500',
+                          borderRadius: 'lg',
+                        }}
+                        _active={{
+                          backgroundColor: 'dark.purple.200',
+                          color: 'dark.purple.500',
+                          borderRadius: 'lg',
+                        }}
                       >
                         Subscriptions
                       </Tab>
                       <Tab
                         fontSize="16px"
                         color={'white'}
-                        fontFamily="Bungee"
-                        textAlign="left"
+                        whiteSpace="nowrap"
+                        fontFamily="Montserrat"
+                        p="6px"
+                        m="0"
+                        gap='10px'
+                        fontWeight={600}
+                        _selected={{ 
+                          backgroundColor: 'dark.purple.200',
+                          color: 'dark.purple.500',
+                          borderRadius: 'lg',
+                        }}
+                        _active={{
+                          backgroundColor: 'dark.purple.200',
+                          color: 'dark.purple.500',
+                          borderRadius: 'lg',
+                        }}
                       >
                         Manage Allow List
                       </Tab>
                       <Tab
                         fontSize="16px"
                         color={'white'}
-                        fontFamily="Bungee"
-                        textAlign="left"
+                        whiteSpace="nowrap"
+                        fontFamily="Montserrat"
+                        p="6px"
+                        m="0"
+                        gap='10px'
+                        fontWeight={600}
+                        _selected={{ 
+                          backgroundColor: 'dark.purple.200',
+                          color: 'dark.purple.500',
+                          borderRadius: 'lg',
+                        }}
+                        _active={{
+                          backgroundColor: 'dark.purple.200',
+                          color: 'dark.purple.500',
+                          borderRadius: 'lg',
+                        }}
+
                       >
                         Advance Info
                       </Tab>
@@ -87,28 +134,37 @@ export default function MyGrave() {
                           boxShadow="md"
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
+                          width='100%'
+                          height={'400px'}
+                          padding='20px'
                         >
                           <JoinGravePanel />
                         </Box>
                       </TabPanel>
                       <TabPanel>
-                      <Box
+                        <Box
                           borderRadius="lg"
                           boxShadow="md"
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
+                          width='100%'
+                          height={'400px'}
+                          padding='20px'
                         >
                           <ManageAllowListPanel />
                         </Box>
                       </TabPanel>
                       <TabPanel>
-                      <Box
+                        <Box
                           borderRadius="lg"
                           boxShadow="md"
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
+                          width='100%'
+                          height={'400px'}
+                          padding='20px'
                         >
-                         <AdvanceInfoPanel />
+                          <AdvanceInfoPanel />
                         </Box>
                       </TabPanel>
                     </TabPanels>
