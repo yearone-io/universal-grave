@@ -21,6 +21,8 @@ import GraveContents from '@/components/GraveContents';
 import ManageAllowList from '@/components/ManageAllowList';
 import { formatAddress } from '@/utils/tokenUtils';
 import SettingsNav from './SettingsNav';
+import ManageAllowListPanel from './ManageAllowListPanel';
+import AdvanceInfoPanel from './AdvanceInfoPanel';
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
@@ -96,7 +98,7 @@ export default function MyGrave() {
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
                         >
-                        <p>two!</p>
+                          <ManageAllowListPanel />
                         </Box>
                       </TabPanel>
                       <TabPanel>
@@ -106,7 +108,7 @@ export default function MyGrave() {
                           backgroundColor={bgColor}
                           color={'dark.purple.500'}
                         >
-                        <p>three!</p>
+                         <AdvanceInfoPanel />
                         </Box>
                       </TabPanel>
                     </TabPanels>
