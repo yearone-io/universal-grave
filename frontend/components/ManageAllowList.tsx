@@ -18,12 +18,12 @@ import { BiSolidCheckCircle } from 'react-icons/bi';
 
 const messageState = {
   isCheckingStatus: 'Checking status...',
-  isAddingToAllowList: 'Adding to allow list...',
-  isRemovingFromAllowList: 'Removing from allow list...',
-  tokenAllowListDetected: 'Allow asset detected',
+  isAddingToAllowList: 'Adding to allowlist...',
+  isRemovingFromAllowList: 'Removing from allowlist...',
+  tokenAllowListDetected: 'Allowed asset detected',
   tokenDisallowedDetected: 'Disallowed asset detected',
   invalidAddress: 'Invalid address',
-  makeSureValidAddress: 'Make sure it is a valid address',
+  makeSureValidAddress: 'Make sure the address is valid',
 };
 
 export default function ManageAllowList() {
@@ -51,7 +51,7 @@ export default function ManageAllowList() {
     useState(tokenAddress);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setTokenAddress(event.target.value);
+    setTokenAddress(event.target.value.toLowerCase());
   };
 
   // Effect for debouncing tokenAddress update
@@ -82,7 +82,7 @@ export default function ManageAllowList() {
     setIsCheckingStatus(true);
     graveForwarder
       .connect(signer)
-      .tokenAllowlist(await signer.getAddress(), tokenAddress)
+      .tokenAllowlist(await signer.getAddress(), tokenAddress.toLowerCase())
       .then(value => {
         const message = value
           ? messageState.tokenAllowListDetected
@@ -111,7 +111,7 @@ export default function ManageAllowList() {
       .then(() => {
         setTokenCheckMessage('');
         toast({
-          title: `${tokenAddress} has been added to allow list`,
+          title: `${tokenAddress} has been added to allowlist`,
           status: 'success',
           position: 'bottom-left',
           duration: 9000,
@@ -120,7 +120,7 @@ export default function ManageAllowList() {
       })
       .catch(reason => {
         toast({
-          title: `Error adding ${tokenAddress} to allow list: ${reason.message}`,
+          title: `Error adding ${tokenAddress} to allowlist: ${reason.message}`,
           status: 'error',
           position: 'bottom-left',
           duration: 9000,
@@ -142,7 +142,7 @@ export default function ManageAllowList() {
       .then(() => {
         setTokenCheckMessage('');
         toast({
-          title: `${tokenAddress} has been removed from allow list`,
+          title: `${tokenAddress} has been removed from allowlist`,
           status: 'success',
           position: 'bottom-left',
           duration: 9000,
@@ -151,7 +151,7 @@ export default function ManageAllowList() {
       })
       .catch(reason => {
         toast({
-          title: `Error removing ${tokenAddress} from allow list: ${reason.message}`,
+          title: `Error removing ${tokenAddress} from allowlist: ${reason.message}`,
           status: 'error',
           position: 'bottom-left',
           duration: 9000,
@@ -237,7 +237,7 @@ export default function ManageAllowList() {
       >
         If you want to mint, receive, or swap certain LSP7 or LSP8 tokens you
         can add them to the allowlist beforehand so that they don’t get
-        automatically redirected to your Grave.
+        automatically redirected to your GRAVE.
       </Text>
       <FormControl textAlign="start">
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
