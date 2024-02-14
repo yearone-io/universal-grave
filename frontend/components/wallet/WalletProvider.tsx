@@ -116,7 +116,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           siweMessage,
           signature as string
         );
-        console.log('The account\'s Main Controller address is:', signerAddress);
+        console.log("The account's Main Controller address is:", signerAddress);
         // Update state and localStorage with the first account address.
         setAccount(connectedAccount);
         setMainUPController(signerAddress);
