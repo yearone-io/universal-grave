@@ -54,8 +54,8 @@ export default function ManageAllowList() {
       .tokenAllowlist(await signer.getAddress(), tokenAddress)
       .then(value => {
         const message = value
-          ? `Allow asset dettected`
-          : `Disallowed asset dettected`;
+          ? `Allow asset detected`
+          : `Disallowed asset detected`;
         setTokenCheckMessage(message);
       })
       .catch(reason => {
@@ -208,6 +208,7 @@ export default function ManageAllowList() {
         </FormLabel>
         <Box display="flex" alignItems="center" h="50px">
           <Input
+            autoComplete='off'
             width="314px"
             height="25px"
             fontFamily={'Bungee'}

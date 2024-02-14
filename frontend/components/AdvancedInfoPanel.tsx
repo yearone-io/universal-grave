@@ -16,7 +16,7 @@ const AdvancedInfoPanel = () => {
           fontFamily="Bungee"
           color="dark.purple.400"
         >
-          Your UP current configuration
+          Your profile's current configuration
         </Text>
         <Box mt="20px">
           <Text>
