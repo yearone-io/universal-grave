@@ -1,8 +1,6 @@
 import { ethers } from 'ethers';
 import { getNetworkConfig } from '@/constants/networks';
 
-const UNKNOWN_LUKSO_NETWORK = '0x2a';
-
 export const getProvider = () => {
   const luksoProvider = getLuksoProvider();
   if (typeof luksoProvider === 'string') {
@@ -12,11 +10,13 @@ export const getProvider = () => {
 };
 
 export const getLuksoProvider = () => {
-  const rpcUrl = getNetworkConfig(
+  const networkConfig = getNetworkConfig(
     process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
-  ).rpcUrl;
-  if (window.lukso && window.lukso.chainId === UNKNOWN_LUKSO_NETWORK) {
-    //this ID comes back when you have an UP extension installed but have not no created/recovered any profiles yet
+  );
+  const rpcUrl = networkConfig.rpcUrl;
+  if (window.lukso && Number(window.lukso.chainId) !== networkConfig.chainId) {
+    //if extension is connected to a different network than the app then default to app's rpc url
+    //we could instead prompt user to change networks but this is mostly used for viewing data and not interactions
     return rpcUrl;
   }
   if (window.lukso) {
