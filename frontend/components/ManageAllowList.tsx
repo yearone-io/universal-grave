@@ -8,13 +8,23 @@ import {
   Text,
   useToast,
 } from '@chakra-ui/react';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import { LSP1GraveForwarder } from '@/contracts';
 import { getProvider } from '@/utils/provider';
 import { BiSolidCheckCircle } from 'react-icons/bi';
+
+const messageState = {
+  isCheckingStatus: 'Checking status...',
+  isAddingToAllowList: 'Adding to allow list...',
+  isRemovingFromAllowList: 'Removing from allow list...',
+  tokenAllowListDetected: 'Allow asset detected',
+  tokenDisallowedDetected: 'Disallowed asset detected',
+  invalidAddress: 'Invalid address',
+  makeSureValidAddress: 'Make sure it is a valid address',
+};
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
@@ -37,13 +47,34 @@ export default function ManageAllowList() {
     useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
+  const [debouncedTokenAddress, setDebouncedTokenAddress] =
+    useState(tokenAddress);
 
-  const handleChange = (event: {
-    target: { value: React.SetStateAction<string> };
-  }) => setTokenAddress(event.target.value);
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTokenAddress(event.target.value);
+  };
+
+  // Effect for debouncing tokenAddress update
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedTokenAddress(tokenAddress);
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [tokenAddress]);
+
+  // Call fetchTokenAllowListStatus using debouncedTokenAddress
+  useEffect(() => {
+    setTokenCheckMessage('');
+    // Ensure there's a value to check and avoid fetching on initial render
+    if (debouncedTokenAddress) {
+      fetchTokenAllowListStatus();
+    }
+  }, [debouncedTokenAddress]);
 
   const fetchTokenAllowListStatus = async () => {
-    setTokenCheckMessage('');
     if (!tokenAddress) {
       return;
     }
@@ -54,18 +85,16 @@ export default function ManageAllowList() {
       .tokenAllowlist(await signer.getAddress(), tokenAddress)
       .then(value => {
         const message = value
-          ? `Allow asset dettected`
-          : `Disallowed asset dettected`;
+          ? messageState.tokenAllowListDetected
+          : messageState.tokenDisallowedDetected;
         setTokenCheckMessage(message);
       })
       .catch(reason => {
-        toast({
-          title: `Error checking status of ${tokenAddress}: ${reason.message}`,
-          status: 'error',
-          position: 'bottom-left',
-          duration: 9000,
-          isClosable: true,
-        });
+        if (reason.message && reason.message.includes('invalid address')) {
+          setTokenCheckMessage(messageState.invalidAddress);
+        } else {
+          setTokenCheckMessage(messageState.makeSureValidAddress);
+        }
       })
       .finally(() => {
         setIsCheckingStatus(false);
@@ -140,40 +169,48 @@ export default function ManageAllowList() {
     if (isCheckingStatus) {
       return (
         <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-          Checking status...
+          {messageState.isCheckingStatus}
         </Text>
       );
     }
     if (isAddingToAllowList) {
       return (
         <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-          Adding to allow list...
+          {messageState.isAddingToAllowList}
         </Text>
       );
     }
     if (isRemovingFromAllowList) {
       return (
         <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-          Removing from allow list...
+          {messageState.isRemovingFromAllowList}
         </Text>
       );
     }
     // When there is a token check message, show it with the CheckCircleIcon
     if (tokenCheckMessage) {
+      let icon = <></>;
+      if (
+        tokenCheckMessage === messageState.tokenAllowListDetected ||
+        tokenCheckMessage === messageState.tokenDisallowedDetected
+      ) {
+        icon = (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              position: 'relative',
+              top: '1px',
+            }}
+          >
+            <BiSolidCheckCircle />
+          </span>
+        );
+      }
       return (
         <Flex alignItems="center">
           <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-            {tokenCheckMessage + ' '}
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                position: 'relative',
-                top: '1px',
-              }}
-            >
-              <BiSolidCheckCircle />
-            </span>
+            {tokenCheckMessage + ' '} {icon}
           </Text>
         </Flex>
       );
@@ -208,6 +245,7 @@ export default function ManageAllowList() {
         </FormLabel>
         <Box display="flex" alignItems="center" h="50px">
           <Input
+            autoComplete="off"
             width="314px"
             height="25px"
             fontFamily={'Bungee'}
@@ -227,7 +265,6 @@ export default function ManageAllowList() {
               fontWeight: 'bold',
               color: 'var(--chakra-colors-dark-purple-200)',
             }}
-            onBlur={fetchTokenAllowListStatus}
           />
           <Text
             fontFamily="Bungee"

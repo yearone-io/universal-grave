@@ -63,9 +63,11 @@ export default function MyGrave() {
                         color={'white'}
                         whiteSpace="nowrap"
                         fontFamily="Montserrat"
-                        p="6px"
+                        p="6px 20px 6px 6px"
                         m="0"
                         gap="10px"
+                        width={'100%'}
+                        justifyContent={'start'}
                         fontWeight={600}
                         _selected={{
                           backgroundColor: 'dark.purple.200',
@@ -78,15 +80,17 @@ export default function MyGrave() {
                           borderRadius: 'lg',
                         }}
                       >
-                        Subscriptions
+                        Subscription
                       </Tab>
                       <Tab
                         fontSize="16px"
                         color={'white'}
                         whiteSpace="nowrap"
                         fontFamily="Montserrat"
-                        p="6px"
+                        p="6px 20px 6px 6px"
                         m="0"
+                        width={'100%'}
+                        justifyContent={'start'}
                         gap="10px"
                         fontWeight={600}
                         _selected={{
@@ -107,8 +111,10 @@ export default function MyGrave() {
                         color={'white'}
                         whiteSpace="nowrap"
                         fontFamily="Montserrat"
-                        p="6px"
                         m="0"
+                        p="6px 20px 6px 6px"
+                        width={'100%'}
+                        justifyContent={'start'}
                         gap="10px"
                         fontWeight={600}
                         _selected={{
