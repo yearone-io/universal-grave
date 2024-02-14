@@ -111,7 +111,7 @@ export default function MyGrave() {
                         color={'white'}
                         whiteSpace="nowrap"
                         fontFamily="Montserrat"
-                        m='0'
+                        m="0"
                         p="6px 20px 6px 6px"
                         width={'100%'}
                         justifyContent={'start'}
