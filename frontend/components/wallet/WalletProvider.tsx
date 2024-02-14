@@ -74,6 +74,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const disconnect = () => {
     // Clear the account address from state.
     setAccount(null);
+    setMainUPController(undefined);
     // reset the graveVault address
     setGraveVault(undefined);
     setConnectedChainId(undefined);
@@ -100,14 +101,13 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         if (!accounts.length) {
           throw new Error('No user accounts found');
         }
-        console.log('Connected with', accounts[0]);
-        // Update state and localStorage with the first account address.
-        setAccount(accounts[0]);
+        const connectedAccount = accounts[0];
+        console.log('Connected with', connectedAccount);
         // To enable the Sign-In With Ethereum (SIWE) screen, you need to prepare a message with a specific format
-        const siweMessage = buildSIWEMessage(accounts[0]);
+        const siweMessage = buildSIWEMessage(connectedAccount);
         const signature = await web3.eth.personal.sign(
           siweMessage,
-          accounts[0],
+          connectedAccount,
           ''
         );
         // Request the user to sign the login message with his Universal Profile
@@ -116,10 +116,11 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
           siweMessage,
           signature as string
         );
+        console.log('The account\'s Main Controller address is:', signerAddress);
+        // Update state and localStorage with the first account address.
+        setAccount(connectedAccount);
         setMainUPController(signerAddress);
-        console.log('The Main Controller address is:', signerAddress);
-
-        localStorage.setItem('connectedAccount', accounts[0]);
+        localStorage.setItem('connectedAccount', connectedAccount);
         localStorage.setItem('mainUPController', signerAddress);
       } catch (error: any) {
         // Log any connection errors.

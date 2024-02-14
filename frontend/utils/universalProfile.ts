@@ -15,7 +15,9 @@ export const getGraveVaultFor = async (
     LSP1GraveForwarder.abi,
     provider
   );
+  console.log('get graveVaults for', account);
   const graveYardAddress = await graveForwarder.graveVaults(account);
+  console.log('graveYardAddress', graveYardAddress);
   return graveYardAddress === ethers.constants.AddressZero
     ? null
     : graveYardAddress;
