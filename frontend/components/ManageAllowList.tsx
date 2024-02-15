@@ -167,25 +167,13 @@ export default function ManageAllowList() {
   const FieldMessage = () => {
     // Conditional rendering based on the state flags
     if (isCheckingStatus) {
-      return (
-        <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-          {messageState.isCheckingStatus}
-        </Text>
-      );
+      return messageState.isCheckingStatus;
     }
     if (isAddingToAllowList) {
-      return (
-        <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-          {messageState.isAddingToAllowList}
-        </Text>
-      );
+      return messageState.isAddingToAllowList;
     }
     if (isRemovingFromAllowList) {
-      return (
-        <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-          {messageState.isRemovingFromAllowList}
-        </Text>
-      );
+      return messageState.isRemovingFromAllowList;
     }
     // When there is a token check message, show it with the CheckCircleIcon
     if (tokenCheckMessage) {
@@ -208,11 +196,9 @@ export default function ManageAllowList() {
         );
       }
       return (
-        <Flex alignItems="center">
-          <Text fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-            {tokenCheckMessage + ' '} {icon}
-          </Text>
-        </Flex>
+        <>
+          {tokenCheckMessage + ' '} {icon}
+        </>
       );
     }
     return null; // Return null if there's no specific message to display
@@ -246,7 +232,8 @@ export default function ManageAllowList() {
         <Box display="flex" alignItems="center" h="50px">
           <Input
             autoComplete="off"
-            width="314px"
+            maxWidth="314px"
+            minWidth="200px"
             height="25px"
             fontFamily={'Bungee'}
             backgroundColor="white"
@@ -267,10 +254,11 @@ export default function ManageAllowList() {
             }}
           />
           <Text
+            ml={2}
             fontFamily="Bungee"
             fontWeight={400}
             fontSize={'14px'}
-            ml="20px"
+            maxWidth={'120px'}
           >
             {FieldMessage()}
           </Text>
