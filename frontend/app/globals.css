@@ -60,4 +60,15 @@ a {
   font-size: 14px !important;
   list-style: 17px !important;
   font-family: 'bungee' !important;
+  width: 100% !important;
+  overflow-wrap: break-word !important;
+}
+.chakra-step__title,
+.chakra-step__title + div {
+  width: 100% !important;
+  overflow-wrap: break-word !important;
+}
+.chakra-step__indicator + div {
+  width: 100% !important;
+  overflow-wrap: break-word !important;
 }

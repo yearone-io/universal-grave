@@ -11,8 +11,6 @@ import {
   StepTitle,
   Stepper,
   Text,
-  VStack,
-  useColorModeValue,
   useSteps,
 } from '@chakra-ui/react';
 import JoinGraveBtn from './JoinGraveBtn';
@@ -57,8 +55,6 @@ const initialLeavingSteps = [
 const JoinGravePanel: React.FC = () => {
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
-
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   const [steps, setSteps] = React.useState([...initialSteps]);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
 
@@ -156,7 +152,7 @@ const JoinGravePanel: React.FC = () => {
             style={{
               color: 'var(--chakra-colors-dark-purple-500)',
               fontWeight: 'bold',
-              width: '435px',
+              width: '100%',
             }}
           >
             {step.title}
@@ -218,17 +214,7 @@ const JoinGravePanel: React.FC = () => {
   };
 
   return (
-    <VStack
-      spacing={4}
-      p={10}
-      backgroundColor={bgColor}
-      boxShadow="md"
-      borderRadius="lg"
-      textAlign="center"
-      color={'dark.purple.500'}
-      width={'555px'}
-      minHeight={'335px'}
-    >
+    <>
       <Text
         fontSize="20px"
         fontWeight="bold"
@@ -261,7 +247,7 @@ const JoinGravePanel: React.FC = () => {
           {steps.map((step, index) => standardStepper(step, index))}
         </Stepper>
       )}
-    </VStack>
+    </>
   );
 };
 
