@@ -7,7 +7,7 @@ import { LSP4_TOKEN_TYPES, LSP8_TOKEN_ID_FORMAT } from "@lukso/lsp-smart-contrac
 // load env vars
 dotenv.config();
 // Update those values in the .env file
-const { UP_ADDR, EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
+const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
 const LSP8TokenMetadataBaseURIKey = "0x1a7628600c3bac7101f53697f48df381ddc36b9015e7d7c9c5633d1252aa2843";
 const LSP4MetadataKey = "0x9afb95cacc9f95858ec44aa8c3b685511002e30ae54415823f406128b85b238e";
 

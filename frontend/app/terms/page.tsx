@@ -24,7 +24,7 @@ export const metadata = {
 };
 
 export default function TermsOfService() {
-  const companyName = '[Your Company Name]';
+  const companyName = 'YearOne';
   return (
     <Container maxW="container.md">
       {/* Navigation Links (Optional) */}
