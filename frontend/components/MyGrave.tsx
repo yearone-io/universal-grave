@@ -25,7 +25,9 @@ export default function MyGrave() {
   const logoPath = '/images/logo-full.png';
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
-  const [oldForwarderAddress, setOldForwarderAddress] = useState<string | null>();
+  const [oldForwarderAddress, setOldForwarderAddress] = useState<
+    string | null
+  >();
 
   useEffect(() => {
     setOldForwarderAddress(hasOlderGraveDelegate(URDLsp7, URDLsp8));
