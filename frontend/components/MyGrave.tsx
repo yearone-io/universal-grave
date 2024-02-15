@@ -1,30 +1,116 @@
 'use client';
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Container,
-  Flex,
   Image,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
   Text,
+  useColorModeValue,
+  VStack,
+  Flex,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import React, { useContext, useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
-import ManageAllowList from '@/components/ManageAllowList';
+import AdvancedInfoPanel from './AdvancedInfoPanel';
+import ManageAllowList from './ManageAllowList';
 import { hasOlderGraveDelegate } from '@/utils/urdUtils';
 import { UpgradeURD } from '@/components/UpgradeURD';
 
-export default function MyGrave() {
+const getTabOption = (tabName: string) => {
+  return (
+    <Tab
+      fontSize="16px"
+      color={'white'}
+      whiteSpace="nowrap"
+      fontFamily="Montserrat"
+      p="6px 20px 6px 6px"
+      m="0"
+      gap="10px"
+      width={'100%'}
+      justifyContent={'start'}
+      fontWeight={600}
+      _selected={{
+        backgroundColor: 'dark.purple.200',
+        color: 'dark.purple.500',
+        borderRadius: 'lg',
+      }}
+      _active={{
+        backgroundColor: 'dark.purple.200',
+        color: 'dark.purple.500',
+        borderRadius: 'lg',
+      }}
+    >
+      {tabName}
+    </Tab>
+  );
+};
+
+const getTabPanel = (tabName: string) => {
   const logoPath = '/images/logo-full.png';
+  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
+  let panel;
+  switch (tabName) {
+    case 'Subscription':
+      panel = <JoinGravePanel />;
+      break;
+    case 'Manage Allowlist':
+      panel = <ManageAllowList />;
+      break;
+    case 'Advanced Info':
+      panel = <AdvancedInfoPanel />;
+      break;
+    default:
+      panel = <JoinGravePanel />;
+      break;
+  }
+  return (
+    <TabPanel
+      m="0 20px"
+      borderRadius="lg"
+      boxShadow="md"
+      backgroundColor={bgColor}
+      color={'dark.purple.500'}
+      minHeight={'450px'}
+      padding="20px"
+      width={'100%'}
+    >
+      <Flex width={'100%'} justifyContent={'space-between'} flexWrap={'wrap'}>
+        <Flex
+          maxWidth={'560px'}
+          textAlign="center"
+          flexDirection={'column'}
+          gap={3}
+          alignItems={'center'}
+          width={'100%'}
+          padding={'0 20px'}
+        >
+          {panel}
+        </Flex>
+        <Flex>
+          <Image
+            src={logoPath}
+            alt="Universal-Grave-logo"
+            height={'410px'}
+            width="266px"
+            padding="25px"
+          />
+        </Flex>
+      </Flex>
+    </TabPanel>
+  );
+};
+
+export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const { account } = walletContext;
   const [oldForwarderAddress, setOldForwarderAddress] = useState<
     string | null
   >();
@@ -41,19 +127,22 @@ export default function MyGrave() {
         alignItems="flex-start"
         w="100%"
         pt="50px"
+        mb={2}
       >
-        <Box>
+        <Box width={'100%'}>
           {account ? (
-            <Box>
-              <Box>
-                <Text
-                  fontSize="20px"
-                  color={'white'}
-                  fontFamily="Bungee"
-                  mb="30px"
-                >
-                  SETTINGS
-                </Text>
+            <Box width={'100%'}>
+              <Box width={'100%'}>
+                <Box display="flex" flexDir="column">
+                    <Text
+                      fontSize="20px"
+                      color={'white'}
+                      fontFamily="Bungee"
+                      mb="30px"
+                    >
+                      SETTINGS
+                    </Text>
+                </Box>
                 <Box>
                   <Flex justifyContent="center">
                     {oldForwarderAddress ? (
@@ -63,38 +152,24 @@ export default function MyGrave() {
                     )}
                   </Flex>
                 </Box>
-                <Box maxW={'550px'}>
-                  <Accordion mb={'4'} allowToggle>
-                    <AccordionItem>
-                      <h2>
-                        <AccordionButton>
-                          <Box as="span" flex="1" textAlign="left">
-                            Advanced info
-                          </Box>
-                          <AccordionIcon />
-                        </AccordionButton>
-                      </h2>
-                      <AccordionPanel pb={4}>
-                        <Text>LSP7 Universal Receiver Delegate</Text>
-                        <a
-                          href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
-                          style={{ textDecoration: 'underline' }}
-                          target="_blank"
-                        >
-                          {URDLsp7}
-                        </a>
-                        <Text>LSP8 Universal Receiver Delegate</Text>
-                        <a
-                          href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
-                          style={{ textDecoration: 'underline' }}
-                          target="_blank"
-                        >
-                          {URDLsp8}
-                        </a>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
-                  <ManageAllowList />
+                <Box display="flex" width={'100%'}>
+                  <Tabs display="flex" flexDirection="row" width={'100%'}>
+                    <TabList
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="start"
+                      border={'none'}
+                    >
+                      {getTabOption('Subscription')}
+                      {getTabOption('Manage Allowlist')}
+                      {getTabOption('Advanced Info')}
+                    </TabList>
+                    <TabPanels p="0" width={'100%'} mr={'25px'}>
+                      {getTabPanel('Subscription')}
+                      {getTabPanel('Manage Allowlist')}
+                      {getTabPanel('Advanced Info')}
+                    </TabPanels>
+                  </Tabs>
                 </Box>
               </Box>
             </Box>
@@ -102,7 +177,6 @@ export default function MyGrave() {
             <SignInBox />
           )}
         </Box>
-        <Image src={logoPath} alt="Universal-Grave-logo" width={'300px'} />
       </Stack>
       {account && <GraveContents account={account} />}
     </Container>
