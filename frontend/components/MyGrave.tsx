@@ -12,6 +12,7 @@ import {
   Text,
   useColorModeValue,
   VStack,
+  Flex,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
@@ -77,18 +78,21 @@ const getTabPanel = (tabName: string) => {
       color={'dark.purple.500'}
       minHeight={'450px'}
       padding="20px"
+      width={'100%'}
     >
-      <Box display="flex" flexWrap={'wrap'} padding="0 20px">
-        <VStack
-          width={'60%'}
+      <Flex width={'100%'} justifyContent={'space-between'} flexWrap={'wrap'}>
+        <Flex
           maxWidth={'560px'}
-          spacing={4}
           textAlign="center"
-          padding="0 20px"
+          flexDirection={'column'}
+          gap={3}
+          alignItems={'center'}
+          width={'100%'}
+          padding={'0 20px'}
         >
           {panel}
-        </VStack>
-        <Box>
+        </Flex>
+        <Flex>
           <Image
             src={logoPath}
             alt="Universal-Grave-logo"
@@ -96,8 +100,8 @@ const getTabPanel = (tabName: string) => {
             width="266px"
             padding="25px"
           />
-        </Box>
-      </Box>
+        </Flex>
+      </Flex>
     </TabPanel>
   );
 };
@@ -116,10 +120,10 @@ export default function MyGrave() {
         pt="50px"
         mb={2}
       >
-        <Box>
+        <Box width={'100%'}>
           {account ? (
-            <Box>
-              <Box>
+            <Box width={'100%'}>
+              <Box width={'100%'}>
                 <Box display="flex" flexDir="column">
                   <Text
                     fontSize="20px"
@@ -130,8 +134,8 @@ export default function MyGrave() {
                     SETTINGS
                   </Text>
                 </Box>
-                <Box display="flex">
-                  <Tabs display="flex" flexDirection="row">
+                <Box display="flex" width={'100%'}>
+                  <Tabs display="flex" flexDirection="row" width={'100%'}>
                     <TabList
                       display="flex"
                       flexDirection="column"
@@ -142,7 +146,7 @@ export default function MyGrave() {
                       {getTabOption('Manage Allowlist')}
                       {getTabOption('Advanced Info')}
                     </TabList>
-                    <TabPanels p="0">
+                    <TabPanels p="0" width={'100%'} mr={'25px'}>
                       {getTabPanel('Subscription')}
                       {getTabPanel('Manage Allowlist')}
                       {getTabPanel('Advanced Info')}

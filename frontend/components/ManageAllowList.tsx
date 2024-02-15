@@ -219,7 +219,7 @@ export default function ManageAllowList() {
   };
 
   return (
-    <Box>
+    <>
       <Text
         fontSize="20px"
         fontWeight="bold"
@@ -276,9 +276,8 @@ export default function ManageAllowList() {
           </Text>
         </Box>
       </FormControl>
-      <Flex>
+      <Flex justifyContent={'flex-start'} gap={2} width={'100%'}>
         <Button
-          mt={2}
           h={'33px'}
           mr="10px"
           isDisabled={isSubmitting}
@@ -289,7 +288,6 @@ export default function ManageAllowList() {
           ALLOW ASSET
         </Button>
         <Button
-          mt={2}
           h={'33px'}
           isDisabled={isSubmitting}
           isLoading={isRemovingFromAllowList}
@@ -299,6 +297,6 @@ export default function ManageAllowList() {
           DISALLOW ASSET
         </Button>
       </Flex>
-    </Box>
+    </>
   );
 }

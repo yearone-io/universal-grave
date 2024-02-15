@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
+import { formatAddress } from '@/utils/tokenUtils';
 
 const AdvancedInfoPanel = () => {
   const walletContext = useContext(WalletContext);
@@ -25,7 +26,7 @@ const AdvancedInfoPanel = () => {
           style={{ textDecoration: 'underline' }}
           target="_blank"
         >
-          {URDLsp7}
+          {formatAddress(URDLsp7)}
         </a>
       </Box>
       <Box mt="20px">
@@ -37,7 +38,7 @@ const AdvancedInfoPanel = () => {
           style={{ textDecoration: 'underline' }}
           target="_blank"
         >
-          {URDLsp8}
+          {formatAddress(URDLsp8)}
         </a>
       </Box>
     </>
