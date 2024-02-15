@@ -5,6 +5,7 @@ on:
       - main
 jobs:
   autoupdate:
+    permissions: write-all
     name: autoupdate
     runs-on: ubuntu-22.04
     steps:
