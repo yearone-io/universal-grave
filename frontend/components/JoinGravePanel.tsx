@@ -2,7 +2,6 @@ import React, { useContext } from 'react';
 import {
   Box,
   Flex,
-  Image,
   Step,
   StepDescription,
   StepIndicator,
@@ -12,7 +11,6 @@ import {
   StepTitle,
   Stepper,
   Text,
-  VStack,
   useSteps,
 } from '@chakra-ui/react';
 import JoinGraveBtn from './JoinGraveBtn';
@@ -57,8 +55,6 @@ const initialLeavingSteps = [
 const JoinGravePanel: React.FC = () => {
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
-  const logoPath = '/images/logo-full.png';
-
   const [steps, setSteps] = React.useState([...initialSteps]);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
 
@@ -156,7 +152,7 @@ const JoinGravePanel: React.FC = () => {
             style={{
               color: 'var(--chakra-colors-dark-purple-500)',
               fontWeight: 'bold',
-              width: '435px',
+              width: '100%',
             }}
           >
             {step.title}
@@ -218,51 +214,40 @@ const JoinGravePanel: React.FC = () => {
   };
 
   return (
-    <Box display="flex" padding="0 20px">
-      <VStack spacing={4} textAlign="center" width="65%" padding="0 20px">
-        <Text
-          fontSize="20px"
-          fontWeight="bold"
-          fontFamily="Bungee"
-          color="dark.purple.400"
-        >
-          {displayMainTitle()}
-        </Text>
-        <JoinGraveBtn
-          onJoiningStepChange={handleNewStep}
-          onLeavingStepChange={handleLeavingStep}
-        />
+    <>
+      <Text
+        fontSize="20px"
+        fontWeight="bold"
+        fontFamily="Bungee"
+        color="dark.purple.400"
+      >
+        {displayMainTitle()}
+      </Text>
+      <JoinGraveBtn
+        onJoiningStepChange={handleNewStep}
+        onLeavingStepChange={handleLeavingStep}
+      />
 
-        {activeLeavingStep > -1 ? (
-          <Stepper
-            index={activeLeavingStep}
-            orientation="vertical"
-            gap="3"
-            id="leaving-grave-step-indicator"
-          >
-            {leaveSteps.map((step, index) => standardStepper(step, index))}
-          </Stepper>
-        ) : (
-          <Stepper
-            index={activeStep}
-            orientation="vertical"
-            gap="3"
-            id="grave-step-indicator"
-          >
-            {steps.map((step, index) => standardStepper(step, index))}
-          </Stepper>
-        )}
-      </VStack>
-      <Box width="35%">
-        <Image
-          src={logoPath}
-          alt="Universal-Grave-logo"
-          height={'410px'}
-          width="266px"
-          padding="25px"
-        />
-      </Box>
-    </Box>
+      {activeLeavingStep > -1 ? (
+        <Stepper
+          index={activeLeavingStep}
+          orientation="vertical"
+          gap="3"
+          id="leaving-grave-step-indicator"
+        >
+          {leaveSteps.map((step, index) => standardStepper(step, index))}
+        </Stepper>
+      ) : (
+        <Stepper
+          index={activeStep}
+          orientation="vertical"
+          gap="3"
+          id="grave-step-indicator"
+        >
+          {steps.map((step, index) => standardStepper(step, index))}
+        </Stepper>
+      )}
+    </>
   );
 };
 

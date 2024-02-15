@@ -2,7 +2,6 @@
 import {
   Box,
   Container,
-  Flex,
   Image,
   Stack,
   Tab,
@@ -12,19 +11,100 @@ import {
   Tabs,
   Text,
   useColorModeValue,
+  VStack,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import React, { useContext } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
-import ManageAllowListPanel from './ManageAllowListPanel';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
+import ManageAllowList from './ManageAllowList';
+
+const getTabOption = (tabName: string) => {
+  return (
+    <Tab
+      fontSize="16px"
+      color={'white'}
+      whiteSpace="nowrap"
+      fontFamily="Montserrat"
+      p="6px 20px 6px 6px"
+      m="0"
+      gap="10px"
+      width={'100%'}
+      justifyContent={'start'}
+      fontWeight={600}
+      _selected={{
+        backgroundColor: 'dark.purple.200',
+        color: 'dark.purple.500',
+        borderRadius: 'lg',
+      }}
+      _active={{
+        backgroundColor: 'dark.purple.200',
+        color: 'dark.purple.500',
+        borderRadius: 'lg',
+      }}
+    >
+      {tabName}
+    </Tab>
+  );
+};
+
+const getTabPanel = (tabName: string) => {
+  const logoPath = '/images/logo-full.png';
+  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
+  let panel;
+  switch (tabName) {
+    case 'Subscription':
+      panel = <JoinGravePanel />;
+      break;
+    case 'Manage Allowlist':
+      panel = <ManageAllowList />;
+      break;
+    case 'Advanced Info':
+      panel = <AdvancedInfoPanel />;
+      break;
+    default:
+      panel = <JoinGravePanel />;
+      break;
+  }
+  return (
+    <TabPanel
+      m="0 20px"
+      borderRadius="lg"
+      boxShadow="md"
+      backgroundColor={bgColor}
+      color={'dark.purple.500'}
+      minHeight={'450px'}
+      padding="20px"
+    >
+      <Box display="flex" flexWrap={'wrap'} padding="0 20px">
+        <VStack
+          width={'60%'}
+          maxWidth={'560px'}
+          spacing={4}
+          textAlign="center"
+          padding="0 20px"
+        >
+          {panel}
+        </VStack>
+        <Box>
+          <Image
+            src={logoPath}
+            alt="Universal-Grave-logo"
+            height={'410px'}
+            width="266px"
+            padding="25px"
+          />
+        </Box>
+      </Box>
+    </TabPanel>
+  );
+};
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
   const { account } = walletContext;
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -58,119 +138,14 @@ export default function MyGrave() {
                       alignItems="start"
                       border={'none'}
                     >
-                      <Tab
-                        fontSize="16px"
-                        color={'white'}
-                        whiteSpace="nowrap"
-                        fontFamily="Montserrat"
-                        p="6px 20px 6px 6px"
-                        m="0"
-                        gap="10px"
-                        width={'100%'}
-                        justifyContent={'start'}
-                        fontWeight={600}
-                        _selected={{
-                          backgroundColor: 'dark.purple.200',
-                          color: 'dark.purple.500',
-                          borderRadius: 'lg',
-                        }}
-                        _active={{
-                          backgroundColor: 'dark.purple.200',
-                          color: 'dark.purple.500',
-                          borderRadius: 'lg',
-                        }}
-                      >
-                        Subscription
-                      </Tab>
-                      <Tab
-                        fontSize="16px"
-                        color={'white'}
-                        whiteSpace="nowrap"
-                        fontFamily="Montserrat"
-                        p="6px 20px 6px 6px"
-                        m="0"
-                        width={'100%'}
-                        justifyContent={'start'}
-                        gap="10px"
-                        fontWeight={600}
-                        _selected={{
-                          backgroundColor: 'dark.purple.200',
-                          color: 'dark.purple.500',
-                          borderRadius: 'lg',
-                        }}
-                        _active={{
-                          backgroundColor: 'dark.purple.200',
-                          color: 'dark.purple.500',
-                          borderRadius: 'lg',
-                        }}
-                      >
-                        Manage Allowlist
-                      </Tab>
-                      <Tab
-                        fontSize="16px"
-                        color={'white'}
-                        whiteSpace="nowrap"
-                        fontFamily="Montserrat"
-                        m="0"
-                        p="6px 20px 6px 6px"
-                        width={'100%'}
-                        justifyContent={'start'}
-                        gap="10px"
-                        fontWeight={600}
-                        _selected={{
-                          backgroundColor: 'dark.purple.200',
-                          color: 'dark.purple.500',
-                          borderRadius: 'lg',
-                        }}
-                        _active={{
-                          backgroundColor: 'dark.purple.200',
-                          color: 'dark.purple.500',
-                          borderRadius: 'lg',
-                        }}
-                      >
-                        Advanced Info
-                      </Tab>
+                      {getTabOption('Subscription')}
+                      {getTabOption('Manage Allowlist')}
+                      {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0">
-                      <TabPanel p="0 20px">
-                        <Box
-                          borderRadius="lg"
-                          boxShadow="md"
-                          backgroundColor={bgColor}
-                          color={'dark.purple.500'}
-                          width="900px"
-                          height={'450px'}
-                          padding="20px"
-                        >
-                          <JoinGravePanel />
-                        </Box>
-                      </TabPanel>
-                      <TabPanel p="0 20px">
-                        <Box
-                          borderRadius="lg"
-                          boxShadow="md"
-                          backgroundColor={bgColor}
-                          color={'dark.purple.500'}
-                          width="900px"
-                          height={'450px'}
-                          padding="20px"
-                        >
-                          <ManageAllowListPanel />
-                        </Box>
-                      </TabPanel>
-                      <TabPanel p="0 20px">
-                        <Box
-                          borderRadius="lg"
-                          boxShadow="md"
-                          backgroundColor={bgColor}
-                          color={'dark.purple.500'}
-                          width="900px"
-                          height={'450px'}
-                          padding="20px"
-                        >
-                          <AdvancedInfoPanel />
-                        </Box>
-                      </TabPanel>
+                      {getTabPanel('Subscription')}
+                      {getTabPanel('Manage Allowlist')}
+                      {getTabPanel('Advanced Info')}
                     </TabPanels>
                   </Tabs>
                 </Box>
