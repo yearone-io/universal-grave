@@ -51,7 +51,7 @@ const initialLeavingSteps = [
     title: 'Migrate your GRAVE to the new forwarder',
     completeText: { text: '', address: null },
     complete: false,
-  }
+  },
 ];
 
 export const UpgradeURD = ({
@@ -130,10 +130,10 @@ export const UpgradeURD = ({
 
     try {
       await setForwarderAsLSPDelegate(
-          account!,
-          networkConfig.universalGraveForwarder,
-          signer,
-          provider
+        account!,
+        networkConfig.universalGraveForwarder,
+        signer,
+        provider
       );
     } catch (e: any) {
       console.error('Error setting forwarder as LSP delegate', e);
@@ -155,7 +155,10 @@ export const UpgradeURD = ({
       setURDLsp7(networkConfig.universalGraveForwarder);
       setURDLsp8(networkConfig.universalGraveForwarder);
     } catch (e: any) {
-      console.error('Error migrating your GRAVE to the new forwarder', e.message);
+      console.error(
+        'Error migrating your GRAVE to the new forwarder',
+        e.message
+      );
       toast({
         title: `Error redirecting spam to grave ${e.message}`,
         status: 'error',
