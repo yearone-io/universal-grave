@@ -275,6 +275,7 @@ export default function JoinGraveBtn({
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
+      debugger;
       await updateBECPermissions(provider, signer);
       setJoiningStep(1);
       console.log('step 1');
@@ -417,6 +418,20 @@ export default function JoinGraveBtn({
       getLuksoProvider()
     );
 
+
+
+    const addressPermission = await erc725.getData({
+      keyName: 'AddressPermissions:Permissions:<address>',
+      dynamicKeyParts: mainUPController,
+    });
+
+    const decodedPermission = erc725.decodePermissions(addressPermission.value);
+    console.log(
+        JSON.stringify(decodedPermission, null, 2),
+    );
+    
+
+    debugger;
     const newPermissions = erc725.encodePermissions({
       ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
       ...GRAVE_CONTROLLER_PERMISSIONS,
