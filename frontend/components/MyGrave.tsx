@@ -110,8 +110,8 @@ const getTabPanel = (tabName: string) => {
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account } = walletContext;
-  const [oldForwarderAddress, setOldForwarderAddress] = useState<
+  const { account, URDLsp7, URDLsp8 } = walletContext;
+  const [oldForwarderAddress, setOldForwarderAddress, ] = useState<
     string | null
   >();
 
@@ -134,14 +134,14 @@ export default function MyGrave() {
             <Box width={'100%'}>
               <Box width={'100%'}>
                 <Box display="flex" flexDir="column">
-                    <Text
-                      fontSize="20px"
-                      color={'white'}
-                      fontFamily="Bungee"
-                      mb="30px"
-                    >
-                      SETTINGS
-                    </Text>
+                  <Text
+                    fontSize="20px"
+                    color={'white'}
+                    fontFamily="Bungee"
+                    mb="30px"
+                  >
+                    SETTINGS
+                  </Text>
                 </Box>
                 <Box>
                   <Flex justifyContent="center">

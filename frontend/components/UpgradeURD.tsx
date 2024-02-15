@@ -125,7 +125,7 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(1);
-      setIsSubmitting(false)
+      setIsSubmitting(false);
       return;
     }
 
@@ -148,7 +148,7 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(2);
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
 
     setLeavingStep(3);
@@ -171,12 +171,12 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(2);
-      setIsSubmitting(false)
+      setIsSubmitting(false);
       return;
     }
 
     setLeavingStep(4);
-    setIsSubmitting(false)
+    setIsSubmitting(false);
   };
 
   const handleLeavingStep = (leavingStep: number) => {
