@@ -11,7 +11,6 @@ import {
   Tabs,
   Text,
   useColorModeValue,
-  VStack,
   Flex,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
@@ -53,13 +52,17 @@ const getTabOption = (tabName: string) => {
   );
 };
 
-const getTabPanel = (tabName: string) => {
+const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
   const logoPath = '/images/logo-full.png';
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   let panel;
   switch (tabName) {
     case 'Subscription':
-      panel = <JoinGravePanel />;
+      panel = oldForwarderAddress ? (
+        <UpgradeURD oldForwarderAddress={oldForwarderAddress} />
+      ) : (
+        <JoinGravePanel />
+      )
       break;
     case 'Manage Allowlist':
       panel = <ManageAllowList />;
@@ -143,15 +146,6 @@ export default function MyGrave() {
                     SETTINGS
                   </Text>
                 </Box>
-                <Box>
-                  <Flex justifyContent="center">
-                    {oldForwarderAddress ? (
-                      <UpgradeURD oldForwarderAddress={oldForwarderAddress} />
-                    ) : (
-                      <JoinGravePanel />
-                    )}
-                  </Flex>
-                </Box>
                 <Box display="flex" width={'100%'}>
                   <Tabs display="flex" flexDirection="row" width={'100%'}>
                     <TabList
@@ -165,7 +159,7 @@ export default function MyGrave() {
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
-                      {getTabPanel('Subscription')}
+                      {getTabPanel('Subscription', oldForwarderAddress)}
                       {getTabPanel('Manage Allowlist')}
                       {getTabPanel('Advanced Info')}
                     </TabPanels>
