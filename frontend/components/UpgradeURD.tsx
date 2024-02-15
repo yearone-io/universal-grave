@@ -124,7 +124,7 @@ export const UpgradeURD = ({
         duration: 9000,
         isClosable: true,
       });
-      setLeavingStep(1);
+      setLeavingStep(0);
       setIsSubmitting(false);
       return;
     }
@@ -147,7 +147,7 @@ export const UpgradeURD = ({
         duration: 9000,
         isClosable: true,
       });
-      setLeavingStep(2);
+      setLeavingStep(0);
       setIsSubmitting(false);
     }
 
@@ -170,7 +170,7 @@ export const UpgradeURD = ({
         duration: 9000,
         isClosable: true,
       });
-      setLeavingStep(2);
+      setLeavingStep(0);
       setIsSubmitting(false);
       return;
     }
