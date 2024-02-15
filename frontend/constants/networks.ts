@@ -1,5 +1,6 @@
 export interface Network {
   chainId: number;
+  name: string;
   symbol: string;
   rpcUrl: string;
   explorerURL: string;
@@ -11,15 +12,17 @@ export interface Network {
 const NETWORKS = {
   mainnet: {
     chainId: 42,
+    name: 'LUKSO',
     symbol: 'LYX',
     rpcUrl: 'https://rpc.lukso.gateway.fm',
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
-    universalGraveForwarder: '0xa5467dfe7019bf2c7c5f7a707711b9d4cad118c8',
+    universalGraveForwarder: '0x433908ce6457b302a6452257Bc40e466d95c78E9',
     previousGraveForwarders: [],
-    lsp1UrdVault: '',
+    lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
   },
   testnet: {
     chainId: 4201,
+    name: 'LUKSO Testnet',
     symbol: 'LYXt',
     rpcUrl: 'https://rpc.testnet.lukso.network',
     explorerURL: 'https://explorer.execution.testnet.lukso.network',
