@@ -92,6 +92,7 @@ export const UpgradeURD = ({
   const toast = useToast();
 
   const handleUpgrade = async () => {
+    setIsSubmitting(true);
     setLeavingStep(0);
 
     try {
@@ -106,6 +107,7 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(0);
+      setIsSubmitting(false);
       return;
     }
 
@@ -123,6 +125,7 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(1);
+      setIsSubmitting(false)
       return;
     }
 
@@ -145,6 +148,7 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(2);
+      setIsSubmitting(false)
     }
 
     setLeavingStep(3);
@@ -167,10 +171,12 @@ export const UpgradeURD = ({
         isClosable: true,
       });
       setLeavingStep(2);
+      setIsSubmitting(false)
       return;
     }
 
     setLeavingStep(4);
+    setIsSubmitting(false)
   };
 
   const handleLeavingStep = (leavingStep: number) => {
