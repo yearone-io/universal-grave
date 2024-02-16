@@ -3,6 +3,7 @@ import { SiweMessage } from 'siwe';
 import { getNetworkConfig } from '@/constants/networks';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { getProvider } from '@/utils/provider';
+import { getChecksumAddress } from './tokenUtils';
 
 export const getGraveVaultFor = async (
   account: string,
@@ -53,15 +54,4 @@ export const hasJoinedTheGrave = (
       getChecksumAddress(universalGraveForwarder) &&
     getChecksumAddress(URDLsp8) === getChecksumAddress(universalGraveForwarder)
   );
-};
-
-export const getChecksumAddress = (address: string | null) => {
-  // Check if the address is valid
-  if (!address || !ethers.utils.isAddress(address)) {
-    // Handle invalid address
-    return address;
-  }
-
-  // Convert to checksum address
-  return ethers.utils.getAddress(address);
 };

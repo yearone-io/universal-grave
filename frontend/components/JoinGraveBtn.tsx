@@ -18,9 +18,10 @@ import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 import {
-  getChecksumAddress,
   hasJoinedTheGrave,
 } from '@/utils/universalProfile';
+import { doesControllerHaveMissingPermissions } from '@/utils/urdUtils';
+import { getChecksumAddress } from '@/utils/tokenUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -112,6 +113,8 @@ export default function JoinGraveBtn({
   // 1 - Verifying owners of vaults
 
   // ========================= FETCHING DATA =========================
+
+  
 
   /**
    * Function to fetch the profile data.
@@ -415,6 +418,11 @@ export default function JoinGraveBtn({
     provider: ethers.providers.JsonRpcProvider,
     signer: ethers.providers.JsonRpcSigner
   ) => {
+    // check if we need to update permissions
+    const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController as string, account as string);
+    if (!missingPermissions.length) {
+      return;
+    }
     const UP = new ethers.Contract(
       account as string,
       UniversalProfile.abi,
@@ -427,6 +435,7 @@ export default function JoinGraveBtn({
       getLuksoProvider()
     );
 
+    // All the permissions have to be passed. If one is missing the tx will set it to false (even if it is set to true)
     const newPermissions = erc725.encodePermissions({
       ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
       ...GRAVE_CONTROLLER_PERMISSIONS,
@@ -636,7 +645,6 @@ export default function JoinGraveBtn({
   };
 
   // ========================= HELPERS =========================
-
   const hasExistingNonGraveDelegates = () => {
     return (
       !hasJoinedTheGrave(

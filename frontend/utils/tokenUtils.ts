@@ -9,6 +9,17 @@ import lsp9Schema from '@erc725/erc725.js/schemas/LSP9Vault.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 
+export const getChecksumAddress = (address: string | null) => {
+  // Check if the address is valid
+  if (!address || !ethers.utils.isAddress(address)) {
+    // Handle invalid address
+    return address;
+  }
+
+  // Convert to checksum address
+  return ethers.utils.getAddress(address);
+};
+
 export const formatAddress = (address: string | null) => {
   if (!address) return '0x';
   if (address.length < 10) return address; // '0x' is an address
