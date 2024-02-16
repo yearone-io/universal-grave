@@ -97,6 +97,11 @@ export const updateBECPermissions = async (
   provider: ethers.providers.JsonRpcProvider,
   signer: ethers.providers.JsonRpcSigner
 ) => {
+  // check if we need to update permissions
+  const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController, account);
+  if (!missingPermissions.length) {
+    return;
+  }
   const UP = new ethers.Contract(account, UniversalProfile.abi, provider);
 
   const erc725 = new ERC725(
@@ -263,4 +268,48 @@ export const setForwarderAsLSPDelegate = async (
     dataValues
   );
   return await setDataBatchTx.wait();
+};
+
+export const getAddressPermissionsOnTarget = async (
+  address: string,
+  targetEntity: string
+) => {
+  const erc725 = new ERC725(
+    LSP6Schema as ERC725JSONSchema[],
+    targetEntity,
+    getLuksoProvider()
+  );
+  const addressPermission = await erc725.getData({
+    keyName: 'AddressPermissions:Permissions:<address>',
+    dynamicKeyParts: address,
+  });
+
+  return erc725.decodePermissions(addressPermission.value as string);
+};
+
+export const getMissingPermissions = (
+  currentPermissions: { [key: string]: boolean },
+  requiredPermissions: { [key: string]: boolean }
+) => {
+  const missingPermissions = [];
+  for (const permission in requiredPermissions) {
+    // check if the permission exists in the required permissions and if it is different from the current permissions
+    if (requiredPermissions[permission] !== currentPermissions[permission]) {
+      missingPermissions.push(permission);
+    }
+  }
+  return missingPermissions;
+};
+
+export const doesControllerHaveMissingPermissions = async (
+  address: string,
+  targetEntity: string
+) => {
+  // check if we need to update permissions
+  const currentPermissions = await getAddressPermissionsOnTarget(address, targetEntity);
+  const missingPermissions = getMissingPermissions(currentPermissions, {
+    ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+    ...GRAVE_CONTROLLER_PERMISSIONS,
+  });
+  return missingPermissions;
 };

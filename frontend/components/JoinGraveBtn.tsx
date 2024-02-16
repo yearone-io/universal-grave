@@ -17,6 +17,7 @@ import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { 
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { doesControllerHaveMissingPermissions } from '@/utils/urdUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -103,17 +104,7 @@ export default function JoinGraveBtn({
 
   // ========================= FETCHING DATA =========================
 
-  const getCurrentPermissions = async (
-    erc725: ERC725,
-    mainUPController: string
-  ) => {
-    const addressPermission = await erc725.getData({
-      keyName: 'AddressPermissions:Permissions:<address>',
-      dynamicKeyParts: mainUPController,
-    });
-
-    return erc725.decodePermissions(addressPermission.value as string);
-  };
+  
 
   /**
    * Function to fetch the profile data.
@@ -417,6 +408,11 @@ export default function JoinGraveBtn({
     provider: ethers.providers.JsonRpcProvider,
     signer: ethers.providers.JsonRpcSigner
   ) => {
+    // check if we need to update permissions
+    const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController as string, account as string);
+    if (!missingPermissions.length) {
+      return;
+    }
     const UP = new ethers.Contract(
       account as string,
       UniversalProfile.abi,
@@ -428,20 +424,6 @@ export default function JoinGraveBtn({
       account,
       getLuksoProvider()
     );
-
-    // check if we need to update permissions
-    const currentPermissions = await getCurrentPermissions(
-      erc725,
-      mainUPController as string
-    );
-    const missingPermissions = getMissingPermission(currentPermissions, {
-      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-      ...GRAVE_CONTROLLER_PERMISSIONS,
-    });
-    console.log('missingPermissions: ', missingPermissions);
-    if (!missingPermissions) {
-      return;
-    }
 
     // All the permissions have to be passed. If one is missing the tx will set it to false (even if it is set to true)
     const newPermissions = erc725.encodePermissions({
@@ -653,20 +635,6 @@ export default function JoinGraveBtn({
   };
 
   // ========================= HELPERS =========================
-
-  const getMissingPermission = (
-    currentPermissions: { [key: string]: boolean },
-    requiredPermissions: { [key: string]: boolean }
-  ) => {
-    for (const permission in requiredPermissions) {
-      // check if the permission exists in the required permissions and if it is different from the current permissions
-      if (requiredPermissions[permission] !== currentPermissions[permission]) {
-        return permission;
-      }
-    }
-    return '';
-  };
-
   // Custom function to safely get checksum address
   const getChecksumAddress = (address: string | null) => {
     // Check if the address is valid
