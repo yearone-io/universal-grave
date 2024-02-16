@@ -1,4 +1,5 @@
-import { ReactNode } from 'react';
+'use client';
+import React, { ReactNode, useContext } from 'react';
 import {
   Box,
   chakra,
@@ -9,9 +10,12 @@ import {
   VisuallyHidden,
   Flex,
   Image,
+  Select,
 } from '@chakra-ui/react';
 import { FaTwitter, FaMoon, FaGithub } from 'react-icons/fa';
 import Link from 'next/link';
+import { WalletContext } from '@/components/wallet/WalletContext';
+import { getNetworkConfig } from '@/constants/networks';
 
 const SocialButton = ({
   children,
@@ -49,7 +53,8 @@ const SocialButton = ({
 export default function SmallWithLogoLeft() {
   const colorModeIcon = FaMoon;
   const logoPath = '/images/logo-text.png';
-
+  const walletContext = useContext(WalletContext);
+  const { networkConfig } = walletContext;
   return (
     <Box
       bg={useColorModeValue('light.gray.100', 'dark.purple.500')}
@@ -69,6 +74,32 @@ export default function SmallWithLogoLeft() {
         justify={{ base: 'center', md: 'space-between' }}
         align={{ base: 'center', md: 'center' }}
       >
+        <Box minWidth={'170'}>
+          <Select
+            onChange={event =>
+              (window.location.href = getNetworkConfig(
+                event.target.value
+              ).baseUrl)
+            }
+          >
+            <option
+              selected={
+                networkConfig.chainId === getNetworkConfig('mainnet').chainId
+              }
+              value="mainnet"
+            >
+              LUKSO Mainnet
+            </option>
+            <option
+              selected={
+                networkConfig.chainId === getNetworkConfig('testnet').chainId
+              }
+              value="testnet"
+            >
+              LUKSO Testnet
+            </option>
+          </Select>
+        </Box>
         <Flex gap="7px" justifyContent="center" alignItems="center">
           <Image src={logoPath} alt="Universal-Grave-logo" width={'40px'} />
         </Flex>
