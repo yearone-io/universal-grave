@@ -15,7 +15,6 @@ import {
   useColorModeValue,
   useSteps,
   useToast,
-  VStack,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
@@ -278,17 +277,7 @@ export const UpgradeURD = ({
   };
 
   return (
-    <VStack
-      spacing={4}
-      p={10}
-      backgroundColor={bgColor}
-      boxShadow="md"
-      borderRadius="lg"
-      textAlign="center"
-      color={'dark.purple.500'}
-      width={'555px'}
-      minHeight={'335px'}
-    >
+    <>
       <Text
         fontSize="20px"
         fontWeight="bold"
@@ -314,6 +303,6 @@ export const UpgradeURD = ({
       >
         {leaveSteps.map((step, index) => standardStepper(step, index))}
       </Stepper>
-    </VStack>
+    </>
   );
 };
