@@ -11,16 +11,17 @@ import {
   Tabs,
   Text,
   useColorModeValue,
-  VStack,
   Flex,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
+import { hasOlderGraveDelegate } from '@/utils/urdUtils';
+import { UpgradeURD } from '@/components/UpgradeURD';
 
 const getTabOption = (tabName: string) => {
   return (
@@ -51,13 +52,17 @@ const getTabOption = (tabName: string) => {
   );
 };
 
-const getTabPanel = (tabName: string) => {
+const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
   const logoPath = '/images/logo-full.png';
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   let panel;
   switch (tabName) {
     case 'Subscription':
-      panel = <JoinGravePanel />;
+      panel = oldForwarderAddress ? (
+        <UpgradeURD oldForwarderAddress={oldForwarderAddress} />
+      ) : (
+        <JoinGravePanel />
+      );
       break;
     case 'Manage Allowlist':
       panel = <ManageAllowList />;
@@ -108,7 +113,14 @@ const getTabPanel = (tabName: string) => {
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account } = walletContext;
+  const { account, URDLsp7, URDLsp8 } = walletContext;
+  const [oldForwarderAddress, setOldForwarderAddress] = useState<
+    string | null
+  >();
+
+  useEffect(() => {
+    setOldForwarderAddress(hasOlderGraveDelegate(URDLsp7, URDLsp8));
+  }, [URDLsp7, URDLsp8]);
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -147,7 +159,7 @@ export default function MyGrave() {
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
-                      {getTabPanel('Subscription')}
+                      {getTabPanel('Subscription', oldForwarderAddress)}
                       {getTabPanel('Manage Allowlist')}
                       {getTabPanel('Advanced Info')}
                     </TabPanels>
