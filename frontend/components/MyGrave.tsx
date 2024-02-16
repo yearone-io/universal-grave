@@ -21,6 +21,7 @@ import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
+import { hasJoinedTheGrave } from '@/utils/universalProfile';
 
 const getTabOption = (tabName: string) => {
   return (
@@ -108,7 +109,7 @@ const getTabPanel = (tabName: string) => {
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account } = walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
 
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
@@ -143,12 +144,21 @@ export default function MyGrave() {
                       border={'none'}
                     >
                       {getTabOption('Subscription')}
-                      {getTabOption('Manage Allowlist')}
+                      {hasJoinedTheGrave(
+                        URDLsp7,
+                        URDLsp8,
+                        networkConfig.universalGraveForwarder
+                      ) && getTabOption('Manage Allowlist')}
+
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
                       {getTabPanel('Subscription')}
-                      {getTabPanel('Manage Allowlist')}
+                      {hasJoinedTheGrave(
+                        URDLsp7,
+                        URDLsp8,
+                        networkConfig.universalGraveForwarder
+                      ) && getTabPanel('Manage Allowlist')}
                       {getTabPanel('Advanced Info')}
                     </TabPanels>
                   </Tabs>

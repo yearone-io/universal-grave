@@ -38,3 +38,30 @@ export const buildSIWEMessage = (upAddress: string): string => {
   };
   return new SiweMessage(siweParams).prepareMessage();
 };
+
+export const hasJoinedTheGrave = (
+  URDLsp7: string | null,
+  URDLsp8: string | null,
+  universalGraveForwarder: string
+) => {
+  // Note: check sum case address to avoid issues with case sensitivity
+  if (!URDLsp7 || !URDLsp8 || !universalGraveForwarder) {
+    return false;
+  }
+  return (
+    getChecksumAddress(URDLsp7) ===
+      getChecksumAddress(universalGraveForwarder) &&
+    getChecksumAddress(URDLsp8) === getChecksumAddress(universalGraveForwarder)
+  );
+};
+
+export const getChecksumAddress = (address: string | null) => {
+  // Check if the address is valid
+  if (!address || !ethers.utils.isAddress(address)) {
+    // Handle invalid address
+    return address;
+  }
+
+  // Convert to checksum address
+  return ethers.utils.getAddress(address);
+};
