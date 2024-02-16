@@ -10,17 +10,7 @@ import {
   GRAVE_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
-
-export const getChecksumAddress = (address: string | null) => {
-  // Check if the address is valid
-  if (!address || !ethers.utils.isAddress(address)) {
-    // Handle invalid address
-    return address;
-  }
-
-  // Convert to checksum address
-  return ethers.utils.getAddress(address);
-};
+import { getChecksumAddress } from './tokenUtils';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -98,7 +88,10 @@ export const updateBECPermissions = async (
   signer: ethers.providers.JsonRpcSigner
 ) => {
   // check if we need to update permissions
-  const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController, account);
+  const missingPermissions = await doesControllerHaveMissingPermissions(
+    mainUPController,
+    account
+  );
   if (!missingPermissions.length) {
     return;
   }
@@ -306,7 +299,10 @@ export const doesControllerHaveMissingPermissions = async (
   targetEntity: string
 ) => {
   // check if we need to update permissions
-  const currentPermissions = await getAddressPermissionsOnTarget(address, targetEntity);
+  const currentPermissions = await getAddressPermissionsOnTarget(
+    address,
+    targetEntity
+  );
   const missingPermissions = getMissingPermissions(currentPermissions, {
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
     ...GRAVE_CONTROLLER_PERMISSIONS,

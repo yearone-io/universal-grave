@@ -17,7 +17,9 @@ import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { 
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import { doesControllerHaveMissingPermissions } from '@/utils/urdUtils';
+import { getChecksumAddress } from '@/utils/tokenUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -76,7 +78,13 @@ export default function JoinGraveBtn({
     if (window.lukso && account) {
       fetchProfile().then(() => {
         // Update steps if the user has already joined the Grave
-        if (hasJoinedTheGrave()) {
+        if (
+          hasJoinedTheGrave(
+            URDLsp7,
+            URDLsp8,
+            networkConfig.universalGraveForwarder
+          )
+        ) {
           setJoiningStep(5);
         }
       });
@@ -103,8 +111,6 @@ export default function JoinGraveBtn({
   // 1 - Verifying owners of vaults
 
   // ========================= FETCHING DATA =========================
-
-  
 
   /**
    * Function to fetch the profile data.
@@ -409,7 +415,10 @@ export default function JoinGraveBtn({
     signer: ethers.providers.JsonRpcSigner
   ) => {
     // check if we need to update permissions
-    const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController as string, account as string);
+    const missingPermissions = await doesControllerHaveMissingPermissions(
+      mainUPController as string,
+      account as string
+    );
     if (!missingPermissions.length) {
       return;
     }
@@ -635,31 +644,13 @@ export default function JoinGraveBtn({
   };
 
   // ========================= HELPERS =========================
-  // Custom function to safely get checksum address
-  const getChecksumAddress = (address: string | null) => {
-    // Check if the address is valid
-    if (!address || !ethers.utils.isAddress(address)) {
-      // Handle invalid address
-      return address;
-    }
-
-    // Convert to checksum address
-    return ethers.utils.getAddress(address);
-  };
-
-  const hasJoinedTheGrave = () => {
-    // Note: check sum case address to avoid issues with case sensitivity
-    return (
-      getChecksumAddress(URDLsp7) ===
-        getChecksumAddress(networkConfig.universalGraveForwarder) &&
-      getChecksumAddress(URDLsp8) ===
-        getChecksumAddress(networkConfig.universalGraveForwarder)
-    );
-  };
-
   const hasExistingNonGraveDelegates = () => {
     return (
-      !hasJoinedTheGrave() &&
+      !hasJoinedTheGrave(
+        URDLsp7,
+        URDLsp8,
+        networkConfig.universalGraveForwarder
+      ) &&
       (URDLsp8 != null || URDLsp7 != null) &&
       !(URDLsp8 === '0x' || URDLsp7 === '0x')
     );
@@ -708,7 +699,9 @@ export default function JoinGraveBtn({
   const displayJoinLeaveButtons = () => {
     // Note: check sum case address to avoid issues with case sensitivity
 
-    if (hasJoinedTheGrave()) {
+    if (
+      hasJoinedTheGrave(URDLsp7, URDLsp8, networkConfig.universalGraveForwarder)
+    ) {
       return (
         <Button
           color={'dark.purple.500'}
