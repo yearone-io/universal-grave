@@ -74,38 +74,9 @@ export default function SmallWithLogoLeft() {
         justify={{ base: 'center', md: 'space-between' }}
         align={{ base: 'center', md: 'center' }}
       >
-        <Box minWidth={'170'}>
-          <Select
-            onChange={event =>
-              (window.location.href = getNetworkConfig(
-                event.target.value
-              ).baseUrl)
-            }
-          >
-            <option
-              selected={
-                networkConfig.chainId === getNetworkConfig('mainnet').chainId
-              }
-              value="mainnet"
-            >
-              LUKSO Mainnet
-            </option>
-            <option
-              selected={
-                networkConfig.chainId === getNetworkConfig('testnet').chainId
-              }
-              value="testnet"
-            >
-              LUKSO Testnet
-            </option>
-          </Select>
-        </Box>
-        <Flex gap="7px" justifyContent="center" alignItems="center">
+        <Flex gap={3} justifyContent="center" alignItems="center">
           <Image src={logoPath} alt="Universal-Grave-logo" width={'40px'} />
-        </Flex>
-        <Flex gap="7px" justifyContent="center" alignItems="center">
-          © 2023 Universal Grave. All rights reserved
-          <Icon as={colorModeIcon} />
+          <Box>© 2024 Universal GRAVE</Box>
         </Flex>
         <Stack direction={'row'} spacing={6} alignItems={'center'}>
           <SocialButton
@@ -121,6 +92,32 @@ export default function SmallWithLogoLeft() {
           <Link href={'/terms'}>Terms</Link>
           <Link href={'/terms#privacy'}>Privacy</Link>
           <Link href={'/feedback'}>Feedback</Link>
+          <Box minWidth={'170'}>
+            <Select
+              onChange={event =>
+                (window.location.href = getNetworkConfig(
+                  event.target.value
+                ).baseUrl)
+              }
+            >
+              <option
+                selected={
+                  networkConfig.chainId === getNetworkConfig('mainnet').chainId
+                }
+                value="mainnet"
+              >
+                LUKSO Mainnet
+              </option>
+              <option
+                selected={
+                  networkConfig.chainId === getNetworkConfig('testnet').chainId
+                }
+                value="testnet"
+              >
+                LUKSO Testnet
+              </option>
+            </Select>
+          </Box>
         </Stack>
       </Container>
     </Box>
