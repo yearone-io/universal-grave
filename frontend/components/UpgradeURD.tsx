@@ -60,26 +60,13 @@ export const UpgradeURD = ({
   oldForwarderAddress: string;
 }) => {
   const walletContext = useContext(WalletContext);
-  const { account, networkConfig, setURDLsp7, setURDLsp8, mainUPController } =
-    walletContext;
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   const provider = new ethers.providers.Web3Provider(window.lukso);
-  const graveForwarder = new ethers.Contract(
-    networkConfig.universalGraveForwarder,
-    LSP1GraveForwarderAbi.abi,
-    provider
-  ) as LSP1GraveForwarder;
-
-  const oldForwarder = new ethers.Contract(
-    oldForwarderAddress,
-    LSP1GraveForwarderAbi.abi,
-    provider
-  ) as LSP1GraveForwarder;
-
   const signer = provider.getSigner();
+  const { account, networkConfig, setURDLsp7, setURDLsp8, mainUPController } =
+    walletContext;
 
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
   const [leavingStep, setLeavingStep] = useState<number>(-1);
 
@@ -90,6 +77,24 @@ export const UpgradeURD = ({
     });
 
   const toast = useToast();
+
+  const migrateGraveToNewForwarder = async () => {
+    const oldForwarder = new ethers.Contract(
+      oldForwarderAddress,
+      LSP1GraveForwarderAbi.abi,
+      provider
+    ) as LSP1GraveForwarder;
+
+    const graveForwarder = new ethers.Contract(
+      networkConfig.universalGraveForwarder,
+      LSP1GraveForwarderAbi.abi,
+      provider
+    ) as LSP1GraveForwarder;
+
+    return await graveForwarder
+      .connect(signer)
+      .setGrave(await oldForwarder.connect(signer).getGrave());
+  };
 
   const handleUpgrade = async () => {
     setIsSubmitting(true);
@@ -132,8 +137,7 @@ export const UpgradeURD = ({
     setLeavingStep(2);
 
     try {
-      const existingGrave = await oldForwarder.connect(signer).getGrave();
-      await graveForwarder.connect(signer).setGrave(existingGrave);
+      await migrateGraveToNewForwarder();
     } catch (e: any) {
       console.error(
         'Error migrating your GRAVE to the new forwarder',
