@@ -103,19 +103,17 @@ export default function JoinGraveBtn({
 
   // ========================= FETCHING DATA =========================
 
-  const getCurrentPermissions = async (erc725: ERC725, mainUPController: string) => {
+  const getCurrentPermissions = async (
+    erc725: ERC725,
+    mainUPController: string
+  ) => {
     const addressPermission = await erc725.getData({
       keyName: 'AddressPermissions:Permissions:<address>',
       dynamicKeyParts: mainUPController,
     });
 
-    const decodedPermission = erc725.decodePermissions(addressPermission.value as string);
-    console.log(
-        JSON.stringify(decodedPermission, null, 2),
-    );
-
-    return decodedPermission;
-  }
+    return erc725.decodePermissions(addressPermission.value as string);
+  };
 
   /**
    * Function to fetch the profile data.
@@ -430,19 +428,26 @@ export default function JoinGraveBtn({
       account,
       getLuksoProvider()
     );
-    
+
     // check if we need to update permissions
-    const currentPermissions = await getCurrentPermissions(erc725, mainUPController as string);
-    const missingPermissions = getMissingPermission(currentPermissions, { ...DEFAULT_UP_CONTROLLER_PERMISSIONS, ...GRAVE_CONTROLLER_PERMISSIONS });
+    const currentPermissions = await getCurrentPermissions(
+      erc725,
+      mainUPController as string
+    );
+    const missingPermissions = getMissingPermission(currentPermissions, {
+      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+      ...GRAVE_CONTROLLER_PERMISSIONS,
+    });
     console.log('missingPermissions: ', missingPermissions);
     if (!missingPermissions) {
       return;
     }
 
     // All the permissions have to be passed. If one is missing the tx will set it to false (even if it is set to true)
-    const newPermissions = erc725.encodePermissions(
-      { ...DEFAULT_UP_CONTROLLER_PERMISSIONS, ...GRAVE_CONTROLLER_PERMISSIONS }
-    );
+    const newPermissions = erc725.encodePermissions({
+      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+      ...GRAVE_CONTROLLER_PERMISSIONS,
+    });
     const permissionsData = erc725.encodeData([
       {
         keyName: 'AddressPermissions:Permissions:<address>',
@@ -649,7 +654,10 @@ export default function JoinGraveBtn({
 
   // ========================= HELPERS =========================
 
-  const getMissingPermission = (currentPermissions: { [key: string]: boolean }, requiredPermissions: { [key: string]: boolean }) => {
+  const getMissingPermission = (
+    currentPermissions: { [key: string]: boolean },
+    requiredPermissions: { [key: string]: boolean }
+  ) => {
     for (const permission in requiredPermissions) {
       // check if the permission exists in the required permissions and if it is different from the current permissions
       if (requiredPermissions[permission] !== currentPermissions[permission]) {
@@ -657,8 +665,7 @@ export default function JoinGraveBtn({
       }
     }
     return '';
-  }
-    
+  };
 
   // Custom function to safely get checksum address
   const getChecksumAddress = (address: string | null) => {
