@@ -43,13 +43,13 @@ const initialLeavingSteps = [
     complete: false,
   },
   {
-    title: 'Direct all 🆙 spam to the GRAVE',
-    completeText: { text: 'SPAM IS DEAD', address: null },
+    title: 'Migrate your GRAVE to the new forwarder',
+    completeText: { text: '', address: null },
     complete: false,
   },
   {
-    title: 'Migrate your GRAVE to the new forwarder',
-    completeText: { text: '', address: null },
+    title: 'Direct all 🆙 spam to the GRAVE',
+    completeText: { text: 'SPAM IS DEAD', address: null },
     complete: false,
   },
 ];
@@ -132,32 +132,8 @@ export const UpgradeURD = ({
     setLeavingStep(2);
 
     try {
-      await setForwarderAsLSPDelegate(
-        account!,
-        networkConfig.universalGraveForwarder,
-        signer,
-        provider
-      );
-    } catch (e: any) {
-      console.error('Error setting forwarder as LSP delegate', e);
-      toast({
-        title: `Error setting forwarder as LSP delegate ${e.message}`,
-        status: 'error',
-        position: 'bottom-left',
-        duration: 9000,
-        isClosable: true,
-      });
-      setLeavingStep(0);
-      setIsSubmitting(false);
-    }
-
-    setLeavingStep(3);
-
-    try {
       const existingGrave = await oldForwarder.connect(signer).getGrave();
       await graveForwarder.connect(signer).setGrave(existingGrave);
-      setURDLsp7(networkConfig.universalGraveForwarder);
-      setURDLsp8(networkConfig.universalGraveForwarder);
     } catch (e: any) {
       console.error(
         'Error migrating your GRAVE to the new forwarder',
@@ -173,6 +149,30 @@ export const UpgradeURD = ({
       setLeavingStep(0);
       setIsSubmitting(false);
       return;
+    }
+
+    setLeavingStep(3);
+
+    try {
+      await setForwarderAsLSPDelegate(
+        account!,
+        networkConfig.universalGraveForwarder,
+        signer,
+        provider
+      );
+      setURDLsp7(networkConfig.universalGraveForwarder);
+      setURDLsp8(networkConfig.universalGraveForwarder);
+    } catch (e: any) {
+      console.error('Error setting forwarder as LSP delegate', e);
+      toast({
+        title: `Error setting forwarder as LSP delegate ${e.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+      setLeavingStep(0);
+      setIsSubmitting(false);
     }
 
     setLeavingStep(4);

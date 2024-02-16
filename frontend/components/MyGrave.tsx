@@ -62,7 +62,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
         <UpgradeURD oldForwarderAddress={oldForwarderAddress} />
       ) : (
         <JoinGravePanel />
-      )
+      );
       break;
     case 'Manage Allowlist':
       panel = <ManageAllowList />;
@@ -114,7 +114,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8 } = walletContext;
-  const [oldForwarderAddress, setOldForwarderAddress, ] = useState<
+  const [oldForwarderAddress, setOldForwarderAddress] = useState<
     string | null
   >();
 
