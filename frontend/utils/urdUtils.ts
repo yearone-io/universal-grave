@@ -88,7 +88,10 @@ export const updateBECPermissions = async (
   signer: ethers.providers.JsonRpcSigner
 ) => {
   // check if we need to update permissions
-  const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController, account);
+  const missingPermissions = await doesControllerHaveMissingPermissions(
+    mainUPController,
+    account
+  );
   if (!missingPermissions.length) {
     return;
   }
@@ -296,7 +299,10 @@ export const doesControllerHaveMissingPermissions = async (
   targetEntity: string
 ) => {
   // check if we need to update permissions
-  const currentPermissions = await getAddressPermissionsOnTarget(address, targetEntity);
+  const currentPermissions = await getAddressPermissionsOnTarget(
+    address,
+    targetEntity
+  );
   const missingPermissions = getMissingPermissions(currentPermissions, {
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
     ...GRAVE_CONTROLLER_PERMISSIONS,

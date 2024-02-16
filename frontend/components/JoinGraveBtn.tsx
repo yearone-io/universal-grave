@@ -17,9 +17,7 @@ import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { 
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
-import {
-  hasJoinedTheGrave,
-} from '@/utils/universalProfile';
+import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import { doesControllerHaveMissingPermissions } from '@/utils/urdUtils';
 import { getChecksumAddress } from '@/utils/tokenUtils';
 
@@ -113,8 +111,6 @@ export default function JoinGraveBtn({
   // 1 - Verifying owners of vaults
 
   // ========================= FETCHING DATA =========================
-
-  
 
   /**
    * Function to fetch the profile data.
@@ -419,7 +415,10 @@ export default function JoinGraveBtn({
     signer: ethers.providers.JsonRpcSigner
   ) => {
     // check if we need to update permissions
-    const missingPermissions = await doesControllerHaveMissingPermissions(mainUPController as string, account as string);
+    const missingPermissions = await doesControllerHaveMissingPermissions(
+      mainUPController as string,
+      account as string
+    );
     if (!missingPermissions.length) {
       return;
     }
