@@ -20,6 +20,7 @@ import JoinGravePanel from '@/components/JoinGravePanel';
 import GraveContents from '@/components/GraveContents';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
+import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import { hasOlderGraveDelegate } from '@/utils/urdUtils';
 import { UpgradeURD } from '@/components/UpgradeURD';
 
@@ -113,7 +114,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8 } = walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
   const [oldForwarderAddress, setOldForwarderAddress] = useState<
     string | null
   >();
@@ -155,12 +156,21 @@ export default function MyGrave() {
                       border={'none'}
                     >
                       {getTabOption('Subscription')}
-                      {getTabOption('Manage Allowlist')}
+                      {hasJoinedTheGrave(
+                        URDLsp7,
+                        URDLsp8,
+                        networkConfig.universalGraveForwarder
+                      ) && getTabOption('Manage Allowlist')}
+
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
                       {getTabPanel('Subscription', oldForwarderAddress)}
-                      {getTabPanel('Manage Allowlist')}
+                      {hasJoinedTheGrave(
+                        URDLsp7,
+                        URDLsp8,
+                        networkConfig.universalGraveForwarder
+                      ) && getTabPanel('Manage Allowlist')}
                       {getTabPanel('Advanced Info')}
                     </TabPanels>
                   </Tabs>

@@ -3,6 +3,7 @@ import { SiweMessage } from 'siwe';
 import { getNetworkConfig } from '@/constants/networks';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { getProvider } from '@/utils/provider';
+import { getChecksumAddress } from './tokenUtils';
 
 export const getGraveVaultFor = async (
   account: string,
@@ -37,4 +38,20 @@ export const buildSIWEMessage = (upAddress: string): string => {
     ], // Information the user wishes to have resolved as part of authentication by the relying party
   };
   return new SiweMessage(siweParams).prepareMessage();
+};
+
+export const hasJoinedTheGrave = (
+  URDLsp7: string | null,
+  URDLsp8: string | null,
+  universalGraveForwarder: string
+) => {
+  // Note: check sum case address to avoid issues with case sensitivity
+  if (!URDLsp7 || !URDLsp8 || !universalGraveForwarder) {
+    return false;
+  }
+  return (
+    getChecksumAddress(URDLsp7) ===
+      getChecksumAddress(universalGraveForwarder) &&
+    getChecksumAddress(URDLsp8) === getChecksumAddress(universalGraveForwarder)
+  );
 };
