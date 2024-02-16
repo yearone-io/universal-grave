@@ -51,7 +51,7 @@ export interface IUPForwarderData {
 
 export const getUPForwardersData = async (
   account: string | null,
-  provider: ethers.providers.JsonRpcProvider,
+  provider: ethers.providers.JsonRpcProvider
 ): Promise<IUPForwarderData> => {
   try {
     const UP = new ethers.Contract(
@@ -59,9 +59,7 @@ export const getUPForwardersData = async (
       UniversalProfile.abi,
       provider
     );
-    const UPData = await UP.connect(
-      provider.getSigner()
-    ).getDataBatch([
+    const UPData = await UP.connect(provider.getSigner()).getDataBatch([
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +

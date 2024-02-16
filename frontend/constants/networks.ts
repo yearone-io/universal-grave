@@ -7,6 +7,7 @@ export interface Network {
   universalGraveForwarder: string;
   previousGraveForwarders: string[];
   lsp1UrdVault: string;
+  baseUrl: string;
 }
 
 const NETWORKS = {
@@ -19,6 +20,7 @@ const NETWORKS = {
     universalGraveForwarder: '0x433908ce6457b302a6452257Bc40e466d95c78E9',
     previousGraveForwarders: [],
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
+    baseUrl: 'https://universalgrave.com',
   },
   testnet: {
     chainId: 4201,
@@ -32,6 +34,7 @@ const NETWORKS = {
       '0x9c27a05310dC8aF53B60124B244cc9d12f202cdF',
     ],
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
+    baseUrl: 'https://testnet--universal-grave.netlify.app',
   },
 } as {
   [key: string]: Network;
