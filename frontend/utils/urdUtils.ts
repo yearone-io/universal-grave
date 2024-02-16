@@ -41,6 +41,56 @@ export const hasOlderGraveDelegate = (
 };
 
 /**
+ * Function to get the UP data and set the URD for LSP7 and LSP8.
+ */
+export interface IUPForwarderData {
+  readonly URDLsp7: string | null;
+  readonly URDLsp8: string | null;
+  readonly oldForwarderAddress: string | null;
+}
+
+export const getUPForwardersData = async (
+  account: string | null,
+  provider: ethers.providers.JsonRpcProvider,
+): Promise<IUPForwarderData> => {
+  try {
+    const UP = new ethers.Contract(
+      account as string,
+      UniversalProfile.abi,
+      provider
+    );
+    const UPData = await UP.connect(
+      provider.getSigner()
+    ).getDataBatch([
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
+    ]);
+    if (UPData) {
+      // Set the URD for LSP7 and LSP8 to what is returned from the UP.
+      // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
+      console.log('UPData: ', UPData);
+      return {
+        URDLsp7: getChecksumAddress(UPData[0]),
+        URDLsp8: getChecksumAddress(UPData[1]),
+        oldForwarderAddress: hasOlderGraveDelegate(
+          getChecksumAddress(UPData[0]),
+          getChecksumAddress(UPData[1])
+        ),
+      };
+    }
+  } catch (err) {
+    throw err;
+  }
+  return {
+    URDLsp7: null,
+    URDLsp8: null,
+    oldForwarderAddress: null,
+  };
+};
+
+/**
  * Function to update the permissions of the Browser Extension controller.
  */
 export const updateBECPermissions = async (
