@@ -47,7 +47,6 @@ export default function LSPAssets({
       const receivedAssetsResults = await erc725js.fetchData(
         'LSP5ReceivedAssets[]'
       );
-      console.log("receivedAssetsResults", receivedAssetsResults.value);
       const lsp7Results: TokenInfo[] = [];
       const lsp8Results: TokenInfo[] = [];
       const unrecognisedAssetResults: TokenInfo[] = [];
