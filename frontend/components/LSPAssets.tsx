@@ -5,7 +5,7 @@ import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import { detectLSP, LSPType, TokenInfo } from '@/utils/tokenUtils';
+import { getLSPAssetBasicInfo, LSPType, TokenInfo } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
@@ -52,36 +52,12 @@ export default function LSPAssets({
       const unrecognisedAssetResults: TokenInfo[] = [];
       const detectAssetCalls: TokenInfo[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
-        const possibleLsp7Item = await detectLSP(
-          assetAddress,
-          graveVault,
-          LSPType.LSP7DigitalAsset
-        );
-        if (possibleLsp7Item.type === LSPType.LSP7DigitalAsset) {
-          detectAssetCalls.push(possibleLsp7Item);
-          continue;
-        }
-        const possibleLsp8Item = await detectLSP(
-          assetAddress,
-          graveVault,
-          LSPType.LSP8IdentifiableDigitalAsset
-        );
-        if (possibleLsp8Item.type === LSPType.LSP7DigitalAsset) {
-          detectAssetCalls.push(possibleLsp8Item);
-          continue;
-        }
-        //must be unknown so push either of them
-        detectAssetCalls.push(possibleLsp8Item);
-      }
-
-      for (const asset of detectAssetCalls) {
+        const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
+        console.log('asset', asset);
         if (!asset) continue;
-
-        if (asset.type === LSPType.LSP7DigitalAsset) {
-          console.log('lsp7', asset);
+        if (asset.interface === LSPType.LSP7DigitalAsset) {
           lsp7Results.push(asset);
-        } else if (asset.type === LSPType.LSP8IdentifiableDigitalAsset) {
-          console.log('lsp8', asset);
+        } else if (asset.interface === LSPType.LSP8IdentifiableDigitalAsset) {
           const contract = new ethers.Contract(
             asset.address as string,
             LSP8IdentifiableDigitalAsset.abi,
@@ -89,6 +65,7 @@ export default function LSPAssets({
           );
           const tokenIds = await contract.tokenIdsOf(graveVault);
           tokenIds.forEach((tokenId: string) => {
+            // need to fetch token specific data here
             lsp8Results.push({
               ...asset,
               tokenId: tokenId.toString(),
