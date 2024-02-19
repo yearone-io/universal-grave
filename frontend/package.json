@@ -17,7 +17,7 @@
     "@emotion/styled": "^11.11.0",
     "@fontsource/bungee": "^5.0.1",
     "@fontsource/montserrat": "^5.0.13",
-    "@lukso/lsp-factory.js": "^3.2.1",
+    "@lukso/lsp-factory.js": "^3.3.1",
     "@lukso/lsp-smart-contracts": "^0.14.0",
     "@types/node": "20.2.5",
     "@types/react": "18.2.9",
