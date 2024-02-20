@@ -30,18 +30,18 @@ export const detectLSP = async (
 ): Promise<string | null> => {
   // fetch digital asset interface details
   try {
-    const contract = new ethers.Contract(
+    const lspAsset = new ERC725(
+      lsp4Schema as ERC725JSONSchema[],
       assetAddress,
-      eip165ABI.concat(erc20ABI) as any,
-      getProvider()
+      getLuksoProvider()
     );
-    const isLSP7 = await contract.supportsInterface(
+    const isLSP7 = await lspAsset.supportsInterface(
       INTERFACE_IDS.LSP7DigitalAsset
     );
     if (isLSP7) {
       return INTERFACE_IDS.LSP7DigitalAsset;
     }
-    const isLSP8 = await contract.supportsInterface(
+    const isLSP8 = await lspAsset.supportsInterface(
       INTERFACE_IDS.LSP8IdentifiableDigitalAsset
     );
     if (isLSP8) {
@@ -74,20 +74,19 @@ export const getLSPAssetBasicInfo = async (
 
   // fetch metadata details
   try {
-    const erc725js = new ERC725(
+    const lspAsset = new ERC725(
       lsp4Schema as ERC725JSONSchema[],
       assetAddress,
-      getLuksoProvider(),
+      'https://lukso-testnet.rpc.thirdweb.com',
       {
         ipfsGateway: constants.IPFS,
+        gas: 40_000_000
       }
     );
-    //[{ value: LSP4TokenType }, { value: name }, { value: symbol }] =
-    const assetFetchedData = await erc725js.fetchData([
-      'LSP4TokenType',
-      'LSP4TokenName',
-      'LSP4TokenSymbol',
-    ]);
+    const assetFetchedData = await lspAsset.fetchData();
+    if (assetFetchedData.length) {
+      console.log('assetFetchedData', lspInterfaceShortNames[lspInterface], assetAddress, assetFetchedData);
+    }
     LSP4TokenType = Number(assetFetchedData[0].value);
     name = String(assetFetchedData[1].value);
     symbol = String(assetFetchedData[2].value);
