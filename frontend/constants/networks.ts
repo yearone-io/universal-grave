@@ -15,7 +15,7 @@ const NETWORKS = {
     chainId: 42,
     name: 'LUKSO',
     symbol: 'LYX',
-    rpcUrl: 'https://rpc.lukso.gateway.fm',
+    rpcUrl: 'https://lukso.rpc.thirdweb.com',
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
     universalGraveForwarder: '0x433908ce6457b302a6452257Bc40e466d95c78E9',
     previousGraveForwarders: [],
@@ -26,7 +26,7 @@ const NETWORKS = {
     chainId: 4201,
     name: 'LUKSO Testnet',
     symbol: 'LYXt',
-    rpcUrl: 'https://rpc.testnet.lukso.network',
+    rpcUrl: 'https://lukso-testnet.rpc.thirdweb.com',
     explorerURL: 'https://explorer.execution.testnet.lukso.network',
     universalGraveForwarder: '0x7e77c704be7a6bba042f66eaba0b9557a872902d',
     previousGraveForwarders: [
