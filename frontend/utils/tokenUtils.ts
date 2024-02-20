@@ -68,7 +68,7 @@ export const getLSPAssetBasicInfo = async (
   if (!lspInterface) {
     return unrecognizedLsp;
   }
-  let LSP4TokenType: number, name: string, symbol: string;
+  let LSP4TokenType: number, name: string, symbol: string, metadata: any;
   let balance: string = '0',
     decimals;
 
@@ -77,19 +77,22 @@ export const getLSPAssetBasicInfo = async (
     const lspAsset = new ERC725(
       lsp4Schema as ERC725JSONSchema[],
       assetAddress,
-      'https://lukso-testnet.rpc.thirdweb.com',
+      getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
         gas: 40_000_000
       }
     );
-    const assetFetchedData = await lspAsset.fetchData();
-    if (assetFetchedData.length) {
-      console.log('assetFetchedData', lspInterfaceShortNames[lspInterface], assetAddress, assetFetchedData);
-    }
+    const assetFetchedData = await lspAsset.fetchData([
+      'LSP4TokenType',
+      'LSP4TokenName',
+      'LSP4TokenSymbol',
+      'LSP4Metadata',
+    ]);
     LSP4TokenType = Number(assetFetchedData[0].value);
     name = String(assetFetchedData[1].value);
     symbol = String(assetFetchedData[2].value);
+    metadata = assetFetchedData[3].value;
   } catch (error) {
     console.error('error getting metadata', error);
     return unrecognizedLsp;
@@ -128,7 +131,7 @@ export const getLSPAssetBasicInfo = async (
     name: name,
     symbol: symbol,
     address: assetAddress,
-    metadata: {},
+    metadata,
     balance,
     decimals,
     label: `${
@@ -152,4 +155,27 @@ export const formatAddress = (address: string | null) => {
   if (!address) return '0x';
   if (address.length < 10) return address; // '0x' is an address
   return `${address.slice(0, 5)}...${address.slice(-4)}`;
+};
+
+export const getTokenIconURL = (LSP4Metadata: any) => {
+  if (LSP4Metadata.icon?.[0]?.url) {
+    const url = LSP4Metadata.icon?.[0]?.url;
+    if (url.startsWith('ipfs://')) {
+      return `${
+        constants.IPFS_GATEWAY
+      }${url.slice(7)}`;
+    } else if (url.startsWith('data:image/')) {
+      return url;
+    }
+  } else if (LSP4Metadata.images?.[0]?.[0]?.url) {
+    const url = LSP4Metadata.images?.[0]?.[0]?.url;
+    if (url.startsWith('ipfs://')) {
+      return `${
+        constants.IPFS_GATEWAY
+      }${url.slice(7)}`;
+    } else if (url.startsWith('data:image/')) {
+      return url;
+    }
+  }
+  return null;
 };

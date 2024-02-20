@@ -1,6 +1,6 @@
 export const constants = {
   IPFS: 'https://api.universalprofile.cloud/ipfs',
-  IPFS_GATEWAY: 'https://gateway.pinata.cloud/ipfs/',
+  IPFS_GATEWAY: 'https://api.universalprofile.cloud/ipfs/',
   METADATA: {
     TITLE: 'GRAVE | Digital Spambox',
     IMAGE: '/images/ghoulie.jpg',
