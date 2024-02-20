@@ -94,7 +94,10 @@ export default function SmallWithLogoLeft() {
           <Link href={'/feedback'}>Feedback</Link>
           <Box minWidth={'170'}>
             <Select
-              defaultValue={getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!).chainId}
+              defaultValue={
+                getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
+                  .chainId
+              }
               onChange={event =>
                 (window.location.href = getNetworkConfig(
                   event.target.value

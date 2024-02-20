@@ -12,17 +12,18 @@ import {
   Text,
   useColorModeValue,
   Flex,
+  Button,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
 import React, { useContext, useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
-import GraveContents from '@/components/GraveContents';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
 import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import { hasOlderGraveDelegate } from '@/utils/urdUtils';
 import { UpgradeURD } from '@/components/UpgradeURD';
+import Link from 'next/link';
 
 const getTabOption = (tabName: string) => {
   return (
@@ -114,7 +115,8 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
 
 export default function MyGrave() {
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig, graveVault } =
+    walletContext;
   const [oldForwarderAddress, setOldForwarderAddress] = useState<
     string | null
   >();
@@ -137,6 +139,31 @@ export default function MyGrave() {
           {account ? (
             <Box width={'100%'}>
               <Box width={'100%'}>
+                {graveVault && (
+                  <Flex
+                    textAlign="center"
+                    flexDirection={'column'}
+                    gap={3}
+                    alignItems={'center'}
+                    width={'100%'}
+                    padding={'0 20px'}
+                  >
+                    <Link href={`/grave/${account}`}>
+                      <Button
+                        color={'dark.purple.500'}
+                        border={
+                          '1px solid var(--chakra-colors-dark-purple-500)'
+                        }
+                        mb="10px"
+                        fontFamily="Bungee"
+                        fontSize="16px"
+                        fontWeight="400"
+                      >
+                        View my Grave yard
+                      </Button>
+                    </Link>
+                  </Flex>
+                )}
                 <Box display="flex" flexDir="column">
                   <Text
                     fontSize="20px"
@@ -182,7 +209,6 @@ export default function MyGrave() {
           )}
         </Box>
       </Stack>
-      {account && <GraveContents account={account} />}
     </Container>
   );
 }
