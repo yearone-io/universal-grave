@@ -80,7 +80,7 @@ export const getLSPAssetBasicInfo = async (
       getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
-        gas: 40_000_000,
+        gas: 20_000_000,
       }
     );
     const assetFetchedData = await lspAsset.fetchData([
