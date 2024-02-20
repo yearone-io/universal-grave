@@ -80,7 +80,7 @@ export const getLSPAssetBasicInfo = async (
       getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
-        gas: 40_000_000
+        gas: 40_000_000,
       }
     );
     const assetFetchedData = await lspAsset.fetchData([
@@ -161,18 +161,14 @@ export const getTokenIconURL = (LSP4Metadata: any) => {
   if (LSP4Metadata.icon?.[0]?.url) {
     const url = LSP4Metadata.icon?.[0]?.url;
     if (url.startsWith('ipfs://')) {
-      return `${
-        constants.IPFS_GATEWAY
-      }${url.slice(7)}`;
+      return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
     } else if (url.startsWith('data:image/')) {
       return url;
     }
   } else if (LSP4Metadata.images?.[0]?.[0]?.url) {
     const url = LSP4Metadata.images?.[0]?.[0]?.url;
     if (url.startsWith('ipfs://')) {
-      return `${
-        constants.IPFS_GATEWAY
-      }${url.slice(7)}`;
+      return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
     } else if (url.startsWith('data:image/')) {
       return url;
     }

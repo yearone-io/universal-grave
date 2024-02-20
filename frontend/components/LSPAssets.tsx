@@ -53,7 +53,6 @@ export default function LSPAssets({
       const unrecognisedAssetResults: TokenInfo[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
         const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
-        console.log('asset', asset);
         if (!asset) continue;
         if (asset.interface === INTERFACE_IDS.LSP7DigitalAsset) {
           lsp7Results.push(asset);
