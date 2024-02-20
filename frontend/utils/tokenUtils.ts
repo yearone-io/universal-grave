@@ -79,6 +79,7 @@ export type TokenInfo = {
   balance?: number;
   label?: string;
   tokenId?: string;
+  metadata?: any;
 };
 
 export const detectLSP = async (
@@ -181,6 +182,7 @@ export const getLSPAssetBasicInfo = async (
     name: name as string,
     symbol: symbol as string,
     address: assetAddress,
+    metadata: {},
     balance,
     decimals,
     label: `${
