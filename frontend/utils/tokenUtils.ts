@@ -82,7 +82,6 @@ export const getLSPAssetBasicInfo = async (
         ipfsGateway: constants.IPFS,
       }
     );
-    //[{ value: LSP4TokenType }, { value: name }, { value: symbol }] =
     const assetFetchedData = await erc725js.fetchData([
       'LSP4TokenType',
       'LSP4TokenName',
