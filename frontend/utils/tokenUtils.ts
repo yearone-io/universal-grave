@@ -7,79 +7,22 @@ import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 
-export const getChecksumAddress = (address: string | null) => {
-  // Check if the address is valid
-  if (!address || !ethers.utils.isAddress(address)) {
-    // Handle invalid address
-    return address;
-  }
-
-  // Convert to checksum address
-  return ethers.utils.getAddress(address);
-};
-
-export const formatAddress = (address: string | null) => {
-  if (!address) return '0x';
-  if (address.length < 10) return address; // '0x' is an address
-  return `${address.slice(0, 5)}...${address.slice(-4)}`;
-};
-
-//most functions below are copied from https://github.com/lukso-network/universalprofile-test-dapp/blob/main/src/helpers/tokenUtils.ts
-export enum LSPType {
-  LSP7DigitalAsset = 'LSP7DigitalAsset',
-  LSP8IdentifiableDigitalAsset = 'LSP8IdentifiableDigitalAsset',
-  Unknown = 'Unknown',
-}
-
-export interface LspTypeOption {
-  interfaceId: string; // EIP-165
-  shortName: string;
-  lsp2Schema: ERC725JSONSchema | null;
-  decimals?: string;
-}
-
-const getSupportedStandardObject = (schemas: ERC725JSONSchema[]) => {
-  try {
-    const results = schemas.filter(schema => {
-      return schema.name.startsWith('SupportedStandards:');
-    });
-
-    if (results.length === 0) {
-      return null;
-    }
-
-    return results[0];
-  } catch (error) {
-    return null;
-  }
-};
-
-const lspTypeOptions: Record<
-  Exclude<LSPType, LSPType.Unknown>,
-  LspTypeOption
-> = {
-  [LSPType.LSP7DigitalAsset]: {
-    interfaceId: INTERFACE_IDS.LSP7DigitalAsset,
-    lsp2Schema: getSupportedStandardObject(lsp4Schema as ERC725JSONSchema[]),
-    shortName: 'LSP7',
-  },
-  [LSPType.LSP8IdentifiableDigitalAsset]: {
-    interfaceId: INTERFACE_IDS.LSP8IdentifiableDigitalAsset,
-    lsp2Schema: getSupportedStandardObject(lsp4Schema as ERC725JSONSchema[]),
-    shortName: 'LSP8',
-  },
-};
-
 export type TokenInfo = {
-  interface: string;
-  address?: string;
-  name?: string;
-  symbol?: string;
-  decimals?: string;
-  balance?: number;
-  label?: string;
-  tokenId?: string;
-  metadata?: any;
+  readonly interface: string;
+  readonly address: string;
+  readonly tokenType?: number;
+  readonly name?: string;
+  readonly symbol?: string;
+  readonly decimals?: string;
+  readonly balance?: string;
+  readonly label?: string;
+  readonly tokenId?: string;
+  readonly metadata?: Record<string, any>;
+};
+
+export const lspInterfaceShortNames = {
+  [INTERFACE_IDS.LSP7DigitalAsset]: 'LSP7',
+  [INTERFACE_IDS.LSP8IdentifiableDigitalAsset]: 'LSP8',
 };
 
 export const detectLSP = async (
@@ -96,13 +39,13 @@ export const detectLSP = async (
       INTERFACE_IDS.LSP7DigitalAsset
     );
     if (isLSP7) {
-      return LSPType.LSP7DigitalAsset;
+      return INTERFACE_IDS.LSP7DigitalAsset;
     }
     const isLSP8 = await contract.supportsInterface(
       INTERFACE_IDS.LSP8IdentifiableDigitalAsset
     );
     if (isLSP8) {
-      return LSPType.LSP8IdentifiableDigitalAsset;
+      return INTERFACE_IDS.LSP8IdentifiableDigitalAsset;
     }
     return null;
   } catch (error) {
@@ -116,18 +59,18 @@ export const getLSPAssetBasicInfo = async (
   ownerAddress: string
 ): Promise<TokenInfo> => {
   const unrecognizedLsp = {
-    type: LSPType.Unknown,
     address: assetAddress,
     name: 'unrecognised',
     metadata: {},
     interface: '',
   };
-  const lspType = await detectLSP(assetAddress);
-  if (!lspType) {
+  const lspInterface = await detectLSP(assetAddress);
+  if (!lspInterface) {
     return unrecognizedLsp;
   }
-  let LSP4TokenType, LSP4Metadata, name, symbol;
-  let balance, decimals;
+  let LSP4TokenType: number, name: string, symbol: string;
+  let balance: string = '0',
+    decimals;
 
   // fetch metadata details
   try {
@@ -139,13 +82,15 @@ export const getLSPAssetBasicInfo = async (
         ipfsGateway: constants.IPFS,
       }
     );
-    [{ value: LSP4TokenType }, { value: name }, { value: symbol }] =
-      await erc725js.fetchData([
-        'LSP4TokenType',
-        'LSP4TokenName',
-        'LSP4TokenSymbol',
-      ]);
-    console.log('LSP4TokenType', LSP4TokenType);
+    //[{ value: LSP4TokenType }, { value: name }, { value: symbol }] =
+    const assetFetchedData = await erc725js.fetchData([
+      'LSP4TokenType',
+      'LSP4TokenName',
+      'LSP4TokenSymbol',
+    ]);
+    LSP4TokenType = Number(assetFetchedData[0].value);
+    name = String(assetFetchedData[1].value);
+    symbol = String(assetFetchedData[2].value);
   } catch (error) {
     console.error('error getting metadata', error);
     return unrecognizedLsp;
@@ -158,7 +103,9 @@ export const getLSPAssetBasicInfo = async (
       getProvider()
     );
     decimals =
-      lspType === LSPType.LSP7DigitalAsset ? await contract.decimals() : 0;
+      lspInterface === INTERFACE_IDS.LSP7DigitalAsset
+        ? await contract.decimals()
+        : 0;
     if (decimals !== '0') {
       const _balance = await contract
         .balanceOf(ownerAddress)
@@ -166,27 +113,44 @@ export const getLSPAssetBasicInfo = async (
           console.error('error getting balance', e);
           return undefined;
         });
-      console.log('balance', _balance);
       balance = _balance
         ? parseFloat(ethers.utils.formatUnits(_balance, decimals)).toFixed(
             LSP4TokenType === LSP4_TOKEN_TYPES.TOKEN ? 4 : 0
           )
-        : 0;
+        : '0';
     }
   } catch (err) {
-    console.error(assetAddress, lspType, err);
+    console.error(assetAddress, lspInterface, err);
     return unrecognizedLsp;
   }
   return {
-    interface: lspType,
-    name: name as string,
-    symbol: symbol as string,
+    interface: lspInterface,
+    tokenType: LSP4TokenType,
+    name: name,
+    symbol: symbol,
     address: assetAddress,
     metadata: {},
     balance,
     decimals,
     label: `${
-      lspType ? lspTypeOptions[lspType].shortName : ''
+      lspInterface ? lspInterfaceShortNames[lspInterface] : ''
     } ${name} (sym) ${formatAddress(assetAddress)}`,
   };
+};
+
+export const getChecksumAddress = (address: string | null) => {
+  // Check if the address is valid
+  if (!address || !ethers.utils.isAddress(address)) {
+    // Handle invalid address
+    return address;
+  }
+
+  // Convert to checksum address
+  return ethers.utils.getAddress(address);
+};
+
+export const formatAddress = (address: string | null) => {
+  if (!address) return '0x';
+  if (address.length < 10) return address; // '0x' is an address
+  return `${address.slice(0, 5)}...${address.slice(-4)}`;
 };

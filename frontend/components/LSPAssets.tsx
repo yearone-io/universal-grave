@@ -5,12 +5,13 @@ import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import { getLSPAssetBasicInfo, LSPType, TokenInfo } from '@/utils/tokenUtils';
+import { getLSPAssetBasicInfo, TokenInfo } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { INTERFACE_IDS } from '@lukso/lsp-smart-contracts';
 
 export default function LSPAssets({
   graveVault,
@@ -55,9 +56,11 @@ export default function LSPAssets({
         const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
         console.log('asset', asset);
         if (!asset) continue;
-        if (asset.interface === LSPType.LSP7DigitalAsset) {
+        if (asset.interface === INTERFACE_IDS.LSP7DigitalAsset) {
           lsp7Results.push(asset);
-        } else if (asset.interface === LSPType.LSP8IdentifiableDigitalAsset) {
+        } else if (
+          asset.interface === INTERFACE_IDS.LSP8IdentifiableDigitalAsset
+        ) {
           const contract = new ethers.Contract(
             asset.address as string,
             LSP8IdentifiableDigitalAsset.abi,
