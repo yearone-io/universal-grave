@@ -8,31 +8,25 @@ import {
   useColorModeValue,
   useToast,
   Avatar,
+  Image,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
-import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
+import { TokenData, formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { getProvider } from '@/utils/provider';
 
 interface LSP8PanelProps {
-  tokenName: string;
-  tokenId: string;
-  tokenAddress: string;
-  vaultAddress: string;
-  tokenMetadata: Record<string, any>; //LSP4Metadata
+  readonly tokenData: TokenData;
+  readonly vaultAddress: string;
   onReviveSuccess: () => void;
 }
 
 const LSP8Panel: React.FC<LSP8PanelProps> = ({
-  tokenName,
-  tokenId,
-  tokenAddress,
-  tokenMetadata,
+  tokenData,
   vaultAddress,
   onReviveSuccess,
 }) => {
@@ -58,7 +52,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
-  const tokenAddressDisplay = formatAddress(tokenAddress);
+  const tokenAddressDisplay = formatAddress(tokenData.address);
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
@@ -97,7 +91,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
       const lsp8Tx = lsp8.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        tokenId,
+        tokenData.tokenId,
         false,
         '0x',
       ]);
@@ -134,14 +128,14 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     }
   };
 
-  const getTokenIconUrl = () => {
-    const iconURL = getTokenIconURL(tokenMetadata.LSP4Metadata);
+  const getTokenIcon = () => {
+    const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
     let tokenIcon = !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
         LSP8
       </Box>
     ) : (
-      <Avatar height={16} minW={16} name={tokenName} src={iconURL} />
+      <Avatar height={16} minW={16} name={tokenData?.name} src={iconURL} />
     );
     return tokenIcon;
   };
@@ -152,7 +146,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
       borderRadius="lg"
       px={4}
       py={4}
-      align="center"
+      align="flex-start"
       justify="space-between"
       boxShadow="md"
       minWidth={'lg'}
@@ -170,18 +164,28 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         alignItems={'center'}
         boxSizing={'content-box'}
       >
-        {getTokenIconUrl()}
+        {getTokenIcon()}
       </Flex>
 
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
         <Flex flexDirection={'row'} justifyContent={'space-between'}>
           <Text color={fontColor} fontFamily={'Bungee'}>
-            {tokenName}
+            {tokenData?.name}
           </Text>
           <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {formatAddress(tokenId)}
+            {formatAddress(tokenData?.tokenId as string)}
           </Text>
         </Flex>
+        {tokenData?.image && (
+          <Flex justifyContent={'center'}>
+            <Image
+              src={tokenData?.image}
+              alt={tokenData?.name}
+              width="400px"
+              border={'1px solid ' + containerBorderColor}
+            />
+          </Flex>
+        )}
         <Flex
           flexDirection={'row'}
           justifyContent={'space-between'}
@@ -202,7 +206,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.explorerURL}/address/${tokenAddress}`,
+                  `${networkConfig.explorerURL}/address/${tokenData?.address}`,
                   '_blank'
                 )
               }
@@ -216,9 +220,9 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               _hover={{ bg: createButtonBg }}
               border={createButtonBorder}
               size={'xs'}
-              onClick={() => transferTokenToUP(tokenAddress)}
+              onClick={() => transferTokenToUP(tokenData?.address)}
             >
-              {isProcessing ? 'Reviving...' : `Revive Tokens`}
+              {isProcessing ? 'Reviving...' : `Revive NFT`}
             </Button>
           )}
         </Flex>

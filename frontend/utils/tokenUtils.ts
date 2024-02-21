@@ -7,7 +7,7 @@ import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 
-export type TokenInfo = {
+export type TokenData = {
   readonly interface: string;
   readonly address: string;
   readonly tokenType?: number;
@@ -15,9 +15,9 @@ export type TokenInfo = {
   readonly symbol?: string;
   readonly decimals?: string;
   readonly balance?: string;
-  readonly label?: string;
   readonly tokenId?: string;
-  readonly metadata?: Record<string, any>;
+  metadata?: Record<string, any>;
+  image?: string;
 };
 
 export const lspInterfaceShortNames = {
@@ -57,7 +57,7 @@ export const detectLSP = async (
 export const getLSPAssetBasicInfo = async (
   assetAddress: string,
   ownerAddress: string
-): Promise<TokenInfo> => {
+): Promise<TokenData> => {
   const unrecognizedLsp = {
     address: assetAddress,
     name: 'unrecognised',
@@ -134,9 +134,6 @@ export const getLSPAssetBasicInfo = async (
     metadata,
     balance,
     decimals,
-    label: `${
-      lspInterface ? lspInterfaceShortNames[lspInterface] : ''
-    } ${name} (sym) ${formatAddress(assetAddress)}`,
   };
 };
 
@@ -174,4 +171,34 @@ export const getTokenIconURL = (LSP4Metadata: any) => {
     }
   }
   return null;
+};
+
+export const getTokenImageURL = (LSP4Metadata: any) => {
+  if (LSP4Metadata.images?.[0]?.[0]?.url) {
+    const url = LSP4Metadata.images?.[0]?.[0]?.url;
+    if (url.startsWith('ipfs://')) {
+      return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
+    } else if (url.startsWith('data:image/')) {
+      return url;
+    }
+  }
+  return null;
+};
+
+export const parseDataURI = (dataUri: string) => {
+  // Step 1: Remove the prefix to get the JSON string
+  // We split the string by the first comma and take the second part, which is the actual JSON
+  const jsonString = dataUri.replace(
+    'data:application/json;charset=UTF-8,',
+    ''
+  );
+  // Step 2: Parse the JSON string into an object
+  try {
+    const jsonObj = JSON.parse(jsonString);
+    console.log(jsonObj); // This will log the object to the console
+    return jsonObj;
+  } catch (e) {
+    console.error('Error parsing JSON', e);
+    return {};
+  }
 };
