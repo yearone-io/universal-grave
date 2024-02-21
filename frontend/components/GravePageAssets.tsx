@@ -9,7 +9,7 @@ export default function GravePageAssets({
   pageAccount,
   pageGraveVault = null,
 }: {
-  pageAccount: string | null;
+  pageAccount: string;
   pageGraveVault?: string | null;
 }) {
   const walletContext = useContext(WalletContext);
@@ -18,7 +18,7 @@ export default function GravePageAssets({
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!graveVault && pageAccount) {
+    if (!graveVault) {
       getGraveVaultFor(pageAccount, networkConfig.universalGraveForwarder)
         .then(graveVault => {
           if (!graveVault) {
