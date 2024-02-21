@@ -4,6 +4,7 @@ import {
   Container,
   Image,
   Icon,
+  MenuButton,
 } from '@chakra-ui/react';
 import React, { useContext } from 'react';
 import { FaCog } from 'react-icons/fa';
@@ -51,11 +52,6 @@ export default function Header() {
           </Flex>
         </Link>
         <Flex justifyContent={'flex-end'} alignItems={'center'} gap={2}>
-          {account && (
-            <Link href="/grave" passHref>
-              <Icon as={FaCog} color={'light.white'} h={5} w={6} />
-            </Link>
-          )}
           <WalletConnector />
         </Flex>
       </Container>
