@@ -30,18 +30,18 @@ export const detectLSP = async (
 ): Promise<string | null> => {
   // fetch digital asset interface details
   try {
-    const contract = new ethers.Contract(
+    const lspAsset = new ERC725(
+      lsp4Schema as ERC725JSONSchema[],
       assetAddress,
-      eip165ABI.concat(erc20ABI) as any,
-      getProvider()
+      getLuksoProvider()
     );
-    const isLSP7 = await contract.supportsInterface(
+    const isLSP7 = await lspAsset.supportsInterface(
       INTERFACE_IDS.LSP7DigitalAsset
     );
     if (isLSP7) {
       return INTERFACE_IDS.LSP7DigitalAsset;
     }
-    const isLSP8 = await contract.supportsInterface(
+    const isLSP8 = await lspAsset.supportsInterface(
       INTERFACE_IDS.LSP8IdentifiableDigitalAsset
     );
     if (isLSP8) {
@@ -68,28 +68,31 @@ export const getLSPAssetBasicInfo = async (
   if (!lspInterface) {
     return unrecognizedLsp;
   }
-  let LSP4TokenType: number, name: string, symbol: string;
+  let LSP4TokenType: number, name: string, symbol: string, metadata: any;
   let balance: string = '0',
     decimals;
 
   // fetch metadata details
   try {
-    const erc725js = new ERC725(
+    const lspAsset = new ERC725(
       lsp4Schema as ERC725JSONSchema[],
       assetAddress,
       getLuksoProvider(),
       {
         ipfsGateway: constants.IPFS,
+        gas: 20_000_000,
       }
     );
-    const assetFetchedData = await erc725js.fetchData([
+    const assetFetchedData = await lspAsset.fetchData([
       'LSP4TokenType',
       'LSP4TokenName',
       'LSP4TokenSymbol',
+      'LSP4Metadata',
     ]);
     LSP4TokenType = Number(assetFetchedData[0].value);
     name = String(assetFetchedData[1].value);
     symbol = String(assetFetchedData[2].value);
+    metadata = assetFetchedData[3].value;
   } catch (error) {
     console.error('error getting metadata', error);
     return unrecognizedLsp;
@@ -128,7 +131,7 @@ export const getLSPAssetBasicInfo = async (
     name: name,
     symbol: symbol,
     address: assetAddress,
-    metadata: {},
+    metadata,
     balance,
     decimals,
     label: `${
@@ -152,4 +155,23 @@ export const formatAddress = (address: string | null) => {
   if (!address) return '0x';
   if (address.length < 10) return address; // '0x' is an address
   return `${address.slice(0, 5)}...${address.slice(-4)}`;
+};
+
+export const getTokenIconURL = (LSP4Metadata: any) => {
+  if (LSP4Metadata.icon?.[0]?.url) {
+    const url = LSP4Metadata.icon?.[0]?.url;
+    if (url.startsWith('ipfs://')) {
+      return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
+    } else if (url.startsWith('data:image/')) {
+      return url;
+    }
+  } else if (LSP4Metadata.images?.[0]?.[0]?.url) {
+    const url = LSP4Metadata.images?.[0]?.[0]?.url;
+    if (url.startsWith('ipfs://')) {
+      return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
+    } else if (url.startsWith('data:image/')) {
+      return url;
+    }
+  }
+  return null;
 };

@@ -15,7 +15,7 @@ import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { formatAddress } from '@/utils/tokenUtils';
+import { formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { getProvider } from '@/utils/provider';
 
@@ -135,19 +135,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   };
 
   const getTokenIconUrl = () => {
-    let tokenIcon = (
+    const iconURL = getTokenIconURL(tokenMetadata.LSP4Metadata);
+    let tokenIcon = !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
         LSP7
       </Box>
+    ) : (
+      <Avatar height={16} minW={16} name={tokenName} src={iconURL} />
     );
-    if (tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.startsWith('ipfs://')) {
-      const iconURL = `${
-        constants.IPFS_GATEWAY
-      }${tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.slice(7)}`;
-      tokenIcon = (
-        <Avatar height={16} minW={16} name={tokenName} src={iconURL} />
-      );
-    }
     return tokenIcon;
   };
 
