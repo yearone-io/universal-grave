@@ -5,13 +5,18 @@ import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import { getLSPAssetBasicInfo, TokenInfo } from '@/utils/tokenUtils';
+import {
+  getLSPAssetBasicInfo,
+  getTokenImageURL,
+  parseDataURI,
+  TokenData,
+} from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
-import { INTERFACE_IDS } from '@lukso/lsp-smart-contracts';
+import { INTERFACE_IDS, LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 
 export default function LSPAssets({
   graveVault,
@@ -19,9 +24,9 @@ export default function LSPAssets({
   graveVault: string | null;
 }) {
   const [loading, setLoading] = useState(true);
-  const [lsp7Assets, setLsp7Assets] = useState<TokenInfo[]>([]);
-  const [lsp8Assets, setLsp8Assets] = useState<TokenInfo[]>([]);
-  const [unrecognisedAssets, setUnrecognisedAssets] = useState<TokenInfo[]>([]);
+  const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
+  const [lsp8Assets, setLsp8Assets] = useState<TokenData[]>([]);
+  const [unrecognisedAssets, setUnrecognisedAssets] = useState<TokenData[]>([]);
 
   const toast = useToast();
 
@@ -48,12 +53,15 @@ export default function LSPAssets({
       const receivedAssetsResults = await erc725js.fetchData(
         'LSP5ReceivedAssets[]'
       );
-      const lsp7Results: TokenInfo[] = [];
-      const lsp8Results: TokenInfo[] = [];
-      const unrecognisedAssetResults: TokenInfo[] = [];
+      const lsp7Results: TokenData[] = [];
+      const lsp8Results: TokenData[] = [];
+      const unrecognisedAssetResults: TokenData[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
         const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
         if (!asset) continue;
+        if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
+          asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
+        }
         if (asset.interface === INTERFACE_IDS.LSP7DigitalAsset) {
           lsp7Results.push(asset);
         } else if (
@@ -65,8 +73,38 @@ export default function LSPAssets({
             getProvider()
           );
           const tokenIds = await contract.tokenIdsOf(graveVault);
-          tokenIds.forEach((tokenId: string) => {
+          tokenIds.forEach(async (tokenId: string) => {
             // need to fetch token specific data here
+            if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
+              const tokenMetadata = await contract.getDataForTokenId(
+                tokenId,
+                ERC725.encodeKeyName('LSP4Metadata')
+              );
+              const decodedMetadata = ERC725.decodeData(
+                [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
+                [
+                  {
+                    name: 'LSP4Metadata',
+                    key: '0x9afb95cacc9f95858ec44aa8c3b685511002e30ae54415823f406128b85b238e',
+                    keyType: 'Singleton',
+                    valueType: 'bytes',
+                    valueContent: 'VerifiableURI',
+                  },
+                ]
+              );
+              if (decodedMetadata[0]?.value?.url) {
+                const parsedMetadata = parseDataURI(
+                  decodedMetadata[0].value.url
+                );
+                const image = parsedMetadata
+                  ? getTokenImageURL(parsedMetadata.LSP4Metadata)
+                  : await contract.getDataForTokenId(
+                      tokenId,
+                      '0xef285b02a4f711ad84793f73cc8ed6fea8af7013ece8132dacb7b33f6bce93da'
+                    );
+                asset.image = image;
+              }
+            }
             lsp8Results.push({
               ...asset,
               tokenId: tokenId.toString(),
@@ -152,10 +190,7 @@ export default function LSPAssets({
             ? lsp7Assets.map((asset, index) => (
                 <Box key={'lsp7-' + index}>
                   <LSP7Panel
-                    tokenName={asset.name!}
-                    tokenAmount={asset.balance!.toString()}
-                    tokenAddress={asset.address!}
-                    tokenMetadata={asset.metadata!}
+                    tokenData={asset}
                     vaultAddress={graveVault!}
                     onReviveSuccess={fetchAssets}
                   />
@@ -177,10 +212,7 @@ export default function LSPAssets({
             ? lsp8Assets.map((asset, index) => (
                 <Box key={'lsp8-' + index}>
                   <LSP8Panel
-                    tokenName={asset.name!}
-                    tokenId={asset.tokenId!}
-                    tokenAddress={asset.address!}
-                    tokenMetadata={asset.metadata!}
+                    tokenData={asset}
                     vaultAddress={graveVault!}
                     onReviveSuccess={fetchAssets}
                   />
@@ -188,30 +220,31 @@ export default function LSPAssets({
               ))
             : emptyAssets()}
         </Box>
-        <Box minWidth={'500px'}>
-          <Text
-            color="white"
-            fontWeight={400}
-            fontSize="16px"
-            fontFamily="Bungee"
-            mb="20px"
-          >
-            Unrecognized LSP Assets
-          </Text>
-          {unrecognisedAssets.length
-            ? unrecognisedAssets.map((asset, index) => (
-                <Box key={'unrecognised-' + index}>
-                  <UnrecognisedPanel
-                    tokenName={asset.name!}
-                    tokenAddress={asset.address!}
-                    tokenMetadata={asset.metadata!}
-                    vaultAddress={graveVault!}
-                    tokenAmount={''}
-                  />
-                </Box>
-              ))
-            : emptyAssets()}
-        </Box>
+        {unrecognisedAssets.length > 0 && (
+          <Box minWidth={'500px'}>
+            <Text
+              color="white"
+              fontWeight={400}
+              fontSize="16px"
+              fontFamily="Bungee"
+              mb="20px"
+            >
+              Unrecognized LSP Assets
+            </Text>
+
+            {unrecognisedAssets.map((asset, index) => (
+              <Box key={'unrecognised-' + index}>
+                <UnrecognisedPanel
+                  tokenName={asset.name!}
+                  tokenAddress={asset.address!}
+                  tokenMetadata={asset.metadata!}
+                  vaultAddress={graveVault!}
+                  tokenAmount={''}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
       </Flex>
     </Box>
   );
