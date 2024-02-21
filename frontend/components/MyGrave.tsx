@@ -139,41 +139,33 @@ export default function MyGrave() {
           {account ? (
             <Box width={'100%'}>
               <Box width={'100%'}>
-                {graveVault && (
-                  <Flex
-                    textAlign="center"
-                    flexDirection={'column'}
-                    gap={3}
-                    alignItems={'center'}
-                    width={'100%'}
-                    padding={'0 20px'}
-                  >
+                <Flex
+                  alignItems={'center'}
+                  width="100%"
+                  justifyContent={'space-between'}
+                  gap={2}
+                  mb="20px"
+                >
+                  <Text fontSize="20px" color={'white'} fontFamily="Bungee">
+                    SETTINGS
+                  </Text>
+                  {graveVault && (
                     <Link href={`/grave/${account}`}>
                       <Button
                         color={'dark.purple.500'}
                         border={
                           '1px solid var(--chakra-colors-dark-purple-500)'
                         }
-                        mb="10px"
+                        size={'sm'}
                         fontFamily="Bungee"
                         fontSize="16px"
                         fontWeight="400"
                       >
-                        View my Grave yard
+                        View your Graveyard
                       </Button>
                     </Link>
-                  </Flex>
-                )}
-                <Box display="flex" flexDir="column">
-                  <Text
-                    fontSize="20px"
-                    color={'white'}
-                    fontFamily="Bungee"
-                    mb="30px"
-                  >
-                    SETTINGS
-                  </Text>
-                </Box>
+                  )}
+                </Flex>
                 <Box display="flex" width={'100%'}>
                   <Tabs display="flex" flexDirection="row" width={'100%'}>
                     <TabList
