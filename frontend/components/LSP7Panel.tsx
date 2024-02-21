@@ -8,34 +8,33 @@ import {
   useColorModeValue,
   useToast,
   Avatar,
+  Image,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
-import { constants } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
+import { TokenData, formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { getProvider } from '@/utils/provider';
+import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 
 interface LSP7PanelProps {
-  tokenName: string;
-  tokenAmount: string;
-  tokenAddress: string;
-  vaultAddress: string;
-  tokenMetadata: Record<string, any>; //LSP4Metadata
+  readonly tokenData: TokenData;
+  readonly vaultAddress: string;
   onReviveSuccess: () => void;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
-  tokenName,
-  tokenAmount,
-  tokenAddress,
-  tokenMetadata,
+  tokenData,
   vaultAddress,
   onReviveSuccess,
 }) => {
+  const reviveText =
+    tokenData.tokenType === LSP4_TOKEN_TYPES.NFT
+      ? 'Revive NFT'
+      : 'Revive Tokens';
   const walletContext = useContext(WalletContext);
   const { graveVault: connectedGraveValue, networkConfig } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
@@ -58,7 +57,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
-  const tokenAddressDisplay = formatAddress(tokenAddress);
+  const tokenAddressDisplay = formatAddress(tokenData?.address);
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
@@ -97,7 +96,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        tokenAmount,
+        tokenData?.balance,
         false,
         '0x',
       ]);
@@ -134,14 +133,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     }
   };
 
-  const getTokenIconUrl = () => {
-    const iconURL = getTokenIconURL(tokenMetadata.LSP4Metadata);
+  const getTokenIcon = () => {
+    const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
     let tokenIcon = !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
         LSP7
       </Box>
     ) : (
-      <Avatar height={16} minW={16} name={tokenName} src={iconURL} />
+      <Avatar height={16} minW={16} name={tokenData?.name} src={iconURL} />
     );
     return tokenIcon;
   };
@@ -152,7 +151,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       borderRadius="lg"
       px={4}
       py={4}
-      align="center"
+      align="flex-start"
       justify="space-between"
       boxShadow="md"
       minWidth={'lg'}
@@ -170,18 +169,28 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         alignItems={'center'}
         boxSizing={'content-box'}
       >
-        {getTokenIconUrl()}
+        {getTokenIcon()}
       </Flex>
 
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
         <Flex flexDirection={'row'} justifyContent={'space-between'}>
           <Text color={fontColor} fontFamily={'Bungee'}>
-            {tokenName}
+            {tokenData?.name}
           </Text>
           <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {tokenAmount}
+            {tokenData?.balance}
           </Text>
         </Flex>
+        {tokenData?.image && (
+          <Flex justifyContent={'center'}>
+            <Image
+              src={tokenData?.image}
+              alt={tokenData?.name}
+              width="400px"
+              border={'1px solid ' + containerBorderColor}
+            />
+          </Flex>
+        )}
         <Flex
           flexDirection={'row'}
           justifyContent={'space-between'}
@@ -202,7 +211,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.explorerURL}/address/${tokenAddress}`,
+                  `${networkConfig.explorerURL}/address/${tokenData?.address}`,
                   '_blank'
                 )
               }
@@ -216,9 +225,9 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               _hover={{ bg: createButtonBg }}
               border={createButtonBorder}
               size={'xs'}
-              onClick={() => transferTokenToUP(tokenAddress)}
+              onClick={() => transferTokenToUP(tokenData?.address)}
             >
-              {isProcessing ? 'Reviving...' : `Revive Tokens`}
+              {isProcessing ? 'Reviving...' : reviveText}
             </Button>
           )}
         </Flex>
