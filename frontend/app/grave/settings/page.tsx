@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
-import MyGrave from '@/components/MyGrave';
+import GraveSettings from '@/components/GraveSettings';
 
 export const metadata: Metadata = {
-  title: 'YOUR GRAVEYARD',
+  title: 'GRAVE - Settings',
   description: 'List and manage assets in your graveyard',
   openGraph: {
     images: {
@@ -15,6 +15,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Grave() {
-  return <MyGrave />;
+export default function Settings() {
+  return <GraveSettings />;
 }

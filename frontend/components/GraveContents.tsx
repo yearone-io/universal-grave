@@ -41,7 +41,7 @@ export default function GraveContents({ account }: { account: string }) {
           {graveTitle}
         </Text>
         {account === connectedAccount && (
-          <Link href="/grave" passHref>
+          <Link href="/grave/settings" passHref>
             <Icon as={FaCog} color={'light.white'} h={5} w={6} />
           </Link>
         )}

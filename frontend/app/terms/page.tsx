@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 
 export const metadata = {
-  title: 'GRAVEYARD - Terms of Service',
+  title: 'GRAVE - Terms of Service',
   description: 'Terms of Service',
   openGraph: {
     images: {
