@@ -6,7 +6,6 @@ import { WalletContext } from './wallet/WalletContext';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
-  DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
   GRAVE_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
@@ -415,10 +414,11 @@ export default function JoinGraveBtn({
     signer: ethers.providers.JsonRpcSigner
   ) => {
     // check if we need to update permissions
-    const missingPermissions = await doesControllerHaveMissingPermissions(
-      mainUPController as string,
-      account as string
-    );
+    const { missingPermissions, currentPermissions } =
+      await doesControllerHaveMissingPermissions(
+        mainUPController as string,
+        account as string
+      );
     if (!missingPermissions.length) {
       return;
     }
@@ -436,7 +436,7 @@ export default function JoinGraveBtn({
 
     // All the permissions have to be passed. If one is missing the tx will set it to false (even if it is set to true)
     const newPermissions = erc725.encodePermissions({
-      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+      ...currentPermissions,
       ...GRAVE_CONTROLLER_PERMISSIONS,
     });
     const permissionsData = erc725.encodeData([

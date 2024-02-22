@@ -5,7 +5,6 @@ import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
 import { getLuksoProvider } from '@/utils/provider';
 import {
-  DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
   GRAVE_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
@@ -49,10 +48,8 @@ export const updateBECPermissions = async (
   signer: ethers.providers.JsonRpcSigner
 ) => {
   // check if we need to update permissions
-  const missingPermissions = await doesControllerHaveMissingPermissions(
-    mainUPController,
-    account
-  );
+  const { missingPermissions, currentPermissions } =
+    await doesControllerHaveMissingPermissions(mainUPController, account);
   if (!missingPermissions.length) {
     return;
   }
@@ -65,7 +62,7 @@ export const updateBECPermissions = async (
   );
 
   const newPermissions = erc725.encodePermissions({
-    ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
+    ...currentPermissions,
     ...GRAVE_CONTROLLER_PERMISSIONS,
   });
   const permissionsData = erc725.encodeData([
@@ -265,8 +262,7 @@ export const doesControllerHaveMissingPermissions = async (
     targetEntity
   );
   const missingPermissions = getMissingPermissions(currentPermissions, {
-    ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
     ...GRAVE_CONTROLLER_PERMISSIONS,
   });
-  return missingPermissions;
+  return { missingPermissions, currentPermissions };
 };

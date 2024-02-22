@@ -40,24 +40,6 @@ and 🔑  AddressPermissions:Permissions:<address> for the URD of new UP! extens
 }
 */
 
-export const DEFAULT_UP_CONTROLLER_PERMISSIONS = {
-  SUPER_SETDATA: true,
-  SETDATA: true,
-  SIGN: true,
-  ENCRYPT: true,
-  DECRYPT: true,
-  SUPER_CALL: true,
-  CALL: true,
-  SUPER_STATICCALL: true,
-  STATICCALL: true,
-  SUPER_TRANSFERVALUE: true,
-  TRANSFERVALUE: true,
-  DEPLOY: true,
-  EXECUTE_RELAY_CALL: true,
-  EDITPERMISSIONS: true,
-  ADDCONTROLLER: true,
-};
-
 export const GRAVE_CONTROLLER_PERMISSIONS = {
   ADDUNIVERSALRECEIVERDELEGATE: true,
   CHANGEUNIVERSALRECEIVERDELEGATE: true,
