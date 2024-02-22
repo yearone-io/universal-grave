@@ -31,6 +31,8 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   uint256 public lsp8RedirectedCounter;
   uint256 public graveUserCounter;
 
+  event SetGrave(address indexed user, address grave);
+
   function setGrave(address grave) public {
     // Check if the provided address implements the LSP9Vault interface
     require(
@@ -47,6 +49,7 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
         graveUserCounter++;
     } 
     graveVaults[msg.sender] = grave;
+    emit SetGrave(msg.sender, grave);
   }
 
   function getGrave() public view returns (address) {
@@ -78,7 +81,8 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   {
     // CHECK that the address of the LSP7/LSP8 is whitelisted
     if (tokenAllowlist[msg.sender][notifier]) {
-      return super.universalReceiverDelegate(notifier, value, typeId, data);
+      super.universalReceiverDelegate(notifier, value, typeId, data);
+      return "";
     }
     require(
       graveVaults[msg.sender] != address(0),
@@ -120,8 +124,8 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
         (msg.sender, graveVaults[msg.sender], amount, false, data)
       );
       lsp7RedirectedCounter++;
-      // 0 = CALL
-      return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
+      IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
+      return "";
     } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
       // extract data (we only need the amount that was transferred / minted)
       (, , , bytes32 tokenId, ) = abi.decode(
@@ -133,10 +137,10 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
         (msg.sender, graveVaults[msg.sender], tokenId, false, data)
       );
       lsp8RedirectedCounter++;
-      // 0 = CALL
-      return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
+      IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
+      return "";
     }
-
-    return '';
+    super.universalReceiverDelegate(notifier, value, typeId, data);
+    return ": no typeId match found, defaulting to LSP1UniversalReceiverDelegateUP  behavior";
   }
 }
