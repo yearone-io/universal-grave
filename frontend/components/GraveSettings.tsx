@@ -152,9 +152,7 @@ export default function GraveSettings() {
                   <Link href={`/grave/${account}`}>
                     <Button
                       color={'dark.purple.500'}
-                      border={
-                        '1px solid var(--chakra-colors-dark-purple-500)'
-                      }
+                      border={'1px solid var(--chakra-colors-dark-purple-500)'}
                       size={'sm'}
                       fontFamily="Bungee"
                       fontSize="16px"
