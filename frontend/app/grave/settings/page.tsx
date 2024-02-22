@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import GraveSettings from '@/components/GraveSettings';
 
 export const metadata: Metadata = {
-  title: 'YOUR GRAVEYARD',
+  title: 'GRAVE - Settings',
   description: 'List and manage assets in your graveyard',
   openGraph: {
     images: {
@@ -15,6 +15,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Grave() {
+export default function Settings() {
   return <GraveSettings />;
 }
