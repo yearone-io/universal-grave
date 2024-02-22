@@ -28,8 +28,9 @@ const NETWORKS = {
     symbol: 'LYXt',
     rpcUrl: 'https://lukso-testnet.rpc.thirdweb.com',
     explorerURL: 'https://explorer.execution.testnet.lukso.network',
-    universalGraveForwarder: '0x7e77c704be7a6bba042f66eaba0b9557a872902d',
+    universalGraveForwarder: '0x72e5b0aeaa8456fa43ba94db703f74052b4cdaac',
     previousGraveForwarders: [
+      '0x7e77c704be7a6bba042f66eaba0b9557a872902d',
       '0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3',
       '0x9c27a05310dC8aF53B60124B244cc9d12f202cdF',
     ],
