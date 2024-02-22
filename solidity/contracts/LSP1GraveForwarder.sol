@@ -78,7 +78,8 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
   {
     // CHECK that the address of the LSP7/LSP8 is whitelisted
     if (tokenAllowlist[msg.sender][notifier]) {
-      return super.universalReceiverDelegate(notifier, value, typeId, data);
+      super.universalReceiverDelegate(notifier, value, typeId, data);
+      return "";
     }
     require(
       graveVaults[msg.sender] != address(0),
@@ -120,8 +121,8 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
         (msg.sender, graveVaults[msg.sender], amount, false, data)
       );
       lsp7RedirectedCounter++;
-      // 0 = CALL
-      return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
+      IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP7Tx);
+      return "";
     } else if (typeId == _TYPEID_LSP8_TOKENSRECIPIENT) {
       // extract data (we only need the amount that was transferred / minted)
       (, , , bytes32 tokenId, ) = abi.decode(
@@ -134,9 +135,10 @@ contract LSP1GraveForwarder is LSP1UniversalReceiverDelegateUP {
       );
       lsp8RedirectedCounter++;
       // 0 = CALL
-      return IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
+      IERC725X(msg.sender).execute(0, notifier, 0, encodedLSP8Tx);
+      return "";
     }
-
-    return '';
+    super.universalReceiverDelegate(notifier, value, typeId, data);
+    return ": no typeId match found, defaulting to LSP1UniversalReceiverDelegateUP  behavior";
   }
 }
