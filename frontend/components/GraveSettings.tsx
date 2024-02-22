@@ -113,7 +113,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
   );
 };
 
-export default function MyGrave() {
+export default function GraveSettings() {
   const walletContext = useContext(WalletContext);
   const { account, URDLsp7, URDLsp8, networkConfig, graveVault } =
     walletContext;
@@ -149,22 +149,18 @@ export default function MyGrave() {
                   <Text fontSize="20px" color={'white'} fontFamily="Bungee">
                     SETTINGS
                   </Text>
-                  {graveVault && (
-                    <Link href={`/grave/${account}`}>
-                      <Button
-                        color={'dark.purple.500'}
-                        border={
-                          '1px solid var(--chakra-colors-dark-purple-500)'
-                        }
-                        size={'sm'}
-                        fontFamily="Bungee"
-                        fontSize="16px"
-                        fontWeight="400"
-                      >
-                        View your Graveyard
-                      </Button>
-                    </Link>
-                  )}
+                  <Link href={`/grave/${account}`}>
+                    <Button
+                      color={'dark.purple.500'}
+                      border={'1px solid var(--chakra-colors-dark-purple-500)'}
+                      size={'sm'}
+                      fontFamily="Bungee"
+                      fontSize="16px"
+                      fontWeight="400"
+                    >
+                      View your Graveyard
+                    </Button>
+                  </Link>
                 </Flex>
                 <Box display="flex" width={'100%'}>
                   <Tabs display="flex" flexDirection="row" width={'100%'}>

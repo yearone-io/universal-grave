@@ -4,8 +4,8 @@ import GraveContents from '@/components/GraveContents';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'GRAVEYARD',
-  description: 'List of assets in graveyard',
+  title: 'GRAVE - Graveyard',
+  description: 'List of assets in your graveyard',
   openGraph: {
     images: {
       url: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function GravePage({ params }: { params: { account: string } }) {
+export default function Grave({ params }: { params: { account: string } }) {
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
       <GraveContents account={params.account} />

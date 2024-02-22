@@ -112,7 +112,7 @@ export default function Landing() {
             >
               {`GRAVE - the Global Reserve For Abandoned Virtual Entities. A cemetery for unwanted digital assets. But given that one man's trash is another man's treasure, all assets have a chance at revival.`}
             </Text>
-            <Link href={'/grave'} passHref>
+            <Link href={'/grave/settings'} passHref>
               <Button
                 px={6}
                 color={createButtonColor}
