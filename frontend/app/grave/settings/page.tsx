@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import MyGrave from '@/components/MyGrave';
+import GraveSettings from '@/components/GraveSettings';
 
 export const metadata: Metadata = {
   title: 'YOUR GRAVEYARD',
@@ -16,5 +16,5 @@ export const metadata: Metadata = {
 };
 
 export default function Grave() {
-  return <MyGrave />;
+  return <GraveSettings />;
 }

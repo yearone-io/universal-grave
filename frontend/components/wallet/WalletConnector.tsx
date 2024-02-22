@@ -44,11 +44,11 @@ const WalletConnector: React.FC = () => {
             {formatAddress(account)}
           </MenuButton>
           <MenuList>
-            <MenuItem as="a" href={`/grave/${account}`} icon={<TbGrave2 />}>
-              My Grave Yard
+            <MenuItem as={Link} href={`/grave/${account}`} icon={<TbGrave2 />}>
+              My Graveyard
             </MenuItem>
-            <MenuItem as="a" href="/grave" icon={<FaCog />}>
-              <Link href={'/grave'}>Settings</Link>
+            <MenuItem as={Link} href="/grave/settings" icon={<FaCog />}>
+              Settings
             </MenuItem>
             <MenuItem onClick={disconnect} icon={<VscDebugDisconnect />}>
               Disconnect
