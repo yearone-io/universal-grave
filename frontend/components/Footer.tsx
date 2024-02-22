@@ -94,22 +94,15 @@ export default function SmallWithLogoLeft() {
           <Link href={'/feedback'}>Feedback</Link>
           <Box minWidth={'170'}>
             <Select
-              defaultValue={
-                getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!)
-                  .chainId
-              }
+              defaultValue={process.env.NEXT_PUBLIC_DEFAULT_NETWORK!}
               onChange={event =>
                 (window.location.href = getNetworkConfig(
                   event.target.value
                 ).baseUrl)
               }
             >
-              <option value={getNetworkConfig('mainnet').chainId}>
-                LUKSO Mainnet
-              </option>
-              <option value={getNetworkConfig('testnet').chainId}>
-                LUKSO Testnet
-              </option>
+              <option value={'mainnet'}>LUKSO Mainnet</option>
+              <option value={'testnet'}>LUKSO Testnet</option>
             </Select>
           </Box>
         </Stack>
