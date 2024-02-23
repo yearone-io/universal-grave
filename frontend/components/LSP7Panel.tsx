@@ -61,6 +61,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
+    
     if (isProcessing) {
       return;
     }
@@ -93,10 +94,13 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         signer
       );
       const lsp7 = tokenContract.connect(signer);
+    
+      const balanceInBaseUnits = ethers.utils.parseUnits(tokenData?.balance as string, tokenData?.decimals);
+
       const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        tokenData?.balance,
+        balanceInBaseUnits,
         false,
         '0x',
       ]);
