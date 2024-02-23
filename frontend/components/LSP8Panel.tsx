@@ -22,16 +22,18 @@ import { getProvider } from '@/utils/provider';
 interface LSP8PanelProps {
   readonly tokenData: TokenData;
   readonly vaultAddress: string;
+  readonly vaultOwner: string;
   onReviveSuccess: () => void;
 }
 
 const LSP8Panel: React.FC<LSP8PanelProps> = ({
   tokenData,
   vaultAddress,
+  vaultOwner,
   onReviveSuccess,
 }) => {
   const walletContext = useContext(WalletContext);
-  const { graveVault: connectedGraveValue, networkConfig } = walletContext;
+  const { account: connectedUPAddress, networkConfig } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -212,7 +214,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
               }
             />
           </Flex>
-          {vaultAddress === connectedGraveValue && (
+          {vaultOwner === connectedUPAddress && (
             <Button
               px={3}
               color={createButtonColor}

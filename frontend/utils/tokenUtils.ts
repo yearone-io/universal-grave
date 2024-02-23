@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { eip165ABI } from '@/abis/eip165ABI';
 import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 
@@ -223,10 +224,54 @@ export const parseDataURI = (dataUri: string) => {
   // Step 2: Parse the JSON string into an object
   try {
     const jsonObj = JSON.parse(jsonString);
-    console.log(jsonObj); // This will log the object to the console
     return jsonObj;
   } catch (e) {
     console.error('Error parsing JSON', e);
     return {};
   }
 };
+
+export async function processLSP8Asset(
+  asset: TokenData,
+  assetOwner: string
+): Promise<TokenData[]> {
+  const contract = new ethers.Contract(
+    asset.address as string,
+    LSP8IdentifiableDigitalAsset.abi,
+    getProvider()
+  );
+  const tokenIds = await contract.tokenIdsOf(assetOwner);
+  const nfts: TokenData[] = [];
+
+  for (const tokenId of tokenIds) {
+    if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
+      const tokenMetadata = await contract.getDataForTokenId(
+        tokenId,
+        ERC725.encodeKeyName('LSP4Metadata')
+      );
+      const decodedMetadata = ERC725.decodeData(
+        [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
+        [
+          {
+            name: 'LSP4Metadata',
+            key: ERC725.encodeKeyName('LSP4Metadata'),
+            keyType: 'Singleton',
+            valueType: 'bytes',
+            valueContent: 'VerifiableURI',
+          },
+        ]
+      );
+
+      let image;
+      if (decodedMetadata[0]?.value?.url) {
+        const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
+        image = getTokenImageURL(parsedMetadata.LSP4Metadata);
+        console.log('image', image);
+      }
+      asset.image = image;
+    }
+    nfts.push({ ...asset, tokenId: tokenId.toString() });
+  }
+
+  return nfts;
+}

@@ -1,13 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { ethers } from 'ethers';
 import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import {
   getLSPAssetBasicInfo,
   getTokenImageURL,
+  processLSP8Asset,
   GRAVE_ASSET_TYPES,
   parseDataURI,
   TokenData,
@@ -15,14 +14,16 @@ import {
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
-import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { getLuksoProvider } from '@/utils/provider';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 
 export default function LSPAssets({
   graveVault,
+  graveOwner,
 }: {
   graveVault: string | null;
+  graveOwner: string;
 }) {
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
@@ -82,59 +83,12 @@ export default function LSPAssets({
           asset.interface ===
             GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
         ) {
-          const contract = new ethers.Contract(
-            asset.address as string,
-            LSP8IdentifiableDigitalAsset.abi,
-            getProvider()
-          );
-          const tokenIds = await contract.tokenIdsOf(graveVault);
-          for (const tokenId of tokenIds) {
-            // need to fetch token specific data here
-            if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
-              const tokenMetadata = await contract.getDataForTokenId(
-                tokenId,
-                ERC725.encodeKeyName('LSP4Metadata')
-              );
-              const decodedMetadata = ERC725.decodeData(
-                [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
-                [
-                  {
-                    name: 'LSP4Metadata',
-                    key: '0x9afb95cacc9f95858ec44aa8c3b685511002e30ae54415823f406128b85b238e',
-                    keyType: 'Singleton',
-                    valueType: 'bytes',
-                    valueContent: 'VerifiableURI',
-                  },
-                ]
-              );
-              if (decodedMetadata[0]?.value?.url) {
-                const parsedMetadata = parseDataURI(
-                  decodedMetadata[0].value.url
-                );
-                const image = parsedMetadata
-                  ? getTokenImageURL(parsedMetadata.LSP4Metadata)
-                  : await contract.getDataForTokenId(
-                      tokenId,
-                      '0xef285b02a4f711ad84793f73cc8ed6fea8af7013ece8132dacb7b33f6bce93da'
-                    );
-                asset.image = image;
-              }
-            }
-            asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
-              ? lsp8Results.push({
-                  ...asset,
-                  tokenId: tokenId.toString(),
-                })
-              : unrecognisedLsp8Results.push({
-                  ...asset,
-                  tokenId: tokenId.toString(),
-                });
-          }
+          const lsp8Tokens = await processLSP8Asset(asset, graveVault);
+          lsp8Results.push(...lsp8Tokens);
         } else {
           unrecognisedAssetResults.push(asset);
         }
       }
-
       setLsp7Assets(lsp7Results);
       setLsp8Assets(lsp8Results);
       setUnrecognisedAssets(unrecognisedAssetResults);
@@ -214,6 +168,7 @@ export default function LSPAssets({
                   <LSP7Panel
                     tokenData={asset}
                     vaultAddress={graveVault!}
+                    vaultOwner={graveOwner}
                     onReviveSuccess={fetchAssets}
                   />
                 </Box>
@@ -236,6 +191,7 @@ export default function LSPAssets({
                   <LSP8Panel
                     tokenData={asset}
                     vaultAddress={graveVault!}
+                    vaultOwner={graveOwner}
                     onReviveSuccess={fetchAssets}
                   />
                 </Box>

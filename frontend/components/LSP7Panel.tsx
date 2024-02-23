@@ -23,12 +23,14 @@ import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 interface LSP7PanelProps {
   readonly tokenData: TokenData;
   readonly vaultAddress: string;
+  readonly vaultOwner: string;
   onReviveSuccess: () => void;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenData,
   vaultAddress,
+  vaultOwner,
   onReviveSuccess,
 }) => {
   const reviveText =
@@ -36,7 +38,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       ? 'Revive NFT'
       : 'Revive Tokens';
   const walletContext = useContext(WalletContext);
-  const { graveVault: connectedGraveValue, networkConfig } = walletContext;
+  const { account: connectedUPAddress, networkConfig } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -216,7 +218,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               }
             />
           </Flex>
-          {vaultAddress === connectedGraveValue && (
+          {vaultOwner === connectedUPAddress && (
             <Button
               px={3}
               color={createButtonColor}
