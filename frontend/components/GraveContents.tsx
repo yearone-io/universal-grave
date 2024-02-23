@@ -16,38 +16,38 @@ import Link from 'next/link';
  *  Returns a layout with the graveyard title, a settings icon (for the owner's graveyard),
  *  a share button, and the GravePageAssets component showing the graveyard's LSP7s & LSP8s
  */
-export default function GraveContents({ account }: { account: string }) {
+export default function GraveContents({ graveOwner }: { graveOwner: string }) {
   const walletContext = useContext(WalletContext);
-  const { account: connectedAccount, graveVault } = walletContext;
+  const { account: connectedAccount } = walletContext;
   let graveTitle = 'YOUR GRAVEYARD';
-  let pageGraveVault = null;
-  // account present and same as connected account
-  // account present but not same as connected account
-  if (connectedAccount && connectedAccount === account) {
+  if (connectedAccount && connectedAccount === graveOwner) {
     graveTitle = 'YOUR GRAVEYARD';
-  } else if (!connectedAccount || connectedAccount !== account) {
-    graveTitle = `${formatAddress(account)}'s GRAVEYARD`;
+  } else {
+    graveTitle = `${formatAddress(graveOwner)}'s GRAVEYARD`;
   }
+  const graveHeader = (
+    <Flex alignItems={'center'} gap={2}>
+      <Text
+        fontSize="20px"
+        color="white"
+        fontFamily="Bungee"
+        mb="30px"
+        mt="30px"
+      >
+        {graveTitle}
+      </Text>
+      {graveOwner === connectedAccount && (
+        <Link href="/grave/settings" passHref>
+          <Icon as={FaCog} color={'light.white'} h={5} w={6} />
+        </Link>
+      )}
+      <ShareButton pageAccount={graveOwner} />
+    </Flex>
+  );
   return (
     <Box>
-      <Flex alignItems={'center'} gap={2}>
-        <Text
-          fontSize="20px"
-          color="white"
-          fontFamily="Bungee"
-          mb="30px"
-          mt="30px"
-        >
-          {graveTitle}
-        </Text>
-        {account === connectedAccount && (
-          <Link href="/grave/settings" passHref>
-            <Icon as={FaCog} color={'light.white'} h={5} w={6} />
-          </Link>
-        )}
-        <ShareButton pageAccount={account} />
-      </Flex>
-      <GravePageAssets pageAccount={account} pageGraveVault={pageGraveVault} />
+      {graveHeader}
+      <GravePageAssets graveOwner={graveOwner} />
     </Box>
   );
 }

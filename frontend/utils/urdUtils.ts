@@ -3,7 +3,7 @@ import { getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
-import { getLuksoProvider } from '@/utils/provider';
+import { getLuksoProvider, getProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
@@ -22,22 +22,59 @@ export const hasOlderGraveDelegate = (
   if (!URDLsp7 || !URDLsp8) return null;
   const urd7 = getChecksumAddress(URDLsp7)!;
   const urd8 = getChecksumAddress(URDLsp8)!;
-  let urd7Index = networkConfig.previousGraveForwarders.indexOf(urd7);
-  let urd8Index = networkConfig.previousGraveForwarders.indexOf(urd8);
-  if (urd7Index > -1 && urd8Index > -1 && urd7 === urd8) {
-    return networkConfig.previousGraveForwarders[urd7Index];
-  }
-  return null;
+  const checksummedHistoricalURDs = networkConfig.previousGraveForwarders.map(
+    (forwarder) => getChecksumAddress(forwarder)!
+  );
+  // retun the first match of the historical URDs if urd7 or urd8 is in the list
+  return (
+    checksummedHistoricalURDs.find((forwarder) => forwarder === urd7) ||
+    checksummedHistoricalURDs.find((forwarder) => forwarder === urd8) ||
+    null
+  );
 };
 
 /**
  * Function to get the UP data and set the URD for LSP7 and LSP8.
  */
 export interface IUPForwarderData {
-  readonly URDLsp7: string | null;
-  readonly URDLsp8: string | null;
-  readonly oldForwarderAddress: string | null;
+  lsp7Urd: string | null;
+  lsp8Urd: string | null;
+  oldUrdVersion: string | null;
 }
+
+export const getUpAddressUrds = async (
+  upAddress: string
+): Promise<IUPForwarderData> => {
+  const provider = getProvider();
+  const urdData: IUPForwarderData = {
+    lsp7Urd: null,
+    lsp8Urd: null,
+    oldUrdVersion: null,
+  };
+  try {
+    const UP = new ethers.Contract(
+      upAddress as string,
+      UniversalProfile.abi,
+      provider
+    );
+    const UPData = await UP.connect(provider.getSigner()).getDataBatch([
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
+    ]);
+    if (UPData) {
+      urdData.lsp7Urd = getChecksumAddress(UPData[0]);
+      urdData.lsp8Urd = getChecksumAddress(UPData[1]);
+      urdData.oldUrdVersion = hasOlderGraveDelegate(urdData.lsp7Urd, urdData.lsp8Urd);
+      console.log('UPData: ', UPData);
+    }
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+  return urdData;
+};
 
 /**
  * Function to update the permissions of the Browser Extension controller.
