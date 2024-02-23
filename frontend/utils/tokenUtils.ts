@@ -9,7 +9,7 @@ import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
 
 export type TokenData = {
-  readonly interface: string;
+  readonly interface: GRAVE_ASSET_TYPES;
   readonly address: string;
   readonly tokenType?: number;
   readonly name?: string;
@@ -21,10 +21,13 @@ export type TokenData = {
   image?: string;
 };
 
-export const lspInterfaceShortNames = {
-  [INTERFACE_IDS.LSP7DigitalAsset]: 'LSP7',
-  [INTERFACE_IDS.LSP8IdentifiableDigitalAsset]: 'LSP8',
-};
+export enum GRAVE_ASSET_TYPES {
+  LSP7DigitalAsset,
+  LSP8IdentifiableDigitalAsset,
+  UnrecognisedLSP7DigitalAsset,
+  UnrecognisedLSP8IdentifiableDigitalAsset,
+  Unrecognised,
+}
 
 function computeSelector(signature: string): string {
   return ethers.utils
@@ -46,23 +49,37 @@ const lsp8TransferSelector = computeSelector(
 export const detectLSP = async (
   provider: any,
   assetAddress: string
-): Promise<string | null> => {
+): Promise<GRAVE_ASSET_TYPES> => {
   // fetch digital asset interface details
   try {
+    const lspAsset = new ERC725(
+      lsp4Schema as ERC725JSONSchema[],
+      assetAddress,
+      getLuksoProvider()
+    );
+    if (await lspAsset.supportsInterface(INTERFACE_IDS.LSP7DigitalAsset)) {
+      return GRAVE_ASSET_TYPES.LSP7DigitalAsset;
+    }
+    if (
+      await lspAsset.supportsInterface(
+        INTERFACE_IDS.LSP8IdentifiableDigitalAsset
+      )
+    ) {
+      return GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset;
+    }
+
     const bytecode = await provider.getCode(assetAddress);
-    const isLSP7 = supportsFunction(bytecode, lsp7TransferSelector);
-    if (isLSP7) {
-      return INTERFACE_IDS.LSP7DigitalAsset;
+    if (supportsFunction(bytecode, lsp7TransferSelector)) {
+      return GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
     }
-    const isLSP8 = supportsFunction(bytecode, lsp8TransferSelector);
-    if (isLSP8) {
-      return INTERFACE_IDS.LSP8IdentifiableDigitalAsset;
+    if (supportsFunction(bytecode, lsp8TransferSelector)) {
+      return GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset;
     }
-    return null;
   } catch (error) {
     console.error('error detecting LSP asset interface', error);
-    return null;
   }
+
+  return GRAVE_ASSET_TYPES.Unrecognised;
 };
 
 export const getLSPAssetBasicInfo = async (
@@ -74,10 +91,10 @@ export const getLSPAssetBasicInfo = async (
     address: assetAddress,
     name: 'unrecognised',
     metadata: {},
-    interface: '',
+    interface: GRAVE_ASSET_TYPES.Unrecognised,
   };
   const lspInterface = await detectLSP(provider, assetAddress);
-  if (!lspInterface) {
+  if (lspInterface === GRAVE_ASSET_TYPES.Unrecognised) {
     return unrecognizedLsp;
   }
   let LSP4TokenType: number, name: string, symbol: string, metadata: any;
@@ -117,7 +134,9 @@ export const getLSPAssetBasicInfo = async (
       provider
     );
     decimals =
-      lspInterface === INTERFACE_IDS.LSP7DigitalAsset
+      lspInterface ===
+      (GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
+        GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset)
         ? await contract.decimals()
         : 0;
     if (decimals !== '0') {
