@@ -44,5 +44,5 @@ export default function GravePageAssets({
   if (error) {
     return <Text>{error}</Text>;
   }
-  return graveVault ? <LSPAssets graveVault={graveVault} /> : <>Loading...</>;
+  return graveVault ? <LSPAssets graveVault={graveVault} graveOwner={graveOwner} /> : <>Loading...</>;
 }

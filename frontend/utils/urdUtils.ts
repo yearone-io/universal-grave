@@ -67,7 +67,6 @@ export const getUpAddressUrds = async (
       urdData.lsp7Urd = getChecksumAddress(UPData[0]);
       urdData.lsp8Urd = getChecksumAddress(UPData[1]);
       urdData.oldUrdVersion = hasOlderGraveDelegate(urdData.lsp7Urd, urdData.lsp8Urd);
-      console.log('UPData: ', UPData);
     }
   } catch (err) {
     console.error(err);
