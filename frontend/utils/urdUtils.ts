@@ -3,7 +3,7 @@ import { getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
-import { getLuksoProvider } from '@/utils/provider';
+import { getLuksoProvider, getProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
@@ -33,10 +33,46 @@ export const hasOlderGraveDelegate = (
  * Function to get the UP data and set the URD for LSP7 and LSP8.
  */
 export interface IUPForwarderData {
-  readonly URDLsp7: string | null;
-  readonly URDLsp8: string | null;
-  readonly oldForwarderAddress: string | null;
+  lsp7Urd: string | null;
+  lsp8Urd: string | null;
+  oldUrdVersion: string | null;
 }
+
+export const getUpAddressUrds = async (
+  upAddress: string
+): Promise<IUPForwarderData> => {
+  const provider = getProvider();
+  const urdData: IUPForwarderData = {
+    lsp7Urd: null,
+    lsp8Urd: null,
+    oldUrdVersion: null,
+  };
+  try {
+    const UP = new ethers.Contract(
+      upAddress as string,
+      UniversalProfile.abi,
+      provider
+    );
+    const UPData = await UP.connect(provider.getSigner()).getDataBatch([
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+        LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
+    ]);
+    if (UPData) {
+      urdData.lsp7Urd = getChecksumAddress(UPData[0]);
+      urdData.lsp8Urd = getChecksumAddress(UPData[1]);
+      urdData.oldUrdVersion = hasOlderGraveDelegate(
+        urdData.lsp7Urd,
+        urdData.lsp8Urd
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+  return urdData;
+};
 
 /**
  * Function to update the permissions of the Browser Extension controller.
