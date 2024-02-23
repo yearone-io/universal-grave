@@ -20,33 +20,30 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
   const walletContext = useContext(WalletContext);
   const { account: connectedAccount } = walletContext;
   let graveTitle = 'YOUR GRAVEYARD';
-  if (connectedAccount && connectedAccount === graveOwner) {
+  if (connectedAccount === graveOwner) {
     graveTitle = 'YOUR GRAVEYARD';
   } else {
     graveTitle = `${formatAddress(graveOwner)}'s GRAVEYARD`;
   }
-  const graveHeader = (
-    <Flex alignItems={'center'} gap={2}>
-      <Text
-        fontSize="20px"
-        color="white"
-        fontFamily="Bungee"
-        mb="30px"
-        mt="30px"
-      >
-        {graveTitle}
-      </Text>
-      {graveOwner === connectedAccount && (
-        <Link href="/grave/settings" passHref>
-          <Icon as={FaCog} color={'light.white'} h={5} w={6} />
-        </Link>
-      )}
-      <ShareButton pageAccount={graveOwner} />
-    </Flex>
-  );
   return (
     <Box>
-      {graveHeader}
+      <Flex alignItems={'center'} gap={2}>
+        <Text
+          fontSize="20px"
+          color="white"
+          fontFamily="Bungee"
+          mb="30px"
+          mt="30px"
+        >
+          {graveTitle}
+        </Text>
+        {graveOwner === connectedAccount && (
+          <Link href="/grave/settings" passHref>
+            <Icon as={FaCog} color={'light.white'} h={5} w={6} />
+          </Link>
+        )}
+        <ShareButton pageAccount={graveOwner} />
+      </Flex>
       <GravePageAssets graveOwner={graveOwner} />
     </Box>
   );

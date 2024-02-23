@@ -26,25 +26,34 @@ export const lspInterfaceShortNames = {
   [INTERFACE_IDS.LSP8IdentifiableDigitalAsset]: 'LSP8',
 };
 
+function computeSelector(signature: string): string {
+  return ethers.utils
+    .keccak256(ethers.utils.toUtf8Bytes(signature))
+    .slice(0, 10); // First 4 bytes (8 characters + '0x')
+}
+
+function supportsFunction(bytecode: string, selector: string): boolean {
+  return bytecode.includes(selector.slice(2)); // Remove '0x' when searching in bytecode
+}
+
+const lsp7TransferSelector = computeSelector(
+  'transfer(address,address,uint256,bool,bytes)'
+);
+const lsp8TransferSelector = computeSelector(
+  'transfer(address,address,bytes32,bool,bytes)'
+);
+
 export const detectLSP = async (
   assetAddress: string
 ): Promise<string | null> => {
   // fetch digital asset interface details
   try {
-    const lspAsset = new ERC725(
-      lsp4Schema as ERC725JSONSchema[],
-      assetAddress,
-      getLuksoProvider()
-    );
-    const isLSP7 = await lspAsset.supportsInterface(
-      INTERFACE_IDS.LSP7DigitalAsset
-    );
+    const bytecode = await getProvider().getCode(assetAddress);
+    const isLSP7 = supportsFunction(bytecode, lsp7TransferSelector);
     if (isLSP7) {
       return INTERFACE_IDS.LSP7DigitalAsset;
     }
-    const isLSP8 = await lspAsset.supportsInterface(
-      INTERFACE_IDS.LSP8IdentifiableDigitalAsset
-    );
+    const isLSP8 = supportsFunction(bytecode, lsp8TransferSelector);
     if (isLSP8) {
       return INTERFACE_IDS.LSP8IdentifiableDigitalAsset;
     }
@@ -155,15 +164,15 @@ export const formatAddress = (address: string | null) => {
   return `${address.slice(0, 5)}...${address.slice(-4)}`;
 };
 
-export const getTokenIconURL = (LSP4Metadata: any) => {
-  if (LSP4Metadata.icon?.[0]?.url) {
+export const getTokenIconURL = (LSP4Metadata?: any) => {
+  if (LSP4Metadata?.icon?.[0]?.url) {
     const url = LSP4Metadata.icon?.[0]?.url;
     if (url.startsWith('ipfs://')) {
       return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
     } else if (url.startsWith('data:image/')) {
       return url;
     }
-  } else if (LSP4Metadata.images?.[0]?.[0]?.url) {
+  } else if (LSP4Metadata?.images?.[0]?.[0]?.url) {
     const url = LSP4Metadata.images?.[0]?.[0]?.url;
     if (url.startsWith('ipfs://')) {
       return `${constants.IPFS_GATEWAY}${url.slice(7)}`;

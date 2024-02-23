@@ -1,21 +1,21 @@
 import { useContext, useState } from 'react';
 import {
+  Avatar,
   Box,
   Button,
   Flex,
   IconButton,
+  Image,
   Text,
   useColorModeValue,
   useToast,
-  Avatar,
-  Image,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { TokenData, formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
+import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { getProvider } from '@/utils/provider';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
@@ -137,14 +137,13 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
   const getTokenIcon = () => {
     const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
-    let tokenIcon = !iconURL ? (
+    return !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
         LSP7
       </Box>
     ) : (
       <Avatar height={16} minW={16} name={tokenData?.name} src={iconURL} />
     );
-    return tokenIcon;
   };
 
   return (
