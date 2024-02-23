@@ -49,6 +49,7 @@ export default function JoinGraveBtn({
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
   const {
+    provider,
     account,
     graveVault,
     mainUPController,
@@ -101,7 +102,7 @@ export default function JoinGraveBtn({
    */
   const fetchProfileUrdData = async () => {
     try {
-      const urdData = await getUpAddressUrds(account as string);
+      const urdData = await getUpAddressUrds(provider, account as string);
       urdData.lsp7Urd && setURDLsp7(urdData.lsp7Urd);
       urdData.lsp8Urd && setURDLsp8(urdData.lsp8Urd);
     } catch (err) {
@@ -132,7 +133,7 @@ export default function JoinGraveBtn({
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
     try {
-      await updateBECPermissions(account!, mainUPController!);
+      await updateBECPermissions(provider, account!, mainUPController!);
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
@@ -143,6 +144,7 @@ export default function JoinGraveBtn({
       // 2.A. Set up new Vault if none found
       try {
         const newVaultAddress = await setUpGraveVault(
+          provider,
           account!,
           networkConfig.universalGraveForwarder,
           networkConfig.lsp1UrdVault
@@ -158,7 +160,11 @@ export default function JoinGraveBtn({
     } else {
       // 2.B. If Vault exists ensure it has the correct URD and if not, set it
       try {
-        await setVaultURD(graveVault as string, networkConfig.lsp1UrdVault);
+        await setVaultURD(
+          provider,
+          graveVault as string,
+          networkConfig.lsp1UrdVault
+        );
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
@@ -170,6 +176,7 @@ export default function JoinGraveBtn({
     // 3. Set LSP7 and LSP8 URD to the GRAVE Forwarder address and give URD permissions
     try {
       await toggleForwarderAsLSPDelegate(
+        provider,
         account!,
         networkConfig.universalGraveForwarder,
         true
@@ -212,7 +219,7 @@ export default function JoinGraveBtn({
 
     // 1- Set Permissions on Browser Extension Controller
     try {
-      await updateBECPermissions(account!, mainUPController!);
+      await updateBECPermissions(provider, account!, mainUPController!);
       setLeavingStep(1);
     } catch (err: any) {
       console.error('Error: ', err);
@@ -229,6 +236,7 @@ export default function JoinGraveBtn({
     // 2- Set the URD for LSP7 and LSP8 to the zero address
     try {
       await toggleForwarderAsLSPDelegate(
+        provider,
         account!,
         networkConfig.universalGraveForwarder,
         false

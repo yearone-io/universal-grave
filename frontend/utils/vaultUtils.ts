@@ -3,14 +3,13 @@ import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProf
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { ERC725YDataKeys, OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
-import { getProvider } from './provider';
 
 export const setUpGraveVault = async (
+  provider: any,
   upAccount: string,
   forwarderAddress: string,
   vaultURD: string
 ): Promise<string> => {
-  const provider = getProvider();
   const signer = provider.getSigner();
   const UP = new ethers.Contract(upAccount, UniversalProfile.abi, provider);
 
@@ -98,10 +97,10 @@ export const setUpGraveVault = async (
  * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
  */
 export const setVaultURD = async (
+  provider: any,
   vaultAddress: string,
   vaultURDAddress: string
 ) => {
-  const provider = getProvider();
   const signer = provider.getSigner();
   const vault = new ethers.Contract(
     vaultAddress as string,
@@ -129,10 +128,10 @@ export const setVaultURD = async (
 };
 
 export const migrateVaultToNewForwarder = async (
+  provider: any,
   oldForwarderAddress: string,
   newForwarderAddress: string
 ) => {
-  const provider = getProvider();
   const signer = provider.getSigner();
   const oldForwarder = new ethers.Contract(
     oldForwarderAddress,

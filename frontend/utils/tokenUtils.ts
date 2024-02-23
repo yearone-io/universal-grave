@@ -6,7 +6,7 @@ import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { constants } from '@/app/constants';
-import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { getLuksoProvider } from '@/utils/provider';
 
 export type TokenData = {
   readonly interface: string;
@@ -44,11 +44,12 @@ const lsp8TransferSelector = computeSelector(
 );
 
 export const detectLSP = async (
+  provider: any,
   assetAddress: string
 ): Promise<string | null> => {
   // fetch digital asset interface details
   try {
-    const bytecode = await getProvider().getCode(assetAddress);
+    const bytecode = await provider.getCode(assetAddress);
     const isLSP7 = supportsFunction(bytecode, lsp7TransferSelector);
     if (isLSP7) {
       return INTERFACE_IDS.LSP7DigitalAsset;
@@ -65,6 +66,7 @@ export const detectLSP = async (
 };
 
 export const getLSPAssetBasicInfo = async (
+  provider: any,
   assetAddress: string,
   ownerAddress: string
 ): Promise<TokenData> => {
@@ -74,7 +76,7 @@ export const getLSPAssetBasicInfo = async (
     metadata: {},
     interface: '',
   };
-  const lspInterface = await detectLSP(assetAddress);
+  const lspInterface = await detectLSP(provider, assetAddress);
   if (!lspInterface) {
     return unrecognizedLsp;
   }
@@ -112,7 +114,7 @@ export const getLSPAssetBasicInfo = async (
     const contract = new ethers.Contract(
       assetAddress,
       eip165ABI.concat(erc20ABI) as any,
-      getProvider()
+      provider
     );
     decimals =
       lspInterface === INTERFACE_IDS.LSP7DigitalAsset
@@ -213,13 +215,14 @@ export const parseDataURI = (dataUri: string) => {
 };
 
 export async function processLSP8Asset(
+  provider: any,
   asset: TokenData,
   assetOwner: string
 ): Promise<TokenData[]> {
   const contract = new ethers.Contract(
     asset.address as string,
     LSP8IdentifiableDigitalAsset.abi,
-    getProvider()
+    provider
   );
   const tokenIds = await contract.tokenIdsOf(assetOwner);
   const nfts: TokenData[] = [];

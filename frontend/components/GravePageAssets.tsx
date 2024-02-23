@@ -12,22 +12,27 @@ export default function GravePageAssets({
   graveOwner: string;
 }) {
   const walletContext = useContext(WalletContext);
-  const { networkConfig } = walletContext;
+  const { networkConfig, provider } = walletContext;
   const [graveVault, setGraveVault] = useState<string | null>(null);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
     if (!graveVault) {
-      getGraveVaultFor(graveOwner, networkConfig.universalGraveForwarder)
+      getGraveVaultFor(
+        provider,
+        graveOwner,
+        networkConfig.universalGraveForwarder
+      )
         .then(async graveVault => {
           if (graveVault) {
             return setGraveVault(graveVault);
           }
           // check if the user has an old Urd version
           // and thus potentially a different grave vault
-          const urdData = await getUpAddressUrds(graveOwner);
+          const urdData = await getUpAddressUrds(provider, graveOwner);
           if (urdData.oldUrdVersion) {
             const oldGraveVault = await getGraveVaultFor(
+              provider,
               graveOwner,
               urdData.oldUrdVersion
             );

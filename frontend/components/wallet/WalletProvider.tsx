@@ -4,6 +4,7 @@ import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
 import { buildSIWEMessage, getGraveVaultFor } from '@/utils/universalProfile';
 import { getNetworkConfig } from '@/constants/networks';
+import { getProvider } from '@/utils/provider';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -25,7 +26,7 @@ interface Props {
  * @returns {JSX.Element} - A provider component that passes down wallet context.
  */
 export const WalletProvider: React.FC<Props> = ({ children }) => {
-  // State to hold the connected account's address.
+  const [provider, setProvider] = useState<any>(null);
   const [account, setAccount] = useState<string | null>(null);
   const [mainUPController, setMainUPController] = useState<string>();
   const [graveVault, setGraveVault] = useState<string>();
@@ -39,6 +40,11 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
   );
   const toast = useToast();
+
+  useEffect(() => {
+    const initProvider = getProvider();
+    setProvider(initProvider);
+  }, [connectedChainId, mainUPController]);
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
   useEffect(() => {
@@ -58,13 +64,15 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.lukso && account) {
-      getGraveVaultFor(account, networkConfig.universalGraveForwarder).then(
-        graveVault => {
-          if (graveVault) {
-            setGraveVault(graveVault);
-          }
+      getGraveVaultFor(
+        provider,
+        account,
+        networkConfig.universalGraveForwarder
+      ).then(graveVault => {
+        if (graveVault) {
+          setGraveVault(graveVault);
         }
-      );
+      });
     }
   }, [account]);
 
@@ -166,6 +174,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   return (
     <WalletContext.Provider
       value={{
+        provider,
         account,
         graveVault,
         mainUPController,

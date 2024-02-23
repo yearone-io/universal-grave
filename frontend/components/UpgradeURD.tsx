@@ -16,7 +16,6 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { ethers } from 'ethers';
 import { formatAddress } from '@/utils/tokenUtils';
 import { FaCheckCircle } from 'react-icons/fa';
 import {
@@ -56,8 +55,14 @@ export const UpgradeURD = ({
   oldForwarderAddress: string;
 }) => {
   const walletContext = useContext(WalletContext);
-  const { account, networkConfig, setURDLsp7, setURDLsp8, mainUPController } =
-    walletContext;
+  const {
+    account,
+    provider,
+    networkConfig,
+    setURDLsp7,
+    setURDLsp8,
+    mainUPController,
+  } = walletContext;
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
@@ -76,7 +81,7 @@ export const UpgradeURD = ({
     setLeavingStep(0);
 
     try {
-      await updateBECPermissions(account!, mainUPController!);
+      await updateBECPermissions(provider, account!, mainUPController!);
     } catch (e: any) {
       console.error('Error updating permissions', e);
       toast({
@@ -94,7 +99,12 @@ export const UpgradeURD = ({
     setLeavingStep(1);
 
     try {
-      await toggleForwarderAsLSPDelegate(account!, oldForwarderAddress, false);
+      await toggleForwarderAsLSPDelegate(
+        provider,
+        account!,
+        oldForwarderAddress,
+        false
+      );
     } catch (e: any) {
       console.error('Error resetting LSP delegates', e);
       toast({
@@ -113,6 +123,7 @@ export const UpgradeURD = ({
 
     try {
       await migrateVaultToNewForwarder(
+        provider,
         oldForwarderAddress,
         networkConfig.universalGraveForwarder
       );
@@ -137,6 +148,7 @@ export const UpgradeURD = ({
 
     try {
       await toggleForwarderAsLSPDelegate(
+        provider,
         account!,
         networkConfig.universalGraveForwarder,
         true

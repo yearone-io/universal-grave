@@ -13,7 +13,6 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import { LSP1GraveForwarder } from '@/contracts';
-import { getProvider } from '@/utils/provider';
 import { BiSolidCheckCircle } from 'react-icons/bi';
 
 const messageState = {
@@ -28,11 +27,10 @@ const messageState = {
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
-  const { networkConfig } = walletContext;
+  const { networkConfig, provider } = walletContext;
   const toast = useToast();
-
-  const provider = getProvider();
   const signer = provider.getSigner();
+
   const graveForwarder = new ethers.Contract(
     networkConfig.universalGraveForwarder,
     LSP1GraveForwarderAbi.abi,

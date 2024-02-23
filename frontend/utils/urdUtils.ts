@@ -1,10 +1,9 @@
 import { ethers } from 'ethers';
 import { getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
-import { getProvider } from '@/utils/provider';
+import { getLuksoProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
@@ -40,9 +39,9 @@ export interface IUPForwarderData {
 }
 
 export const getUpAddressUrds = async (
+  provider: any,
   upAddress: string
 ): Promise<IUPForwarderData> => {
-  const provider = getProvider();
   const urdData: IUPForwarderData = {
     lsp7Urd: null,
     lsp8Urd: null,
@@ -79,10 +78,10 @@ export const getUpAddressUrds = async (
  * Function to update the permissions of the Browser Extension controller.
  */
 export const updateBECPermissions = async (
+  provider: any,
   account: string,
   mainUPController: string
 ) => {
-  const provider = getProvider();
   const signer = provider.getSigner();
   // check if we need to update permissions
   const missingPermissions = await doesControllerHaveMissingPermissions(
@@ -97,7 +96,7 @@ export const updateBECPermissions = async (
   const erc725 = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     account,
-    provider
+    getLuksoProvider()
   );
 
   const newPermissions = erc725.encodePermissions({
@@ -120,11 +119,11 @@ export const updateBECPermissions = async (
 };
 
 export const toggleForwarderAsLSPDelegate = async (
+  provider: any,
   upAccount: string,
   forwarderAddress: string,
   isDelegate: boolean
 ) => {
-  const provider = getProvider();
   const signer = provider.getSigner();
   // 1. Prepare keys and values for setting the Forwarder as the delegate for LSP7 and LSP8
   const LSP7URDdataKey =
@@ -143,7 +142,7 @@ export const toggleForwarderAsLSPDelegate = async (
   const upPermissions = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     upAccount,
-    provider
+    getLuksoProvider()
   );
   const checkSumForwarderAddress = getChecksumAddress(
     forwarderAddress
@@ -195,7 +194,7 @@ export const getAddressPermissionsOnTarget = async (
   const erc725 = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     targetEntity,
-    getProvider()
+    getLuksoProvider()
   );
   const addressPermission = await erc725.getData({
     keyName: 'AddressPermissions:Permissions:<address>',
