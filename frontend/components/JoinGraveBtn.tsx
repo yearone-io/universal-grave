@@ -1,27 +1,15 @@
 'use client';
 import { useContext, useEffect, useState } from 'react';
-import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
-import { ethers } from 'ethers';
-import { DEFAULT_UP_URD_PERMISSIONS } from '@/app/constants';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
-import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json' assert { type: 'json' };
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
-import { AddressZero } from '@ethersproject/constants';
-import { getLuksoProvider, getProvider } from '@/utils/provider';
-import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import {
+  urdsMatchLatestForwarder,
   getUpAddressUrds,
-  resetLSPDelegates,
-  setForwarderAsLSPDelegate,
-  setVaultURD,
+  toggleForwarderAsLSPDelegate,
   updateBECPermissions,
 } from '@/utils/urdUtils';
-import { getChecksumAddress } from '@/utils/tokenUtils';
+import { setUpGraveVault, setVaultURD } from '@/utils/vaultUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -60,7 +48,6 @@ export default function JoinGraveBtn({
   if (!walletContext) {
     throw new Error('WalletConnector must be used within a WalletProvider.');
   }
-
   const {
     account,
     graveVault,
@@ -74,14 +61,13 @@ export default function JoinGraveBtn({
   } = walletContext;
 
   // ========================= HOOKS =========================
-
   useEffect(() => {
     // Request account access on component mount
     if (window.lukso && account) {
       fetchProfileUrdData().then(() => {
         // Update steps if the user has already joined the Grave
         if (
-          hasJoinedTheGrave(
+          urdsMatchLatestForwarder(
             URDLsp7,
             URDLsp8,
             networkConfig.universalGraveForwarder
@@ -132,106 +118,6 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
 
-  const batchJoin = async (
-    provider: ethers.providers.JsonRpcProvider,
-    signer: ethers.providers.JsonRpcSigner
-  ): Promise<{ vaultAddress: string }> => {
-    const UP = new ethers.Contract(
-      account as string,
-      UniversalProfile.abi,
-      provider
-    );
-
-    // 1.create vault
-    const vaultFactory = new ethers.ContractFactory(
-      LSP9Vault.abi,
-      LSP9Vault.bytecode,
-      signer
-    );
-    const deployTransactionObject = vaultFactory.getDeployTransaction(account);
-    const firstCreateEncodedData = deployTransactionObject.data;
-
-    const nonce = await provider.getTransactionCount(account as string);
-    const predictedVaultAddress = ethers.utils.getContractAddress({
-      from: account as string,
-      nonce: nonce,
-    });
-
-    //  2.Set the vault in the forwarder contract
-    const graveForwarderContract = new ethers.Contract(
-      networkConfig.universalGraveForwarder,
-      LSP1GraveForwarder.abi,
-      signer
-    );
-    const encodedSetGrave = graveForwarderContract.interface.encodeFunctionData(
-      'setGrave',
-      [predictedVaultAddress]
-    );
-
-    // 3. Enable grave to keep assets inventory
-    const vaultContract = new ethers.Contract(
-      predictedVaultAddress,
-      LSP9Vault.abi,
-      signer
-    );
-    const encodedGraveSetData = vaultContract.interface.encodeFunctionData(
-      'setData',
-      [
-        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        networkConfig.lsp1UrdVault,
-      ]
-    );
-
-    // In order:
-    // 1. Create the vault
-    // 2. Set the vault in the forwarder contract
-    // 3. Enable grave to keep assets inventory
-    console.log('Predicted Address for Vault: ', predictedVaultAddress);
-    // ============ IMPORTANT ============
-    // NOTE: DONT ADD MORE CREATE TRANX TO THE BATCH.
-    // PREDICTED VAULT ADDRESS FOR THE VAULT COULD BE WRONG DEPENDING ON ORDER.
-    // ============ IMPORTANT ============
-    const operationsType = [1, 0, 0];
-    const targets = [
-      AddressZero,
-      networkConfig.universalGraveForwarder,
-      predictedVaultAddress,
-    ];
-    const values = [0, 0, 0];
-    const datas = [
-      firstCreateEncodedData,
-      encodedSetGrave,
-      encodedGraveSetData,
-    ];
-    const batchTx = await UP.connect(signer).executeBatch(
-      operationsType,
-      targets,
-      values,
-      datas
-    );
-    const receipt = await batchTx.wait();
-
-    // Verify that the Vault predicted address is the same as the one emitted by the event
-    for (const event of receipt.events) {
-      if (event.event === 'ContractCreated') {
-        const vaultAddress = event.args.contractAddress;
-        if (
-          vaultAddress.toLowerCase() === predictedVaultAddress.toLowerCase()
-        ) {
-          console.log('Address matches: ', vaultAddress);
-          return { vaultAddress };
-        } else {
-          //'Mismatch in predicted Vault '
-          console.log('Mismatch in predicted Vault: ', vaultAddress);
-        }
-      }
-    }
-    // If no matching event is found, throw an error to ensure the function does not exit without returning a value
-    throw new Error(
-      'No Vault creation event found, failed to create the vault.'
-    );
-  };
-
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -243,10 +129,7 @@ export default function JoinGraveBtn({
       });
       return;
     }
-    const provider = getProvider();
-    const signer = provider.getSigner();
-    let vaultAddress = graveVault;
-    // 1. Give the Browser Extension Controller the necessary permissions
+    // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
     try {
       await updateBECPermissions(account!, mainUPController!);
@@ -257,12 +140,15 @@ export default function JoinGraveBtn({
       return err;
     }
     if (!graveVault) {
-      // 2.A. Create a vault for the UP in batch transaction. (if needed)
+      // 2.A. Set up new Vault if none found
       try {
-        const batchJoinTrax = await batchJoin(provider, signer);
-
+        const newVaultAddress = await setUpGraveVault(
+          account!,
+          networkConfig.universalGraveForwarder,
+          networkConfig.lsp1UrdVault
+        );
         // add the vault to the provider store
-        addGraveVault(batchJoinTrax.vaultAddress);
+        addGraveVault(newVaultAddress);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
@@ -270,10 +156,9 @@ export default function JoinGraveBtn({
         return err;
       }
     } else {
-      console.log('batch join skipped, vault already exists');
-      //2.B. Enable grave to keep assets inventory (this done in 2.A too but as part of a batch call)
+      // 2.B. If Vault exists ensure it has the correct URD and if not, set it
       try {
-        await setVaultURD(vaultAddress as string, networkConfig.lsp1UrdVault);
+        await setVaultURD(graveVault as string, networkConfig.lsp1UrdVault);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
@@ -282,11 +167,12 @@ export default function JoinGraveBtn({
       }
     }
 
-    // 3. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
+    // 3. Set LSP7 and LSP8 URD to the GRAVE Forwarder address and give URD permissions
     try {
-      await setForwarderAsLSPDelegate(
+      await toggleForwarderAsLSPDelegate(
         account!,
-        networkConfig.universalGraveForwarder
+        networkConfig.universalGraveForwarder,
+        true
       );
       setJoiningStep(3);
       console.log('step 3');
@@ -342,11 +228,11 @@ export default function JoinGraveBtn({
     }
     // 2- Set the URD for LSP7 and LSP8 to the zero address
     try {
-      await resetLSPDelegates(networkConfig.universalGraveForwarder);
-      // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
-      //       The UP should still have access to the vault, but no more assets should be redirected.
-      //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
-      //       Something wrong like renouncing ownership.
+      await toggleForwarderAsLSPDelegate(
+        account!,
+        networkConfig.universalGraveForwarder,
+        false
+      );
     } catch (err: any) {
       console.error('Error: ', err);
       toast({
@@ -374,7 +260,7 @@ export default function JoinGraveBtn({
   // ========================= HELPERS =========================
   const hasExistingNonGraveDelegates = () => {
     return (
-      !hasJoinedTheGrave(
+      !urdsMatchLatestForwarder(
         URDLsp7,
         URDLsp8,
         networkConfig.universalGraveForwarder
@@ -425,10 +311,12 @@ export default function JoinGraveBtn({
   };
 
   const displayJoinLeaveButtons = () => {
-    // Note: check sum case address to avoid issues with case sensitivity
-
     if (
-      hasJoinedTheGrave(URDLsp7, URDLsp8, networkConfig.universalGraveForwarder)
+      urdsMatchLatestForwarder(
+        URDLsp7,
+        URDLsp8,
+        networkConfig.universalGraveForwarder
+      )
     ) {
       return (
         <Button

@@ -223,7 +223,6 @@ export async function processLSP8Asset(
   );
   const tokenIds = await contract.tokenIdsOf(assetOwner);
   const nfts: TokenData[] = [];
-
   for (const tokenId of tokenIds) {
     if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
       const tokenMetadata = await contract.getDataForTokenId(
@@ -247,7 +246,6 @@ export async function processLSP8Asset(
       if (decodedMetadata[0]?.value?.url) {
         const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
         image = getTokenImageURL(parsedMetadata.LSP4Metadata);
-        console.log('image', image);
       }
       asset.image = image;
     }

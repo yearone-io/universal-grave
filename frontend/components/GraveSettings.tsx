@@ -20,8 +20,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
-import { hasJoinedTheGrave } from '@/utils/universalProfile';
-import { hasOlderGraveDelegate } from '@/utils/urdUtils';
+import {
+  hasOlderGraveDelegate,
+  urdsMatchLatestForwarder,
+} from '@/utils/urdUtils';
 import { UpgradeURD } from '@/components/UpgradeURD';
 import Link from 'next/link';
 
@@ -170,7 +172,7 @@ export default function GraveSettings() {
                       border={'none'}
                     >
                       {getTabOption('Subscription')}
-                      {hasJoinedTheGrave(
+                      {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
                         networkConfig.universalGraveForwarder
@@ -180,7 +182,7 @@ export default function GraveSettings() {
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
                       {getTabPanel('Subscription', oldForwarderAddress)}
-                      {hasJoinedTheGrave(
+                      {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
                         networkConfig.universalGraveForwarder
