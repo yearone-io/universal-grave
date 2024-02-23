@@ -8,15 +8,16 @@ import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/L
 import {
   getLSPAssetBasicInfo,
   getTokenImageURL,
+  GRAVE_ASSET_TYPES,
   parseDataURI,
   TokenData,
 } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
-import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
-import { INTERFACE_IDS, LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
+import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
+import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 
 export default function LSPAssets({
   graveVault,
@@ -27,6 +28,12 @@ export default function LSPAssets({
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenData[]>([]);
   const [unrecognisedAssets, setUnrecognisedAssets] = useState<TokenData[]>([]);
+  const [unrecognisedLsp7Assets, setUnrecognisedLsp7Assets] = useState<
+    TokenData[]
+  >([]);
+  const [unrecognisedLsp8Assets, setUnrecognisedLsp8Assets] = useState<
+    TokenData[]
+  >([]);
 
   const toast = useToast();
 
@@ -55,6 +62,8 @@ export default function LSPAssets({
       );
       const lsp7Results: TokenData[] = [];
       const lsp8Results: TokenData[] = [];
+      const unrecognisedLsp7Results: TokenData[] = [];
+      const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
         const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
@@ -62,10 +71,16 @@ export default function LSPAssets({
         if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
           asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
         }
-        if (asset.interface === INTERFACE_IDS.LSP7DigitalAsset) {
+        if (asset.interface === GRAVE_ASSET_TYPES.LSP7DigitalAsset) {
           lsp7Results.push(asset);
         } else if (
-          asset.interface === INTERFACE_IDS.LSP8IdentifiableDigitalAsset
+          asset.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
+        ) {
+          unrecognisedLsp7Results.push(asset);
+        } else if (
+          asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset ||
+          asset.interface ===
+            GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
         ) {
           const contract = new ethers.Contract(
             asset.address as string,
@@ -73,7 +88,7 @@ export default function LSPAssets({
             getProvider()
           );
           const tokenIds = await contract.tokenIdsOf(graveVault);
-          tokenIds.forEach(async (tokenId: string) => {
+          for (const tokenId of tokenIds) {
             // need to fetch token specific data here
             if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
               const tokenMetadata = await contract.getDataForTokenId(
@@ -105,11 +120,16 @@ export default function LSPAssets({
                 asset.image = image;
               }
             }
-            lsp8Results.push({
-              ...asset,
-              tokenId: tokenId.toString(),
-            });
-          });
+            asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
+              ? lsp8Results.push({
+                  ...asset,
+                  tokenId: tokenId.toString(),
+                })
+              : unrecognisedLsp8Results.push({
+                  ...asset,
+                  tokenId: tokenId.toString(),
+                });
+          }
         } else {
           unrecognisedAssetResults.push(asset);
         }
@@ -118,6 +138,8 @@ export default function LSPAssets({
       setLsp7Assets(lsp7Results);
       setLsp8Assets(lsp8Results);
       setUnrecognisedAssets(unrecognisedAssetResults);
+      setUnrecognisedLsp7Assets(unrecognisedLsp7Results);
+      setUnrecognisedLsp8Assets(unrecognisedLsp8Results);
     } catch (error: any) {
       console.error(error);
       toast({
@@ -220,6 +242,50 @@ export default function LSPAssets({
               ))
             : emptyAssets()}
         </Box>
+        {unrecognisedLsp7Assets.length > 0 && (
+          <Box minWidth={'500px'}>
+            <Text
+              color="white"
+              fontWeight={400}
+              fontSize="16px"
+              fontFamily="Bungee"
+              mb="20px"
+            >
+              Unrecognized LSP7 Assets
+            </Text>
+            {unrecognisedLsp7Assets.map((asset, index) => (
+              <Box key={'unrecognised-lsp7-' + index}>
+                <LSP7Panel
+                  tokenData={asset}
+                  vaultAddress={graveVault!}
+                  onReviveSuccess={fetchAssets}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
+        {unrecognisedLsp8Assets.length > 0 && (
+          <Box minWidth={'500px'}>
+            <Text
+              color="white"
+              fontWeight={400}
+              fontSize="16px"
+              fontFamily="Bungee"
+              mb="20px"
+            >
+              Unrecognized LSP8 Assets
+            </Text>
+            {unrecognisedLsp8Assets.map((asset, index) => (
+              <Box key={'unrecognised-lsp8-' + index}>
+                <LSP8Panel
+                  tokenData={asset}
+                  vaultAddress={graveVault!}
+                  onReviveSuccess={fetchAssets}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
         {unrecognisedAssets.length > 0 && (
           <Box minWidth={'500px'}>
             <Text
