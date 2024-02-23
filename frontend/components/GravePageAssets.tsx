@@ -45,7 +45,7 @@ export default function GravePageAssets({
           setError('No GRAVE vault found for this account');
         } catch (error) {
           console.error(error);
-          setError(error.message);
+          setError('Error fetching GRAVE vault');
         }
       }
     };
