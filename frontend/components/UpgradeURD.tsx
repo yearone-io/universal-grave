@@ -100,7 +100,7 @@ export const UpgradeURD = ({
     setLeavingStep(0);
 
     try {
-      await updateBECPermissions(account!, mainUPController!, provider, signer);
+      await updateBECPermissions(account!, mainUPController!);
     } catch (e: any) {
       console.error('Error updating permissions', e);
       toast({
@@ -118,7 +118,7 @@ export const UpgradeURD = ({
     setLeavingStep(1);
 
     try {
-      await resetLSPDelegates(provider, signer, oldForwarderAddress);
+      await resetLSPDelegates(oldForwarderAddress);
     } catch (e: any) {
       console.error('Error resetting LSP delegates', e);
       toast({

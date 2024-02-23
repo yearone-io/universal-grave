@@ -84,9 +84,9 @@ export const getUpAddressUrds = async (
 export const updateBECPermissions = async (
   account: string,
   mainUPController: string,
-  provider: ethers.providers.JsonRpcProvider,
-  signer: ethers.providers.JsonRpcSigner
 ) => {
+  const provider = getProvider();
+  const signer = provider.getSigner();
   // check if we need to update permissions
   const missingPermissions = await doesControllerHaveMissingPermissions(
     mainUPController,
@@ -100,7 +100,7 @@ export const updateBECPermissions = async (
   const erc725 = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     account,
-    getLuksoProvider()
+    provider
   );
 
   const newPermissions = erc725.encodePermissions({
@@ -126,10 +126,10 @@ export const updateBECPermissions = async (
  * Function to reset the delegates for LSP7 and LSP8 to the zero address. Used when leaving the Grave.
  */
 export const resetLSPDelegates = async (
-  provider: ethers.providers.JsonRpcProvider,
-  signer: ethers.providers.JsonRpcSigner,
   forwarderAddress: string
 ) => {
+  const provider = getProvider();
+  const signer = provider.getSigner();
   const account = await signer.getAddress();
   // Interacting with the Universal Profile contract
   const UP = new ethers.Contract(
@@ -141,7 +141,7 @@ export const resetLSPDelegates = async (
   const erc725 = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     account,
-    getLuksoProvider()
+    provider
   );
 
   // LSP7 data key to set the forwarder as the delegate
@@ -198,16 +198,16 @@ export const resetLSPDelegates = async (
 export const setForwarderAsLSPDelegate = async (
   account: string,
   forwarder: string,
-  signer: ethers.providers.JsonRpcSigner,
-  provider: ethers.providers.JsonRpcProvider
 ) => {
+  const provider = getProvider();
+  const signer = provider.getSigner();
   // Interacting with the Universal Profile contract
   const UP = new ethers.Contract(account, UniversalProfile.abi, provider);
 
   const erc725 = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     account,
-    getLuksoProvider()
+    provider
   );
   // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
   const LSP7URDdataKey =
@@ -270,7 +270,7 @@ export const getAddressPermissionsOnTarget = async (
   const erc725 = new ERC725(
     LSP6Schema as ERC725JSONSchema[],
     targetEntity,
-    getLuksoProvider()
+    getProvider()
   );
   const addressPermission = await erc725.getData({
     keyName: 'AddressPermissions:Permissions:<address>',

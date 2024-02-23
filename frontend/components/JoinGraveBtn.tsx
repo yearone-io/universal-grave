@@ -6,9 +6,7 @@ import { WalletContext } from './wallet/WalletContext';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
 import {
-  DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
-  GRAVE_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
@@ -19,8 +17,9 @@ import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import {
-  doesControllerHaveMissingPermissions,
   getUpAddressUrds,
+  resetLSPDelegates,
+  updateBECPermissions,
 } from '@/utils/urdUtils';
 import { getChecksumAddress } from '@/utils/tokenUtils';
 
@@ -250,7 +249,7 @@ export default function JoinGraveBtn({
     // 1. Give the Browser Extension Controller the necessary permissions
     console.log('step 0');
     try {
-      await updateBECPermissions(provider, signer);
+      await updateBECPermissions(account!, mainUPController!);
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
@@ -321,12 +320,10 @@ export default function JoinGraveBtn({
       return;
     }
     setLeavingStep(0);
-    const provider = getProvider();
-    const signer = provider.getSigner();
 
     // 1- Set Permissions on Browser Extension Controller
     try {
-      await updateBECPermissions(provider, signer);
+      await updateBECPermissions(account!, mainUPController!);
       setLeavingStep(1);
     } catch (err: any) {
       console.error('Error: ', err);
@@ -342,7 +339,7 @@ export default function JoinGraveBtn({
     }
     // 2- Set the URD for LSP7 and LSP8 to the zero address
     try {
-      await resetLSPDelegates(signer, provider);
+      await resetLSPDelegates(networkConfig.universalGraveForwarder);
       // NOTE: on leave, don't reset the associated vault in the grave delegate contract.
       //       The UP should still have access to the vault, but no more assets should be redirected.
       //       Future idea, create a second vault or reset to a new vault incase something wrong happens with the first one and have multiple using LSP10.
@@ -372,54 +369,6 @@ export default function JoinGraveBtn({
   };
 
   // ========================= UPDATING DATA =========================
-
-  /**
-   * Function to update the permissions of the Browser Extension controller.
-   */
-  const updateBECPermissions = async (
-    provider: ethers.providers.JsonRpcProvider,
-    signer: ethers.providers.JsonRpcSigner
-  ) => {
-    // check if we need to update permissions
-    const missingPermissions = await doesControllerHaveMissingPermissions(
-      mainUPController as string,
-      account as string
-    );
-    if (!missingPermissions.length) {
-      return;
-    }
-    const UP = new ethers.Contract(
-      account as string,
-      UniversalProfile.abi,
-      provider
-    );
-
-    const erc725 = new ERC725(
-      LSP6Schema as ERC725JSONSchema[],
-      account,
-      getLuksoProvider()
-    );
-
-    // All the permissions have to be passed. If one is missing the tx will set it to false (even if it is set to true)
-    const newPermissions = erc725.encodePermissions({
-      ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-      ...GRAVE_CONTROLLER_PERMISSIONS,
-    });
-    const permissionsData = erc725.encodeData([
-      {
-        keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: mainUPController,
-        value: newPermissions,
-      },
-    ]);
-
-    const setDataBatchTx = await UP.connect(signer).setDataBatch(
-      permissionsData.keys,
-      permissionsData.values
-    );
-    return await setDataBatchTx.wait();
-  };
-
   /**
    * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
    */
@@ -529,79 +478,6 @@ export default function JoinGraveBtn({
     dataValues = [...dataValues, ...data.values];
 
     // 4.execute the tx
-    const setDataBatchTx = await UP.connect(signer).setDataBatch(
-      dataKeys,
-      dataValues
-    );
-    return await setDataBatchTx.wait();
-  };
-
-  /**
-   * Function to reset the delegates for LSP7 and LSP8 to the zero address. Used when leaving the Grave.
-   */
-  const resetLSPDelegates = async (
-    signer: ethers.providers.JsonRpcSigner,
-    provider: ethers.providers.JsonRpcProvider
-  ) => {
-    const account = await signer.getAddress();
-    // Interacting with the Universal Profile contract
-    const UP = new ethers.Contract(
-      account as string,
-      UniversalProfile.abi,
-      provider
-    );
-
-    const erc725 = new ERC725(
-      LSP6Schema as ERC725JSONSchema[],
-      account,
-      getLuksoProvider()
-    );
-
-    // LSP7 data key to set the forwarder as the delegate
-    const LSP7URDdataKey =
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-    // LSP8 data key to set the forwarder as the delegate
-    const LSP8URDdataKey =
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
-
-    let dataValues = ['0x', '0x'];
-
-    const permissionsResult = await erc725.getData();
-    const allControllers = permissionsResult[0].value as string[];
-    // remove permissions if leaving the Grave and reducing the number of controllers
-    const permissions = '0x';
-    // Remove the forwarder from the list of controllers.
-    // Note: check sum case address to avoid issues with case sensitivity
-    const formattedControllers = allControllers.filter((controller: any) => {
-      return (
-        getChecksumAddress(controller) !==
-        getChecksumAddress(networkConfig.universalGraveForwarder)
-      );
-    });
-
-    const data = erc725.encodeData([
-      // the permission of the beneficiary address
-      {
-        keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: networkConfig.universalGraveForwarder,
-        value: permissions,
-      },
-      // the new list controllers addresses (= addresses with permissions set on the UP)
-      // + or -  1 in the `AddressPermissions[]` array length
-      {
-        keyName: 'AddressPermissions[]',
-        value: formattedControllers,
-      },
-    ]);
-    dataKeys = [...dataKeys, ...data.keys];
-    dataValues = [...dataValues, ...data.values];
-
-    // execute the tx
     const setDataBatchTx = await UP.connect(signer).setDataBatch(
       dataKeys,
       dataValues
