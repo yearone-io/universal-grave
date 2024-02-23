@@ -5,7 +5,7 @@ import { formatAddress } from '@/utils/tokenUtils';
 
 const AdvancedInfoPanel = () => {
   const walletContext = useContext(WalletContext);
-  const { URDLsp7, URDLsp8, networkConfig } = walletContext;
+  const { URDLsp7, URDLsp8, networkConfig, graveVault } = walletContext;
 
   return (
     <>
@@ -41,6 +41,20 @@ const AdvancedInfoPanel = () => {
           {formatAddress(URDLsp8)}
         </a>
       </Box>
+      { graveVault && (
+        <Box mt="20px">
+          <Text>
+            <strong>Vault</strong> 
+          </Text>
+          <a
+            href={`${networkConfig.explorerURL}/address/${graveVault}`}
+            style={{ textDecoration: 'underline' }}
+            target="_blank"
+          >
+            {formatAddress(graveVault as string)}
+          </a>
+        </Box>
+      )}
     </>
   );
 };
