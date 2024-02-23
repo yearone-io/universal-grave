@@ -134,6 +134,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   };
 
   const getTokenIcon = () => {
+    debugger;
     const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
     return !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>

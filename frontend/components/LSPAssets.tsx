@@ -60,9 +60,11 @@ export default function LSPAssets({
         const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
         if (!asset) continue;
         if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
+          debugger;
           asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
         }
         if (asset.interface === INTERFACE_IDS.LSP7DigitalAsset) {
+          debugger;
           lsp7Results.push(asset);
         } else if (
           asset.interface === INTERFACE_IDS.LSP8IdentifiableDigitalAsset
@@ -93,6 +95,7 @@ export default function LSPAssets({
                 ]
               );
               if (decodedMetadata[0]?.value?.url) {
+                debugger;
                 const parsedMetadata = parseDataURI(
                   decodedMetadata[0].value.url
                 );

@@ -47,6 +47,7 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
         ?
       </Box>
     );
+    debugger;
     if (tokenMetadata?.LSP4Metadata?.icon?.[0]?.url.startsWith('ipfs://')) {
       const iconURL = `${
         constants.IPFS_GATEWAY
