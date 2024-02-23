@@ -79,12 +79,16 @@ export default function LSPAssets({
         ) {
           unrecognisedLsp7Results.push(asset);
         } else if (
-          asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset ||
-          asset.interface ===
-            GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
+          asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
         ) {
           const lsp8Tokens = await processLSP8Asset(asset, graveVault);
           lsp8Results.push(...lsp8Tokens);
+        } else if (
+          asset.interface ===
+          GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
+        ) {
+          const lsp8Tokens = await processLSP8Asset(asset, graveVault);
+          unrecognisedLsp8Results.push(...lsp8Tokens);
         } else {
           unrecognisedAssetResults.push(asset);
         }
@@ -212,6 +216,7 @@ export default function LSPAssets({
             {unrecognisedLsp7Assets.map((asset, index) => (
               <Box key={'unrecognised-lsp7-' + index}>
                 <LSP7Panel
+                  vaultOwner={graveOwner}
                   tokenData={asset}
                   vaultAddress={graveVault!}
                   onReviveSuccess={fetchAssets}
@@ -234,6 +239,7 @@ export default function LSPAssets({
             {unrecognisedLsp8Assets.map((asset, index) => (
               <Box key={'unrecognised-lsp8-' + index}>
                 <LSP8Panel
+                  vaultOwner={graveOwner}
                   tokenData={asset}
                   vaultAddress={graveVault!}
                   onReviveSuccess={fetchAssets}
