@@ -22,8 +22,12 @@ export const hasOlderGraveDelegate = (
   if (!URDLsp7 || !URDLsp8) return null;
   const urd7 = getChecksumAddress(URDLsp7)!;
   const urd8 = getChecksumAddress(URDLsp8)!;
-  let urd7Index = networkConfig.previousGraveForwarders.findIndex(item => item.toLowerCase() === urd7.toLowerCase());
-  let urd8Index = networkConfig.previousGraveForwarders.findIndex(item => item.toLowerCase() === urd8.toLowerCase());
+  let urd7Index = networkConfig.previousGraveForwarders.findIndex(
+    item => item.toLowerCase() === urd7.toLowerCase()
+  );
+  let urd8Index = networkConfig.previousGraveForwarders.findIndex(
+    item => item.toLowerCase() === urd8.toLowerCase()
+  );
   if (urd7Index > -1 && urd8Index > -1 && urd7 === urd8) {
     return networkConfig.previousGraveForwarders[urd7Index];
   }
