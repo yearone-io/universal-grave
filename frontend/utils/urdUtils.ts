@@ -1,9 +1,10 @@
 import { ethers } from 'ethers';
 import { getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
-import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { getProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
@@ -79,7 +80,7 @@ export const getUpAddressUrds = async (
  */
 export const updateBECPermissions = async (
   account: string,
-  mainUPController: string,
+  mainUPController: string
 ) => {
   const provider = getProvider();
   const signer = provider.getSigner();
@@ -121,9 +122,7 @@ export const updateBECPermissions = async (
 /**
  * Function to reset the delegates for LSP7 and LSP8 to the zero address. Used when leaving the Grave.
  */
-export const resetLSPDelegates = async (
-  forwarderAddress: string
-) => {
+export const resetLSPDelegates = async (forwarderAddress: string) => {
   const provider = getProvider();
   const signer = provider.getSigner();
   const account = await signer.getAddress();
@@ -193,7 +192,7 @@ export const resetLSPDelegates = async (
 
 export const setForwarderAsLSPDelegate = async (
   account: string,
-  forwarder: string,
+  forwarder: string
 ) => {
   const provider = getProvider();
   const signer = provider.getSigner();
@@ -257,6 +256,40 @@ export const setForwarderAsLSPDelegate = async (
     dataValues
   );
   return await setDataBatchTx.wait();
+};
+
+/**
+ * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
+ */
+export const setVaultURD = async (
+  vaultAddress: string,
+  vaultURDAddress: string
+) => {
+  const provider = getProvider();
+  const signer = provider.getSigner();
+  const vault = new ethers.Contract(
+    vaultAddress as string,
+    LSP9Vault.abi,
+    signer
+  );
+  try {
+    //1. Check if it is neccessary to set the delegate in the vault
+    const lsp1 = await vault
+      .connect(signer)
+      .getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+    if (lsp1.toLocaleLowerCase() === vaultURDAddress.toLocaleLowerCase()) {
+      return;
+    }
+  } catch (err: any) {
+    console.error('Error setVaultURD: ', err);
+  }
+  //2. Set the delegate in the vault if neccesary
+  return await vault
+    .connect(signer)
+    .setData(
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+      vaultURDAddress
+    );
 };
 
 export const getAddressPermissionsOnTarget = async (

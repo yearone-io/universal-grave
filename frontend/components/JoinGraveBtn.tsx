@@ -5,9 +5,7 @@ import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { WalletContext } from './wallet/WalletContext';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ethers } from 'ethers';
-import {
-  DEFAULT_UP_URD_PERMISSIONS,
-} from '@/app/constants';
+import { DEFAULT_UP_URD_PERMISSIONS } from '@/app/constants';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
@@ -19,6 +17,8 @@ import { hasJoinedTheGrave } from '@/utils/universalProfile';
 import {
   getUpAddressUrds,
   resetLSPDelegates,
+  setForwarderAsLSPDelegate,
+  setVaultURD,
   updateBECPermissions,
 } from '@/utils/urdUtils';
 import { getChecksumAddress } from '@/utils/tokenUtils';
@@ -273,7 +273,7 @@ export default function JoinGraveBtn({
       console.log('batch join skipped, vault already exists');
       //2.B. Enable grave to keep assets inventory (this done in 2.A too but as part of a batch call)
       try {
-        await setDelegateInVault(vaultAddress as string);
+        await setVaultURD(vaultAddress as string, networkConfig.lsp1UrdVault);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
@@ -284,7 +284,10 @@ export default function JoinGraveBtn({
 
     // 3. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
-      await setForwarderAsLSPDelegate(signer, provider);
+      await setForwarderAsLSPDelegate(
+        account!,
+        networkConfig.universalGraveForwarder
+      );
       setJoiningStep(3);
       console.log('step 3');
     } catch (err: any) {
@@ -366,123 +369,6 @@ export default function JoinGraveBtn({
       duration: 9000,
       isClosable: true,
     });
-  };
-
-  // ========================= UPDATING DATA =========================
-  /**
-   * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
-   */
-  const setDelegateInVault = async (vaultAddress: string) => {
-    const provider = getProvider();
-    const signer = provider.getSigner();
-    const vault = new ethers.Contract(
-      vaultAddress as string,
-      LSP9Vault.abi,
-      signer
-    );
-    try {
-      //1. Check if it is neccessary to set the delegate in the vault
-      const lsp1 = await vault
-        .connect(signer)
-        .getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-      if (
-        lsp1.toLocaleLowerCase() ===
-        networkConfig.lsp1UrdVault.toLocaleLowerCase()
-      ) {
-        return;
-      }
-    } catch (err: any) {
-      console.error('Error setDelegateInVault: ', err);
-    }
-    //2. Set the delegate in the vault if neccesary
-    return await vault
-      .connect(signer)
-      .setData(
-        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        networkConfig.lsp1UrdVault
-      );
-  };
-
-  /**
-   *  Function to set the forwarder contract as the delegate for LSP7 and LSP8.
-   */
-  const setForwarderAsLSPDelegate = async (
-    signer: ethers.providers.JsonRpcSigner,
-    provider: ethers.providers.JsonRpcProvider
-  ) => {
-    // Interacting with the Universal Profile contract
-    const UP = new ethers.Contract(
-      account as string,
-      UniversalProfile.abi,
-      provider
-    );
-
-    const erc725 = new ERC725(
-      LSP6Schema as ERC725JSONSchema[],
-      account,
-      getLuksoProvider()
-    );
-    // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
-    const LSP7URDdataKey =
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-    const LSP8URDdataKey =
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-    let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
-
-    let dataValues = [
-      networkConfig.universalGraveForwarder,
-      networkConfig.universalGraveForwarder,
-    ];
-
-    const permissionsResult = await erc725.getData();
-    const allControllers = permissionsResult[0].value as string[];
-    let formattedControllers = [] as string[];
-    const permissions = erc725.encodePermissions({
-      SUPER_CALL: true,
-      ...DEFAULT_UP_URD_PERMISSIONS,
-    });
-
-    // 2 - remove the forwarder from the list of controllers for sanity check
-    // Note: check sum case address to avoid issues with case sensitivity
-    formattedControllers = allControllers.filter((controller: any) => {
-      return (
-        getChecksumAddress(controller) !==
-        getChecksumAddress(networkConfig.universalGraveForwarder)
-      );
-    });
-
-    // 3- add the forwarder to the list of controllers
-    formattedControllers = [
-      ...formattedControllers,
-      networkConfig.universalGraveForwarder,
-    ];
-
-    const data = erc725.encodeData([
-      // the permission of the beneficiary address
-      {
-        keyName: 'AddressPermissions:Permissions:<address>',
-        dynamicKeyParts: networkConfig.universalGraveForwarder,
-        value: permissions,
-      },
-      // the new list controllers addresses (= addresses with permissions set on the UP)
-      // + or -  1 in the `AddressPermissions[]` array length
-      {
-        keyName: 'AddressPermissions[]',
-        value: formattedControllers,
-      },
-    ]);
-    dataKeys = [...dataKeys, ...data.keys];
-    dataValues = [...dataValues, ...data.values];
-
-    // 4.execute the tx
-    const setDataBatchTx = await UP.connect(signer).setDataBatch(
-      dataKeys,
-      dataValues
-    );
-    return await setDataBatchTx.wait();
   };
 
   // ========================= HELPERS =========================
