@@ -97,7 +97,11 @@ export default function LSPAssets({
           asset.interface ===
           GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
         ) {
-          const lsp8Tokens = await processLSP8Asset(provider, asset, graveVault);
+          const lsp8Tokens = await processLSP8Asset(
+            provider,
+            asset,
+            graveVault
+          );
           unrecognisedLsp8Results.push(...lsp8Tokens);
         } else {
           unrecognisedAssetResults.push(asset);

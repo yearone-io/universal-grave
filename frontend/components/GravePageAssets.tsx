@@ -17,18 +17,19 @@ export default function GravePageAssets({
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!graveVault) {
-      getGraveVaultFor(
-        provider,
-        graveOwner,
-        networkConfig.universalGraveForwarder
-      )
-        .then(async graveVault => {
+    const fetchGraveVault = async () => {
+      if (!graveVault && provider && networkConfig) {
+        try {
+          const graveVault = await getGraveVaultFor(
+            provider,
+            graveOwner,
+            networkConfig.universalGraveForwarder
+          );
           if (graveVault) {
-            return setGraveVault(graveVault);
+            setGraveVault(graveVault);
+            return;
           }
-          // check if the user has an old Urd version
-          // and thus potentially a different grave vault
+          // Attempt to retrieve grave vault for users with an old Urd version
           const urdData = await getUpAddressUrds(provider, graveOwner);
           if (urdData.oldUrdVersion) {
             const oldGraveVault = await getGraveVaultFor(
@@ -37,17 +38,27 @@ export default function GravePageAssets({
               urdData.oldUrdVersion
             );
             if (oldGraveVault) {
-              return setGraveVault(oldGraveVault);
+              setGraveVault(oldGraveVault);
+              return;
             }
           }
           setError('No GRAVE vault found for this account');
-        })
-        .catch(reason => {
-          console.error(reason);
-          setError(reason.message);
-        });
-    }
-  }, [graveOwner]);
+        } catch (error) {
+          console.error(error);
+          setError(error.message);
+        }
+      }
+    };
+
+    fetchGraveVault();
+  }, [
+    graveOwner,
+    graveVault,
+    provider,
+    networkConfig,
+    setGraveVault,
+    setError,
+  ]);
 
   if (error) {
     return <Text>{error}</Text>;

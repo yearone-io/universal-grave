@@ -58,7 +58,6 @@ const getTabOption = (tabName: string) => {
 
 const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
   const logoPath = '/images/logo-full.png';
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   let panel;
   switch (tabName) {
     case 'Subscription':
@@ -83,7 +82,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
       m="0 20px"
       borderRadius="lg"
       boxShadow="md"
-      backgroundColor={bgColor}
+      backgroundColor={'dark.purple.200'}
       color={'dark.purple.500'}
       minHeight={'450px'}
       padding="20px"
@@ -177,7 +176,6 @@ export default function GraveSettings() {
                         URDLsp8,
                         networkConfig.universalGraveForwarder
                       ) && getTabOption('Manage Allowlist')}
-
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>

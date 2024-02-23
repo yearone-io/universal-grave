@@ -13,10 +13,10 @@ export const getGraveVaultFor = async (
     LSP1GraveForwarder.abi,
     provider
   );
-  const graveYardAddress = await graveForwarder.graveVaults(account);
-  return graveYardAddress === ethers.constants.AddressZero
+  const graveVaultAddress = await graveForwarder.graveVaults(account);
+  return graveVaultAddress === ethers.constants.AddressZero
     ? null
-    : graveYardAddress;
+    : graveVaultAddress;
 };
 
 export const buildSIWEMessage = (upAddress: string): string => {
