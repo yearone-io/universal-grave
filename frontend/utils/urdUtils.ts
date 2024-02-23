@@ -23,12 +23,12 @@ export const hasOlderGraveDelegate = (
   const urd7 = getChecksumAddress(URDLsp7)!;
   const urd8 = getChecksumAddress(URDLsp8)!;
   const checksummedHistoricalURDs = networkConfig.previousGraveForwarders.map(
-    (forwarder) => getChecksumAddress(forwarder)!
+    forwarder => getChecksumAddress(forwarder)!
   );
   // retun the first match of the historical URDs if urd7 or urd8 is in the list
   return (
-    checksummedHistoricalURDs.find((forwarder) => forwarder === urd7) ||
-    checksummedHistoricalURDs.find((forwarder) => forwarder === urd8) ||
+    checksummedHistoricalURDs.find(forwarder => forwarder === urd7) ||
+    checksummedHistoricalURDs.find(forwarder => forwarder === urd8) ||
     null
   );
 };
@@ -66,7 +66,10 @@ export const getUpAddressUrds = async (
     if (UPData) {
       urdData.lsp7Urd = getChecksumAddress(UPData[0]);
       urdData.lsp8Urd = getChecksumAddress(UPData[1]);
-      urdData.oldUrdVersion = hasOlderGraveDelegate(urdData.lsp7Urd, urdData.lsp8Urd);
+      urdData.oldUrdVersion = hasOlderGraveDelegate(
+        urdData.lsp7Urd,
+        urdData.lsp8Urd
+      );
     }
   } catch (err) {
     console.error(err);

@@ -27,11 +27,14 @@ export default function GravePageAssets({
           // and thus potentially a different grave vault
           const urdData = await getUpAddressUrds(graveOwner);
           if (urdData.oldUrdVersion) {
-            const oldGraveVault = await getGraveVaultFor(graveOwner, urdData.oldUrdVersion);
+            const oldGraveVault = await getGraveVaultFor(
+              graveOwner,
+              urdData.oldUrdVersion
+            );
             if (oldGraveVault) {
               return setGraveVault(oldGraveVault);
             }
-          } 
+          }
           setError('No GRAVE vault found for this account');
         })
         .catch(reason => {
@@ -44,5 +47,9 @@ export default function GravePageAssets({
   if (error) {
     return <Text>{error}</Text>;
   }
-  return graveVault ? <LSPAssets graveVault={graveVault} graveOwner={graveOwner} /> : <>Loading...</>;
+  return graveVault ? (
+    <LSPAssets graveVault={graveVault} graveOwner={graveOwner} />
+  ) : (
+    <>Loading...</>
+  );
 }

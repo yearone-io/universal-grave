@@ -203,21 +203,36 @@ export const parseDataURI = (dataUri: string) => {
   }
 };
 
-export async function processLSP8Asset(asset: TokenData, assetOwner: string): Promise<TokenData[]> {
-  const contract = new ethers.Contract(asset.address as string, LSP8IdentifiableDigitalAsset.abi, getProvider());
+export async function processLSP8Asset(
+  asset: TokenData,
+  assetOwner: string
+): Promise<TokenData[]> {
+  const contract = new ethers.Contract(
+    asset.address as string,
+    LSP8IdentifiableDigitalAsset.abi,
+    getProvider()
+  );
   const tokenIds = await contract.tokenIdsOf(assetOwner);
   const nfts: TokenData[] = [];
 
   for (const tokenId of tokenIds) {
     if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
-      const tokenMetadata = await contract.getDataForTokenId(tokenId, ERC725.encodeKeyName('LSP4Metadata'));
-      const decodedMetadata = ERC725.decodeData([{ value: tokenMetadata, keyName: 'LSP4Metadata' }], [{
-        name: 'LSP4Metadata',
-        key: ERC725.encodeKeyName('LSP4Metadata'),
-        keyType: 'Singleton',
-        valueType: 'bytes',
-        valueContent: 'VerifiableURI',
-      }]);
+      const tokenMetadata = await contract.getDataForTokenId(
+        tokenId,
+        ERC725.encodeKeyName('LSP4Metadata')
+      );
+      const decodedMetadata = ERC725.decodeData(
+        [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
+        [
+          {
+            name: 'LSP4Metadata',
+            key: ERC725.encodeKeyName('LSP4Metadata'),
+            keyType: 'Singleton',
+            valueType: 'bytes',
+            valueContent: 'VerifiableURI',
+          },
+        ]
+      );
 
       let image;
       if (decodedMetadata[0]?.value?.url) {

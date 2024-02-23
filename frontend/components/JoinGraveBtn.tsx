@@ -18,7 +18,10 @@ import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 import { hasJoinedTheGrave } from '@/utils/universalProfile';
-import { doesControllerHaveMissingPermissions, getUpAddressUrds } from '@/utils/urdUtils';
+import {
+  doesControllerHaveMissingPermissions,
+  getUpAddressUrds,
+} from '@/utils/urdUtils';
 import { getChecksumAddress } from '@/utils/tokenUtils';
 
 /**
