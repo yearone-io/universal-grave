@@ -19,14 +19,16 @@ export const hasOlderGraveDelegate = (
   const networkConfig = getNetworkConfig(
     process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
   );
-  const previousForwarders = networkConfig.previousGraveForwarders;
   return (
-      previousForwarders.find((forwarder) => forwarder.toLowerCase() === URDLsp7?.toLowerCase()) ||
-      previousForwarders.find((forwarder) => forwarder.toLowerCase() === URDLsp8?.toLowerCase()) ||
-      null
+    networkConfig.previousGraveForwarders.find(
+      forwarder => forwarder.toLowerCase() === URDLsp7?.toLowerCase()
+    ) ||
+    networkConfig.previousGraveForwarders.find(
+      forwarder => forwarder.toLowerCase() === URDLsp8?.toLowerCase()
+    ) ||
+    null
   );
 };
-
 /**
  * Function to get the UP data and set the URD for LSP7 and LSP8.
  */
