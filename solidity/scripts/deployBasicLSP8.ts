@@ -7,14 +7,14 @@ import { LSP4_TOKEN_TYPES, LSP8_TOKEN_ID_FORMAT } from "@lukso/lsp-smart-contrac
 // load env vars
 dotenv.config();
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
+const { EOA_PRIVATE_KEY, UP_ADDR } = process.env;
 const LSP8TokenMetadataBaseURIKey = "0x1a7628600c3bac7101f53697f48df381ddc36b9015e7d7c9c5633d1252aa2843";
 const LSP4MetadataKey = "0x9afb95cacc9f95858ec44aa8c3b685511002e30ae54415823f406128b85b238e";
 
 async function deployAndSetLSP8MetadataBaseURI() {
     const tokenName = 'Year One Wolves';
     const tokenTicker = 'YOW';
-    const tokenOwner = CONTROLLER_PUBLIC_KEY;
+    const tokenOwner = UP_ADDR;
     // setup provider
     const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
     // setup signer (the browser extension controller)
@@ -58,8 +58,8 @@ async function deployAndSetLSP8MetadataBaseURI() {
     );
     console.log('✅ Base URI data set. Tx:', setDataTx.hash);
 
-    const mintTx = await lsp8Mintable.mint(signer.address, "0x0000000000000000000000000000000000000000000000000000000000000001", true, "0x", { gasLimit: 400_000 });
-    console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
+    // const mintTx = await lsp8Mintable.mint(signer.address, "0x0000000000000000000000000000000000000000000000000000000000000001", true, "0x", { gasLimit: 400_000 });
+    // console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
 }
 
 deployAndSetLSP8MetadataBaseURI().catch((error) => {
