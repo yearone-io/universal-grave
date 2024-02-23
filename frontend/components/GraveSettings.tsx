@@ -115,8 +115,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
 
 export default function GraveSettings() {
   const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig, graveVault } =
-    walletContext;
+  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
   const [oldForwarderAddress, setOldForwarderAddress] = useState<
     string | null
   >();
