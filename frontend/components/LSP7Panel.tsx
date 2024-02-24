@@ -31,6 +31,16 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   vaultAddress,
   onReviveSuccess,
 }) => {
+  const displayTokenAmount = tokenData?.balance
+    ? parseFloat(ethers.utils.formatUnits(tokenData?.balance, tokenData?.decimals)).toFixed(
+      tokenData.tokenType === LSP4_TOKEN_TYPES.TOKEN ? Number(tokenData?.decimals) : 0
+      )
+    : '0';
+
+  // Assuming rawTokenAmount is a BigNumber representing the amount in base units
+  const rawTokenAmount = tokenData?.balance
+  console.log('rawTokenAmount', rawTokenAmount)
+  
   const reviveText =
     tokenData.tokenType === LSP4_TOKEN_TYPES.NFT
       ? 'Revive NFT'
@@ -94,13 +104,18 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         signer
       );
       const lsp7 = tokenContract.connect(signer);
-    
-      const balanceInBaseUnits = ethers.utils.parseUnits(tokenData?.balance as string, tokenData?.decimals);
+      let balanceInBaseUnits = '0'
+      if (tokenData && tokenData.decimals !== undefined && rawTokenAmount) {
+        balanceInBaseUnits = ethers.utils.formatUnits(rawTokenAmount, tokenData?.decimals);
+        console.log('Formatted balance in base unit', balanceInBaseUnits)
+      } else {
+        console.error("Token decimals are undefined");
+      }
 
       const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        balanceInBaseUnits,
+        rawTokenAmount,
         false,
         '0x',
       ]);
@@ -181,7 +196,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             {tokenData?.name}
           </Text>
           <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {tokenData?.balance}
+            {displayTokenAmount}
           </Text>
         </Flex>
         {tokenData?.image && (
