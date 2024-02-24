@@ -31,7 +31,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   vaultAddress,
   onReviveSuccess,
 }) => {
-  const displayTokenAmount = tokenData?.balance
+  const displayTokenAmount = tokenData?.balance && tokenData?.decimals
     ? parseFloat(ethers.utils.formatUnits(tokenData?.balance, tokenData?.decimals)).toFixed(
       tokenData.tokenType === LSP4_TOKEN_TYPES.TOKEN ? Number(tokenData?.decimals) : 0
       )
