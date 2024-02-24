@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function Grave({ params }: { params: { account: string } }) {
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
-      <GraveContents account={params.account} />
+      <GraveContents graveOwner={params.account} />
     </Container>
   );
 }

@@ -4,11 +4,12 @@ import { ethers } from 'ethers';
 import { eip165ABI } from '@/abis/eip165ABI';
 import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 
 export type TokenData = {
-  readonly interface: string;
+  readonly interface: GRAVE_ASSET_TYPES;
   readonly address: string;
   readonly tokenType?: number;
   readonly name?: string;
@@ -20,10 +21,13 @@ export type TokenData = {
   image?: string;
 };
 
-export const lspInterfaceShortNames = {
-  [INTERFACE_IDS.LSP7DigitalAsset]: 'LSP7',
-  [INTERFACE_IDS.LSP8IdentifiableDigitalAsset]: 'LSP8',
-};
+export enum GRAVE_ASSET_TYPES {
+  LSP7DigitalAsset,
+  LSP8IdentifiableDigitalAsset,
+  UnrecognisedLSP7DigitalAsset,
+  UnrecognisedLSP8IdentifiableDigitalAsset,
+  Unrecognised,
+}
 
 function computeSelector(signature: string): string {
   return ethers.utils
@@ -44,23 +48,37 @@ const lsp8TransferSelector = computeSelector(
 
 export const detectLSP = async (
   assetAddress: string
-): Promise<string | null> => {
+): Promise<GRAVE_ASSET_TYPES> => {
   // fetch digital asset interface details
   try {
+    const lspAsset = new ERC725(
+      lsp4Schema as ERC725JSONSchema[],
+      assetAddress,
+      getLuksoProvider()
+    );
+    if (await lspAsset.supportsInterface(INTERFACE_IDS.LSP7DigitalAsset)) {
+      return GRAVE_ASSET_TYPES.LSP7DigitalAsset;
+    }
+    if (
+      await lspAsset.supportsInterface(
+        INTERFACE_IDS.LSP8IdentifiableDigitalAsset
+      )
+    ) {
+      return GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset;
+    }
+
     const bytecode = await getProvider().getCode(assetAddress);
-    const isLSP7 = supportsFunction(bytecode, lsp7TransferSelector);
-    if (isLSP7) {
-      return INTERFACE_IDS.LSP7DigitalAsset;
+    if (supportsFunction(bytecode, lsp7TransferSelector)) {
+      return GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
     }
-    const isLSP8 = supportsFunction(bytecode, lsp8TransferSelector);
-    if (isLSP8) {
-      return INTERFACE_IDS.LSP8IdentifiableDigitalAsset;
+    if (supportsFunction(bytecode, lsp8TransferSelector)) {
+      return GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset;
     }
-    return null;
   } catch (error) {
     console.error('error detecting LSP asset interface', error);
-    return null;
   }
+
+  return GRAVE_ASSET_TYPES.Unrecognised;
 };
 
 export const getLSPAssetBasicInfo = async (
@@ -71,10 +89,10 @@ export const getLSPAssetBasicInfo = async (
     address: assetAddress,
     name: 'unrecognised',
     metadata: {},
-    interface: '',
+    interface: GRAVE_ASSET_TYPES.Unrecognised,
   };
   const lspInterface = await detectLSP(assetAddress);
-  if (!lspInterface) {
+  if (lspInterface === GRAVE_ASSET_TYPES.Unrecognised) {
     return unrecognizedLsp;
   }
   let LSP4TokenType: number, name: string, symbol: string, metadata: any;
@@ -114,7 +132,9 @@ export const getLSPAssetBasicInfo = async (
       getProvider()
     );
     decimals =
-      lspInterface === INTERFACE_IDS.LSP7DigitalAsset
+      lspInterface ===
+      (GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
+        GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset)
         ? await contract.decimals()
         : 0;
     if (decimals !== '0') {
@@ -205,10 +225,54 @@ export const parseDataURI = (dataUri: string) => {
   // Step 2: Parse the JSON string into an object
   try {
     const jsonObj = JSON.parse(jsonString);
-    console.log(jsonObj); // This will log the object to the console
     return jsonObj;
   } catch (e) {
     console.error('Error parsing JSON', e);
     return {};
   }
 };
+
+export async function processLSP8Asset(
+  asset: TokenData,
+  assetOwner: string
+): Promise<TokenData[]> {
+  const contract = new ethers.Contract(
+    asset.address as string,
+    LSP8IdentifiableDigitalAsset.abi,
+    getProvider()
+  );
+  const tokenIds = await contract.tokenIdsOf(assetOwner);
+  const nfts: TokenData[] = [];
+
+  for (const tokenId of tokenIds) {
+    if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
+      const tokenMetadata = await contract.getDataForTokenId(
+        tokenId,
+        ERC725.encodeKeyName('LSP4Metadata')
+      );
+      const decodedMetadata = ERC725.decodeData(
+        [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
+        [
+          {
+            name: 'LSP4Metadata',
+            key: ERC725.encodeKeyName('LSP4Metadata'),
+            keyType: 'Singleton',
+            valueType: 'bytes',
+            valueContent: 'VerifiableURI',
+          },
+        ]
+      );
+
+      let image;
+      if (decodedMetadata[0]?.value?.url) {
+        const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
+        image = getTokenImageURL(parsedMetadata.LSP4Metadata);
+        console.log('image', image);
+      }
+      asset.image = image;
+    }
+    nfts.push({ ...asset, tokenId: tokenId.toString() });
+  }
+
+  return nfts;
+}

@@ -18,7 +18,10 @@ import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import { AddressZero } from '@ethersproject/constants';
 import { getLuksoProvider, getProvider } from '@/utils/provider';
 import { hasJoinedTheGrave } from '@/utils/universalProfile';
-import { doesControllerHaveMissingPermissions } from '@/utils/urdUtils';
+import {
+  doesControllerHaveMissingPermissions,
+  getUpAddressUrds,
+} from '@/utils/urdUtils';
 import { getChecksumAddress } from '@/utils/tokenUtils';
 
 /**
@@ -76,7 +79,7 @@ export default function JoinGraveBtn({
   useEffect(() => {
     // Request account access on component mount
     if (window.lukso && account) {
-      fetchProfile().then(() => {
+      fetchProfileUrdData().then(() => {
         // Update steps if the user has already joined the Grave
         if (
           hasJoinedTheGrave(
@@ -106,57 +109,20 @@ export default function JoinGraveBtn({
     onLeavingStepChange && onLeavingStepChange(leavingStep);
   }, [leavingStep]);
 
-  // TODOS after V1:
-  // 0 - Add a batch call or wrapper contract so  on page load it gets URD, LSP7 Delegate, LP8 Delegate, LS7 permissions, LSP8 permissions
-  // 1 - Verifying owners of vaults
-
   // ========================= FETCHING DATA =========================
 
   /**
    * Function to fetch the profile data.
    */
-  const fetchProfile = async () => {
-    const provider = getProvider();
-    const signer = provider.getSigner();
-
-    //1- GET LSP7 and LSP8 URD
-    await getUPData(provider, signer);
-
-    // 4 - verified the owner of the vault is the UP by checking ownership or/and querying LSP10.LSP10Vaults[]
-    //    to avoid issues related to renouncing ownership of the vault
-    // TODO for future versions: check if the vault is owned by the UP
-  };
-
-  /**
-   * Function to get the UP data and set the URD for LSP7 and LSP8.
-   */
-  const getUPData = async (
-    provider: ethers.providers.JsonRpcProvider,
-    signer: ethers.providers.JsonRpcSigner
-  ) => {
+  const fetchProfileUrdData = async () => {
     try {
-      const UP = new ethers.Contract(
-        account as string,
-        UniversalProfile.abi,
-        provider
-      );
-      const UPData = await UP.connect(signer).getDataBatch([
-        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-          LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
-        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-          LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
-      ]);
-      if (UPData) {
-        // Set the URD for LSP7 and LSP8 to what is returned from the UP.
-        // Later on, we will check if the URD is the Grave Forwarder to determine if the user is in the Grave or not.
-        console.log('UPData: ', UPData);
-        setURDLsp7(getChecksumAddress(UPData[0]));
-        setURDLsp8(getChecksumAddress(UPData[1]));
-      }
+      const urdData = await getUpAddressUrds(account as string);
+      urdData.lsp7Urd && setURDLsp7(urdData.lsp7Urd);
+      urdData.lsp8Urd && setURDLsp8(urdData.lsp8Urd);
     } catch (err) {
       console.error(err);
       toast({
-        title: `Error fetching UP data.`,
+        title: `Error fetching UP URDs data.`,
         status: 'error',
         position: 'bottom-left',
         duration: 9000,
@@ -335,7 +301,7 @@ export default function JoinGraveBtn({
     });
 
     // 4. Update the UI
-    fetchProfile();
+    fetchProfileUrdData();
   };
 
   // ========================= LEAVING FLOW =========================
@@ -395,7 +361,7 @@ export default function JoinGraveBtn({
     }
     setJoiningStep(0);
     setLeavingStep(-1); // reset the leaving step
-    fetchProfile();
+    fetchProfileUrdData();
     toast({
       title: `Your UP left the grave. 👻🪦`,
       status: 'success',
