@@ -33,7 +33,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   vaultOwner,
   onReviveSuccess,
 }) => {
-  const displayTokenAmount = tokenData?.balance && tokenData?.decimals
+  const displayTokenAmount = tokenData?.balance !== undefined && tokenData?.decimals !== undefined
     ? parseFloat(ethers.utils.formatUnits(tokenData?.balance, tokenData?.decimals)).toFixed(
       tokenData.tokenType === LSP4_TOKEN_TYPES.TOKEN ? Number(tokenData?.decimals) : 0
       )
@@ -41,7 +41,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
   // Assuming rawTokenAmount is a BigNumber representing the amount in base units
   const rawTokenAmount = tokenData?.balance
-  console.log('rawTokenAmount', rawTokenAmount)
   
   const reviveText =
     tokenData.tokenType === LSP4_TOKEN_TYPES.NFT

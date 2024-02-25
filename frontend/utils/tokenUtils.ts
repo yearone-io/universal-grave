@@ -144,12 +144,6 @@ export const getLSPAssetBasicInfo = async (
           console.error('error getting balance', e);
           return undefined;
         });
-
-      // balance = _balance
-      //   ? parseFloat(ethers.utils.formatUnits(_balance, decimals)).toFixed(
-      //       LSP4TokenType === LSP4_TOKEN_TYPES.TOKEN ? decimals : 0
-      //     )
-      //   : '0';
     }
   } catch (err) {
     console.error(assetAddress, lspInterface, err);
