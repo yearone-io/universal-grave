@@ -132,11 +132,11 @@ export const getLSPAssetBasicInfo = async (
       getProvider()
     );
     decimals =
-      lspInterface ===
-      (GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
-        GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset)
+      lspInterface === GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
+      lspInterface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
         ? await contract.decimals()
         : 0;
+
     if (decimals !== '0') {
       balance = await contract
         .balanceOf(ownerAddress)
