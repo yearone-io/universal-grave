@@ -17,7 +17,6 @@ import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAs
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { getProvider } from '@/utils/provider';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 
 interface LSP7PanelProps {
@@ -38,7 +37,11 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       ? 'Revive NFT'
       : 'Revive Tokens';
   const walletContext = useContext(WalletContext);
-  const { account: connectedUPAddress, networkConfig } = walletContext;
+  const {
+    account: connectedUPAddress,
+    networkConfig,
+    provider,
+  } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -68,7 +71,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     }
     setIsProcessing(true);
     try {
-      const provider = getProvider();
       const signer = provider.getSigner();
 
       const LSP1GraveForwarderContract = new ethers.Contract(

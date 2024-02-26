@@ -12,21 +12,17 @@ import {
   StepStatus,
   StepTitle,
   Text,
-  useColorModeValue,
   useSteps,
   useToast,
 } from '@chakra-ui/react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { ethers } from 'ethers';
-import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
-import { LSP1GraveForwarder } from '@/contracts';
 import { formatAddress } from '@/utils/tokenUtils';
 import { FaCheckCircle } from 'react-icons/fa';
 import {
-  resetLSPDelegates,
-  setForwarderAsLSPDelegate,
+  toggleForwarderAsLSPDelegate,
   updateBECPermissions,
 } from '@/utils/urdUtils';
+import { migrateVaultToNewForwarder } from '@/utils/vaultUtils';
 
 const initialLeavingSteps = [
   {
@@ -59,11 +55,14 @@ export const UpgradeURD = ({
   oldForwarderAddress: string;
 }) => {
   const walletContext = useContext(WalletContext);
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
-  const provider = new ethers.providers.Web3Provider(window.lukso);
-  const signer = provider.getSigner();
-  const { account, networkConfig, setURDLsp7, setURDLsp8, mainUPController } =
-    walletContext;
+  const {
+    account,
+    provider,
+    networkConfig,
+    setURDLsp7,
+    setURDLsp8,
+    mainUPController,
+  } = walletContext;
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
@@ -77,30 +76,12 @@ export const UpgradeURD = ({
 
   const toast = useToast();
 
-  const migrateGraveToNewForwarder = async () => {
-    const oldForwarder = new ethers.Contract(
-      oldForwarderAddress,
-      LSP1GraveForwarderAbi.abi,
-      provider
-    ) as LSP1GraveForwarder;
-
-    const graveForwarder = new ethers.Contract(
-      networkConfig.universalGraveForwarder,
-      LSP1GraveForwarderAbi.abi,
-      provider
-    ) as LSP1GraveForwarder;
-
-    return await graveForwarder
-      .connect(signer)
-      .setGrave(await oldForwarder.connect(signer).getGrave());
-  };
-
   const handleUpgrade = async () => {
     setIsSubmitting(true);
     setLeavingStep(0);
 
     try {
-      await updateBECPermissions(account!, mainUPController!, provider, signer);
+      await updateBECPermissions(provider, account!, mainUPController!);
     } catch (e: any) {
       console.error('Error updating permissions', e);
       toast({
@@ -118,7 +99,12 @@ export const UpgradeURD = ({
     setLeavingStep(1);
 
     try {
-      await resetLSPDelegates(provider, signer, oldForwarderAddress);
+      await toggleForwarderAsLSPDelegate(
+        provider,
+        account!,
+        oldForwarderAddress,
+        false
+      );
     } catch (e: any) {
       console.error('Error resetting LSP delegates', e);
       toast({
@@ -136,7 +122,11 @@ export const UpgradeURD = ({
     setLeavingStep(2);
 
     try {
-      await migrateGraveToNewForwarder();
+      await migrateVaultToNewForwarder(
+        provider,
+        oldForwarderAddress,
+        networkConfig.universalGraveForwarder
+      );
     } catch (e: any) {
       console.error(
         'Error migrating your GRAVE to the new forwarder',
@@ -157,11 +147,11 @@ export const UpgradeURD = ({
     setLeavingStep(3);
 
     try {
-      await setForwarderAsLSPDelegate(
+      await toggleForwarderAsLSPDelegate(
+        provider,
         account!,
         networkConfig.universalGraveForwarder,
-        signer,
-        provider
+        true
       );
       setURDLsp7(networkConfig.universalGraveForwarder);
       setURDLsp8(networkConfig.universalGraveForwarder);

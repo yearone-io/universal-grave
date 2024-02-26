@@ -12,37 +12,53 @@ export default function GravePageAssets({
   graveOwner: string;
 }) {
   const walletContext = useContext(WalletContext);
-  const { networkConfig } = walletContext;
+  const { networkConfig, provider } = walletContext;
   const [graveVault, setGraveVault] = useState<string | null>(null);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!graveVault) {
-      getGraveVaultFor(graveOwner, networkConfig.universalGraveForwarder)
-        .then(async graveVault => {
+    const fetchGraveVault = async () => {
+      if (!graveVault) {
+        try {
+          const graveVault = await getGraveVaultFor(
+            provider,
+            graveOwner,
+            networkConfig.universalGraveForwarder
+          );
           if (graveVault) {
-            return setGraveVault(graveVault);
+            setGraveVault(graveVault);
+            return;
           }
-          // check if the user has an old Urd version
-          // and thus potentially a different grave vault
-          const urdData = await getUpAddressUrds(graveOwner);
+          // Attempt to retrieve grave vault for users with an old Urd version
+          const urdData = await getUpAddressUrds(provider, graveOwner);
           if (urdData.oldUrdVersion) {
             const oldGraveVault = await getGraveVaultFor(
+              provider,
               graveOwner,
               urdData.oldUrdVersion
             );
             if (oldGraveVault) {
-              return setGraveVault(oldGraveVault);
+              setGraveVault(oldGraveVault);
+              return;
             }
           }
           setError('No GRAVE vault found for this account');
-        })
-        .catch(reason => {
-          console.error(reason);
-          setError(reason.message);
-        });
-    }
-  }, [graveOwner]);
+        } catch (error) {
+          console.error(error);
+          setError('Error fetching GRAVE vault');
+        }
+      }
+    };
+
+    fetchGraveVault();
+  }, [
+    graveOwner,
+    graveVault,
+    provider,
+    networkConfig,
+    setGraveVault,
+    setError,
+  ]);
 
   if (error) {
     return <Text>{error}</Text>;
