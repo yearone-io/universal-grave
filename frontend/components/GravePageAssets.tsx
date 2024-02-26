@@ -18,7 +18,7 @@ export default function GravePageAssets({
 
   useEffect(() => {
     const fetchGraveVault = async () => {
-      if (!graveVault && provider && networkConfig) {
+      if (!graveVault) {
         try {
           const graveVault = await getGraveVaultFor(
             provider,

@@ -11,6 +11,7 @@ import {
 } from '@/app/constants';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -39,7 +40,7 @@ export interface IUPForwarderData {
 }
 
 export const getUpAddressUrds = async (
-  provider: any,
+  provider: JsonRpcProvider | Web3Provider,
   upAddress: string
 ): Promise<IUPForwarderData> => {
   const urdData: IUPForwarderData = {
@@ -78,7 +79,7 @@ export const getUpAddressUrds = async (
  * Function to update the permissions of the Browser Extension controller.
  */
 export const updateBECPermissions = async (
-  provider: any,
+  provider: JsonRpcProvider | Web3Provider,
   account: string,
   mainUPController: string
 ) => {
@@ -119,7 +120,7 @@ export const updateBECPermissions = async (
 };
 
 export const toggleForwarderAsLSPDelegate = async (
-  provider: any,
+  provider: JsonRpcProvider | Web3Provider,
   upAccount: string,
   forwarderAddress: string,
   isDelegate: boolean

@@ -7,6 +7,7 @@ import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 export type TokenData = {
   readonly interface: GRAVE_ASSET_TYPES;
@@ -47,7 +48,7 @@ const lsp8TransferSelector = computeSelector(
 );
 
 export const detectLSP = async (
-  provider: any,
+  provider: JsonRpcProvider | Web3Provider,
   assetAddress: string
 ): Promise<GRAVE_ASSET_TYPES> => {
   // fetch digital asset interface details
@@ -83,7 +84,7 @@ export const detectLSP = async (
 };
 
 export const getLSPAssetBasicInfo = async (
-  provider: any,
+  provider: JsonRpcProvider | Web3Provider,
   assetAddress: string,
   ownerAddress: string
 ): Promise<TokenData> => {
@@ -234,7 +235,7 @@ export const parseDataURI = (dataUri: string) => {
 };
 
 export async function processLSP8Asset(
-  provider: any,
+  provider: JsonRpcProvider | Web3Provider,
   asset: TokenData,
   assetOwner: string
 ): Promise<TokenData[]> {

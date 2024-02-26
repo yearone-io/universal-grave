@@ -1,10 +1,11 @@
 import React, { ReactNode, useEffect, useState } from 'react';
-import { WalletContext } from './WalletContext';
+import { DEFAULT_PROVIDER, WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
 import { buildSIWEMessage, getGraveVaultFor } from '@/utils/universalProfile';
 import { getNetworkConfig } from '@/constants/networks';
 import { getProvider } from '@/utils/provider';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 // Extends the window object to include `lukso`, which will be used to interact with LUKSO blockchain.
 declare global {
@@ -26,7 +27,12 @@ interface Props {
  * @returns {JSX.Element} - A provider component that passes down wallet context.
  */
 export const WalletProvider: React.FC<Props> = ({ children }) => {
-  const [provider, setProvider] = useState<any>(null);
+  const networkConfig = getNetworkConfig(
+    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
+  );
+  const [provider, setProvider] = useState<JsonRpcProvider | Web3Provider>(
+    DEFAULT_PROVIDER
+  );
   const [account, setAccount] = useState<string | null>(null);
   const [mainUPController, setMainUPController] = useState<string>();
   const [graveVault, setGraveVault] = useState<string>();
@@ -36,13 +42,11 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
   const [connectedChainId, setConnectedChainId] = useState<
     number | undefined
   >();
-  const networkConfig = getNetworkConfig(
-    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
-  );
+
   const toast = useToast();
 
   useEffect(() => {
-    const initProvider = getProvider();
+    const initProvider = getProvider(networkConfig);
     setProvider(initProvider);
   }, [connectedChainId, mainUPController]);
 
