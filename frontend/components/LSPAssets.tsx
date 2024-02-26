@@ -45,34 +45,34 @@ export default function LSPAssets({
    */
   const onReviveLSP7Success = (assetAddress: string) => {
     const lsp7AssetsCopy = lsp7Assets.filter(
-      (asset) => asset.address !== assetAddress
+      asset => asset.address !== assetAddress
     );
     setLsp7Assets(lsp7AssetsCopy);
-  }
+  };
 
   const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
     const lsp8AssetsCopy = lsp8Assets.filter(
-      (asset) => asset.address !== assetAddress && asset.tokenId !== tokenId
+      asset => asset.address !== assetAddress && asset.tokenId !== tokenId
     );
     setLsp8Assets(lsp8AssetsCopy);
-  }
+  };
 
   const onReviveUnrecognizedLSP7Success = (assetAddress: string) => {
     const lsp7AssetsCopy = unrecognisedLsp7Assets.filter(
-      (asset) => asset.address !== assetAddress
+      asset => asset.address !== assetAddress
     );
     setUnrecognisedLsp7Assets(lsp7AssetsCopy);
-  }
+  };
 
-  const onReviveUnrecognizedLSP8Success = (assetAddress: string, tokenId: string) => {
+  const onReviveUnrecognizedLSP8Success = (
+    assetAddress: string,
+    tokenId: string
+  ) => {
     const lsp8AssetsCopy = unrecognisedLsp8Assets.filter(
-      (asset) => asset.address !== assetAddress && asset.tokenId !== tokenId
+      asset => asset.address !== assetAddress && asset.tokenId !== tokenId
     );
     setUnrecognisedLsp8Assets(lsp8AssetsCopy);
-  }
-
-
-    
+  };
 
   /**
    * Fetch assets from the grave vault.

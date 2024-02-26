@@ -141,12 +141,10 @@ export const getLSPAssetBasicInfo = async (
         : 0;
 
     if (decimals !== '0') {
-      balance = await contract
-        .balanceOf(ownerAddress)
-        .catch((e: any) => {
-          console.error('error getting balance', e);
-          return undefined;
-        });
+      balance = await contract.balanceOf(ownerAddress).catch((e: any) => {
+        console.error('error getting balance', e);
+        return undefined;
+      });
     }
   } catch (err) {
     console.error(assetAddress, lspInterface, err);
@@ -273,7 +271,7 @@ export async function processLSP8Asset(
   return nfts;
 }
 
-export const getEnoughDecimals = (value: number) => {  
+export const getEnoughDecimals = (value: number) => {
   if (value < 0.01 && value >= 0.0001) {
     return 4;
   } else if (value < 0.0001 && value >= 0.000001) {
@@ -291,6 +289,6 @@ export const getEnoughDecimals = (value: number) => {
   } else if (value < 0.0000000000000001 && value >= 0.000000000000000001) {
     return 18;
   }
-  
+
   return 2;
-}
+};
