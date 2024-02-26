@@ -1,10 +1,7 @@
 import { ethers } from 'ethers';
-import { getNetworkConfig } from '@/constants/networks';
+import { getNetworkConfig, Network } from '@/constants/networks';
 
-export const getProvider = () => {
-  const networkConfig = getNetworkConfig(
-    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
-  );
+export const getProvider = (networkConfig: Network) => {
   const providerNetworkParams = {
     name: networkConfig.name,
     chainId: networkConfig.chainId,
