@@ -52,7 +52,7 @@ export default function LSPAssets({
 
   const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
     const lsp8AssetsCopy = lsp8Assets.filter(
-      asset => asset.address !== assetAddress && asset.tokenId !== tokenId
+      asset => !(asset.address === assetAddress && asset.tokenId === tokenId)
     );
     setLsp8Assets(lsp8AssetsCopy);
   };
@@ -69,7 +69,7 @@ export default function LSPAssets({
     tokenId: string
   ) => {
     const lsp8AssetsCopy = unrecognisedLsp8Assets.filter(
-      asset => asset.address !== assetAddress && asset.tokenId !== tokenId
+      asset => !(asset.address === assetAddress && asset.tokenId === tokenId)
     );
     setUnrecognisedLsp8Assets(lsp8AssetsCopy);
   };
