@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
@@ -8,13 +8,13 @@ import {
   getTokenImageURL,
   processLSP8Asset,
   GRAVE_ASSET_TYPES,
-  parseDataURI,
   TokenData,
 } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8Panel from '@/components/LSP8Panel';
 import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
+import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 
@@ -25,6 +25,8 @@ export default function LSPAssets({
   graveVault: string | null;
   graveOwner: string;
 }) {
+  const walletContext = useContext(WalletContext);
+  const { provider } = walletContext;
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenData[]>([]);
@@ -67,7 +69,11 @@ export default function LSPAssets({
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
-        const asset = await getLSPAssetBasicInfo(assetAddress, graveVault);
+        const asset = await getLSPAssetBasicInfo(
+          provider,
+          assetAddress,
+          graveVault
+        );
         if (!asset) continue;
         if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
           asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
@@ -81,13 +87,21 @@ export default function LSPAssets({
         } else if (
           asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
         ) {
-          const lsp8Tokens = await processLSP8Asset(asset, graveVault);
+          const lsp8Tokens = await processLSP8Asset(
+            provider,
+            asset,
+            graveVault
+          );
           lsp8Results.push(...lsp8Tokens);
         } else if (
           asset.interface ===
           GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
         ) {
-          const lsp8Tokens = await processLSP8Asset(asset, graveVault);
+          const lsp8Tokens = await processLSP8Asset(
+            provider,
+            asset,
+            graveVault
+          );
           unrecognisedLsp8Results.push(...lsp8Tokens);
         } else {
           unrecognisedAssetResults.push(asset);

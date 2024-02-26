@@ -17,7 +17,6 @@ import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/L
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { TokenData, formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { getProvider } from '@/utils/provider';
 
 interface LSP8PanelProps {
   readonly tokenData: TokenData;
@@ -33,7 +32,11 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   onReviveSuccess,
 }) => {
   const walletContext = useContext(WalletContext);
-  const { account: connectedUPAddress, networkConfig } = walletContext;
+  const {
+    account: connectedUPAddress,
+    networkConfig,
+    provider,
+  } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -63,7 +66,6 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     }
     setIsProcessing(true);
     try {
-      const provider = getProvider();
       const signer = provider.getSigner();
 
       const LSP1GraveForwarderContract = new ethers.Contract(

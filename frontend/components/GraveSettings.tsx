@@ -20,8 +20,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
-import { hasJoinedTheGrave } from '@/utils/universalProfile';
-import { hasOlderGraveDelegate } from '@/utils/urdUtils';
+import {
+  hasOlderGraveDelegate,
+  urdsMatchLatestForwarder,
+} from '@/utils/urdUtils';
 import { UpgradeURD } from '@/components/UpgradeURD';
 import Link from 'next/link';
 
@@ -56,7 +58,6 @@ const getTabOption = (tabName: string) => {
 
 const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
   const logoPath = '/images/logo-full.png';
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200');
   let panel;
   switch (tabName) {
     case 'Subscription':
@@ -81,7 +82,7 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
       m="0 20px"
       borderRadius="lg"
       boxShadow="md"
-      backgroundColor={bgColor}
+      backgroundColor={'dark.purple.200'}
       color={'dark.purple.500'}
       minHeight={'450px'}
       padding="20px"
@@ -170,17 +171,16 @@ export default function GraveSettings() {
                       border={'none'}
                     >
                       {getTabOption('Subscription')}
-                      {hasJoinedTheGrave(
+                      {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
                         networkConfig.universalGraveForwarder
                       ) && getTabOption('Manage Allowlist')}
-
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
                       {getTabPanel('Subscription', oldForwarderAddress)}
-                      {hasJoinedTheGrave(
+                      {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
                         networkConfig.universalGraveForwarder
