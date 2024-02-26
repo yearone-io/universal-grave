@@ -17,8 +17,10 @@ const NETWORKS = {
     symbol: 'LYX',
     rpcUrl: 'https://lukso.rpc.thirdweb.com',
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
-    universalGraveForwarder: '0x433908ce6457b302a6452257Bc40e466d95c78E9',
-    previousGraveForwarders: [],
+    universalGraveForwarder: '0x42562196ee7aac3e8501db777b25ffc976ed8463',
+    previousGraveForwarders: [
+      '0x433908ce6457b302a6452257Bc40e466d95c78E9',
+    ],
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
     baseUrl: 'https://universalgrave.com',
   },
