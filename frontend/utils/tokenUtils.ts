@@ -270,3 +270,24 @@ export async function processLSP8Asset(
 
   return nfts;
 }
+
+export const getPriceRoundingDecimals = (value: number) => {  
+  if (value < 0.01 && value >= 0.0001) {
+    return 4;
+  } else if (value < 0.0001 && value >= 0.000001) {
+    return 6;
+  } else if (value < 0.000001 && value >= 0.00000001) {
+    return 8;
+  } else if (value < 0.000001 && value >= 0.00000001) {
+    return 10;
+  } else if (value < 0.00000001 && value >= 0.0000000001) {
+    return 12;
+  } else if (value < 0.0000000001 && value >= 0.000000000001) {
+    return 14;
+  } else if (value < 0.000000000001 && value >= 0.00000000000001) {
+    return 16;
+  } else if (value < 0.00000000000001) {
+    return 18;
+  }
+  return 2;
+}

@@ -15,7 +15,7 @@ import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
+import { formatAddress, getPriceRoundingDecimals, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { getProvider } from '@/utils/provider';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
@@ -33,12 +33,16 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   vaultOwner,
   onReviveSuccess,
 }) => {
-  const displayTokenAmount = tokenData?.balance !== undefined && tokenData?.decimals !== undefined
+  const readableTokenAmount = tokenData?.balance !== undefined && tokenData?.decimals !== undefined
     ? parseFloat(ethers.utils.formatUnits(tokenData?.balance, tokenData?.decimals)).toFixed(
       tokenData.tokenType === LSP4_TOKEN_TYPES.TOKEN ? Number(tokenData?.decimals) : 0
       )
     : '0';
 
+  const roundedTokenAmount =  parseFloat(readableTokenAmount).toFixed(
+    getPriceRoundingDecimals(Number(readableTokenAmount))
+  );
+    
   // Assuming rawTokenAmount is a BigNumber representing the amount in base units
   const rawTokenAmount = tokenData?.balance
   
@@ -197,7 +201,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             {tokenData?.name}
           </Text>
           <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {displayTokenAmount}
+            {roundedTokenAmount}
           </Text>
         </Flex>
         {tokenData?.image && (
