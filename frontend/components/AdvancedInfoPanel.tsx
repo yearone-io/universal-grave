@@ -41,10 +41,10 @@ const AdvancedInfoPanel = () => {
           {formatAddress(URDLsp8)}
         </a>
       </Box>
-      { graveVault && (
+      {graveVault && (
         <Box mt="20px">
           <Text>
-            <strong>Vault</strong> 
+            <strong>Vault</strong>
           </Text>
           <a
             href={`${networkConfig.explorerURL}/address/${graveVault}`}
