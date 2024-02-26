@@ -12,8 +12,6 @@ The GRAVE is designed with flexibility in mind, allowing users to easily toggle 
 
 We hope that our hackathon submission inspires further exploration of practical solutions to the spam problem in Web3.
 
-**NOTE:** Works solely with the latest version of the LSP7 standards at the moment.
-
 ## Set up
 
 # Deploy a new LSP1GraveForwarder contract
