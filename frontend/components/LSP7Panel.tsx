@@ -109,13 +109,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         signer
       );
       const lsp7 = tokenContract.connect(signer);
-      let balanceInBaseUnits = '0'
-      if (tokenData && tokenData.decimals !== undefined && rawTokenAmount) {
-        balanceInBaseUnits = ethers.utils.formatUnits(rawTokenAmount, tokenData?.decimals);
-        console.log('Formatted balance in base unit', balanceInBaseUnits)
-      } else {
-        console.error("Token decimals are undefined");
-      }
 
       const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
         vaultAddress,
