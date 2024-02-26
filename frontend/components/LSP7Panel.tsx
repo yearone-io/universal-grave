@@ -23,7 +23,7 @@ interface LSP7PanelProps {
   readonly tokenData: TokenData;
   readonly vaultAddress: string;
   readonly vaultOwner: string;
-  onReviveSuccess: () => void;
+  onReviveSuccess: (assetAddress: string) => void;
 }
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
@@ -131,7 +131,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
 
       setIsProcessing(false);
-      onReviveSuccess();
+      onReviveSuccess(tokenAddress);
       toast({
         title: `it's alive! ⚡`,
         status: 'success',

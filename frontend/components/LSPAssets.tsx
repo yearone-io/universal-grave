@@ -41,6 +41,40 @@ export default function LSPAssets({
   const toast = useToast();
 
   /**
+   * On revive success, remove the revived asset from the list without fetching the assets again
+   */
+  const onReviveLSP7Success = (assetAddress: string) => {
+    const lsp7AssetsCopy = lsp7Assets.filter(
+      (asset) => asset.address !== assetAddress
+    );
+    setLsp7Assets(lsp7AssetsCopy);
+  }
+
+  const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
+    const lsp8AssetsCopy = lsp8Assets.filter(
+      (asset) => asset.address !== assetAddress && asset.tokenId !== tokenId
+    );
+    setLsp8Assets(lsp8AssetsCopy);
+  }
+
+  const onReviveUnrecognizedLSP7Success = (assetAddress: string) => {
+    const lsp7AssetsCopy = unrecognisedLsp7Assets.filter(
+      (asset) => asset.address !== assetAddress
+    );
+    setUnrecognisedLsp7Assets(lsp7AssetsCopy);
+  }
+
+  const onReviveUnrecognizedLSP8Success = (assetAddress: string, tokenId: string) => {
+    const lsp8AssetsCopy = unrecognisedLsp8Assets.filter(
+      (asset) => asset.address !== assetAddress && asset.tokenId !== tokenId
+    );
+    setUnrecognisedLsp8Assets(lsp8AssetsCopy);
+  }
+
+
+    
+
+  /**
    * Fetch assets from the grave vault.
    * This function is called when the page loads and when an asset is revived
    */
@@ -187,7 +221,7 @@ export default function LSPAssets({
                     tokenData={asset}
                     vaultAddress={graveVault!}
                     vaultOwner={graveOwner}
-                    onReviveSuccess={fetchAssets}
+                    onReviveSuccess={onReviveLSP7Success}
                   />
                 </Box>
               ))
@@ -210,7 +244,7 @@ export default function LSPAssets({
                     tokenData={asset}
                     vaultAddress={graveVault!}
                     vaultOwner={graveOwner}
-                    onReviveSuccess={fetchAssets}
+                    onReviveSuccess={onReviveLSP8Success}
                   />
                 </Box>
               ))
@@ -233,7 +267,7 @@ export default function LSPAssets({
                   vaultOwner={graveOwner}
                   tokenData={asset}
                   vaultAddress={graveVault!}
-                  onReviveSuccess={fetchAssets}
+                  onReviveSuccess={onReviveUnrecognizedLSP7Success}
                 />
               </Box>
             ))}
@@ -256,7 +290,7 @@ export default function LSPAssets({
                   vaultOwner={graveOwner}
                   tokenData={asset}
                   vaultAddress={graveVault!}
-                  onReviveSuccess={fetchAssets}
+                  onReviveSuccess={onReviveUnrecognizedLSP8Success}
                 />
               </Box>
             ))}
