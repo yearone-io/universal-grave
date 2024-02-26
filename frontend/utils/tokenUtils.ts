@@ -135,23 +135,18 @@ export const getLSPAssetBasicInfo = async (
       provider
     );
     decimals =
-      lspInterface ===
-      (GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
-        GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset)
+      lspInterface === GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
+      lspInterface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
         ? await contract.decimals()
         : 0;
+
     if (decimals !== '0') {
-      const _balance = await contract
+      balance = await contract
         .balanceOf(ownerAddress)
         .catch((e: any) => {
           console.error('error getting balance', e);
           return undefined;
         });
-      balance = _balance
-        ? parseFloat(ethers.utils.formatUnits(_balance, decimals)).toFixed(
-            LSP4TokenType === LSP4_TOKEN_TYPES.TOKEN ? 4 : 0
-          )
-        : '0';
     }
   } catch (err) {
     console.error(assetAddress, lspInterface, err);
@@ -276,4 +271,26 @@ export async function processLSP8Asset(
   }
 
   return nfts;
+}
+
+export const getEnoughDecimals = (value: number) => {  
+  if (value < 0.01 && value >= 0.0001) {
+    return 4;
+  } else if (value < 0.0001 && value >= 0.000001) {
+    return 6;
+  } else if (value < 0.000001 && value >= 0.00000001) {
+    return 8;
+  } else if (value < 0.00000001 && value >= 0.0000000001) {
+    return 10;
+  } else if (value < 0.0000000001 && value >= 0.000000000001) {
+    return 12;
+  } else if (value < 0.000000000001 && value >= 0.00000000000001) {
+    return 14;
+  } else if (value < 0.00000000000001 && value >= 0.0000000000000001) {
+    return 16;
+  } else if (value < 0.0000000000000001 && value >= 0.000000000000000001) {
+    return 18;
+  }
+  
+  return 2;
 }

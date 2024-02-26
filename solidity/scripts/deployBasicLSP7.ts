@@ -8,12 +8,12 @@ import {BasicLSP7 as BasicLSP7Type} from "../typechain-types";
 // load env vars
 dotenv.config();
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY } = process.env;
+const { EOA_PRIVATE_KEY, UP_ADDR } = process.env;
 
 async function deployAndSetLSP8MetadataBaseURI() {
     const tokenName = 'LSP7 Token Name';
     const tokenTicker = 'LSP7 TKN';
-    const tokenOwner = CONTROLLER_PUBLIC_KEY;
+    const tokenOwner = UP_ADDR;
     const tokenNondivisible = false;
     // setup provider
     const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
@@ -54,8 +54,9 @@ async function deployAndSetLSP8MetadataBaseURI() {
     let lsp7Mintable = LSP7TokenContract.connect(signer) as BasicLSP7Type;
     const setDataTx = await lsp7Mintable.setData(dataKey,dataValue,{gasLimit: 400_000});
     console.log('✅ Data set. Tx:', setDataTx.hash);
-    const mintTx = await lsp7Mintable.mint(signer.address, 69, true, "0x", { gasLimit: 400_000 });
-    console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
+
+    // const mintTx = await lsp7Mintable.mint(UP_ADDR as string, 69, true, "0x", { gasLimit: 400_000 });
+    // console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
 }
 
 deployAndSetLSP8MetadataBaseURI().catch((error) => {
