@@ -3,7 +3,7 @@ import { getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
-import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { getLuksoProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
@@ -11,6 +11,7 @@ import {
 } from '@/app/constants';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -39,9 +40,9 @@ export interface IUPForwarderData {
 }
 
 export const getUpAddressUrds = async (
+  provider: JsonRpcProvider | Web3Provider,
   upAddress: string
 ): Promise<IUPForwarderData> => {
-  const provider = getProvider();
   const urdData: IUPForwarderData = {
     lsp7Urd: null,
     lsp8Urd: null,
@@ -78,11 +79,11 @@ export const getUpAddressUrds = async (
  * Function to update the permissions of the Browser Extension controller.
  */
 export const updateBECPermissions = async (
+  provider: JsonRpcProvider | Web3Provider,
   account: string,
-  mainUPController: string,
-  provider: ethers.providers.JsonRpcProvider,
-  signer: ethers.providers.JsonRpcSigner
+  mainUPController: string
 ) => {
+  const signer = provider.getSigner();
   // check if we need to update permissions
   const missingPermissions = await doesControllerHaveMissingPermissions(
     mainUPController,
@@ -118,143 +119,71 @@ export const updateBECPermissions = async (
   return await setDataBatchTx.wait();
 };
 
-/**
- * Function to reset the delegates for LSP7 and LSP8 to the zero address. Used when leaving the Grave.
- */
-export const resetLSPDelegates = async (
-  provider: ethers.providers.JsonRpcProvider,
-  signer: ethers.providers.JsonRpcSigner,
-  forwarderAddress: string
+export const toggleForwarderAsLSPDelegate = async (
+  provider: JsonRpcProvider | Web3Provider,
+  upAccount: string,
+  forwarderAddress: string,
+  isDelegate: boolean
 ) => {
-  const account = await signer.getAddress();
-  // Interacting with the Universal Profile contract
-  const UP = new ethers.Contract(
-    account as string,
-    UniversalProfile.abi,
-    provider
-  );
-
-  const erc725 = new ERC725(
-    LSP6Schema as ERC725JSONSchema[],
-    account,
-    getLuksoProvider()
-  );
-
-  // LSP7 data key to set the forwarder as the delegate
+  const signer = provider.getSigner();
+  // 1. Prepare keys and values for setting the Forwarder as the delegate for LSP7 and LSP8
   const LSP7URDdataKey =
     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
     LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-  // LSP8 data key to set the forwarder as the delegate
   const LSP8URDdataKey =
     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
     LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
+  const lspDelegateKeys = [LSP7URDdataKey, LSP8URDdataKey];
+  const lspDelegateValues = isDelegate
+    ? [forwarderAddress, forwarderAddress]
+    : ['0x', '0x'];
 
-  let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
+  // 2. Prepare keys and values for granting the forwarder the necessary permissions on the UP
+  const UP = new ethers.Contract(upAccount, UniversalProfile.abi, provider);
+  const upPermissions = new ERC725(
+    LSP6Schema as ERC725JSONSchema[],
+    upAccount,
+    getLuksoProvider()
+  );
+  const checkSumForwarderAddress = getChecksumAddress(
+    forwarderAddress
+  ) as string;
+  const currentPermissionsData = await upPermissions.getData();
+  const currentControllers = currentPermissionsData[0].value as string[];
+  let newControllers = [] as string[];
+  const forwarderPermissions = isDelegate
+    ? upPermissions.encodePermissions({
+        SUPER_CALL: true,
+        ...DEFAULT_UP_URD_PERMISSIONS,
+      })
+    : '0x';
 
-  let dataValues = ['0x', '0x'];
-
-  const permissionsResult = await erc725.getData();
-  const allControllers = permissionsResult[0].value as string[];
-  // remove permissions if leaving the Grave and reducing the number of controllers
-  const permissions = '0x';
-  // Remove the forwarder from the list of controllers.
-  // Note: check sum case address to avoid issues with case sensitivity
-  const formattedControllers = allControllers.filter((controller: any) => {
-    return (
-      getChecksumAddress(controller) !== getChecksumAddress(forwarderAddress)
-    );
+  // Remove all instance of the forwarder address from the list of UP controllers
+  // and then add it to the end of the list, use checksum address to avoid issues with casing sensitivity
+  newControllers = currentControllers.filter((controller: any) => {
+    return getChecksumAddress(controller) !== checkSumForwarderAddress;
   });
+  isDelegate && newControllers.push(checkSumForwarderAddress);
 
-  const data = erc725.encodeData([
+  const forwarderPermissionsData = upPermissions.encodeData([
     // the permission of the beneficiary address
     {
       keyName: 'AddressPermissions:Permissions:<address>',
       dynamicKeyParts: forwarderAddress,
-      value: permissions,
+      value: forwarderPermissions,
     },
     // the new list controllers addresses (= addresses with permissions set on the UP)
     // + or -  1 in the `AddressPermissions[]` array length
     {
       keyName: 'AddressPermissions[]',
-      value: formattedControllers,
+      value: newControllers,
     },
   ]);
-  dataKeys = [...dataKeys, ...data.keys];
-  dataValues = [...dataValues, ...data.values];
 
-  // execute the tx
+  // 3. Set the data on the UP
   const setDataBatchTx = await UP.connect(signer).setDataBatch(
-    dataKeys,
-    dataValues
-  );
-  return await setDataBatchTx.wait();
-};
-
-export const setForwarderAsLSPDelegate = async (
-  account: string,
-  forwarder: string,
-  signer: ethers.providers.JsonRpcSigner,
-  provider: ethers.providers.JsonRpcProvider
-) => {
-  // Interacting with the Universal Profile contract
-  const UP = new ethers.Contract(account, UniversalProfile.abi, provider);
-
-  const erc725 = new ERC725(
-    LSP6Schema as ERC725JSONSchema[],
-    account,
-    getLuksoProvider()
-  );
-  // 0. Prepare keys for setting the Forwarder as the delegate for LSP7 and LSP8
-  const LSP7URDdataKey =
-    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-    LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40);
-  const LSP8URDdataKey =
-    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-    LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40);
-
-  let dataKeys = [LSP7URDdataKey, LSP8URDdataKey];
-
-  let dataValues = [forwarder, forwarder];
-
-  const permissionsResult = await erc725.getData();
-  const allControllers = permissionsResult[0].value as string[];
-  let formattedControllers = [] as string[];
-  const permissions = erc725.encodePermissions({
-    SUPER_CALL: true,
-    ...DEFAULT_UP_URD_PERMISSIONS,
-  });
-
-  // 2 - remove the forwarder from the list of controllers for sanity check
-  // Note: check sum case address to avoid issues with case sensitivity
-  formattedControllers = allControllers.filter((controller: any) => {
-    return getChecksumAddress(controller) !== getChecksumAddress(forwarder);
-  });
-
-  // 3- add the forwarder to the list of controllers
-  formattedControllers = [...formattedControllers, forwarder];
-
-  const data = erc725.encodeData([
-    // the permission of the beneficiary address
-    {
-      keyName: 'AddressPermissions:Permissions:<address>',
-      dynamicKeyParts: forwarder,
-      value: permissions,
-    },
-    // the new list controllers addresses (= addresses with permissions set on the UP)
-    // + or -  1 in the `AddressPermissions[]` array length
-    {
-      keyName: 'AddressPermissions[]',
-      value: formattedControllers,
-    },
-  ]);
-  dataKeys = [...dataKeys, ...data.keys];
-  dataValues = [...dataValues, ...data.values];
-
-  // 4.execute the tx
-  const setDataBatchTx = await UP.connect(signer).setDataBatch(
-    dataKeys,
-    dataValues
+    [...lspDelegateKeys, ...forwarderPermissionsData.keys],
+    [...lspDelegateValues, ...forwarderPermissionsData.values]
   );
   return await setDataBatchTx.wait();
 };
@@ -304,4 +233,20 @@ export const doesControllerHaveMissingPermissions = async (
     ...GRAVE_CONTROLLER_PERMISSIONS,
   });
   return missingPermissions;
+};
+
+export const urdsMatchLatestForwarder = (
+  URDLsp7: string | null,
+  URDLsp8: string | null,
+  universalGraveForwarder: string
+) => {
+  // Note: check sum case address to avoid issues with case sensitivity
+  if (!URDLsp7 || !URDLsp8 || !universalGraveForwarder) {
+    return false;
+  }
+  return (
+    getChecksumAddress(URDLsp7) ===
+      getChecksumAddress(universalGraveForwarder) &&
+    getChecksumAddress(URDLsp8) === getChecksumAddress(universalGraveForwarder)
+  );
 };

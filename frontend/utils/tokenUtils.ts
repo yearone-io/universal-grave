@@ -6,7 +6,8 @@ import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { constants } from '@/app/constants';
-import { getLuksoProvider, getProvider } from '@/utils/provider';
+import { getLuksoProvider } from '@/utils/provider';
+import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 export type TokenData = {
   readonly interface: GRAVE_ASSET_TYPES;
@@ -47,6 +48,7 @@ const lsp8TransferSelector = computeSelector(
 );
 
 export const detectLSP = async (
+  provider: JsonRpcProvider | Web3Provider,
   assetAddress: string
 ): Promise<GRAVE_ASSET_TYPES> => {
   // fetch digital asset interface details
@@ -67,7 +69,7 @@ export const detectLSP = async (
       return GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset;
     }
 
-    const bytecode = await getProvider().getCode(assetAddress);
+    const bytecode = await provider.getCode(assetAddress);
     if (supportsFunction(bytecode, lsp7TransferSelector)) {
       return GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
     }
@@ -82,6 +84,7 @@ export const detectLSP = async (
 };
 
 export const getLSPAssetBasicInfo = async (
+  provider: JsonRpcProvider | Web3Provider,
   assetAddress: string,
   ownerAddress: string
 ): Promise<TokenData> => {
@@ -91,7 +94,7 @@ export const getLSPAssetBasicInfo = async (
     metadata: {},
     interface: GRAVE_ASSET_TYPES.Unrecognised,
   };
-  const lspInterface = await detectLSP(assetAddress);
+  const lspInterface = await detectLSP(provider, assetAddress);
   if (lspInterface === GRAVE_ASSET_TYPES.Unrecognised) {
     return unrecognizedLsp;
   }
@@ -129,7 +132,7 @@ export const getLSPAssetBasicInfo = async (
     const contract = new ethers.Contract(
       assetAddress,
       eip165ABI.concat(erc20ABI) as any,
-      getProvider()
+      provider
     );
     decimals =
       lspInterface ===
@@ -232,17 +235,17 @@ export const parseDataURI = (dataUri: string) => {
 };
 
 export async function processLSP8Asset(
+  provider: JsonRpcProvider | Web3Provider,
   asset: TokenData,
   assetOwner: string
 ): Promise<TokenData[]> {
   const contract = new ethers.Contract(
     asset.address as string,
     LSP8IdentifiableDigitalAsset.abi,
-    getProvider()
+    provider
   );
   const tokenIds = await contract.tokenIdsOf(assetOwner);
   const nfts: TokenData[] = [];
-
   for (const tokenId of tokenIds) {
     if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
       const tokenMetadata = await contract.getDataForTokenId(
@@ -266,7 +269,6 @@ export async function processLSP8Asset(
       if (decodedMetadata[0]?.value?.url) {
         const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
         image = getTokenImageURL(parsedMetadata.LSP4Metadata);
-        console.log('image', image);
       }
       asset.image = image;
     }

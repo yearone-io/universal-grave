@@ -2,24 +2,21 @@ import { ethers } from 'ethers';
 import { SiweMessage } from 'siwe';
 import { getNetworkConfig } from '@/constants/networks';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { getProvider } from '@/utils/provider';
-import { getChecksumAddress } from './tokenUtils';
 
 export const getGraveVaultFor = async (
+  provider: any,
   account: string,
   universalGraveForwarder: string
 ): Promise<string | null> => {
-  const provider = getProvider();
-
   const graveForwarder = new ethers.Contract(
     universalGraveForwarder,
     LSP1GraveForwarder.abi,
     provider
   );
-  const graveYardAddress = await graveForwarder.graveVaults(account);
-  return graveYardAddress === ethers.constants.AddressZero
+  const graveVaultAddress = await graveForwarder.graveVaults(account);
+  return graveVaultAddress === ethers.constants.AddressZero
     ? null
-    : graveYardAddress;
+    : graveVaultAddress;
 };
 
 export const buildSIWEMessage = (upAddress: string): string => {
@@ -38,20 +35,4 @@ export const buildSIWEMessage = (upAddress: string): string => {
     ], // Information the user wishes to have resolved as part of authentication by the relying party
   };
   return new SiweMessage(siweParams).prepareMessage();
-};
-
-export const hasJoinedTheGrave = (
-  URDLsp7: string | null,
-  URDLsp8: string | null,
-  universalGraveForwarder: string
-) => {
-  // Note: check sum case address to avoid issues with case sensitivity
-  if (!URDLsp7 || !URDLsp8 || !universalGraveForwarder) {
-    return false;
-  }
-  return (
-    getChecksumAddress(URDLsp7) ===
-      getChecksumAddress(universalGraveForwarder) &&
-    getChecksumAddress(URDLsp8) === getChecksumAddress(universalGraveForwarder)
-  );
 };
