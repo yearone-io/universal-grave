@@ -13,7 +13,6 @@ import {
   createUpVault,
 } from '@/utils/urdUtils';
 
-
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
  * It enables users to interact with Universal Profiles (UPs) by managing the Universal Receiver Delegate (URD)
@@ -163,7 +162,11 @@ export default function JoinGraveBtn({
         // need to allow controller to interact with the forwarder using AllowedCalls
         // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
         // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
-        await setGraveInForwarder(provider, vaultAddress as string, networkConfig);
+        await setGraveInForwarder(
+          provider,
+          vaultAddress as string,
+          networkConfig
+        );
         console.log('finished 2 setGraveInForwarder');
         setJoiningStep(3);
         console.log('step 3');

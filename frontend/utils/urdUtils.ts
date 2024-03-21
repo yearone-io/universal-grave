@@ -259,37 +259,40 @@ export const urdsMatchLatestForwarder = (
 export const createUpVault = async (
   provider: JsonRpcProvider | Web3Provider,
   account: string
-  ) => {
-    // create an factory for the LSP9Vault contract
-    const signer = provider.getSigner();
-    let vaultFactory = new ethers.ContractFactory(
-      LSP9Vault.abi,
-      LSP9Vault.bytecode
-    );
-    const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-    return await vaultTransaction.deployTransaction.wait();
-  };
+) => {
+  // create an factory for the LSP9Vault contract
+  const signer = provider.getSigner();
+  let vaultFactory = new ethers.ContractFactory(
+    LSP9Vault.abi,
+    LSP9Vault.bytecode
+  );
+  const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
+  return await vaultTransaction.deployTransaction.wait();
+};
 
 /**
  * Function to set the vault address in the forwarder contract.
  */
 export const setGraveInForwarder = async (
-    provider: JsonRpcProvider | Web3Provider,
-    vaultAddress: string,
-    networkConfig: Network
-  ) => {
-    // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-    // Note: remember to update ABIs if the delegate contracts change
-    const signer = provider.getSigner();
-    const graveForwarder = new ethers.Contract(
-      networkConfig.universalGraveForwarder,
-      LSP1GraveForwarder.abi,
-      provider
-    );
-    return await graveForwarder.connect(signer).setGrave(vaultAddress);
-  };
+  provider: JsonRpcProvider | Web3Provider,
+  vaultAddress: string,
+  networkConfig: Network
+) => {
+  // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+  // Note: remember to update ABIs if the delegate contracts change
+  const signer = provider.getSigner();
+  const graveForwarder = new ethers.Contract(
+    networkConfig.universalGraveForwarder,
+    LSP1GraveForwarder.abi,
+    provider
+  );
+  return await graveForwarder.connect(signer).setGrave(vaultAddress);
+};
 
-export const setDelegateInVault = async (vaultAddress: string, networkConfig: Network) => {
+export const setDelegateInVault = async (
+  vaultAddress: string,
+  networkConfig: Network
+) => {
   const provider = new ethers.providers.Web3Provider(window.lukso);
   const signer = provider.getSigner();
   const vault = new ethers.Contract(
@@ -298,9 +301,14 @@ export const setDelegateInVault = async (vaultAddress: string, networkConfig: Ne
     signer
   );
   try {
-  //1. Check if it is neccessary to set the delegate in the vault
-     const lsp1 = await vault.connect(signer).getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-    if (lsp1.toLocaleLowerCase() === networkConfig.lsp1UrdVault.toLocaleLowerCase()) {
+    //1. Check if it is neccessary to set the delegate in the vault
+    const lsp1 = await vault
+      .connect(signer)
+      .getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+    if (
+      lsp1.toLocaleLowerCase() ===
+      networkConfig.lsp1UrdVault.toLocaleLowerCase()
+    ) {
       return;
     }
   } catch (err: any) {

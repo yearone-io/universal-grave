@@ -44,8 +44,8 @@ const initialSteps = [
   {
     title: 'Direct all 🆙 spam to the GRAVE',
     completeText: { text: 'SPAM IS DEAD', address: null },
-    complete: false
-  }
+    complete: false,
+  },
 ];
 
 const initialLeavingSteps = [
