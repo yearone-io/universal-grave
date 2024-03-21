@@ -8,11 +8,11 @@ import {
   getUpAddressUrds,
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
+  setDelegateInVault,
+  setGraveInForwarder,
+  createUpVault,
 } from '@/utils/urdUtils';
-import { ethers } from 'ethers';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
+
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -121,64 +121,6 @@ export default function JoinGraveBtn({
   };
 
   // ========================= JOINING FLOW =========================
-
-    /**
-   * Function to create a vault for the UP.
-   */
-    const createUpVault = async (signer: ethers.providers.JsonRpcSigner) => {
-      // create an factory for the LSP9Vault contract
-      let vaultFactory = new ethers.ContractFactory(
-        LSP9Vault.abi,
-        LSP9Vault.bytecode
-      );
-      const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-      return await vaultTransaction.deployTransaction.wait();
-    };
-  
-    /**
-     * Function to set the vault address in the forwarder contract.
-     */
-    const setGraveInForwarder = async (
-      provider: ethers.providers.Web3Provider,
-      signer: ethers.providers.JsonRpcSigner,
-      vaultAddress: string
-    ) => {
-      // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
-      // Note: remember to update ABIs if the delegate contracts change
-      const graveForwarder = new ethers.Contract(
-        networkConfig.universalGraveForwarder,
-        LSP1GraveForwarder.abi,
-        provider
-      );
-      return await graveForwarder.connect(signer).setGrave(vaultAddress);
-    };
-
-  const setDelegateInVault = async (vaultAddress: string) => {    
-    const provider = new ethers.providers.Web3Provider(window.lukso);
-    const signer = provider.getSigner();
-    const vault = new ethers.Contract(
-      vaultAddress as string,
-      LSP9Vault.abi,
-      signer
-    );
-    try {
-    //1. Check if it is neccessary to set the delegate in the vault
-       const lsp1 = await vault.connect(signer).getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-      if (lsp1.toLocaleLowerCase() === networkConfig.lsp1UrdVault.toLocaleLowerCase()) {
-        return;
-      }
-    } catch (err: any) {
-      console.error('Error setDelegateInVault: ', err);
-    }
-    //2. Set the delegate in the vault if neccesary
-    return await vault
-      .connect(signer)
-      .setData(
-        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-        networkConfig.lsp1UrdVault
-      );
-  };
-
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -192,9 +134,7 @@ export default function JoinGraveBtn({
     }
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
-   
-    const provider = new ethers.providers.Web3Provider(window.lukso); // todo remove me 
-    const signer = provider.getSigner(); // todo remove me 
+
     let vaultAddress = graveVault;
     try {
       await updateBECPermissions(provider, account!, mainUPController!);
@@ -207,7 +147,7 @@ export default function JoinGraveBtn({
     if (!graveVault) {
       // 2. Create a vault for the UP. (if needed)
       try {
-        const vaultTranx = await createUpVault(signer);
+        const vaultTranx = await createUpVault(provider, account as string);
         vaultAddress = vaultTranx.contractAddress;
         // add the vault to the provider store
         addGraveVault(vaultAddress);
@@ -223,7 +163,7 @@ export default function JoinGraveBtn({
         // need to allow controller to interact with the forwarder using AllowedCalls
         // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
         // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
-        await setGraveInForwarder(provider, signer, vaultAddress);
+        await setGraveInForwarder(provider, vaultAddress as string, networkConfig);
         console.log('finished 2 setGraveInForwarder');
         setJoiningStep(3);
         console.log('step 3');
@@ -238,7 +178,7 @@ export default function JoinGraveBtn({
 
     // 4. Enable grave to keep assets inventory
     try {
-      await setDelegateInVault(vaultAddress as string);
+      await setDelegateInVault(vaultAddress as string, networkConfig);
       setJoiningStep(4);
       console.log('step 4');
     } catch (err: any) {
