@@ -9,7 +9,6 @@ import {
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
 } from '@/utils/urdUtils';
-import { setUpGraveVault, setVaultURD } from '@/utils/vaultUtils';
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
