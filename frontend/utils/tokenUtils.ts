@@ -199,7 +199,7 @@ export const getTokenIconURL = (LSP4Metadata?: any) => {
 };
 
 export const getTokenImageURL = (LSP4Metadata: any) => {
-  if (LSP4Metadata.images?.[0]?.[0]?.url) {
+  if (LSP4Metadata?.images?.[0]?.[0]?.url) {
     const url = LSP4Metadata.images?.[0]?.[0]?.url;
     if (url.startsWith('ipfs://')) {
       return `${constants.IPFS_GATEWAY}${url.slice(7)}`;
