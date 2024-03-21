@@ -103,6 +103,10 @@ export default function LSPAssets({
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
+        // every 4 assets, wait for 1 second
+        if ((receivedAssetsResults!.value! as string[]).indexOf(assetAddress) % 4 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
         const asset = await getLSPAssetBasicInfo(
           provider,
           assetAddress,
