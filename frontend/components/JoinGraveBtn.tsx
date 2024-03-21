@@ -148,11 +148,11 @@ export default function JoinGraveBtn({
     if (!graveVault) {
       // 2. Create a vault for the UP. (if needed)
       try {
-        const vaultTranx = await createUpVault(signer, account as string);
+        const vaultTranx = await createUpVault(signer, account as string) as any
         // Find the vault address from the event
-        const creationEvent = vaultTranx.events.find(
-          event => event.event === 'ContractCreated'
-        );
+        const creationEvent = vaultTranx.events.find((event: any) =>{
+          return event.event === 'ContractCreated';
+        });
         vaultAddress = creationEvent?.args?.contractAddress as string;
 
         // add the vault to the provider store
