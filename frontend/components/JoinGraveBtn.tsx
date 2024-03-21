@@ -134,8 +134,8 @@ export default function JoinGraveBtn({
     }
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
-    const provider = new ethers.providers.Web3Provider(window.lukso);
     const signer = provider.getSigner();
+    
     let vaultAddress = graveVault;
     try {
       await updateBECPermissions(provider, account!, mainUPController!);
