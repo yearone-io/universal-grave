@@ -12,6 +12,7 @@ import {
   setGraveInForwarder,
   createUpVault,
 } from '@/utils/urdUtils';
+import { ethers } from 'ethers';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -133,7 +134,8 @@ export default function JoinGraveBtn({
     }
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
-
+    const provider = new ethers.providers.Web3Provider(window.lukso);
+    const signer = provider.getSigner();
     let vaultAddress = graveVault;
     try {
       await updateBECPermissions(provider, account!, mainUPController!);
@@ -146,8 +148,13 @@ export default function JoinGraveBtn({
     if (!graveVault) {
       // 2. Create a vault for the UP. (if needed)
       try {
-        const vaultTranx = await createUpVault(provider, account as string);
-        vaultAddress = vaultTranx.contractAddress;
+        const vaultTranx = await createUpVault(signer, account as string);
+        // Find the vault address from the event
+        const creationEvent = vaultTranx.events.find(
+          event => event.event === 'ContractCreated'
+        );
+        vaultAddress = creationEvent?.args?.contractAddress as string;
+
         // add the vault to the provider store
         addGraveVault(vaultAddress);
         setJoiningStep(2);

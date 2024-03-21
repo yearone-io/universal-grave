@@ -257,11 +257,10 @@ export const urdsMatchLatestForwarder = (
  * Function to create a vault for the UP.
  */
 export const createUpVault = async (
-  provider: JsonRpcProvider | Web3Provider,
+  signer: ethers.providers.JsonRpcSigner,
   account: string
 ) => {
   // create an factory for the LSP9Vault contract
-  const signer = provider.getSigner();
   let vaultFactory = new ethers.ContractFactory(
     LSP9Vault.abi,
     LSP9Vault.bytecode
