@@ -10,6 +10,10 @@ import {
   updateBECPermissions,
 } from '@/utils/urdUtils';
 import { setUpGraveVault, setVaultURD } from '@/utils/vaultUtils';
+import { ethers } from 'ethers';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
+import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -119,6 +123,66 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
 
+    /**
+   * Function to create a vault for the UP.
+   */
+    const createUpVault = async (signer: ethers.providers.JsonRpcSigner) => {
+      // create an factory for the LSP9Vault contract
+      let vaultFactory = new ethers.ContractFactory(
+        LSP9Vault.abi,
+        LSP9Vault.bytecode
+      );
+      const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
+      return await vaultTransaction.deployTransaction.wait();
+    };
+  
+    /**
+     * Function to set the vault address in the forwarder contract.
+     */
+    const setGraveInForwarder = async (
+      provider: ethers.providers.Web3Provider,
+      signer: ethers.providers.JsonRpcSigner,
+      vaultAddress: string
+    ) => {
+      // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+      // Note: remember to update ABIs if the delegate contracts change
+      const graveForwarder = new ethers.Contract(
+        networkConfig.universalGraveForwarder,
+        LSP1GraveForwarder.abi,
+        provider
+      );
+      return await graveForwarder.connect(signer).setGrave(vaultAddress);
+    };
+
+  /**
+   * Function to set the delegate in the vault. Used to enable the vault to keep assets inventory after deploying the vault.
+   */
+  const setDelegateInVault = async (vaultAddress: string) => {    
+    const provider = new ethers.providers.Web3Provider(window.lukso);
+    const signer = provider.getSigner();
+    const vault = new ethers.Contract(
+      vaultAddress as string,
+      LSP9Vault.abi,
+      signer
+    );
+    try {
+    //1. Check if it is neccessary to set the delegate in the vault
+       const lsp1 = await vault.connect(signer).getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+      if (lsp1.toLocaleLowerCase() === networkConfig.lsp1UrdVault.toLocaleLowerCase()) {
+        return;
+      }
+    } catch (err: any) {
+      console.error('Error setDelegateInVault: ', err);
+    }
+    //2. Set the delegate in the vault if neccesary
+    return await vault
+      .connect(signer)
+      .setData(
+        ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+        networkConfig.lsp1UrdVault
+      );
+  };
+
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -132,6 +196,10 @@ export default function JoinGraveBtn({
     }
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
+   
+    const provider = new ethers.providers.Web3Provider(window.lukso); // todo remove me 
+    const signer = provider.getSigner(); // todo remove me 
+    let vaultAddress = graveVault;
     try {
       await updateBECPermissions(provider, account!, mainUPController!);
       setJoiningStep(1);
@@ -141,39 +209,48 @@ export default function JoinGraveBtn({
       return err;
     }
     if (!graveVault) {
-      // 2.A. Set up new Vault if none found
+      // 2. Create a vault for the UP. (if needed)
       try {
-        const newVaultAddress = await setUpGraveVault(
-          provider,
-          account!,
-          networkConfig.universalGraveForwarder,
-          networkConfig.lsp1UrdVault
-        );
+        const vaultTranx = await createUpVault(signer);
+        vaultAddress = vaultTranx.contractAddress;
         // add the vault to the provider store
-        addGraveVault(newVaultAddress);
+        addGraveVault(vaultAddress);
         setJoiningStep(2);
         console.log('step 2');
+      } catch (err: any) {
+        handleError(err);
+        return err;
+      }
+      // 3. Set the vault in the forwarder contract
+      try {
+        console.log('starting step 2 setGraveInForwarder');
+        // need to allow controller to interact with the forwarder using AllowedCalls
+        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
+        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
+        await setGraveInForwarder(provider, signer, vaultAddress);
+        console.log('finished 2 setGraveInForwarder');
+        setJoiningStep(3);
+        console.log('step 3');
       } catch (err: any) {
         handleError(err);
         return err;
       }
     } else {
-      // 2.B. If Vault exists ensure it has the correct URD and if not, set it
-      try {
-        await setVaultURD(
-          provider,
-          graveVault as string,
-          networkConfig.lsp1UrdVault
-        );
-        setJoiningStep(2);
-        console.log('step 2');
-      } catch (err: any) {
-        handleError(err);
-        return err;
-      }
+      setJoiningStep(3);
+      console.log('step 2 and 3 skipped, vault already exists');
     }
 
-    // 3. Set LSP7 and LSP8 URD to the GRAVE Forwarder address and give URD permissions
+    // 4. Enable grave to keep assets inventory
+    try {
+      await setDelegateInVault(vaultAddress as string);
+      setJoiningStep(4);
+      console.log('step 4');
+    } catch (err: any) {
+      handleError(err);
+      return err;
+    }
+
+    // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
       await toggleForwarderAsLSPDelegate(
         provider,
@@ -181,8 +258,8 @@ export default function JoinGraveBtn({
         networkConfig.universalGraveForwarder,
         true
       );
-      setJoiningStep(3);
-      console.log('step 3');
+      setJoiningStep(5);
+      console.log('step 5');
     } catch (err: any) {
       handleError(err);
       return err;
@@ -195,7 +272,7 @@ export default function JoinGraveBtn({
       isClosable: true,
     });
 
-    // 4. Update the UI
+    // 6. Update the UI
     fetchProfileUrdData();
   };
 
