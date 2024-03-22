@@ -254,34 +254,18 @@ export const urdsMatchLatestForwarder = (
 };
 
 /**
- * Function to create a vault for the UP.
- */
-export const createUpVault = async (
-  signer: ethers.providers.JsonRpcSigner,
-  account: string
-) => {
-  // create an factory for the LSP9Vault contract
-  let vaultFactory = new ethers.ContractFactory(
-    LSP9Vault.abi,
-    LSP9Vault.bytecode
-  );
-  const vaultTransaction = await vaultFactory.connect(signer).deploy(account);
-  return await vaultTransaction.deployTransaction.wait();
-};
-
-/**
  * Function to set the vault address in the forwarder contract.
  */
 export const setGraveInForwarder = async (
   provider: JsonRpcProvider | Web3Provider,
   vaultAddress: string,
-  networkConfig: Network
+  forwarderAddress: string
 ) => {
   // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
   // Note: remember to update ABIs if the delegate contracts change
   const signer = provider.getSigner();
   const graveForwarder = new ethers.Contract(
-    networkConfig.universalGraveForwarder,
+    forwarderAddress,
     LSP1GraveForwarder.abi,
     provider
   );

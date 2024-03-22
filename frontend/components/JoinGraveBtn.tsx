@@ -9,9 +9,8 @@ import {
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
   setGraveInForwarder,
-  createUpVault,
 } from '@/utils/urdUtils';
-import { setVaultURD } from '@/utils/vaultUtils';
+import { createUpVault, setVaultURD } from '@/utils/vaultUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -133,8 +132,6 @@ export default function JoinGraveBtn({
     }
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
-    const signer = provider.getSigner();
-    
     let vaultAddress = graveVault;
     try {
       await updateBECPermissions(provider, account!, mainUPController!);
@@ -147,7 +144,7 @@ export default function JoinGraveBtn({
     if (!graveVault) {
       // 2. Create a vault for the UP. (if needed)
       try {
-        const vaultTranx = await createUpVault(signer, account as string) as any
+        const vaultTranx = await createUpVault(provider, account as string) as any
         // Find the vault address from the event
         const creationEvent = vaultTranx.events.find((event: any) =>{
           return event.event === 'ContractCreated';
@@ -165,13 +162,10 @@ export default function JoinGraveBtn({
       // 3. Set the vault in the forwarder contract
       try {
         console.log('starting step 2 setGraveInForwarder');
-        // need to allow controller to interact with the forwarder using AllowedCalls
-        // https://docs.lukso.tech/standards/universal-profile/lsp6-key-manager/#allowed-calls
-        // https://docs.lukso.tech/learn/expert-guides/vault/grant-vault-permissions/#step-3---generate-the-data-key-value-pair-for-allowedcalls
         await setGraveInForwarder(
           provider,
           vaultAddress as string,
-          networkConfig
+          networkConfig.universalGraveForwarder
         );
         console.log('finished 2 setGraveInForwarder');
         setJoiningStep(3);
