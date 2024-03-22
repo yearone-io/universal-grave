@@ -270,7 +270,7 @@ export const setGraveInForwarder = async (
   );
   // first check if the grave address is already set
   const currentGrave = await graveForwarder.connect(signer).getGrave();
-  if (currentGrave === vaultAddress) {
+  if (currentGrave.toLocaleLowerCase() === vaultAddress.toLocaleLowerCase()) {
     return;
   }
   return await graveForwarder.connect(signer).setGrave(vaultAddress);
