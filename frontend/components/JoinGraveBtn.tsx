@@ -8,8 +8,9 @@ import {
   getUpAddressUrds,
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
+  setGraveInForwarder,
 } from '@/utils/urdUtils';
-import { setUpGraveVault, setVaultURD } from '@/utils/vaultUtils';
+import { createUpVault, setVaultURD } from '@/utils/vaultUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -118,7 +119,6 @@ export default function JoinGraveBtn({
   };
 
   // ========================= JOINING FLOW =========================
-
   const initJoinProcess = async () => {
     if (!window.lukso) {
       toast({
@@ -132,6 +132,7 @@ export default function JoinGraveBtn({
     }
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
+    let vaultAddress = graveVault;
     try {
       await updateBECPermissions(provider, account!, mainUPController!);
       setJoiningStep(1);
@@ -141,30 +142,17 @@ export default function JoinGraveBtn({
       return err;
     }
     if (!graveVault) {
-      // 2.A. Set up new Vault if none found
+      // 2. Create a vault for the UP. (if needed)
       try {
-        const newVaultAddress = await setUpGraveVault(
-          provider,
-          account!,
-          networkConfig.universalGraveForwarder,
-          networkConfig.lsp1UrdVault
-        );
+        const vaultTranx = await createUpVault(provider, account as string) as any
+        // Find the vault address from the event
+        const creationEvent = vaultTranx.events.find((event: any) =>{
+          return event.event === 'ContractCreated';
+        });
+        vaultAddress = creationEvent?.args?.contractAddress as string;
+
         // add the vault to the provider store
-        addGraveVault(newVaultAddress);
-        setJoiningStep(2);
-        console.log('step 2');
-      } catch (err: any) {
-        handleError(err);
-        return err;
-      }
-    } else {
-      // 2.B. If Vault exists ensure it has the correct URD and if not, set it
-      try {
-        await setVaultURD(
-          provider,
-          graveVault as string,
-          networkConfig.lsp1UrdVault
-        );
+        addGraveVault(vaultAddress);
         setJoiningStep(2);
         console.log('step 2');
       } catch (err: any) {
@@ -173,7 +161,33 @@ export default function JoinGraveBtn({
       }
     }
 
-    // 3. Set LSP7 and LSP8 URD to the GRAVE Forwarder address and give URD permissions
+    // 3. Set the vault in the forwarder contract
+    try {
+      console.log('starting step 2 setGraveInForwarder');
+      await setGraveInForwarder(
+        provider,
+        vaultAddress as string,
+        networkConfig.universalGraveForwarder
+      );
+      console.log('finished 2 setGraveInForwarder');
+      setJoiningStep(3);
+      console.log('step 3');
+    } catch (err: any) {
+      handleError(err);
+      return err;
+    }
+
+    // 4. Enable grave to keep assets inventory
+    try {
+      await setVaultURD(provider, vaultAddress as string, networkConfig.lsp1UrdVault);
+      setJoiningStep(4);
+      console.log('step 4');
+    } catch (err: any) {
+      handleError(err);
+      return err;
+    }
+
+    // 5. Set the URD for LSP7 and LSP8 to the forwarder address and permissions
     try {
       await toggleForwarderAsLSPDelegate(
         provider,
@@ -181,8 +195,8 @@ export default function JoinGraveBtn({
         networkConfig.universalGraveForwarder,
         true
       );
-      setJoiningStep(3);
-      console.log('step 3');
+      setJoiningStep(5);
+      console.log('step 5');
     } catch (err: any) {
       handleError(err);
       return err;
@@ -195,7 +209,7 @@ export default function JoinGraveBtn({
       isClosable: true,
     });
 
-    // 4. Update the UI
+    // 6. Update the UI
     fetchProfileUrdData();
   };
 

@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { getNetworkConfig } from '@/constants/networks';
+import { Network, getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
@@ -12,6 +12,7 @@ import {
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
+import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -249,4 +250,28 @@ export const urdsMatchLatestForwarder = (
       getChecksumAddress(universalGraveForwarder) &&
     getChecksumAddress(URDLsp8) === getChecksumAddress(universalGraveForwarder)
   );
+};
+
+/**
+ * Function to set the vault address in the forwarder contract.
+ */
+export const setGraveInForwarder = async (
+  provider: JsonRpcProvider | Web3Provider,
+  vaultAddress: string,
+  forwarderAddress: string
+) => {
+  // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
+  // Note: remember to update ABIs if the delegate contracts change
+  const signer = provider.getSigner();
+  const graveForwarder = new ethers.Contract(
+    forwarderAddress,
+    LSP1GraveForwarder.abi,
+    provider
+  );
+  // first check if the grave address is already set
+  const currentGrave = await graveForwarder.connect(signer).getGrave();
+  if (currentGrave.toLocaleLowerCase() === vaultAddress.toLocaleLowerCase()) {
+    return;
+  }
+  return await graveForwarder.connect(signer).setGrave(vaultAddress);
 };

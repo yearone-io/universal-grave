@@ -1,29 +1,30 @@
 import hre, { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
 import { LSPFactory } from '@lukso/lsp-factory.js';
-import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
-
+import config from '../hardhat.config';
+import { getNetworkAccountsConfig } from '../constants/network';
 
 // load env vars
 dotenv.config();
 
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, CONTROLLER_PUBLIC_KEY} = process.env;
+const { NETWORK } = process.env;
+const { EOA_PRIVATE_KEY, EOA_PUBLIC_KEY } = getNetworkAccountsConfig(NETWORK as string);
 
 async function main() {
-    const lspFactory = new LSPFactory('https://rpc.testnet.lukso.network/', {
+    const lspFactory = new LSPFactory(config.networks[NETWORK].url, {
         deployKey: EOA_PRIVATE_KEY,
-        chainId: 4201, // LUKSO Testnet
+        chainId: config.networks[NETWORK].chainId, // LUKSO Testnet
     });
     // setup provider
-    const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+    const provider = new ethers.JsonRpcProvider(config.networks[NETWORK].url);
     // setup signer (the browser extension controller)
     const signer = new ethers.Wallet(EOA_PRIVATE_KEY as string, provider);
 
     // STEP 1: Deploy UP using EOA
     console.log('⏳ STEP 1: Deploying Universal Profile using EOA');
     const deployedContracts = await lspFactory.UniversalProfile.deploy({
-        controllerAddresses: [CONTROLLER_PUBLIC_KEY as string],
+        controllerAddresses: [EOA_PUBLIC_KEY as string],
         lsp3Profile: {
             name: 'EOA Generated Universal Profile',
             description: 'Grave',

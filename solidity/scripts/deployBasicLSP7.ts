@@ -4,19 +4,23 @@ import * as dotenv from 'dotenv';
 import BasicLSP7 from "../artifacts/contracts/BasicLSP7.sol/BasicLSP7.json";
 import { LSP4_TOKEN_TYPES } from "@lukso/lsp-smart-contracts";
 import {BasicLSP7 as BasicLSP7Type} from "../typechain-types";
+import config from '../hardhat.config';
+import { getNetworkAccountsConfig } from '../constants/network';
 
 // load env vars
 dotenv.config();
+
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, UP_ADDR } = process.env;
+const { NETWORK } = process.env;
+const { EOA_PRIVATE_KEY, UP_ADDR_CONTROLLED_BY_EOA } = getNetworkAccountsConfig(NETWORK as string);
 
 async function deployAndSetLSP8MetadataBaseURI() {
     const tokenName = 'LSP7 Token Name';
     const tokenTicker = 'LSP7 TKN';
-    const tokenOwner = UP_ADDR;
+    const tokenOwner = UP_ADDR_CONTROLLED_BY_EOA;
     const tokenNondivisible = false;
     // setup provider
-    const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+    const provider = new ethers.JsonRpcProvider(config.networks[NETWORK].url);
     // setup signer (the browser extension controller)
     const signer = new ethers.Wallet(EOA_PRIVATE_KEY as string, provider);
     // Deploy Token
@@ -34,7 +38,7 @@ async function deployAndSetLSP8MetadataBaseURI() {
     try {
         await hre.run("verify:verify", {
             address: tokenDeployTx.target,
-            network: "luksoTestnet",
+            network: NETWORK,
             constructorArguments: deploymentArguments,
             contract: "contracts/BasicLSP7.sol:BasicLSP7"
         });
@@ -55,7 +59,7 @@ async function deployAndSetLSP8MetadataBaseURI() {
     const setDataTx = await lsp7Mintable.setData(dataKey,dataValue,{gasLimit: 400_000});
     console.log('✅ Data set. Tx:', setDataTx.hash);
 
-    // const mintTx = await lsp7Mintable.mint(UP_ADDR as string, 69, true, "0x", { gasLimit: 400_000 });
+    // const mintTx = await lsp7Mintable.mint(UP_ADDR_CONTROLLED_BY_EOA as string, 69, true, "0x", { gasLimit: 400_000 });
     // console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
 }
 
