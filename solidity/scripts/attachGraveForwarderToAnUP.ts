@@ -5,6 +5,7 @@ import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { OPERATION_TYPES, PERMISSIONS } from '@lukso/lsp-smart-contracts';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7Mintable from '@lukso/lsp-smart-contracts/artifacts/LSP7Mintable.json';
+import { getNetworkAccountsConfig } from '../constants/network';
 
 /**
  * Thi script does the following:
@@ -25,12 +26,12 @@ import LSP7Mintable from '@lukso/lsp-smart-contracts/artifacts/LSP7Mintable.json
  *    Exits the process on error
 */
 
-
 // load env vars
 dotenv.config();
 
 // Update those values in the .env file
-const { UP_ADDR, EOA_PRIVATE_KEY } = process.env;
+const { NETWORK } = process.env;
+const { UP_ADDR_CONTROLLED_BY_EOA, EOA_PRIVATE_KEY } = getNetworkAccountsConfig(NETWORK as string);
 
 async function main() {
     // setup provider
@@ -45,7 +46,7 @@ async function main() {
       ).bytecode;
     const fullBytecode = CustomURDBytecode;// + params;
     // get the address of the contract that will be created
-    const UP = new ethers.Contract(UP_ADDR as string, UP_ABI, provider);
+    const UP = new ethers.Contract(UP_ADDR_CONTROLLED_BY_EOA as string, UP_ABI, provider);
     const graveForwarderAddress = await UP.connect(signer).execute.staticCall(
         OPERATION_TYPES.CREATE,
         ethers.ZeroAddress,
@@ -56,7 +57,7 @@ async function main() {
     const tx1 = await UP.connect(signer).execute(OPERATION_TYPES.CREATE, ethers.ZeroAddress, 0, fullBytecode);
     await tx1.wait();
     console.log('✅ LSP1 Grave Forwarder URD successfully deployed at address: ', graveForwarderAddress);
-    console.log(`to verify run: npx hardhat verify --network luksoTestnet ${graveForwarderAddress}`);
+    console.log(`to verify run: npx hardhat verify --network ${NETWORK} ${graveForwarderAddress}`);
     
     // ADDING URD TO UP LSP7 RECIPIENT NOTIFICATION
     console.log('⏳ Registering LSP1 Grave Forwarder on the UP for LSP7 and LSP8 assets');
@@ -96,7 +97,7 @@ async function main() {
         LSP9Vault.abi,
         LSP9Vault.bytecode,
     );
-    const graveVaultTx = await vaultFactory.connect(signer).deploy(UP_ADDR);
+    const graveVaultTx = await vaultFactory.connect(signer).deploy(UP_ADDR_CONTROLLED_BY_EOA);
     const graveVaultAddress = graveVaultTx.target as string;
     console.log('✅ Grave Vault deployed', graveVaultAddress);
 
@@ -143,7 +144,7 @@ async function main() {
     const tokenAddress = tokenDeployTx.target as string;
     console.log('✅ Token deployed. Address:', tokenAddress);
     const LSP7TokenContract = new ethers.Contract(tokenAddress, LSP7Mintable.abi, provider);
-    const mintTx = await LSP7TokenContract.connect(signer).mint(UP_ADDR, 69, 0, "0x", { gasLimit: 400_000 });
+    const mintTx = await LSP7TokenContract.connect(signer).mint(UP_ADDR_CONTROLLED_BY_EOA, 69, 0, "0x", { gasLimit: 400_000 });
     console.log('✅ Token minted to vault through UP Grave Vault Forwarder. Tx:', mintTx.hash);
 
     // transfer from grave vault to elsewhere
@@ -166,7 +167,7 @@ async function main() {
     console.log('✅ Token added to whitelist', whitelistAdditionTx.hash);
     const transferPayloadTx = {
         to: tokenAddress, // Address of the graveForwarder contract
-        data: LSP7TokenContract.interface.encodeFunctionData("transfer", [graveVaultAddress, UP_ADDR, 69, 0, "0x"]) // Encoding the setGrave function call
+        data: LSP7TokenContract.interface.encodeFunctionData("transfer", [graveVaultAddress, UP_ADDR_CONTROLLED_BY_EOA, 69, 0, "0x"]) // Encoding the setGrave function call
     };
 
     const LSP9VaultContract = new ethers.Contract(graveVaultAddress, LSP9Vault.abi, provider);

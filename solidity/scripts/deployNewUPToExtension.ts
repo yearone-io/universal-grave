@@ -2,6 +2,15 @@ import hre, { ethers } from 'hardhat';
 import * as dotenv from 'dotenv';
 import { abi as UP_ABI } from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { LSPFactory } from '@lukso/lsp-factory.js';
+import config from '../hardhat.config';
+import { getNetworkAccountsConfig } from '../constants/network';
+
+// load env vars
+dotenv.config();
+
+// Update those values in the .env file
+const { NETWORK } = process.env;
+const { EOA_PUBLIC_KEY, EOA_PRIVATE_KEY } = getNetworkAccountsConfig(NETWORK as string);
 
 /**
  * To import a new profile into your extension:
@@ -13,9 +22,6 @@ import { LSPFactory } from '@lukso/lsp-factory.js';
  * 4) Send the extension controller some LYX tokens because it can't rely on transaction relayer
  *   to pay for the gas
  */
-
-const CONTROLLER_PRIVATE_KEY = process.env.EOA_PRIVATE_KEY;
-const UP_CONTROLLER = process.env.CONTROLLER_PUBLIC_KEY;
 // To be filled out after the UP is deployed
 let myUPAddress = "";
 // To be generated after the UP is deployed by steps below
@@ -25,19 +31,19 @@ const upExtensionController = "";
 '0x00000000000000000000000000000000000000000000000000000000007f3f06'
 const upExtensionControllerPerms = "0x00000000000000000000000000000000000000000000000000000000000003ff";
 
-const lspFactory = new LSPFactory('https://rpc.testnet.lukso.network/', {
-    deployKey: CONTROLLER_PRIVATE_KEY,
-    chainId: 4201, // LUKSO Testnet
+const lspFactory = new LSPFactory(config.networks[NETWORK].url, {
+    deployKey: EOA_PRIVATE_KEY,
+    chainId: config.networks[NETWORK].chainId, // LUKSO Testnet
 });
 
 async function createUniversalProfile() {
     // setup provider
-    const provider = new ethers.JsonRpcProvider('https://rpc.testnet.lukso.network');
+    const provider = new ethers.JsonRpcProvider(config.networks[NETWORK].url);
     // setup signer (the UP controller)
-    const signer = new ethers.Wallet(CONTROLLER_PRIVATE_KEY as string, provider);
+    const signer = new ethers.Wallet(EOA_PRIVATE_KEY as string, provider);
     if (!myUPAddress) {
         const deployedContracts = await lspFactory.UniversalProfile.deploy({
-            controllerAddresses: [UP_CONTROLLER as string],
+            controllerAddresses: [EOA_PUBLIC_KEY as string],
             lsp3Profile: {
                 name: 'My Universal Profile',
                 description: 'My Cool Universal Profile',

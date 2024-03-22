@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-verify";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from 'dotenv';
+import { getNetworkAccountsConfig } from "./constants/network";
 
 // load env vars
 dotenv.config();
@@ -13,12 +14,12 @@ const config: HardhatUserConfig = {
       luksoTestnet: {
         url: "https://lukso-testnet.rpc.thirdweb.com",
         chainId: 4201,
-        accounts: [process.env.EOA_PRIVATE_KEY as string] // your private key here
+        accounts: [getNetworkAccountsConfig("luksoTestnet").EOA_PRIVATE_KEY as string] // your private key here
       },
       luksoMain: {
         url: "https://lukso.rpc.thirdweb.com",
         chainId: 42,
-        accounts: [process.env.EOA_PRIVATE_KEY as string] // your private key here
+        accounts: [getNetworkAccountsConfig("luksoMain").EOA_PRIVATE_KEY as string] // your private key here
       },
     },
     sourcify: {

@@ -59,6 +59,7 @@ typings/
 .env
 .env.test
 .env.local
+constants/network.ts
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
