@@ -12,7 +12,6 @@ import {
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 
 export const hasOlderGraveDelegate = (
@@ -269,5 +268,10 @@ export const setGraveInForwarder = async (
     LSP1GraveForwarder.abi,
     provider
   );
+  // first check if the grave address is already set
+  const currentGrave = await graveForwarder.connect(signer).getGrave();
+  if (currentGrave === vaultAddress) {
+    return;
+  }
   return await graveForwarder.connect(signer).setGrave(vaultAddress);
 };

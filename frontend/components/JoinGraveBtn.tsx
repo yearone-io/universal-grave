@@ -159,24 +159,22 @@ export default function JoinGraveBtn({
         handleError(err);
         return err;
       }
-      // 3. Set the vault in the forwarder contract
-      try {
-        console.log('starting step 2 setGraveInForwarder');
-        await setGraveInForwarder(
-          provider,
-          vaultAddress as string,
-          networkConfig.universalGraveForwarder
-        );
-        console.log('finished 2 setGraveInForwarder');
-        setJoiningStep(3);
-        console.log('step 3');
-      } catch (err: any) {
-        handleError(err);
-        return err;
-      }
-    } else {
+    }
+
+    // 3. Set the vault in the forwarder contract
+    try {
+      console.log('starting step 2 setGraveInForwarder');
+      await setGraveInForwarder(
+        provider,
+        vaultAddress as string,
+        networkConfig.universalGraveForwarder
+      );
+      console.log('finished 2 setGraveInForwarder');
       setJoiningStep(3);
-      console.log('step 2 and 3 skipped, vault already exists');
+      console.log('step 3');
+    } catch (err: any) {
+      handleError(err);
+      return err;
     }
 
     // 4. Enable grave to keep assets inventory
