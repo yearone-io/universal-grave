@@ -3,16 +3,18 @@ import * as dotenv from 'dotenv';
 // need to 'npx hardhat compile' before
 import LSP1UniversalReceiverDelegateVault from "../artifacts/contracts/LSP1UniversalReceiverDelegateVault.sol/LSP1UniversalReceiverDelegateVaultGrave.json";
 import config from '../hardhat.config';
+import { getNetworkAccountsConfig } from '../constants/network';
 
 // load env vars
 dotenv.config();
+
 // Update those values in the .env file
-const { EOA_PRIVATE_KEY, NETWORK } = process.env;
-const network = NETWORK as string || 'luksoTestnet';
+const { NETWORK } = process.env;
+const { EOA_PRIVATE_KEY } = getNetworkAccountsConfig(NETWORK as string);
 
 async function deployLSP1UniversalReceiverDelegateVault() {
     // setup provider
-    const provider = new ethers.JsonRpcProvider(config.networks[network].url);
+    const provider = new ethers.JsonRpcProvider(config.networks[NETWORK].url);
     // setup signer (the browser extension controller)
     const signer = new ethers.Wallet(EOA_PRIVATE_KEY as string, provider);
     // Deploy Token
@@ -28,7 +30,7 @@ async function deployLSP1UniversalReceiverDelegateVault() {
     try {
         await hre.run("verify:verify", {
             address: vaultURDDeployTx.target,
-            network: "luksoTestnet",
+            network: NETWORK,
             constructorArguments: [],
             contract: "contracts/LSP1UniversalReceiverDelegateVault.sol:LSP1UniversalReceiverDelegateVaultGrave"
         });

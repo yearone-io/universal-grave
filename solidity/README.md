@@ -14,9 +14,9 @@
 
    ```md
    EOA_PRIVATE_KEY=
-   CONTROLLER_PUBLIC_KEY=
-   UP_ADDR=
-   RECEIVER_UP_ADDR=
+   EOA_PUBLIC_KEY=
+   UP_ADDR_CONTROLLED_BY_EOA=
+   RECEIVER_UP_ADDR_CONTROLLED_BY_EOA=
    ```
 4. Generate types `npm run typechain`
 
