@@ -8,11 +8,10 @@ import {
   getUpAddressUrds,
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
-  setDelegateInVault,
   setGraveInForwarder,
   createUpVault,
 } from '@/utils/urdUtils';
-import { ethers } from 'ethers';
+import { setVaultURD } from '@/utils/vaultUtils';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -188,7 +187,7 @@ export default function JoinGraveBtn({
 
     // 4. Enable grave to keep assets inventory
     try {
-      await setDelegateInVault(vaultAddress as string, networkConfig);
+      await setVaultURD(provider, vaultAddress as string, networkConfig.lsp1UrdVault);
       setJoiningStep(4);
       console.log('step 4');
     } catch (err: any) {

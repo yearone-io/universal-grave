@@ -287,37 +287,3 @@ export const setGraveInForwarder = async (
   );
   return await graveForwarder.connect(signer).setGrave(vaultAddress);
 };
-
-export const setDelegateInVault = async (
-  vaultAddress: string,
-  networkConfig: Network
-) => {
-  const provider = new ethers.providers.Web3Provider(window.lukso);
-  const signer = provider.getSigner();
-  const vault = new ethers.Contract(
-    vaultAddress as string,
-    LSP9Vault.abi,
-    signer
-  );
-  try {
-    //1. Check if it is neccessary to set the delegate in the vault
-    const lsp1 = await vault
-      .connect(signer)
-      .getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-    if (
-      lsp1.toLocaleLowerCase() ===
-      networkConfig.lsp1UrdVault.toLocaleLowerCase()
-    ) {
-      return;
-    }
-  } catch (err: any) {
-    console.error('Error setDelegateInVault: ', err);
-  }
-  //2. Set the delegate in the vault if neccesary
-  return await vault
-    .connect(signer)
-    .setData(
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-      networkConfig.lsp1UrdVault
-    );
-};

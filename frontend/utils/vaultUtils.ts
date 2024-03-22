@@ -1,5 +1,7 @@
 import { ethers } from 'ethers';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
+import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 export const migrateVaultToNewForwarder = async (
@@ -20,4 +22,35 @@ export const migrateVaultToNewForwarder = async (
     provider
   );
   return await newForwarder.connect(signer).setGrave(vaultAddress);
+};
+
+export const setVaultURD = async (
+  provider: JsonRpcProvider | Web3Provider,
+  vaultAddress: string,
+  vaultURDAddress: string
+) => {
+  const signer = provider.getSigner();
+  const vault = new ethers.Contract(
+    vaultAddress as string,
+    LSP9Vault.abi,
+    signer
+  );
+  try {
+    //1. Check if it is neccessary to set the delegate in the vault
+    const lsp1 = await vault
+      .connect(signer)
+      .getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+    if (lsp1.toLocaleLowerCase() === vaultURDAddress.toLocaleLowerCase()) {
+      return;
+    }
+  } catch (err: any) {
+    console.error('Error setVaultURD: ', err);
+  }
+  //2. Set the delegate in the vault if neccesary
+  return await vault
+    .connect(signer)
+    .setData(
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+      vaultURDAddress
+    );
 };
