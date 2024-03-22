@@ -27,7 +27,7 @@ const initialSteps = [
     complete: false,
   },
   {
-    title: 'Set your GRAVE spambox',
+    title: 'Create your GRAVE spambox',
     completeText: { text: 'ADDRESS: ', address: null },
     complete: false,
   },

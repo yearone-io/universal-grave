@@ -33,7 +33,7 @@ const initialLeavingSteps = [
     complete: false,
   },
   {
-    title: 'Reset previous LSP 7 and LSP8 delegate permissions',
+    title: 'Reset previous LSP7 and LSP8 delegate permissions',
     completeText: { text: '', address: null },
     complete: false,
   },
