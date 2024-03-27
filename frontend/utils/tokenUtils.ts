@@ -1,6 +1,7 @@
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import { INTERFACE_IDS, LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { ethers } from 'ethers';
+import Web3 from 'web3';
 import { eip165ABI } from '@/abis/eip165ABI';
 import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
@@ -262,8 +263,37 @@ export async function processLSP8Asset(
       if (decodedMetadata[0]?.value?.url) {
         const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
         image = getTokenImageURL(parsedMetadata.LSP4Metadata);
+        if (asset.symbol === 'BPIX') {
+          console.log("metadata value", decodedMetadata[0]?.value?.url.replace(
+            'data:application/json;charset=UTF-8,',
+            ''
+          ));
+          console.log("metadata expected hash", decodedMetadata[0]?.value.verification.data);
+          console.log("metadata derived hash", ERC725.encodeKeyName(decodedMetadata[0]?.value?.url.replace(
+            'data:application/json;charset=UTF-8,',
+            ''
+          )));
+          console.log("parsed metadata", parsedMetadata.LSP4Metadata);
+          if (image) {
+            console.log("image data", parsedMetadata.LSP4Metadata.images[0][0]);
+            console.log("image expected hash", parsedMetadata.LSP4Metadata.images[0][0].verification.data);
+            console.log("raw image data derived hash", ERC725.encodeKeyName(image));
+            console.log("raw image data w/ start replaced but not decoded, derived hash", ERC725.encodeKeyName(image.replace(
+              'data:image/svg+xml;base64,',
+              ''
+            )));
+            const svgImage = Buffer.from(image.replace(
+              'data:image/svg+xml;base64,',
+              ''
+            ), 'base64').toString('ascii');
+
+            //console.log("svgImage", svgImage);
+            console.log("image w/ start replaced + decoded, derived hash", ERC725.encodeKeyName(svgImage));
+          }
+        }
       }
       asset.image = image;
+      // get a keccak256(bytes) encoding of the image URL
     }
     nfts.push({ ...asset, tokenId: tokenId.toString() });
   }

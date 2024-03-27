@@ -112,6 +112,7 @@ export default function LSPAssets({
           assetAddress,
           graveVault
         );
+        
         if (!asset) continue;
         if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
           asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
