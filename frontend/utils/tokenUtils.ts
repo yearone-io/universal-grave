@@ -272,7 +272,7 @@ export async function processLSP8Asset(
           console.log("metadata derived hash", ERC725.encodeKeyName(decodedMetadata[0]?.value?.url.replace(
             'data:application/json;charset=UTF-8,',
             ''
-          )));
+          )));//replace last "="
           console.log("parsed metadata", parsedMetadata.LSP4Metadata);
           if (image) {
             console.log("image data", parsedMetadata.LSP4Metadata.images[0][0]);
@@ -281,7 +281,7 @@ export async function processLSP8Asset(
             console.log("raw image data w/ start replaced but not decoded, derived hash", ERC725.encodeKeyName(image.replace(
               'data:image/svg+xml;base64,',
               ''
-            )));
+            ).slice(0,-1)));
             const svgImage = Buffer.from(image.replace(
               'data:image/svg+xml;base64,',
               ''
