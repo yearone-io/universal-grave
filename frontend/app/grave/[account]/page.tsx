@@ -2,17 +2,18 @@ import React from 'react';
 import { Container } from '@chakra-ui/react';
 import GraveContents from '@/components/GraveContents';
 import { Metadata } from 'next';
+import { constants } from '@/app/constants';
 
 export const metadata: Metadata = {
   title: 'GRAVE - Graveyard',
   description: 'List of assets in your graveyard',
   openGraph: {
     images: {
-      url: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
+      url: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
     },
   },
   twitter: {
-    images: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
+    images: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
     card: 'summary_large_image',
   },
 };

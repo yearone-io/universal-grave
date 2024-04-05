@@ -1,24 +1,17 @@
 import React from 'react';
-import {
-  Container,
-  Heading,
-  Text,
-  List,
-  ListItem,
-  Box,
-  Link,
-} from '@chakra-ui/react';
+import { Box, Container, Heading, Text } from '@chakra-ui/react';
+import { constants } from '@/app/constants';
 
 export const metadata = {
   title: 'About',
   description: 'GRAVE - About',
   openGraph: {
     images: {
-      url: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
+      url: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
     },
   },
   twitter: {
-    images: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
+    images: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
     card: 'summary_large_image',
   },
 };
