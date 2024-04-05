@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React, { ReactNode, useEffect, useState } from 'react';
 import { DEFAULT_PROVIDER, WalletContext } from './WalletContext';
 import Web3 from 'web3';

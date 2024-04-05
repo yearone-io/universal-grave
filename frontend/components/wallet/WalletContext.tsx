@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import React from 'react';
 import { getNetworkConfig, Network } from '@/constants/networks';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
