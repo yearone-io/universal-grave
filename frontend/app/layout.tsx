@@ -12,9 +12,14 @@ import Head from 'next/head';
 import { Providers } from '@/app/providers';
 import { Metadata } from 'next';
 import { constants } from '@/app/constants';
+import { getNetworkConfig } from '@/constants/networks';
 
 const title = 'GRAVE';
 const description = 'A cemetery for unwanted digital assets';
+const baseUrl = process.env.DEPLOY_URL
+  ? process.env.DEPLOY_URL
+  : getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!).baseUrl;
+
 export const metadata: Metadata = {
   title: title,
   description: description,
@@ -22,14 +27,14 @@ export const metadata: Metadata = {
     title: title,
     description: description,
     type: 'website',
-    url: `${constants.DOMAIN}`,
+    url: baseUrl,
     images: {
-      url: `${constants.DOMAIN}/images/ghoulie.jpg`,
+      url: `${baseUrl}/images/ghoulie.jpg`,
     },
   },
   twitter: {
     images: {
-      url: `${constants.DOMAIN}/images/ghoulie.jpg`,
+      url: `${baseUrl}/images/ghoulie.jpg`,
     },
     card: 'summary_large_image',
   },

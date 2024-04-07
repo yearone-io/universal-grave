@@ -1,5 +1,4 @@
 export const constants = {
-  DOMAIN: 'https://universalgrave.com',
   IPFS: 'https://api.universalprofile.cloud/ipfs',
   IPFS_GATEWAY: 'https://api.universalprofile.cloud/ipfs/',
   METADATA: {
