@@ -1,19 +1,9 @@
 import React from 'react';
 import { Box, Container, Heading, Text } from '@chakra-ui/react';
-import { constants } from '@/app/constants';
 
 export const metadata = {
   title: 'About',
   description: 'GRAVE - About',
-  openGraph: {
-    images: {
-      url: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
-    },
-  },
-  twitter: {
-    images: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
-    card: 'summary_large_image',
-  },
 };
 
 export default function TermsOfService() {

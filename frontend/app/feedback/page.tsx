@@ -1,20 +1,10 @@
 import React from 'react';
 import { Container } from '@chakra-ui/react';
 import { Metadata } from 'next';
-import { constants } from '@/app/constants';
 
 export const metadata: Metadata = {
   title: 'GRAVEYARD',
   description: 'Feedback',
-  openGraph: {
-    images: {
-      url: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
-    },
-  },
-  twitter: {
-    images: `https://${constants.DOMAIN}/images/ghoulie.jpg`,
-    card: 'summary_large_image',
-  },
 };
 
 export default function Feedback({ params }: { params: { account: string } }) {

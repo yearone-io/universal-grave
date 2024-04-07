@@ -10,6 +10,30 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import Head from 'next/head';
 import { Providers } from '@/app/providers';
+import { Metadata } from 'next';
+import { constants } from '@/app/constants';
+
+const title = 'GRAVE';
+const description = 'A cemetery for unwanted digital assets';
+export const metadata: Metadata = {
+  title: title,
+  description: description,
+  openGraph: {
+    title: title,
+    description: description,
+    type: 'website',
+    url: `${constants.DOMAIN}`,
+    images: {
+      url: `${constants.DOMAIN}/images/ghoulie.jpg`,
+    },
+  },
+  twitter: {
+    images: {
+      url: `${constants.DOMAIN}/images/ghoulie.jpg`,
+    },
+    card: 'summary_large_image',
+  },
+};
 
 export default function RootLayout({
   children,
