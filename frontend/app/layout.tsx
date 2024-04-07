@@ -11,14 +11,13 @@ import Header from '@/components/Header';
 import Head from 'next/head';
 import { Providers } from '@/app/providers';
 import { Metadata } from 'next';
-import { constants } from '@/app/constants';
 import { getNetworkConfig } from '@/constants/networks';
 
 const title = 'GRAVE';
 const description = 'A cemetery for unwanted digital assets';
-const baseUrl = process.env.DEPLOY_URL
-  ? process.env.DEPLOY_URL
-  : getNetworkConfig(process.env.NEXT_PUBLIC_DEFAULT_NETWORK!).baseUrl;
+const baseUrl = getNetworkConfig(
+  process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
+).baseUrl;
 
 export const metadata: Metadata = {
   title: title,
