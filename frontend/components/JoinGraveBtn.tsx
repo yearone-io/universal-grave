@@ -144,9 +144,12 @@ export default function JoinGraveBtn({
     if (!graveVault) {
       // 2. Create a vault for the UP. (if needed)
       try {
-        const vaultTranx = await createUpVault(provider, account as string) as any
+        const vaultTranx = (await createUpVault(
+          provider,
+          account as string
+        )) as any;
         // Find the vault address from the event
-        const creationEvent = vaultTranx.events.find((event: any) =>{
+        const creationEvent = vaultTranx.events.find((event: any) => {
           return event.event === 'ContractCreated';
         });
         vaultAddress = creationEvent?.args?.contractAddress as string;
@@ -179,7 +182,11 @@ export default function JoinGraveBtn({
 
     // 4. Enable grave to keep assets inventory
     try {
-      await setVaultURD(provider, vaultAddress as string, networkConfig.lsp1UrdVault);
+      await setVaultURD(
+        provider,
+        vaultAddress as string,
+        networkConfig.lsp1UrdVault
+      );
       setJoiningStep(4);
       console.log('step 4');
     } catch (err: any) {

@@ -5,15 +5,6 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'GRAVEYARD',
   description: 'Feedback',
-  openGraph: {
-    images: {
-      url: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
-    },
-  },
-  twitter: {
-    images: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
-    card: 'summary_large_image',
-  },
 };
 
 export default function Feedback({ params }: { params: { account: string } }) {

@@ -1,26 +1,9 @@
 import React from 'react';
-import {
-  Container,
-  Heading,
-  Text,
-  List,
-  ListItem,
-  Box,
-  Link,
-} from '@chakra-ui/react';
+import { Box, Container, Heading, Link, Text } from '@chakra-ui/react';
 
 export const metadata = {
   title: 'GRAVE - Terms of Service',
   description: 'Terms of Service',
-  openGraph: {
-    images: {
-      url: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
-    },
-  },
-  twitter: {
-    images: 'https://universal-grave.netlify.app/images/ghoulie.jpg',
-    card: 'summary_large_image',
-  },
 };
 
 export default function TermsOfService() {
