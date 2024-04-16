@@ -90,7 +90,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (isProcessing || await disconnectIfNetworkChanged()) {
+    if (isProcessing || (await disconnectIfNetworkChanged())) {
       return;
     }
     setIsProcessing(true);

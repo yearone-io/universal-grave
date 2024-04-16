@@ -78,7 +78,7 @@ export const UpgradeURD = ({
   const toast = useToast();
 
   const handleUpgrade = async () => {
-    if(await disconnectIfNetworkChanged()) {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
     setIsSubmitting(true);

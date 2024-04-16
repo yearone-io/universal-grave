@@ -101,7 +101,7 @@ export default function ManageAllowList() {
   };
 
   const addTokenToAllowList = async () => {
-    if(await disconnectIfNetworkChanged()) {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
     setIsSubmitting(true);
