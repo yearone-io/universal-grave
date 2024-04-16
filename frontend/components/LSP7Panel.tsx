@@ -64,6 +64,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     account: connectedUPAddress,
     networkConfig,
     provider,
+    disconnectIfNetworkChanged,
   } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
@@ -92,6 +93,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     if (isProcessing) {
       return;
     }
+    disconnectIfNetworkChanged();
     setIsProcessing(true);
     try {
       const signer = provider.getSigner();

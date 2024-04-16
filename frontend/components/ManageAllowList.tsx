@@ -27,7 +27,7 @@ const messageState = {
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
-  const { networkConfig, provider } = walletContext;
+  const { networkConfig, provider, disconnectIfNetworkChanged } = walletContext;
   const toast = useToast();
   const signer = provider.getSigner();
 
@@ -101,6 +101,7 @@ export default function ManageAllowList() {
   };
 
   const addTokenToAllowList = async () => {
+    disconnectIfNetworkChanged();
     setIsSubmitting(true);
     setIsAddingToAllowList(true);
     return graveForwarder

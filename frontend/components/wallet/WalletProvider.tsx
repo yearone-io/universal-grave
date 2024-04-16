@@ -179,6 +179,23 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     setGraveVault(graveVault);
   };
 
+  const disconnectIfNetworkChanged = async () => {
+    if (typeof window !== 'undefined' && window.lukso) {
+      const web3 = new Web3(window.lukso);
+      const chainId = Number(await web3.eth.getChainId());
+      if (chainId !== networkConfig.chainId) {
+        disconnect();
+        toast({
+          title: 'Network changed, please connect again.',
+          status: 'warning',
+          position: 'bottom-left',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    }
+  };
+
   // Render the context provider, passing down the account state and control functions to children.
   return (
     <WalletContext.Provider
@@ -191,6 +208,7 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
         URDLsp7,
         connect,
         disconnect,
+        disconnectIfNetworkChanged,
         isLoadingAccount,
         setURDLsp7,
         setURDLsp8,

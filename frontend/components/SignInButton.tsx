@@ -30,7 +30,8 @@ const SignInButton: React.FC = () => {
     }
     await connect();
   };
-
+  const buttonText =
+    connectedChainId !== networkConfig.chainId ? 'Switch Network' : 'Sign In';
   return (
     <Button
       onClick={onSignInClick}
@@ -46,7 +47,7 @@ const SignInButton: React.FC = () => {
           fontWeight="400"
           color={'dark.purple.500'}
         >
-          {isLoadingAccount ? '...' : 'Sign In'}
+          {isLoadingAccount ? '...' : buttonText}
         </Box>
       </Flex>
     </Button>

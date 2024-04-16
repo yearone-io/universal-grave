@@ -60,6 +60,7 @@ export default function JoinGraveBtn({
     URDLsp7,
     URDLsp8,
     networkConfig,
+    disconnectIfNetworkChanged,
   } = walletContext;
 
   // ========================= HOOKS =========================
@@ -306,6 +307,7 @@ export default function JoinGraveBtn({
    */
   const handleReset = async () => {
     if (loading) return;
+    disconnectIfNetworkChanged();
     setLoading(true);
     try {
       await leaveTheGrave();
