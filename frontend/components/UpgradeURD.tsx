@@ -62,6 +62,7 @@ export const UpgradeURD = ({
     setURDLsp7,
     setURDLsp8,
     mainUPController,
+    disconnectIfNetworkChanged,
   } = walletContext;
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -77,6 +78,9 @@ export const UpgradeURD = ({
   const toast = useToast();
 
   const handleUpgrade = async () => {
+    if (await disconnectIfNetworkChanged()) {
+      return;
+    }
     setIsSubmitting(true);
     setLeavingStep(0);
 

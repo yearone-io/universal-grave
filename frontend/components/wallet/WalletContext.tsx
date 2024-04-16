@@ -14,6 +14,7 @@ interface WalletContextType {
   URDLsp8: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  disconnectIfNetworkChanged: () => Promise<boolean>;
   setURDLsp7: (urd: string | null) => void;
   setURDLsp8: (urd: string | null) => void;
   addGraveVault: (graveVault: string) => void;
@@ -47,6 +48,9 @@ const defaultImplementation: WalletContextType = {
   },
   disconnect: () => {
     // Default disconnect implementation
+  },
+  disconnectIfNetworkChanged: () => {
+    return Promise.resolve(false);
   },
   setURDLsp7: () => {},
   setURDLsp8: () => {},
