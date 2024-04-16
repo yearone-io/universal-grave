@@ -53,22 +53,26 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
 
   // Effect hook to check for an existing connected account in localStorage when the component mounts.
   useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      window.lukso &&
-      connectedChainId === networkConfig.chainId
-    ) {
-      // Retrieve the account from localStorage if it exists.
-      const storedAccount = localStorage.getItem('connectedAccount');
-      const storedMainUPController = localStorage.getItem('mainUPController');
-      if (storedAccount) {
-        setAccount(storedAccount);
+    const fetchExistingAccount = async () => {
+      if (
+        typeof window !== 'undefined' &&
+        window.lukso &&
+        Number(await new Web3(window.lukso).eth.getChainId()) ===
+          networkConfig.chainId
+      ) {
+        // Retrieve the account from localStorage if it exists.
+        const storedAccount = localStorage.getItem('connectedAccount');
+        const storedMainUPController = localStorage.getItem('mainUPController');
+        if (storedAccount) {
+          setAccount(storedAccount);
+        }
+        if (storedMainUPController) {
+          setMainUPController(storedMainUPController);
+        }
       }
-      if (storedMainUPController) {
-        setMainUPController(storedMainUPController);
-      }
-    }
-    setIsLoadingAccount(false);
+      setIsLoadingAccount(false);
+    };
+    fetchExistingAccount();
   }, []);
 
   useEffect(() => {
