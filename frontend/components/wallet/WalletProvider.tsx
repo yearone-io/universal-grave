@@ -108,7 +108,27 @@ export const WalletProvider: React.FC<Props> = ({ children }) => {
     if (typeof window !== 'undefined' && window.lukso) {
       // Initialize a new Web3 instance using the LUKSO provider.
       const web3 = new Web3(window.lukso);
-      setConnectedChainId(Number(await web3.eth.getChainId()));
+      const chainId = Number(await web3.eth.getChainId());
+      if (chainId !== networkConfig.chainId) {
+        try {
+          await window.lukso.request({
+            method: 'wallet_switchEthereumChain',
+            params: [
+              { chainId: '0x' + BigInt(networkConfig.chainId).toString(16) },
+            ],
+          });
+        } catch (error: any) {
+          toast({
+            title: `Error switching network. ${error.message}`,
+            status: 'error',
+            position: 'bottom-left',
+            duration: 5000,
+            isClosable: true,
+          });
+          return;
+        }
+      }
+      setConnectedChainId(chainId);
       let accounts: string[] = [];
       try {
         // Reset the graveVault address when connecting
