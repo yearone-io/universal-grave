@@ -101,7 +101,9 @@ export default function ManageAllowList() {
   };
 
   const addTokenToAllowList = async () => {
-    disconnectIfNetworkChanged();
+    if(await disconnectIfNetworkChanged()) {
+      return;
+    }
     setIsSubmitting(true);
     setIsAddingToAllowList(true);
     return graveForwarder

@@ -306,8 +306,7 @@ export default function JoinGraveBtn({
    * This way no more assets are redirected but the UP still has access to the Grave vault.
    */
   const handleReset = async () => {
-    if (loading) return;
-    disconnectIfNetworkChanged();
+    if (loading || await disconnectIfNetworkChanged()) return;
     setLoading(true);
     try {
       await leaveTheGrave();
@@ -321,7 +320,7 @@ export default function JoinGraveBtn({
    * transactions is triggered.
    */
   const handleJoin = async () => {
-    if (loading) return;
+    if (loading || await disconnectIfNetworkChanged()) return;
     setLoading(true);
     try {
       await initJoinProcess();

@@ -25,7 +25,7 @@ export const ExistingURDAlert = ({
 }) => {
   const walletContext = useContext(WalletContext);
 
-  const { URDLsp7, URDLsp8, disconnectIfNetworkChanged } = walletContext;
+  const { URDLsp7, URDLsp8 } = walletContext;
 
   const cancelRef = useRef<FocusableElement>(null);
 
@@ -58,7 +58,6 @@ export const ExistingURDAlert = ({
             colorScheme="red"
             ml={3}
             onClick={() => {
-              disconnectIfNetworkChanged();
               onClose();
               handleJoin();
             }}
