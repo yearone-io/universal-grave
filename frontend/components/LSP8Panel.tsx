@@ -36,6 +36,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     account: connectedUPAddress,
     networkConfig,
     provider,
+    disconnectIfNetworkChanged,
   } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
   const containerBorderColor = useColorModeValue(
@@ -61,9 +62,10 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (isProcessing) {
+    if (isProcessing || (await disconnectIfNetworkChanged())) {
       return;
     }
+
     setIsProcessing(true);
     try {
       const signer = provider.getSigner();
