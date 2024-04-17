@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP1GraveForwarder__factory } from '@/contracts';
-import { HStack, Icon, Text, useColorModeValue } from '@chakra-ui/react';
+import { Flex, HStack, Icon, Text, useColorModeValue } from '@chakra-ui/react';
 import { TbGrave2 } from 'react-icons/tb';
 import { motion } from 'framer-motion';
 
@@ -64,39 +64,37 @@ export default function InstallationCounter() {
   }, [installations]);
 
   return (
-    <HStack
-      bgColor={panelBgColor}
-      p={{ base: 6 }}
-      borderRadius={'lg'}
-      border={`1px solid ${borderColor}`}
-      justifyContent={'center'}
-    >
-      <Icon
-        boxSize={{ base: 8, lg: 10 }}
-        color={customColor}
-        as={TbGrave2}
-      />
-      <Text
-        color={customColor}
-        fontSize={{ base: 'md', lg: 'lg' }}
-        lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
-        fontFamily={'Montserrat'}
-        fontWeight={800}
-        as={motion.text}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+    <Flex justifyContent={'center'}>
+      <HStack
+        bgColor={panelBgColor}
+        p={{ base: 6 }}
+        borderRadius={'lg'}
+        border={`1px solid ${borderColor}`}
+        justifyContent={'center'}
       >
-        {displayNumber == 0 ? '--' : displayNumber}
-      </Text>
-      <Text
-        color={customColor}
-        fontSize={{ base: 'md', lg: 'lg' }}
-        lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
-        fontFamily={'Montserrat'}
-        fontWeight={800}
-      >
-        Universal Profile installations
-      </Text>
-    </HStack>
+        <Icon boxSize={{ base: 8, lg: 10 }} color={customColor} as={TbGrave2} />
+        <Text
+          color={customColor}
+          fontSize={{ base: 'md', lg: 'lg' }}
+          lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+          fontFamily={'Montserrat'}
+          fontWeight={800}
+          as={motion.text}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {displayNumber == 0 ? '--' : displayNumber}
+        </Text>
+        <Text
+          color={customColor}
+          fontSize={{ base: 'md', lg: 'lg' }}
+          lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+          fontFamily={'Montserrat'}
+          fontWeight={800}
+        >
+          Universal Profile installations
+        </Text>
+      </HStack>
+    </Flex>
   );
 }
