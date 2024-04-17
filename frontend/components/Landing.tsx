@@ -20,6 +20,7 @@ import LSPExplainer from '@/components/LSPExplainer';
 import { ChangeEvent, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { useContext, useEffect } from 'react';
+import InstallationCounter from '@/components/InstallationCounter';
 
 export default function Landing() {
   const walletContext = useContext(WalletContext);
@@ -152,6 +153,7 @@ export default function Landing() {
             />
           </Flex>
         </Flex>
+        <InstallationCounter />
         <Box my={{ base: 8, sm: 10, lg: 20 }}>
           <Text
             pb={5}
