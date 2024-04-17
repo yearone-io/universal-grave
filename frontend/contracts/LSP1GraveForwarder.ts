@@ -12,102 +12,132 @@ import type {
   PopulatedTransaction,
   Signer,
   utils,
-} from 'ethers';
-import type { FunctionFragment, Result } from '@ethersproject/abi';
-import type { Listener, Provider } from '@ethersproject/providers';
+} from "ethers";
+import type { FunctionFragment, Result } from "@ethersproject/abi";
+import type { Listener, Provider } from "@ethersproject/providers";
 import type {
   TypedEventFilter,
   TypedEvent,
   TypedListener,
   OnEvent,
-} from './common';
+} from "./common";
 
 export interface LSP1GraveForwarderInterface extends utils.Interface {
   functions: {
-    'VERSION()': FunctionFragment;
-    'addTokenToAllowlist(address)': FunctionFragment;
-    'getAddressStatus(address)': FunctionFragment;
-    'getGrave()': FunctionFragment;
-    'graveVaults(address)': FunctionFragment;
-    'removeTokenFromAllowlist(address)': FunctionFragment;
-    'setGrave(address)': FunctionFragment;
-    'supportsInterface(bytes4)': FunctionFragment;
-    'tokenAllowlist(address,address)': FunctionFragment;
-    'universalReceiverDelegate(address,uint256,bytes32,bytes)': FunctionFragment;
+    "VERSION()": FunctionFragment;
+    "addTokenToAllowlist(address)": FunctionFragment;
+    "getAddressStatus(address)": FunctionFragment;
+    "getGrave()": FunctionFragment;
+    "graveUserCounter()": FunctionFragment;
+    "graveVaults(address)": FunctionFragment;
+    "lsp7RedirectedCounter()": FunctionFragment;
+    "lsp8RedirectedCounter()": FunctionFragment;
+    "removeTokenFromAllowlist(address)": FunctionFragment;
+    "setGrave(address)": FunctionFragment;
+    "supportsInterface(bytes4)": FunctionFragment;
+    "tokenAllowlist(address,address)": FunctionFragment;
+    "universalReceiverDelegate(address,uint256,bytes32,bytes)": FunctionFragment;
   };
 
   getFunction(
     nameOrSignatureOrTopic:
-      | 'VERSION'
-      | 'addTokenToAllowlist'
-      | 'getAddressStatus'
-      | 'getGrave'
-      | 'graveVaults'
-      | 'removeTokenFromAllowlist'
-      | 'setGrave'
-      | 'supportsInterface'
-      | 'tokenAllowlist'
-      | 'universalReceiverDelegate'
+      | "VERSION"
+      | "addTokenToAllowlist"
+      | "getAddressStatus"
+      | "getGrave"
+      | "graveUserCounter"
+      | "graveVaults"
+      | "lsp7RedirectedCounter"
+      | "lsp8RedirectedCounter"
+      | "removeTokenFromAllowlist"
+      | "setGrave"
+      | "supportsInterface"
+      | "tokenAllowlist"
+      | "universalReceiverDelegate"
   ): FunctionFragment;
 
-  encodeFunctionData(functionFragment: 'VERSION', values?: undefined): string;
+  encodeFunctionData(functionFragment: "VERSION", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: 'addTokenToAllowlist',
+    functionFragment: "addTokenToAllowlist",
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: 'getAddressStatus',
+    functionFragment: "getAddressStatus",
     values: [string]
   ): string;
-  encodeFunctionData(functionFragment: 'getGrave', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'graveVaults', values: [string]): string;
+  encodeFunctionData(functionFragment: "getGrave", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: 'removeTokenFromAllowlist',
+    functionFragment: "graveUserCounter",
+    values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "graveVaults", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "lsp7RedirectedCounter",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lsp8RedirectedCounter",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "removeTokenFromAllowlist",
     values: [string]
   ): string;
-  encodeFunctionData(functionFragment: 'setGrave', values: [string]): string;
+  encodeFunctionData(functionFragment: "setGrave", values: [string]): string;
   encodeFunctionData(
-    functionFragment: 'supportsInterface',
+    functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: 'tokenAllowlist',
+    functionFragment: "tokenAllowlist",
     values: [string, string]
   ): string;
   encodeFunctionData(
-    functionFragment: 'universalReceiverDelegate',
+    functionFragment: "universalReceiverDelegate",
     values: [string, BigNumberish, BytesLike, BytesLike]
   ): string;
 
-  decodeFunctionResult(functionFragment: 'VERSION', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "VERSION", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: 'addTokenToAllowlist',
+    functionFragment: "addTokenToAllowlist",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: 'getAddressStatus',
+    functionFragment: "getAddressStatus",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: 'getGrave', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getGrave", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: 'graveVaults',
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: 'removeTokenFromAllowlist',
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: 'setGrave', data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: 'supportsInterface',
+    functionFragment: "graveUserCounter",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: 'tokenAllowlist',
+    functionFragment: "graveVaults",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: 'universalReceiverDelegate',
+    functionFragment: "lsp7RedirectedCounter",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "lsp8RedirectedCounter",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "removeTokenFromAllowlist",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "setGrave", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "supportsInterface",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenAllowlist",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "universalReceiverDelegate",
     data: BytesLike
   ): Result;
 
@@ -155,7 +185,13 @@ export interface LSP1GraveForwarder extends BaseContract {
 
     getGrave(overrides?: CallOverrides): Promise<[string]>;
 
+    graveUserCounter(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     graveVaults(arg0: string, overrides?: CallOverrides): Promise<[string]>;
+
+    lsp7RedirectedCounter(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    lsp8RedirectedCounter(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     removeTokenFromAllowlist(
       token: string,
@@ -179,7 +215,7 @@ export interface LSP1GraveForwarder extends BaseContract {
     ): Promise<[boolean]>;
 
     universalReceiverDelegate(
-      tokenAddress: string,
+      notifier: string,
       value: BigNumberish,
       typeId: BytesLike,
       data: BytesLike,
@@ -198,7 +234,13 @@ export interface LSP1GraveForwarder extends BaseContract {
 
   getGrave(overrides?: CallOverrides): Promise<string>;
 
+  graveUserCounter(overrides?: CallOverrides): Promise<BigNumber>;
+
   graveVaults(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+  lsp7RedirectedCounter(overrides?: CallOverrides): Promise<BigNumber>;
+
+  lsp8RedirectedCounter(overrides?: CallOverrides): Promise<BigNumber>;
 
   removeTokenFromAllowlist(
     token: string,
@@ -222,7 +264,7 @@ export interface LSP1GraveForwarder extends BaseContract {
   ): Promise<boolean>;
 
   universalReceiverDelegate(
-    tokenAddress: string,
+    notifier: string,
     value: BigNumberish,
     typeId: BytesLike,
     data: BytesLike,
@@ -244,7 +286,13 @@ export interface LSP1GraveForwarder extends BaseContract {
 
     getGrave(overrides?: CallOverrides): Promise<string>;
 
+    graveUserCounter(overrides?: CallOverrides): Promise<BigNumber>;
+
     graveVaults(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    lsp7RedirectedCounter(overrides?: CallOverrides): Promise<BigNumber>;
+
+    lsp8RedirectedCounter(overrides?: CallOverrides): Promise<BigNumber>;
 
     removeTokenFromAllowlist(
       token: string,
@@ -265,7 +313,7 @@ export interface LSP1GraveForwarder extends BaseContract {
     ): Promise<boolean>;
 
     universalReceiverDelegate(
-      tokenAddress: string,
+      notifier: string,
       value: BigNumberish,
       typeId: BytesLike,
       data: BytesLike,
@@ -290,7 +338,13 @@ export interface LSP1GraveForwarder extends BaseContract {
 
     getGrave(overrides?: CallOverrides): Promise<BigNumber>;
 
+    graveUserCounter(overrides?: CallOverrides): Promise<BigNumber>;
+
     graveVaults(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    lsp7RedirectedCounter(overrides?: CallOverrides): Promise<BigNumber>;
+
+    lsp8RedirectedCounter(overrides?: CallOverrides): Promise<BigNumber>;
 
     removeTokenFromAllowlist(
       token: string,
@@ -314,7 +368,7 @@ export interface LSP1GraveForwarder extends BaseContract {
     ): Promise<BigNumber>;
 
     universalReceiverDelegate(
-      tokenAddress: string,
+      notifier: string,
       value: BigNumberish,
       typeId: BytesLike,
       data: BytesLike,
@@ -337,8 +391,18 @@ export interface LSP1GraveForwarder extends BaseContract {
 
     getGrave(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    graveUserCounter(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     graveVaults(
       arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    lsp7RedirectedCounter(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    lsp8RedirectedCounter(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -364,7 +428,7 @@ export interface LSP1GraveForwarder extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     universalReceiverDelegate(
-      tokenAddress: string,
+      notifier: string,
       value: BigNumberish,
       typeId: BytesLike,
       data: BytesLike,
