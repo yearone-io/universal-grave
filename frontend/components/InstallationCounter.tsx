@@ -7,10 +7,7 @@ import { motion } from 'framer-motion';
 
 export default function InstallationCounter() {
   const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
-  const customColor = useColorModeValue(
-    'light.black',
-    'var(--chakra-colors-dark-purple-500)'
-  );
+  const customColor = useColorModeValue('light.black', 'white');
   const borderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-200)'
@@ -66,34 +63,46 @@ export default function InstallationCounter() {
   return (
     <Flex justifyContent={'center'}>
       <HStack
-        bgColor={panelBgColor}
+        bgColor={'dark.purple.300'}
         p={{ base: 6 }}
         borderRadius={'lg'}
-        border={`1px solid ${borderColor}`}
         justifyContent={'center'}
+        width={'100%'}
+        maxWidth={{ base: '100%', md: '450px' }}
       >
-        <Icon boxSize={{ base: 8, lg: 10 }} color={customColor} as={TbGrave2} />
         <Text
           color={customColor}
           fontSize={{ base: 'md', lg: 'lg' }}
           lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
           fontFamily={'Montserrat'}
-          fontWeight={800}
-          as={motion.text}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          fontWeight={400}
         >
-          {displayNumber == 0 ? '--' : displayNumber}
+          Profiles protected by the GRAVE:
         </Text>
-        <Text
-          color={customColor}
-          fontSize={{ base: 'md', lg: 'lg' }}
-          lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
-          fontFamily={'Montserrat'}
-          fontWeight={800}
-        >
-          Universal Profile installations
-        </Text>
+        <Flex alignItems={'center'} justifyContent={'center'} gap={1}>
+          <Text
+            color={customColor}
+            fontSize={{ base: 'lg', lg: 'xl' }}
+            lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+            fontFamily={'Montserrat'}
+            fontWeight={700}
+            as={motion.text}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            {displayNumber == 0 ? '--' : displayNumber}
+          </Text>
+          <Text
+            color={customColor}
+            fontSize={{ base: 'lg', lg: 'xl' }}
+            lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+            fontFamily={'Montserrat'}
+            fontWeight={400}
+            filter={'grayscale(1)'}
+          >
+            👻
+          </Text>
+        </Flex>
       </HStack>
     </Flex>
   );

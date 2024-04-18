@@ -4,7 +4,6 @@ import {
   Box,
   chakra,
   Container,
-  Icon,
   Stack,
   useColorModeValue,
   VisuallyHidden,
@@ -78,7 +77,12 @@ export default function SmallWithLogoLeft() {
           <Image src={logoPath} alt="Universal-Grave-logo" width={'40px'} />
           <Box>© 2024 Universal GRAVE</Box>
         </Flex>
-        <Stack direction={'row'} spacing={6} alignItems={'center'}>
+        <Flex
+          gap={6}
+          justifyContent={'center'}
+          alignItems={'center'}
+          flexWrap={'wrap'}
+        >
           <SocialButton
             label={'Twitter'}
             href={'https://twitter.com/YearOneIO'}
@@ -105,7 +109,7 @@ export default function SmallWithLogoLeft() {
               <option value={'testnet'}>LUKSO Testnet</option>
             </Select>
           </Box>
-        </Stack>
+        </Flex>
       </Container>
     </Box>
   );
