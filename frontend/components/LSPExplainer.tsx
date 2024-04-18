@@ -37,7 +37,7 @@ const LSPExplainer: React.FC<LSPExplainerProps> = ({
       gap={4}
       boxShadow="md"
       width={'100%'}
-      maxWidth={{ base: '100%', md: '550px' }}
+      maxWidth={{ base: '100%', md: '540px' }}
       minHeight={{ base: '100px', md: '145px' }}
     >
       <Flex

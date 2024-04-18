@@ -45,7 +45,7 @@ export default function Landing() {
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
   const [inputValue, setInputValue] = useState<string>();
-  const defaultGraveButtonText = 'Connect a GRAVE to your 🆙';
+  const defaultGraveButtonText = 'Protect your 🆙 with a GRAVE';
   const [graveButtonText, setGraveButtonText] = useState<string>(
     defaultGraveButtonText
   );
@@ -164,7 +164,7 @@ export default function Landing() {
           flexDirection={{ base: 'column', md: 'row' }}
           justify={{ base: 'center', md: 'center' }}
           align={{ base: 'center', md: 'center' }}
-          gap={{ base: 3, md: 3 }}
+          gap={{ base: 3, md: 4 }}
           flexWrap={'wrap'}
         >
           <LSPExplainer
