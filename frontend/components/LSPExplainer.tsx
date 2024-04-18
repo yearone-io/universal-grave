@@ -7,12 +7,11 @@ import {
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 
-// Add a props interface for TypeScript (if you're using it)
 interface LSPExplainerProps {
-  title: string; // for "LSP7 Digital Assets"
-  description: string; // for "The most advanced token standard"
-  learnURL: string; // URL for the "Learn More" button
-  badgeText: string; // for "LSP7"
+  title: string;
+  badgeText: any;
+  description?: string;
+  learnURL?: string;
 }
 
 const LSPExplainer: React.FC<LSPExplainerProps> = ({
@@ -33,11 +32,13 @@ const LSPExplainer: React.FC<LSPExplainerProps> = ({
     <Flex
       bg={panelBgColor}
       borderRadius="lg"
-      px={4}
-      py={4}
+      p={6}
       align="center"
-      justify="space-between"
+      gap={4}
       boxShadow="md"
+      width={'100%'}
+      maxWidth={{ base: '100%', md: '540px' }}
+      minHeight={{ base: '100px', md: '145px' }}
     >
       <Flex
         bg={interestsBgColor}
@@ -54,31 +55,39 @@ const LSPExplainer: React.FC<LSPExplainerProps> = ({
         <Box fontWeight={'bold'}>{badgeText}</Box>
       </Flex>
 
-      <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
+      <Flex w={'100%'} flexDirection={'column'} padding={2} gap={1}>
         <Flex flexDirection={'row'} gap={1} alignItems={'center'}>
-          <Text color={fontColor} fontFamily={'Bungee'}>
+          <Text
+            color={fontColor}
+            fontSize={{ base: 'md', lg: 'lg' }}
+            lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+            fontFamily={'Montserrat'}
+            fontWeight={700}
+          >
             {title}
           </Text>
-          <IconButton
-            aria-label={'lean more url'}
-            icon={<FaExternalLinkAlt color={fontColor} />}
+          {!!learnURL && (
+            <IconButton
+              aria-label={'lean more url'}
+              icon={<FaExternalLinkAlt color={fontColor} />}
+              color={fontColor}
+              size="sm"
+              variant="ghost"
+              onClick={() => window.open(`${learnURL}`, '_blank')}
+            />
+          )}
+        </Flex>
+        {!!description && (
+          <Text
+            fontSize={{ base: 'sm', lg: 'md' }}
+            lineHeight={{ base: 'sm', lg: 'md' }}
+            fontWeight={400}
+            pr={2}
             color={fontColor}
-            size="sm"
-            variant="ghost"
-            onClick={() => window.open(`${learnURL}`, '_blank')}
-          />
-        </Flex>
-        <Flex
-          flexDirection={'row'}
-          justifyContent={'space-between'}
-          alignItems={'center'}
-        >
-          <Flex align="center">
-            <Text fontSize="sm" pr={2} color={fontColor}>
-              {description}
-            </Text>
-          </Flex>
-        </Flex>
+          >
+            {description}
+          </Text>
+        )}
       </Flex>
     </Flex>
   );
