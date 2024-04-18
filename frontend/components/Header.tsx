@@ -1,23 +1,12 @@
 'use client';
-import {
-  Flex,
-  useColorModeValue,
-  Container,
-  Image,
-  Icon,
-  MenuButton,
-} from '@chakra-ui/react';
-import React, { useContext } from 'react';
-import { FaCog } from 'react-icons/fa';
+import { Flex, useColorModeValue, Container, Image } from '@chakra-ui/react';
+import React from 'react';
 import WalletConnector from './wallet/WalletConnector';
 import Link from 'next/link';
-import { WalletContext } from '@/components/wallet/WalletContext';
 
 export default function Header() {
-  const walletContext = useContext(WalletContext);
-  const { account } = walletContext;
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.300');
-  const color = useColorModeValue('light.black', 'dark.black');
+  const bgColor = 'dark.purple.300';
+  const color = 'dark.black';
   const logoPath = '/images/logo-text.png';
   const betaPath = '/images/beta.png';
 

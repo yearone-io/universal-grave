@@ -44,8 +44,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let title = 'Universal Grave';
-
   return (
     <html lang="en">
       <WalletProvider>
