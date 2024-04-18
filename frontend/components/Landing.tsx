@@ -74,12 +74,12 @@ export default function Landing() {
       py={5}
       px={5}
       direction={'column'}
-      spacing={4}
+      spacing={16}
       justify={{ base: 'center', md: 'center' }}
       align={{ base: 'center', md: 'center' }}
     >
       <Flex
-        py={{ base: 8, md: 5 }}
+        pt={{ base: 8, md: 5 }}
         flexDirection={{ base: 'column', md: 'row' }}
         justify={{ base: 'center', md: 'space-between' }}
         align={{ base: 'center', md: 'center' }}
@@ -87,7 +87,7 @@ export default function Landing() {
         w={'100%'}
       >
         <Flex
-          my={{ base: 5, sm: 10, lg: 20 }}
+          my={{ base: 5, sm: 8, lg: 15 }}
           gap={{ base: 4, sm: 5, lg: 6 }}
           flexDirection={'column'}
           alignItems={'left'}
@@ -150,7 +150,7 @@ export default function Landing() {
         </Flex>
       </Flex>
       <InstallationCounter />
-      <Box my={{ base: 8, sm: 10, lg: 20 }}>
+      <Box mb={{ base: 5, sm: 8, lg: 16 }}>
         <Text
           pb={5}
           color={subheadingColor}

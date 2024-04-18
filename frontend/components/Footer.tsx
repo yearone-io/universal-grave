@@ -77,7 +77,12 @@ export default function SmallWithLogoLeft() {
           <Image src={logoPath} alt="Universal-Grave-logo" width={'40px'} />
           <Box>© 2024 Universal GRAVE</Box>
         </Flex>
-        <Flex gap={6} justifyContent={'center'} flexWrap={'wrap'}>
+        <Flex
+          gap={6}
+          justifyContent={'center'}
+          alignItems={'center'}
+          flexWrap={'wrap'}
+        >
           <SocialButton
             label={'Twitter'}
             href={'https://twitter.com/YearOneIO'}
