@@ -17,7 +17,6 @@ import { BiSolidCheckCircle } from 'react-icons/bi';
 
 const messageState = {
   isCheckingStatus: 'Checking status...',
-  isAddingToAllowList: 'Adding to allowlist...',
   isRemovingFromAllowList: 'Removing from allowlist...',
   tokenAllowListDetected: 'Allowed asset detected',
   tokenDisallowedDetected: 'Disallowed asset detected',
@@ -39,8 +38,6 @@ export default function ManageAllowList() {
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
-  const [isAddingToAllowList, setIsAddingToAllowList] =
-    useState<boolean>(false);
   const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
     useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
