@@ -106,7 +106,8 @@ export default function ManageAllowList() {
   );
   
   console.log(roundedTokenAmount)
-
+  // todo store raw
+  // todo store value
   }
 
   // todo fetch balance of tokenAddress
@@ -214,8 +215,8 @@ export default function ManageAllowList() {
   };
 
   const FieldMessage = () => {
-    // todo we care about balance, not about the allowlist
-    // todo, lsp7 or lsp8
+    // todo add messaage of type and balance
+    // todo add message for no balance
 
     // Conditional rendering based on the state flags
     if (isCheckingStatus) {
