@@ -16,6 +16,8 @@ import { LSP1GraveForwarder } from '@/contracts';
 import { BiSolidCheckCircle } from 'react-icons/bi';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
+import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
 
 
 const messageState = {
@@ -45,8 +47,10 @@ export default function ManageAllowList() {
     useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
+  const [rawTokenAmount, setRawTokenAmount] = useState<number>(0);
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(tokenAddress);
+
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTokenAddress(event.target.value.toLowerCase());
@@ -68,9 +72,42 @@ export default function ManageAllowList() {
     setTokenCheckMessage('');
     // Ensure there's a value to check and avoid fetching on initial render
     if (debouncedTokenAddress) {
-      fetchTokenAllowListStatus();
+      // fetchTokenAllowListStatus();
+      fetchTokenData();
     }
   }, [debouncedTokenAddress]);
+
+
+  const fetchTokenData = async () => {
+    if (!tokenAddress) {
+      return;
+    }
+    setIsSubmitting(true);
+    setIsCheckingStatus(true);
+
+    // todo test token that I dont own
+  const wallet = await signer.getAddress() // todo??
+  const assetData = await getLSPAssetBasicInfo(provider, tokenAddress, wallet);
+
+    const tokenType = assetData?.tokenType;
+    const readableTokenAmount =
+    assetData?.balance !== undefined && assetData?.decimals !== undefined
+      ? parseFloat(
+          ethers.utils.formatUnits(assetData?.balance, assetData?.decimals)
+        ).toFixed(
+          tokenType === LSP4_TOKEN_TYPES.TOKEN
+            ? Number(assetData?.decimals)
+            : 0
+        )
+      : '0';
+
+  const roundedTokenAmount = parseFloat(readableTokenAmount).toFixed(
+    getEnoughDecimals(Number(readableTokenAmount))
+  );
+  
+  console.log(roundedTokenAmount)
+
+  }
 
   // todo fetch balance of tokenAddress
   const fetchTokenAllowListStatus = async () => {
@@ -176,88 +213,10 @@ export default function ManageAllowList() {
     }
   };
 
-
-
-
-  // const transferTokenToUP = async (tokenAddress: string) => {
-  //   if (isProcessing || (await disconnectIfNetworkChanged())) {
-  //     return;
-  //   }
-  //   setIsProcessing(true);
-  //   try {
-  //     const signer = provider.getSigner();
-
-  //     const LSP1GraveForwarderContract = new ethers.Contract(
-  //       networkConfig.universalGraveForwarder,
-  //       LSP1GraveForwarder.abi,
-  //       signer
-  //     );
-
-  //     const upAddress = await signer.getAddress();
-  //     if (
-  //       !(await LSP1GraveForwarderContract.tokenAllowlist(
-  //         upAddress,
-  //         tokenAddress
-  //       ))
-  //     ) {
-  //       await LSP1GraveForwarderContract.addTokenToAllowlist(tokenAddress, {
-  //         gasLimit: 400_00,
-  //       });
-  //     }
-
-  //     const tokenContract = new ethers.Contract(
-  //       tokenAddress,
-  //       LSP7DigitalAsset.abi,
-  //       signer
-  //     );
-  //     const lsp7 = tokenContract.connect(signer);
-
-  //     const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
-  //       vaultAddress,
-  //       await signer.getAddress(),
-  //       rawTokenAmount,
-  //       false,
-  //       '0x',
-  //     ]);
-
-  //     const vaultContract = new ethers.Contract(
-  //       vaultAddress,
-  //       LSP9Vault.abi,
-  //       signer
-  //     );
-  //     const lsp9 = vaultContract.connect(signer);
-  //     await lsp9
-  //       .connect(signer)
-  //       .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
-
-  //     setIsProcessing(false);
-  //     onReviveSuccess(tokenAddress);
-  //     toast({
-  //       title: `it's alive! ⚡`,
-  //       status: 'success',
-  //       position: 'bottom-left',
-  //       duration: 9000,
-  //       isClosable: true,
-  //     });
-  //   } catch (error: any) {
-  //     setIsProcessing(false);
-  //     console.error(error);
-  //     toast({
-  //       title: `Error fetching UP data. ${error.message}`,
-  //       status: 'error',
-  //       position: 'bottom-left',
-  //       duration: 9000,
-  //       isClosable: true,
-  //     });
-  //   }
-  // };
-
-
-
-
-
-
   const FieldMessage = () => {
+    // todo we care about balance, not about the allowlist
+    // todo, lsp7 or lsp8
+
     // Conditional rendering based on the state flags
     if (isCheckingStatus) {
       return messageState.isCheckingStatus;
