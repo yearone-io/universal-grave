@@ -72,6 +72,7 @@ export default function ManageAllowList() {
     }
   }, [debouncedTokenAddress]);
 
+  // todo fetch balance of tokenAddress
   const fetchTokenAllowListStatus = async () => {
     if (!tokenAddress) {
       return;
@@ -101,37 +102,6 @@ export default function ManageAllowList() {
   };
 
 
-  const removeTokenFromAllowList = async () => {
-    setIsSubmitting(true);
-    setIsRemovingFromAllowList(true);
-    return graveForwarder
-      .connect(signer)
-      .removeTokenFromAllowlist(tokenAddress)
-      .then(() => {
-        setTokenCheckMessage('');
-        toast({
-          title: `${tokenAddress} has been removed from allowlist`,
-          status: 'success',
-          position: 'bottom-left',
-          duration: 9000,
-          isClosable: true,
-        });
-      })
-      .catch(reason => {
-        toast({
-          title: `Error removing ${tokenAddress} from allowlist: ${reason.message}`,
-          status: 'error',
-          position: 'bottom-left',
-          duration: 9000,
-          isClosable: true,
-        });
-      })
-      .finally(() => {
-        setIsRemovingFromAllowList(false);
-        setIsSubmitting(false);
-      });
-  };
-
 
   const transferTokenFromUP = async (tokenAddress: string) => {
     // if (isProcessing || (await disconnectIfNetworkChanged())) {
@@ -154,7 +124,7 @@ export default function ManageAllowList() {
           tokenAddress
         ))
       ) {
-        await LSP1GraveForwarderContract.removeTokenToAllowlist(tokenAddress, {
+        await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
           gasLimit: 400_00,
         });
       }
@@ -388,8 +358,8 @@ export default function ManageAllowList() {
           h={'33px'}
           mr="10px"
           isDisabled={isSubmitting}
-          isLoading={isRemovingFromAllowList}
-          onClick={removeTokenFromAllowList}
+          isLoading={null}
+          onClick={transferTokenFromUP}
           type="submit"
         >
           POOF!
