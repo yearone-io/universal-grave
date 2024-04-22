@@ -26,6 +26,8 @@ import {
 } from '@/utils/urdUtils';
 import { UpgradeURD } from '@/components/UpgradeURD';
 import Link from 'next/link';
+import SendToGravePanel from './SendToGravePanel';
+import { get } from 'http';
 
 const getTabOption = (tabName: string) => {
   return (
@@ -72,6 +74,9 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
       break;
     case 'Advanced Info':
       panel = <AdvancedInfoPanel />;
+      break;
+    case 'Send To Grave':
+      panel = <SendToGravePanel />;
       break;
     default:
       panel = <JoinGravePanel />;
@@ -176,6 +181,13 @@ export default function GraveSettings() {
                         URDLsp8,
                         networkConfig.universalGraveForwarder
                       ) && getTabOption('Manage Allowlist')}
+                      
+                      {urdsMatchLatestForwarder(
+                        URDLsp7,
+                        URDLsp8,
+                        networkConfig.universalGraveForwarder
+                      ) && getTabOption('Send To Grave')}
+
                       {getTabOption('Advanced Info')}
                     </TabList>
                     <TabPanels p="0" width={'100%'} mr={'25px'}>
@@ -185,6 +197,11 @@ export default function GraveSettings() {
                         URDLsp8,
                         networkConfig.universalGraveForwarder
                       ) && getTabPanel('Manage Allowlist')}
+                                            {urdsMatchLatestForwarder(
+                        URDLsp7,
+                        URDLsp8,
+                        networkConfig.universalGraveForwarder
+                      ) && getTabPanel('Send To Grave')}
                       {getTabPanel('Advanced Info')}
                     </TabPanels>
                   </Tabs>
