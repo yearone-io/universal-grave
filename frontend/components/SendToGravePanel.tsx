@@ -14,6 +14,9 @@ import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import { LSP1GraveForwarder } from '@/contracts';
 import { BiSolidCheckCircle } from 'react-icons/bi';
+import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+
 
 const messageState = {
   isCheckingStatus: 'Checking status...',
@@ -128,6 +131,161 @@ export default function ManageAllowList() {
         setIsSubmitting(false);
       });
   };
+
+
+  const transferTokenFromUP = async (tokenAddress: string) => {
+    // if (isProcessing || (await disconnectIfNetworkChanged())) {
+    //   return;
+    // }
+    // setIsProcessing(true);
+    try {
+      const signer = provider.getSigner();
+
+      const LSP1GraveForwarderContract = new ethers.Contract(
+        networkConfig.universalGraveForwarder,
+        LSP1GraveForwarder.abi,
+        signer
+      );
+
+      const upAddress = await signer.getAddress();
+      if (
+        (await LSP1GraveForwarderContract.tokenAllowlist(
+          upAddress,
+          tokenAddress
+        ))
+      ) {
+        await LSP1GraveForwarderContract.removeTokenToAllowlist(tokenAddress, {
+          gasLimit: 400_00,
+        });
+      }
+
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        LSP7DigitalAsset.abi,
+        signer
+      );
+      const lsp7 = tokenContract.connect(signer);
+
+      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+        await signer.getAddress(),
+        vaultAddress,
+        rawTokenAmount,
+        false,
+        '0x',
+      ]);
+
+      const vaultContract = new ethers.Contract(
+        vaultAddress,
+        LSP9Vault.abi,
+        signer
+      );
+      const lsp9 = vaultContract.connect(signer);
+      await lsp9
+        .connect(signer)
+        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+
+      // setIsProcessing(false);
+      // onReviveSuccess(tokenAddress);
+      toast({
+        title: `Gone but not forgotten! See you in the afterlife.`,
+        status: 'success',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    } catch (error: any) {
+      // setIsProcessing(false);
+      console.error(error);
+      toast({
+        title: `Error fetching UP data. ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    }
+  };
+
+
+
+
+  // const transferTokenToUP = async (tokenAddress: string) => {
+  //   if (isProcessing || (await disconnectIfNetworkChanged())) {
+  //     return;
+  //   }
+  //   setIsProcessing(true);
+  //   try {
+  //     const signer = provider.getSigner();
+
+  //     const LSP1GraveForwarderContract = new ethers.Contract(
+  //       networkConfig.universalGraveForwarder,
+  //       LSP1GraveForwarder.abi,
+  //       signer
+  //     );
+
+  //     const upAddress = await signer.getAddress();
+  //     if (
+  //       !(await LSP1GraveForwarderContract.tokenAllowlist(
+  //         upAddress,
+  //         tokenAddress
+  //       ))
+  //     ) {
+  //       await LSP1GraveForwarderContract.addTokenToAllowlist(tokenAddress, {
+  //         gasLimit: 400_00,
+  //       });
+  //     }
+
+  //     const tokenContract = new ethers.Contract(
+  //       tokenAddress,
+  //       LSP7DigitalAsset.abi,
+  //       signer
+  //     );
+  //     const lsp7 = tokenContract.connect(signer);
+
+  //     const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+  //       vaultAddress,
+  //       await signer.getAddress(),
+  //       rawTokenAmount,
+  //       false,
+  //       '0x',
+  //     ]);
+
+  //     const vaultContract = new ethers.Contract(
+  //       vaultAddress,
+  //       LSP9Vault.abi,
+  //       signer
+  //     );
+  //     const lsp9 = vaultContract.connect(signer);
+  //     await lsp9
+  //       .connect(signer)
+  //       .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+
+  //     setIsProcessing(false);
+  //     onReviveSuccess(tokenAddress);
+  //     toast({
+  //       title: `it's alive! ⚡`,
+  //       status: 'success',
+  //       position: 'bottom-left',
+  //       duration: 9000,
+  //       isClosable: true,
+  //     });
+  //   } catch (error: any) {
+  //     setIsProcessing(false);
+  //     console.error(error);
+  //     toast({
+  //       title: `Error fetching UP data. ${error.message}`,
+  //       status: 'error',
+  //       position: 'bottom-left',
+  //       duration: 9000,
+  //       isClosable: true,
+  //     });
+  //   }
+  // };
+
+
+
+
+
 
   const FieldMessage = () => {
     // Conditional rendering based on the state flags
