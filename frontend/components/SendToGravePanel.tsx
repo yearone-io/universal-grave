@@ -123,7 +123,6 @@ export default function ManageAllowList() {
     if (
       await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
     ) {
-      console.log('Removing token from allowlist');
       setTokenCheckMessage('Removing from allowlist...');
       await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
         gasLimit: 400_00,
