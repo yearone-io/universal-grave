@@ -19,7 +19,8 @@ import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
-  const { networkConfig, provider, disconnectIfNetworkChanged, graveVault} = walletContext;
+  const { networkConfig, provider, disconnectIfNetworkChanged, graveVault } =
+    walletContext;
   const toast = useToast();
   const signer = provider.getSigner();
 
@@ -48,59 +49,59 @@ export default function ManageAllowList() {
   useEffect(() => {
     setTokenCheckMessage('');
     if (debouncedTokenAddress) {
-      fetchTokenData();
+      processTokenData();
     }
   }, [debouncedTokenAddress]);
 
-  const fetchTokenData = async () => {
+  const getTokenData = async () => {
+    let assetData;
+    try {
+      const wallet = await signer.getAddress();
+      assetData = await getLSPAssetBasicInfo(provider, tokenAddress, wallet);
+      return assetData;
+    } catch (error: any) {
+      setTokenCheckMessage('Error fetching token data');
+      console.error(error);
+      toast({
+        title: `Error fetching token data. ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+      setTokenCheckMessage('');
+      setCanSubmit(false);
+      return;
+    }
+  };
+
+  const processTokenData = async () => {
     setCanSubmit(false);
     setTokenCheckMessage('Checking...');
     setRawTokenAmount(0);
 
-    let assetData;
-   try {
-    const wallet = await signer.getAddress();
-    assetData = await getLSPAssetBasicInfo(
-      provider,
-      tokenAddress,
-      wallet
-    );
-  } catch (error: any) {
-    setTokenCheckMessage('Error fetching token data');
-    console.error(error);
-    toast({
-      title: `Error fetching token data. ${error.message}`,
-      status: 'error',
-      position: 'bottom-left',
-      duration: 9000,
-      isClosable: true,
-    });
-    setTokenCheckMessage('');
-    setCanSubmit(false);
-    return;
-  } 
-
-    if (!assetData.balance || !assetData?.decimals) {
+    const assetData = await getTokenData();
+    if (!assetData || !assetData.balance || !assetData?.decimals) {
       setTokenCheckMessage('No balance for this Token');
       setCanSubmit(false);
       return;
     }
-    
+
     const tokenType = assetData?.tokenType;
-    const readableTokenAmount =  parseFloat(
-            ethers.utils.formatUnits(assetData?.balance, assetData?.decimals)
-          ).toFixed(
-            tokenType === LSP4_TOKEN_TYPES.TOKEN
-              ? Number(assetData?.decimals)
-              : 0
-          );
+    const readableTokenAmount = parseFloat(
+      ethers.utils.formatUnits(assetData?.balance, assetData?.decimals)
+    ).toFixed(
+      tokenType === LSP4_TOKEN_TYPES.TOKEN ? Number(assetData?.decimals) : 0
+    );
 
     const roundedTokenAmount = parseFloat(readableTokenAmount).toFixed(
       getEnoughDecimals(Number(readableTokenAmount))
     );
 
     setRawTokenAmount(Number(assetData?.balance));
-    setTokenCheckMessage(`Token balance: ${assetData?.symbol} ${roundedTokenAmount}`)
+    setTokenCheckMessage(
+      `Token balance: ${assetData?.symbol} ${roundedTokenAmount}`
+    );
     setCanSubmit(true);
   };
 
@@ -116,15 +117,12 @@ export default function ManageAllowList() {
       await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
     ) {
       console.log('Removing token from allowlist');
-      setTokenCheckMessage('Removing from allowlist...')
-      await LSP1GraveForwarderContract.removeTokenFromAllowlist(
-        tokenAddress,
-        {
-          gasLimit: 400_00,
-        }
-      );
+      setTokenCheckMessage('Removing from allowlist...');
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
+        gasLimit: 400_00,
+      });
     }
-  }
+  };
 
   const transferToGrave = async () => {
     const tokenContract = new ethers.Contract(
@@ -151,16 +149,14 @@ export default function ManageAllowList() {
     await lsp9
       .connect(signer)
       .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+  };
 
-  }
-
-  const transferTokenFromUP = async (tokenAddress: string) => {
-    if ((await disconnectIfNetworkChanged())) {
+  const transferTokenFromUP = async () => {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
     setIsSubmitting(true);
     try {
-      
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
 
@@ -189,7 +185,6 @@ export default function ManageAllowList() {
   };
 
   const FieldMessage = () => {
-    // Conditional rendering based on the state flags
     if (tokenCheckMessage) {
       return tokenCheckMessage;
     }
@@ -260,7 +255,7 @@ export default function ManageAllowList() {
           mr="10px"
           isDisabled={!canSubmit}
           isLoading={isSubmitting}
-          onClick={()=>{transferTokenFromUP(tokenAddress)}}
+          onClick={transferTokenFromUP}
           type="submit"
         >
           POOF!
