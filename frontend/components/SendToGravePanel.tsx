@@ -19,12 +19,11 @@ import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
 
-
 const messageState = {
-  isCheckingStatus: 'Checking status...',
+  isCheckingStatus: 'Checking...',
   isRemovingFromAllowList: 'Removing from allowlist...',
-  tokenAllowListDetected: 'Allowed asset detected',
-  tokenDisallowedDetected: 'Disallowed asset detected',
+  // tokenAllowListDetected: 'Allowed asset detected',
+  // tokenDisallowedDetected: 'Disallowed asset detected',
   invalidAddress: 'Invalid address',
   makeSureValidAddress: 'Make sure the address is valid',
 };
@@ -43,14 +42,14 @@ export default function ManageAllowList() {
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
-  const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
-    useState<boolean>(false);
+  // const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
+  //   useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
   const [rawTokenAmount, setRawTokenAmount] = useState<number>(0);
+  const [roundedTokenAmount, setRoundedTokenAmount] = useState<string>('0');
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(tokenAddress);
-
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTokenAddress(event.target.value.toLowerCase());
@@ -77,38 +76,59 @@ export default function ManageAllowList() {
     }
   }, [debouncedTokenAddress]);
 
-
   const fetchTokenData = async () => {
     if (!tokenAddress) {
       return;
     }
     setIsSubmitting(true);
     setIsCheckingStatus(true);
+    setRawTokenAmount(0);
+    setRoundedTokenAmount('0');
 
     // todo test token that I dont own
-  const wallet = await signer.getAddress() // todo??
-  const assetData = await getLSPAssetBasicInfo(provider, tokenAddress, wallet);
+    try {
+    const wallet = await signer.getAddress();
+    const assetData = await getLSPAssetBasicInfo(
+      provider,
+      tokenAddress,
+      wallet
+    );
 
     const tokenType = assetData?.tokenType;
     const readableTokenAmount =
-    assetData?.balance !== undefined && assetData?.decimals !== undefined
-      ? parseFloat(
-          ethers.utils.formatUnits(assetData?.balance, assetData?.decimals)
-        ).toFixed(
-          tokenType === LSP4_TOKEN_TYPES.TOKEN
-            ? Number(assetData?.decimals)
-            : 0
-        )
-      : '0';
+      assetData?.balance !== undefined && assetData?.decimals !== undefined
+        ? parseFloat(
+            ethers.utils.formatUnits(assetData?.balance, assetData?.decimals)
+          ).toFixed(
+            tokenType === LSP4_TOKEN_TYPES.TOKEN
+              ? Number(assetData?.decimals)
+              : 0
+          )
+        : '0';
 
-  const roundedTokenAmount = parseFloat(readableTokenAmount).toFixed(
-    getEnoughDecimals(Number(readableTokenAmount))
-  );
-  
-  console.log(roundedTokenAmount)
-  // todo store raw
-  // todo store value
-  }
+    const roundedTokenAmount = parseFloat(readableTokenAmount).toFixed(
+      getEnoughDecimals(Number(readableTokenAmount))
+    );
+
+    setRawTokenAmount(Number(assetData?.balance));
+    setRoundedTokenAmount(roundedTokenAmount);
+    setTokenCheckMessage(`Token balance: ${assetData?.symbol} ${roundedTokenAmount}`)
+
+    } catch (error: any) {
+      setTokenCheckMessage('Error fetching token data');
+      console.error(error);
+      toast({
+        title: `Error fetching token data. ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    } finally {
+      setIsCheckingStatus(false);
+      setIsSubmitting(false);
+    }
+  };
 
   // todo fetch balance of tokenAddress
   const fetchTokenAllowListStatus = async () => {
@@ -121,9 +141,9 @@ export default function ManageAllowList() {
       .connect(signer)
       .tokenAllowlist(await signer.getAddress(), tokenAddress.toLowerCase())
       .then(value => {
-        const message = value
-          ? messageState.tokenAllowListDetected
-          : messageState.tokenDisallowedDetected;
+        // const message = value
+        //   ? messageState.tokenAllowListDetected
+          // : messageState.tokenDisallowedDetected;
         setTokenCheckMessage(message);
       })
       .catch(reason => {
@@ -138,8 +158,6 @@ export default function ManageAllowList() {
         setIsSubmitting(false);
       });
   };
-
-
 
   const transferTokenFromUP = async (tokenAddress: string) => {
     // if (isProcessing || (await disconnectIfNetworkChanged())) {
@@ -157,14 +175,14 @@ export default function ManageAllowList() {
 
       const upAddress = await signer.getAddress();
       if (
-        (await LSP1GraveForwarderContract.tokenAllowlist(
-          upAddress,
-          tokenAddress
-        ))
+        await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
       ) {
-        await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
-          gasLimit: 400_00,
-        });
+        await LSP1GraveForwarderContract.removeTokenFromAllowlist(
+          tokenAddress,
+          {
+            gasLimit: 400_00,
+          }
+        );
       }
 
       const tokenContract = new ethers.Contract(
@@ -223,29 +241,29 @@ export default function ManageAllowList() {
       return messageState.isCheckingStatus;
     }
 
-    if (isRemovingFromAllowList) {
-      return messageState.isRemovingFromAllowList;
-    }
+    // if (isRemovingFromAllowList) {
+    //   return messageState.isRemovingFromAllowList;
+    // }
     // When there is a token check message, show it with the CheckCircleIcon
     if (tokenCheckMessage) {
       let icon = <></>;
-      if (
-        tokenCheckMessage === messageState.tokenAllowListDetected ||
-        tokenCheckMessage === messageState.tokenDisallowedDetected
-      ) {
-        icon = (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              position: 'relative',
-              top: '1px',
-            }}
-          >
-            <BiSolidCheckCircle />
-          </span>
-        );
-      }
+      // if (
+      //   tokenCheckMessage === messageState.tokenAllowListDetected ||
+      //   tokenCheckMessage === messageState.tokenDisallowedDetected
+      // ) {
+      //   icon = (
+      //     <span
+      //       style={{
+      //         display: 'inline-flex',
+      //         alignItems: 'center',
+      //         position: 'relative',
+      //         top: '1px',
+      //       }}
+      //     >
+      //       <BiSolidCheckCircle />
+      //     </span>
+      //   );
+      // }
       return (
         <>
           {tokenCheckMessage + ' '} {icon}
@@ -264,7 +282,7 @@ export default function ManageAllowList() {
         color="dark.purple.400"
       >
         SEND ASSETS TO YOUR GRAVE
-       </Text>
+      </Text>
       <Text
         mb={4}
         mt={4}
@@ -272,7 +290,7 @@ export default function ManageAllowList() {
         fontFamily="Montserrat"
         textAlign="start"
       >
-       BLA BLA BLA
+        BLA BLA BLA
       </Text>
       <FormControl textAlign="start">
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>

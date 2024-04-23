@@ -181,7 +181,7 @@ export default function GraveSettings() {
                         URDLsp8,
                         networkConfig.universalGraveForwarder
                       ) && getTabOption('Manage Allowlist')}
-                      
+
                       {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
@@ -197,7 +197,7 @@ export default function GraveSettings() {
                         URDLsp8,
                         networkConfig.universalGraveForwarder
                       ) && getTabPanel('Manage Allowlist')}
-                                            {urdsMatchLatestForwarder(
+                      {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
                         networkConfig.universalGraveForwarder
