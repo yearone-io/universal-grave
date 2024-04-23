@@ -206,11 +206,12 @@ export default function ManageAllowList() {
       >
         BLA BLA BLA
       </Text>
-      <FormControl textAlign="start">
+      <FormControl textAlign="start" > 
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
           ASSET ADDRESS
         </FormLabel>
-        <Box display="flex" alignItems="center" h="50px">
+        <Box display="flex">
+          <Flex flexDir='column'>
           <Input
             autoComplete="off"
             maxWidth="314px"
@@ -239,10 +240,11 @@ export default function ManageAllowList() {
             fontFamily="Bungee"
             fontWeight={400}
             fontSize={'14px'}
-            maxWidth={'120px'}
+            // maxWidth={'120px'}
           >
             {FieldMessage()}
           </Text>
+          </Flex>
         </Box>
       </FormControl>
       <Flex justifyContent={'flex-start'} gap={2} width={'100%'}>
@@ -251,6 +253,7 @@ export default function ManageAllowList() {
           mr="10px"
           isDisabled={!canSubmit}
           isLoading={isSubmitting}
+          _disabled={{ color: 'black', opacity: 0.5 }}
           onClick={transferTokenFromUP}
           type="submit"
         >
