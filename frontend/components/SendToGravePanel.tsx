@@ -240,7 +240,6 @@ export default function ManageAllowList() {
             fontFamily="Bungee"
             fontWeight={400}
             fontSize={'14px'}
-            // maxWidth={'120px'}
           >
             {FieldMessage()}
           </Text>

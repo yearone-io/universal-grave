@@ -10,7 +10,6 @@ import {
   TabPanels,
   Tabs,
   Text,
-  useColorModeValue,
   Flex,
   Button,
 } from '@chakra-ui/react';
@@ -27,7 +26,6 @@ import {
 import { UpgradeURD } from '@/components/UpgradeURD';
 import Link from 'next/link';
 import SendToGravePanel from './SendToGravePanel';
-import { get } from 'http';
 
 const getTabOption = (tabName: string) => {
   return (
