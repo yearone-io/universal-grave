@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
@@ -28,13 +28,9 @@ export default function ManageAllowList() {
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
-  const [rawTokenAmount, setRawTokenAmount] = useState<number>(0);
+  const [rawTokenAmount, setRawTokenAmount] = useState<BigNumber>(BigNumber.from(0));
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(tokenAddress);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setTokenAddress(event.target.value.toLowerCase());
-  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -52,6 +48,10 @@ export default function ManageAllowList() {
       processTokenData();
     }
   }, [debouncedTokenAddress]);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTokenAddress(event.target.value.toLowerCase());
+  };
 
   const getTokenData = async () => {
     let assetData;
@@ -78,11 +78,17 @@ export default function ManageAllowList() {
   const processTokenData = async () => {
     setCanSubmit(false);
     setTokenCheckMessage('Checking...');
-    setRawTokenAmount(0);
+    setRawTokenAmount(BigNumber.from(0));
 
     const assetData = await getTokenData();
     if (!assetData || !assetData.balance || !assetData?.decimals) {
       setTokenCheckMessage('No balance for this Token');
+      setCanSubmit(false);
+      return;
+    }
+
+    if ( Number(assetData.balance) === 0) {
+      setTokenCheckMessage(`Insufficient balance for ${assetData.symbol}`);
       setCanSubmit(false);
       return;
     }
@@ -98,7 +104,7 @@ export default function ManageAllowList() {
       getEnoughDecimals(Number(readableTokenAmount))
     );
 
-    setRawTokenAmount(Number(assetData?.balance));
+    setRawTokenAmount(assetData?.balance as BigNumber);
     setTokenCheckMessage(
       `Token balance: ${assetData?.symbol} ${roundedTokenAmount}`
     );
@@ -130,25 +136,14 @@ export default function ManageAllowList() {
       LSP7DigitalAsset.abi,
       signer
     );
-    const lsp7 = tokenContract.connect(signer);
-
-    const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+    const tx = await tokenContract.transfer(
       await signer.getAddress(),
       graveVault,
       rawTokenAmount,
       false,
-      '0x',
-    ]);
-
-    const vaultContract = new ethers.Contract(
-      graveVault as string,
-      LSP9Vault.abi,
-      signer
+      '0x'
     );
-    const lsp9 = vaultContract.connect(signer);
-    await lsp9
-      .connect(signer)
-      .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+    await tx.wait()
   };
 
   const transferTokenFromUP = async () => {
@@ -162,6 +157,7 @@ export default function ManageAllowList() {
 
       await transferToGrave();
       setIsSubmitting(false);
+      setTokenAddress('');
       setTokenCheckMessage('');
       toast({
         title: `Gone but not forgotten! See you in the afterlife.`,
