@@ -12,21 +12,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
-import { LSP1GraveForwarder } from '@/contracts';
-import { BiSolidCheckCircle } from 'react-icons/bi';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
-
-const messageState = {
-  isCheckingStatus: 'Checking...',
-  isRemovingFromAllowList: 'Removing from allowlist...',
-  // tokenAllowListDetected: 'Allowed asset detected',
-  // tokenDisallowedDetected: 'Disallowed asset detected',
-  invalidAddress: 'Invalid address',
-  makeSureValidAddress: 'Make sure the address is valid',
-};
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
@@ -36,7 +25,6 @@ export default function ManageAllowList() {
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
-  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
   const [rawTokenAmount, setRawTokenAmount] = useState<number>(0);
@@ -65,11 +53,8 @@ export default function ManageAllowList() {
   }, [debouncedTokenAddress]);
 
   const fetchTokenData = async () => {
-    if (!tokenAddress) {
-      return;
-    }
     setCanSubmit(false);
-    setIsCheckingStatus(true);
+    setTokenCheckMessage('Checking...');
     setRawTokenAmount(0);
 
     let assetData;
@@ -90,14 +75,13 @@ export default function ManageAllowList() {
       duration: 9000,
       isClosable: true,
     });
-    setIsCheckingStatus(false);
+    setTokenCheckMessage('');
     setCanSubmit(false);
     return;
   } 
 
     if (!assetData.balance || !assetData?.decimals) {
       setTokenCheckMessage('No balance for this Token');
-      setIsCheckingStatus(false);
       setCanSubmit(false);
       return;
     }
@@ -117,8 +101,6 @@ export default function ManageAllowList() {
 
     setRawTokenAmount(Number(assetData?.balance));
     setTokenCheckMessage(`Token balance: ${assetData?.symbol} ${roundedTokenAmount}`)
-
-    setIsCheckingStatus(false);
     setCanSubmit(true);
   };
 
@@ -144,41 +126,45 @@ export default function ManageAllowList() {
     }
   }
 
+  const transferToGrave = async () => {
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      LSP7DigitalAsset.abi,
+      signer
+    );
+    const lsp7 = tokenContract.connect(signer);
+
+    const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+      await signer.getAddress(),
+      graveVault,
+      rawTokenAmount,
+      false,
+      '0x',
+    ]);
+
+    const vaultContract = new ethers.Contract(
+      graveVault as string,
+      LSP9Vault.abi,
+      signer
+    );
+    const lsp9 = vaultContract.connect(signer);
+    await lsp9
+      .connect(signer)
+      .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+
+  }
+
   const transferTokenFromUP = async (tokenAddress: string) => {
-    // if (isProcessing || (await disconnectIfNetworkChanged())) {
-    //   return;
-    // }
+    if ((await disconnectIfNetworkChanged())) {
+      return;
+    }
     setIsSubmitting(true);
     try {
       
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
 
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        LSP7DigitalAsset.abi,
-        signer
-      );
-      const lsp7 = tokenContract.connect(signer);
-
-      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
-        await signer.getAddress(),
-        graveVault,
-        rawTokenAmount,
-        false,
-        '0x',
-      ]);
-
-      const vaultContract = new ethers.Contract(
-        graveVault as string,
-        LSP9Vault.abi,
-        signer
-      );
-      const lsp9 = vaultContract.connect(signer);
-      await lsp9
-        .connect(signer)
-        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
-
+      await transferToGrave();
       setIsSubmitting(false);
       setTokenCheckMessage('');
       toast({
@@ -204,9 +190,6 @@ export default function ManageAllowList() {
 
   const FieldMessage = () => {
     // Conditional rendering based on the state flags
-    if (isCheckingStatus) {
-      return messageState.isCheckingStatus;
-    }
     if (tokenCheckMessage) {
       return tokenCheckMessage;
     }
