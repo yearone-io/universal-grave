@@ -1,21 +1,19 @@
 import { useContext, useState } from 'react';
 import {
-  Box,
   Button,
   Flex,
   IconButton,
+  Image,
   Text,
   useColorModeValue,
   useToast,
-  Avatar,
-  Image,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import { TokenData, formatAddress, getTokenIconURL } from '@/utils/tokenUtils';
+import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 
 interface LSP8PanelProps {
@@ -58,7 +56,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
-  const tokenAddressDisplay = formatAddress(tokenData.address);
+  const tokenAddressDisplay = formatAddress(tokenData.tokenId!);
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
@@ -134,103 +132,58 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     }
   };
 
-  const getTokenIcon = () => {
-    const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
-    let tokenIcon = !iconURL ? (
-      <Box padding={1} fontWeight={'bold'}>
-        LSP8
-      </Box>
-    ) : (
-      <Avatar height={16} minW={16} name={tokenData?.name} src={iconURL} />
-    );
-    return tokenIcon;
-  };
-
   return (
-    <Flex
-      bg={panelBgColor}
-      borderRadius="lg"
-      px={4}
-      py={4}
-      align="flex-start"
-      justify="space-between"
-      boxShadow="md"
-      minWidth={'lg'}
-      mb={2}
-    >
-      <Flex
-        bg={interestsBgColor}
-        borderRadius="full"
-        color={fontColor}
-        border={`1px solid ${containerBorderColor}`}
-        fontSize="md"
-        height={16}
-        minW={16}
-        justifyContent={'center'}
-        alignItems={'center'}
-        boxSizing={'content-box'}
-      >
-        {getTokenIcon()}
-      </Flex>
-
-      <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
-        <Flex flexDirection={'row'} justifyContent={'space-between'}>
-          <Text color={fontColor} fontFamily={'Bungee'}>
-            {tokenData?.name}
-          </Text>
-          <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {formatAddress(tokenData?.tokenId as string)}
-          </Text>
+    <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
+      {tokenData?.image && (
+        <Flex justifyContent={'center'}>
+          <Image
+            src={tokenData?.image}
+            alt={tokenData?.name}
+            width="250px"
+            border={'1px solid ' + containerBorderColor}
+          />
         </Flex>
-        {tokenData?.image && (
-          <Flex justifyContent={'center'}>
-            <Image
-              src={tokenData?.image}
-              alt={tokenData?.name}
-              width="400px"
-              border={'1px solid ' + containerBorderColor}
-            />
-          </Flex>
+      )}
+      <Flex
+        flexDirection={'row'}
+        justifyContent={'space-between'}
+        alignItems={'center'}
+      >
+        {vaultOwner === connectedUPAddress && (
+          <Button
+            px={3}
+            color={createButtonColor}
+            bg={createButtonBg}
+            _hover={{ bg: createButtonBg }}
+            border={createButtonBorder}
+            size={'xs'}
+            onClick={() => transferTokenToUP(tokenData)}
+          >
+            {isProcessing ? 'Reviving...' : `Revive`}
+          </Button>
         )}
-        <Flex
-          flexDirection={'row'}
-          justifyContent={'space-between'}
-          alignItems={'center'}
-        >
-          <Flex align="center">
-            <Text fontSize="sm" pr={2} color={fontColor}>
-              Address:
-            </Text>
-            <Text fontSize="sm" fontWeight="bold" pr={1} color={fontColor}>
-              {tokenAddressDisplay}
-            </Text>
-            <IconButton
-              aria-label="View on blockchain explorer"
-              icon={<FaExternalLinkAlt color={fontColor} />}
-              color={fontColor}
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                window.open(
-                  `${networkConfig.explorerURL}/address/${tokenData?.address}`,
-                  '_blank'
-                )
-              }
-            />
-          </Flex>
-          {vaultOwner === connectedUPAddress && (
-            <Button
-              px={3}
-              color={createButtonColor}
-              bg={createButtonBg}
-              _hover={{ bg: createButtonBg }}
-              border={createButtonBorder}
-              size={'xs'}
-              onClick={() => transferTokenToUP(tokenData?.address)}
-            >
-              {isProcessing ? 'Reviving...' : `Revive NFT`}
-            </Button>
-          )}
+        <Flex align="center">
+          <Text fontSize="sm" pr={2} color={fontColor}>
+            Id:
+          </Text>
+          <Text fontSize="sm" fontWeight="bold" pr={1} color={fontColor}>
+            {tokenAddressDisplay}
+          </Text>
+          <IconButton
+            aria-label="View on universal page"
+            icon={<FaExternalLinkAlt color={fontColor} />}
+            color={fontColor}
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              window.open(
+                `${
+                  networkConfig.marketplaceCollectionsURL
+                }/${tokenData?.address}/${tokenData.tokenId!}`,
+                '_blank'
+              )
+            }
+          />
         </Flex>
       </Flex>
     </Flex>

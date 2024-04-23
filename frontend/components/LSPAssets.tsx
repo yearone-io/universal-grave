@@ -17,6 +17,7 @@ import { getLuksoProvider } from '@/utils/provider';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
+import LSP8Group from '@/components/LSP8Group';
 
 export default function LSPAssets({
   graveVault,
@@ -29,7 +30,7 @@ export default function LSPAssets({
   const { provider } = walletContext;
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
-  const [lsp8Assets, setLsp8Assets] = useState<TokenData[]>([]);
+  const [lsp8Assets, setLsp8Assets] = useState<TokenData[][]>([]);
   const [unrecognisedAssets, setUnrecognisedAssets] = useState<TokenData[]>([]);
   const [unrecognisedLsp7Assets, setUnrecognisedLsp7Assets] = useState<
     TokenData[]
@@ -51,9 +52,11 @@ export default function LSPAssets({
   };
 
   const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
-    const lsp8AssetsCopy = lsp8Assets.filter(
-      asset => !(asset.address === assetAddress && asset.tokenId === tokenId)
-    );
+    const lsp8AssetsCopy = lsp8Assets.map(subArray => {
+      return subArray.filter(
+        asset => !(asset.address === assetAddress && asset.tokenId === tokenId)
+      );
+    });
     setLsp8Assets(lsp8AssetsCopy);
   };
 
@@ -98,7 +101,7 @@ export default function LSPAssets({
         'LSP5ReceivedAssets[]'
       );
       const lsp7Results: TokenData[] = [];
-      const lsp8Results: TokenData[] = [];
+      const lsp8Results: TokenData[][] = [];
       const unrecognisedLsp7Results: TokenData[] = [];
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
@@ -134,7 +137,7 @@ export default function LSPAssets({
             asset,
             graveVault
           );
-          lsp8Results.push(...lsp8Tokens);
+          lsp8Results.push(lsp8Tokens);
         } else if (
           asset.interface ===
           GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
@@ -248,7 +251,7 @@ export default function LSPAssets({
           {lsp8Assets.length
             ? lsp8Assets.map((asset, index) => (
                 <Box key={'lsp8-' + index}>
-                  <LSP8Panel
+                  <LSP8Group
                     tokenData={asset}
                     vaultAddress={graveVault!}
                     vaultOwner={graveOwner}

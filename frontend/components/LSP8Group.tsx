@@ -5,60 +5,41 @@ import {
   Button,
   Flex,
   IconButton,
-  Image,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  SimpleGrid,
   Text,
   useColorModeValue,
+  useDisclosure,
   useToast,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import { ethers } from 'ethers';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
-import {
-  formatAddress,
-  getEnoughDecimals,
-  getTokenIconURL,
-  TokenData,
-} from '@/utils/tokenUtils';
+import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
+import { ethers } from 'ethers';
+import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import LSP8Panel from '@/components/LSP8Panel';
 
-interface LSP7PanelProps {
-  readonly tokenData: TokenData;
+interface LSP8PanelProps {
+  readonly tokenData: TokenData[];
   readonly vaultAddress: string;
   readonly vaultOwner: string;
-  onReviveSuccess: (assetAddress: string) => void;
+  onReviveSuccess: (assetAddress: string, tokenId: string) => void;
 }
 
-const LSP7Panel: React.FC<LSP7PanelProps> = ({
+const LSP8Group: React.FC<LSP8PanelProps> = ({
   tokenData,
   vaultAddress,
   vaultOwner,
   onReviveSuccess,
 }) => {
-  const readableTokenAmount =
-    tokenData?.balance !== undefined && tokenData?.decimals !== undefined
-      ? parseFloat(
-          ethers.utils.formatUnits(tokenData?.balance, tokenData?.decimals)
-        ).toFixed(
-          tokenData.tokenType === LSP4_TOKEN_TYPES.TOKEN
-            ? Number(tokenData?.decimals)
-            : 0
-        )
-      : '0';
-
-  const roundedTokenAmount = parseFloat(readableTokenAmount).toFixed(
-    getEnoughDecimals(Number(readableTokenAmount))
-  );
-
-  // Assuming rawTokenAmount is a BigNumber representing the amount in base units
-  const rawTokenAmount = tokenData?.balance;
-
-  const reviveText =
-    tokenData.tokenType === LSP4_TOKEN_TYPES.NFT
-      ? 'Revive NFT'
-      : 'Revive Tokens';
   const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
@@ -67,6 +48,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     disconnectIfNetworkChanged,
   } = walletContext;
   const [isProcessing, setIsProcessing] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -86,13 +68,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
-  const tokenAddressDisplay = formatAddress(tokenData?.address);
+  const tokenAddressDisplay = formatAddress(tokenData[0].address);
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
     if (isProcessing || (await disconnectIfNetworkChanged())) {
       return;
     }
+
     setIsProcessing(true);
     try {
       const signer = provider.getSigner();
@@ -117,15 +100,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
-        LSP7DigitalAsset.abi,
+        LSP8IdentifiableDigitalAsset.abi,
         signer
       );
-      const lsp7 = tokenContract.connect(signer);
-
-      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+      const lsp8 = tokenContract.connect(signer);
+      const lsp8Tx = lsp8.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        rawTokenAmount,
+        tokenData[0].tokenId,
         false,
         '0x',
       ]);
@@ -138,10 +120,10 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const lsp9 = vaultContract.connect(signer);
       await lsp9
         .connect(signer)
-        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+        .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
       setIsProcessing(false);
-      onReviveSuccess(tokenAddress);
+      onReviveSuccess(tokenData[0].tokenId as string);
       toast({
         title: `it's alive! ⚡`,
         status: 'success',
@@ -163,14 +145,15 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   };
 
   const getTokenIcon = () => {
-    const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
-    return !iconURL ? (
+    const iconURL = getTokenIconURL(tokenData[0].metadata?.LSP4Metadata);
+    let tokenIcon = !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
-        LSP7
+        LSP8
       </Box>
     ) : (
-      <Avatar height={16} minW={16} name={tokenData?.name} src={iconURL} />
+      <Avatar height={16} minW={16} name={tokenData[0]?.name} src={iconURL} />
     );
+    return tokenIcon;
   };
 
   return (
@@ -203,21 +186,13 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
         <Flex flexDirection={'row'} justifyContent={'space-between'}>
           <Text color={fontColor} fontFamily={'Bungee'}>
-            {tokenData?.name}
-          </Text>
-          <Text color={fontColor} fontFamily={'Bungee'} px={3}>
-            {roundedTokenAmount}
+            {tokenData[0]?.name}
           </Text>
         </Flex>
-        {tokenData?.image && (
-          <Flex justifyContent={'center'}>
-            <Image
-              src={tokenData?.image}
-              alt={tokenData?.name}
-              width="400px"
-              border={'1px solid ' + containerBorderColor}
-            />
-          </Flex>
+        {tokenData.length > 1 && (
+          <Text fontSize="sm" color={fontColor}>
+            {tokenData.length} items detected
+          </Text>
         )}
         <Flex
           flexDirection={'row'}
@@ -239,13 +214,13 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.marketplaceCollectionsURL}/${tokenData?.address}`,
+                  `${networkConfig.marketplaceCollectionsURL}/${tokenData[0]?.address}`,
                   '_blank'
                 )
               }
             />
           </Flex>
-          {vaultOwner === connectedUPAddress && (
+          {vaultOwner === connectedUPAddress && tokenData.length === 1 && (
             <Button
               px={3}
               color={createButtonColor}
@@ -253,10 +228,82 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               _hover={{ bg: createButtonBg }}
               border={createButtonBorder}
               size={'xs'}
-              onClick={() => transferTokenToUP(tokenData?.address)}
+              onClick={() => transferTokenToUP(tokenData[0]?.address)}
             >
-              {isProcessing ? 'Reviving...' : reviveText}
+              {isProcessing ? 'Reviving...' : `Mark safe & revive`}
             </Button>
+          )}
+          {tokenData.length > 1 && (
+            <>
+              <Button onClick={onOpen}>View all</Button>
+
+              <Modal isOpen={isOpen} onClose={onClose} size={'4xl'}>
+                <ModalOverlay
+                  bg="none"
+                  backdropFilter="auto"
+                  backdropBlur="2px"
+                />
+                <ModalContent background={panelBgColor}>
+                  <ModalHeader>
+                    <Flex>
+                      {getTokenIcon()}
+                      <Box ml="3">
+                        <Text fontWeight="bold" color={fontColor}>
+                          {tokenData[0]?.name}
+                        </Text>
+                        <Text fontSize="sm" color={fontColor}>
+                          {tokenData.length} items detected
+                        </Text>
+                        <Flex align="center">
+                          <Text fontSize="sm" pr={2} color={fontColor}>
+                            Address:
+                          </Text>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="bold"
+                            pr={1}
+                            color={fontColor}
+                          >
+                            {tokenAddressDisplay}
+                          </Text>
+                          <IconButton
+                            aria-label="View on universal page"
+                            icon={<FaExternalLinkAlt color={fontColor} />}
+                            color={fontColor}
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              window.open(
+                                `${networkConfig.marketplaceCollectionsURL}/${tokenData[0]?.address}`,
+                                '_blank'
+                              )
+                            }
+                          />
+                        </Flex>
+                      </Box>
+                    </Flex>
+                  </ModalHeader>
+                  <ModalCloseButton />
+                  <ModalBody>
+                    <SimpleGrid columns={{ sm: 2, md: 3 }}>
+                      {tokenData.map(token => (
+                        <LSP8Panel
+                          tokenData={token}
+                          vaultAddress={vaultAddress}
+                          vaultOwner={vaultOwner}
+                          onReviveSuccess={onReviveSuccess}
+                        />
+                      ))}
+                    </SimpleGrid>
+                  </ModalBody>
+                  <ModalFooter>
+                    <Button mr={3} onClick={onClose}>
+                      Close
+                    </Button>
+                  </ModalFooter>
+                </ModalContent>
+              </Modal>
+            </>
           )}
         </Flex>
       </Flex>
@@ -264,4 +311,4 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   );
 };
 
-export default LSP7Panel;
+export default LSP8Group;
