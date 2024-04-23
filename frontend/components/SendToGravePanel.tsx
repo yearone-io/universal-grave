@@ -41,13 +41,13 @@ export default function ManageAllowList() {
   ) as LSP1GraveForwarder;
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
   // const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
   //   useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
   const [rawTokenAmount, setRawTokenAmount] = useState<number>(0);
-  const [roundedTokenAmount, setRoundedTokenAmount] = useState<string>('0');
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(tokenAddress);
 
@@ -55,23 +55,19 @@ export default function ManageAllowList() {
     setTokenAddress(event.target.value.toLowerCase());
   };
 
-  // Effect for debouncing tokenAddress update
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedTokenAddress(tokenAddress);
-    }, 500); // 500ms debounce delay
+    }, 500);
 
     return () => {
       clearTimeout(handler);
     };
   }, [tokenAddress]);
 
-  // Call fetchTokenAllowListStatus using debouncedTokenAddress
   useEffect(() => {
     setTokenCheckMessage('');
-    // Ensure there's a value to check and avoid fetching on initial render
     if (debouncedTokenAddress) {
-      // fetchTokenAllowListStatus();
       fetchTokenData();
     }
   }, [debouncedTokenAddress]);
@@ -80,22 +76,37 @@ export default function ManageAllowList() {
     if (!tokenAddress) {
       return;
     }
-    setIsSubmitting(true);
+    setCanSubmit(false);
     setIsCheckingStatus(true);
     setRawTokenAmount(0);
-    setRoundedTokenAmount('0');
 
-    try {
+    let assetData;
+   try {
     const wallet = await signer.getAddress();
-    const assetData = await getLSPAssetBasicInfo(
+    assetData = await getLSPAssetBasicInfo(
       provider,
       tokenAddress,
       wallet
     );
+  } catch (error: any) {
+    setTokenCheckMessage('Error fetching token data');
+    console.error(error);
+    toast({
+      title: `Error fetching token data. ${error.message}`,
+      status: 'error',
+      position: 'bottom-left',
+      duration: 9000,
+      isClosable: true,
+    });
+    setIsCheckingStatus(false);
+    setCanSubmit(true);
+    return;
+  } 
+
     if (!assetData.balance || !assetData?.decimals) {
       setTokenCheckMessage('No balance for this Token');
       setIsCheckingStatus(false);
-      setIsSubmitting(false);
+      setCanSubmit(false);
       return;
     }
     
@@ -113,52 +124,10 @@ export default function ManageAllowList() {
     );
 
     setRawTokenAmount(Number(assetData?.balance));
-    setRoundedTokenAmount(roundedTokenAmount);
     setTokenCheckMessage(`Token balance: ${assetData?.symbol} ${roundedTokenAmount}`)
 
-    } catch (error: any) {
-      setTokenCheckMessage('Error fetching token data');
-      console.error(error);
-      toast({
-        title: `Error fetching token data. ${error.message}`,
-        status: 'error',
-        position: 'bottom-left',
-        duration: 9000,
-        isClosable: true,
-      });
-    } finally {
-      setIsCheckingStatus(false);
-      setIsSubmitting(false); // todo?
-    }
-  };
-
-  // todo fetch balance of tokenAddress
-  const fetchTokenAllowListStatus = async () => {
-    if (!tokenAddress) {
-      return;
-    }
-    setIsSubmitting(true);
-    setIsCheckingStatus(true);
-    graveForwarder
-      .connect(signer)
-      .tokenAllowlist(await signer.getAddress(), tokenAddress.toLowerCase())
-      .then(value => {
-        // const message = value
-        //   ? messageState.tokenAllowListDetected
-          // : messageState.tokenDisallowedDetected;
-        setTokenCheckMessage(message);
-      })
-      .catch(reason => {
-        if (reason.message && reason.message.includes('invalid address')) {
-          setTokenCheckMessage(messageState.invalidAddress);
-        } else {
-          setTokenCheckMessage(messageState.makeSureValidAddress);
-        }
-      })
-      .finally(() => {
-        setIsCheckingStatus(false);
-        setIsSubmitting(false);
-      });
+    setIsCheckingStatus(false);
+    setCanSubmit(true);
   };
 
   const transferTokenFromUP = async (tokenAddress: string) => {
@@ -235,40 +204,14 @@ export default function ManageAllowList() {
   };
 
   const FieldMessage = () => {
-    // todo add messaage of type and balance
-    // todo add message for no balance
-
     // Conditional rendering based on the state flags
     if (isCheckingStatus) {
       return messageState.isCheckingStatus;
     }
-
-    // if (isRemovingFromAllowList) {
-    //   return messageState.isRemovingFromAllowList;
-    // }
-    // When there is a token check message, show it with the CheckCircleIcon
     if (tokenCheckMessage) {
-      let icon = <></>;
-      // if (
-      //   tokenCheckMessage === messageState.tokenAllowListDetected ||
-      //   tokenCheckMessage === messageState.tokenDisallowedDetected
-      // ) {
-      //   icon = (
-      //     <span
-      //       style={{
-      //         display: 'inline-flex',
-      //         alignItems: 'center',
-      //         position: 'relative',
-      //         top: '1px',
-      //       }}
-      //     >
-      //       <BiSolidCheckCircle />
-      //     </span>
-      //   );
-      // }
       return (
         <>
-          {tokenCheckMessage + ' '} {icon}
+          {tokenCheckMessage }
         </>
       );
     }
@@ -337,7 +280,7 @@ export default function ManageAllowList() {
         <Button
           h={'33px'}
           mr="10px"
-          isDisabled={isSubmitting}
+          isDisabled={!canSubmit}
           isLoading={null}
           onClick={transferTokenFromUP}
           type="submit"
