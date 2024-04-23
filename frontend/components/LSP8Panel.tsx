@@ -133,13 +133,12 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   };
 
   return (
-    <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
+    <Flex w={['s']} flexDirection={'column'} padding={2} gap={2}>
       {tokenData?.image && (
         <Flex justifyContent={'center'}>
           <Image
             src={tokenData?.image}
             alt={tokenData?.name}
-            width="250px"
             border={'1px solid ' + containerBorderColor}
           />
         </Flex>

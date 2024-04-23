@@ -67,6 +67,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   const interestsBgColor = useColorModeValue('light.white', 'dark.white');
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
+  const closeButtonColor = useColorModeValue('light.black', 'dark.purple.500');
 
   const tokenAddressDisplay = formatAddress(tokenData[0].address);
   const toast = useToast();
@@ -237,7 +238,11 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
             <>
               <Button onClick={onOpen}>View all</Button>
 
-              <Modal isOpen={isOpen} onClose={onClose} size={'4xl'}>
+              <Modal
+                isOpen={isOpen}
+                onClose={onClose}
+                size={{ sm: '2xl', lg: '4xl' }}
+              >
                 <ModalOverlay
                   bg="none"
                   backdropFilter="auto"
@@ -283,9 +288,9 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                       </Box>
                     </Flex>
                   </ModalHeader>
-                  <ModalCloseButton />
+                  <ModalCloseButton color={closeButtonColor} />
                   <ModalBody>
-                    <SimpleGrid columns={{ sm: 2, md: 3 }}>
+                    <SimpleGrid columns={[1, 1, 2, 2, 3, 3]} spacing={'m'}>
                       {tokenData.map(token => (
                         <LSP8Panel
                           tokenData={token}
@@ -297,9 +302,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                     </SimpleGrid>
                   </ModalBody>
                   <ModalFooter>
-                    <Button mr={3} onClick={onClose}>
-                      Close
-                    </Button>
+                    <Button onClick={onClose}>Close</Button>
                   </ModalFooter>
                 </ModalContent>
               </Modal>
