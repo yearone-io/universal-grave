@@ -140,6 +140,7 @@ export default function ManageAllowList() {
       await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
     ) {
       console.log('Removing token from allowlist');
+      setTokenCheckMessage('Removing from allowlist...')
       await LSP1GraveForwarderContract.removeTokenFromAllowlist(
         tokenAddress,
         {
@@ -155,8 +156,9 @@ export default function ManageAllowList() {
     // }
     setIsSubmitting(true);
     try {
-
-      removeTokenFromAllowList();
+      
+      await removeTokenFromAllowList();
+      setTokenCheckMessage('Sending token to Grave...');
 
       // const tokenContract = new ethers.Contract(
       //   tokenAddress,
