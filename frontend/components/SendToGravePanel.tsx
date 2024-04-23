@@ -99,7 +99,7 @@ export default function ManageAllowList() {
       isClosable: true,
     });
     setIsCheckingStatus(false);
-    setCanSubmit(true);
+    setCanSubmit(false);
     return;
   } 
 
@@ -209,13 +209,9 @@ export default function ManageAllowList() {
       return messageState.isCheckingStatus;
     }
     if (tokenCheckMessage) {
-      return (
-        <>
-          {tokenCheckMessage }
-        </>
-      );
+      return tokenCheckMessage;
     }
-    return null; // Return null if there's no specific message to display
+    return null;
   };
 
   return (
