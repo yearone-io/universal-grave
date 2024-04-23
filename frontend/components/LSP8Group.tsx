@@ -5,6 +5,7 @@ import {
   Button,
   Flex,
   IconButton,
+  Image,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -69,7 +70,8 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
   const closeButtonColor = useColorModeValue('light.black', 'dark.purple.500');
 
-  const tokenAddressDisplay = formatAddress(tokenData[0].address);
+  const collectionTokenData = tokenData[0];
+  const tokenAddressDisplay = formatAddress(collectionTokenData.address);
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
@@ -108,7 +110,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       const lsp8Tx = lsp8.interface.encodeFunctionData('transfer', [
         vaultAddress,
         await signer.getAddress(),
-        tokenData[0].tokenId,
+        collectionTokenData.tokenId,
         false,
         '0x',
       ]);
@@ -124,7 +126,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
       setIsProcessing(false);
-      onReviveSuccess(tokenAddress, tokenData[0].tokenId as string);
+      onReviveSuccess(tokenAddress, collectionTokenData.tokenId as string);
       toast({
         title: `it's alive! ⚡`,
         status: 'success',
@@ -146,13 +148,18 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   };
 
   const getTokenIcon = () => {
-    const iconURL = getTokenIconURL(tokenData[0].metadata?.LSP4Metadata);
+    const iconURL = getTokenIconURL(collectionTokenData.metadata?.LSP4Metadata);
     let tokenIcon = !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
         LSP8
       </Box>
     ) : (
-      <Avatar height={16} minW={16} name={tokenData[0]?.name} src={iconURL} />
+      <Avatar
+        height={16}
+        minW={16}
+        name={collectionTokenData?.name}
+        src={iconURL}
+      />
     );
     return tokenIcon;
   };
@@ -185,9 +192,18 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       </Flex>
 
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
+        {tokenData.length === 1 && collectionTokenData?.image && (
+          <Flex justifyContent={'center'}>
+            <Image
+              src={collectionTokenData?.image}
+              alt={collectionTokenData?.name}
+              border={'1px solid ' + containerBorderColor}
+            />
+          </Flex>
+        )}
         <Flex flexDirection={'row'} justifyContent={'space-between'}>
           <Text color={fontColor} fontFamily={'Bungee'}>
-            {tokenData[0]?.name}
+            {collectionTokenData?.name}
           </Text>
         </Flex>
         {tokenData.length > 1 && (
@@ -215,7 +231,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.marketplaceCollectionsURL}/${tokenData[0]?.address}`,
+                  `${networkConfig.marketplaceCollectionsURL}/${collectionTokenData?.address}`,
                   '_blank'
                 )
               }
@@ -229,7 +245,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               _hover={{ bg: createButtonBg }}
               border={createButtonBorder}
               size={'xs'}
-              onClick={() => transferTokenToUP(tokenData[0]?.address)}
+              onClick={() => transferTokenToUP(collectionTokenData?.address)}
             >
               {isProcessing ? 'Reviving...' : `Mark safe & revive`}
             </Button>
@@ -254,7 +270,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                       {getTokenIcon()}
                       <Box ml="3">
                         <Text fontWeight="bold" color={fontColor}>
-                          {tokenData[0]?.name}
+                          {collectionTokenData?.name}
                         </Text>
                         <Text fontSize="sm" color={fontColor}>
                           {tokenData.length} items detected
@@ -279,7 +295,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                             variant="ghost"
                             onClick={() =>
                               window.open(
-                                `${networkConfig.marketplaceCollectionsURL}/${tokenData[0]?.address}`,
+                                `${networkConfig.marketplaceCollectionsURL}/${collectionTokenData?.address}`,
                                 '_blank'
                               )
                             }
