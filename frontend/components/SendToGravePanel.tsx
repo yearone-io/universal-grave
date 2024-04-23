@@ -13,7 +13,6 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import { BigNumber, ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
 
@@ -23,12 +22,14 @@ export default function ManageAllowList() {
     walletContext;
   const toast = useToast();
   const signer = provider.getSigner();
-
+  const [showGhosts, setShowGhosts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
-  const [rawTokenAmount, setRawTokenAmount] = useState<BigNumber>(BigNumber.from(0));
+  const [rawTokenAmount, setRawTokenAmount] = useState<BigNumber>(
+    BigNumber.from(0)
+  );
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(tokenAddress);
 
@@ -87,7 +88,7 @@ export default function ManageAllowList() {
       return;
     }
 
-    if ( Number(assetData.balance) === 0) {
+    if (Number(assetData.balance) === 0) {
       setTokenCheckMessage(`Insufficient balance for ${assetData.symbol}`);
       setCanSubmit(false);
       return;
@@ -143,7 +144,7 @@ export default function ManageAllowList() {
       false,
       '0x'
     );
-    await tx.wait()
+    await tx.wait();
   };
 
   const transferTokenFromUP = async () => {
@@ -159,6 +160,8 @@ export default function ManageAllowList() {
       setIsSubmitting(false);
       setTokenAddress('');
       setTokenCheckMessage('');
+      setShowGhosts(true);
+      setTimeout(() => setShowGhosts(false), 4000);
       toast({
         title: `Gone but not forgotten! See you in the afterlife.`,
         status: 'success',
@@ -187,6 +190,21 @@ export default function ManageAllowList() {
     return null;
   };
 
+  const renderGhosts = () => {
+    return Array.from({ length: 10 }).map((_, index) => (
+      <div
+        key={index}
+        className="ghost"
+        style={{
+          left: `${Math.random() * window.innerWidth}px`,
+          top: `${Math.random() * window.innerHeight}px`,
+        }}
+      >
+        👻
+      </div>
+    ));
+  };
+
   return (
     <>
       <Text
@@ -206,43 +224,38 @@ export default function ManageAllowList() {
       >
         BLA BLA BLA
       </Text>
-      <FormControl textAlign="start" > 
+      <FormControl textAlign="start">
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
           ASSET ADDRESS
         </FormLabel>
         <Box display="flex">
-          <Flex flexDir='column'>
-          <Input
-            autoComplete="off"
-            maxWidth="314px"
-            minWidth="200px"
-            height="25px"
-            fontFamily={'Bungee'}
-            backgroundColor="white"
-            borderColor={'var(--chakra-colors-dark-purple-500)'}
-            _hover={{
-              borderColor: 'var(--chakra-colors-dark-purple-500)',
-            }}
-            _focus={{
-              borderColor: 'var(--chakra-colors-dark-purple-500)',
-              boxShadow: 'none',
-            }}
-            value={tokenAddress}
-            onChange={handleChange}
-            placeholder="PASTE ASSET ADDRESS"
-            _placeholder={{
-              fontWeight: 'bold',
-              color: 'var(--chakra-colors-dark-purple-200)',
-            }}
-          />
-          <Text
-            ml={2}
-            fontFamily="Bungee"
-            fontWeight={400}
-            fontSize={'14px'}
-          >
-            {FieldMessage()}
-          </Text>
+          <Flex flexDir="column">
+            <Input
+              autoComplete="off"
+              maxWidth="314px"
+              minWidth="200px"
+              height="25px"
+              fontFamily={'Bungee'}
+              backgroundColor="white"
+              borderColor={'var(--chakra-colors-dark-purple-500)'}
+              _hover={{
+                borderColor: 'var(--chakra-colors-dark-purple-500)',
+              }}
+              _focus={{
+                borderColor: 'var(--chakra-colors-dark-purple-500)',
+                boxShadow: 'none',
+              }}
+              value={tokenAddress}
+              onChange={handleChange}
+              placeholder="PASTE ASSET ADDRESS"
+              _placeholder={{
+                fontWeight: 'bold',
+                color: 'var(--chakra-colors-dark-purple-200)',
+              }}
+            />
+            <Text ml={2} fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
+              {FieldMessage()}
+            </Text>
           </Flex>
         </Box>
       </FormControl>
@@ -259,6 +272,7 @@ export default function ManageAllowList() {
           POOF!
         </Button>
       </Flex>
+      {showGhosts && renderGhosts()}
     </>
   );
 }
