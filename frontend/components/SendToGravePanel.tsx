@@ -85,7 +85,6 @@ export default function ManageAllowList() {
     setRawTokenAmount(0);
     setRoundedTokenAmount('0');
 
-    // todo test token that I dont own
     try {
     const wallet = await signer.getAddress();
     const assetData = await getLSPAssetBasicInfo(
@@ -93,18 +92,21 @@ export default function ManageAllowList() {
       tokenAddress,
       wallet
     );
-
+    if (!assetData.balance || !assetData?.decimals) {
+      setTokenCheckMessage('No balance for this Token');
+      setIsCheckingStatus(false);
+      setIsSubmitting(false);
+      return;
+    }
+    
     const tokenType = assetData?.tokenType;
-    const readableTokenAmount =
-      assetData?.balance !== undefined && assetData?.decimals !== undefined
-        ? parseFloat(
+    const readableTokenAmount =  parseFloat(
             ethers.utils.formatUnits(assetData?.balance, assetData?.decimals)
           ).toFixed(
             tokenType === LSP4_TOKEN_TYPES.TOKEN
               ? Number(assetData?.decimals)
               : 0
-          )
-        : '0';
+          );
 
     const roundedTokenAmount = parseFloat(readableTokenAmount).toFixed(
       getEnoughDecimals(Number(readableTokenAmount))
@@ -126,7 +128,7 @@ export default function ManageAllowList() {
       });
     } finally {
       setIsCheckingStatus(false);
-      setIsSubmitting(false);
+      setIsSubmitting(false); // todo?
     }
   };
 
