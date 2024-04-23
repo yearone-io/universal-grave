@@ -43,8 +43,6 @@ export default function ManageAllowList() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
-  // const [isRemovingFromAllowList, setIsRemovingFromAllowList] =
-  //   useState<boolean>(false);
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
   const [rawTokenAmount, setRawTokenAmount] = useState<number>(0);
@@ -130,71 +128,74 @@ export default function ManageAllowList() {
     setCanSubmit(true);
   };
 
+  const removeTokenFromAllowList = async () => {
+    const LSP1GraveForwarderContract = new ethers.Contract(
+      networkConfig.universalGraveForwarder,
+      LSP1GraveForwarderAbi.abi,
+      signer
+    );
+
+    const upAddress = await signer.getAddress();
+    if (
+      await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
+    ) {
+      console.log('Removing token from allowlist');
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(
+        tokenAddress,
+        {
+          gasLimit: 400_00,
+        }
+      );
+    }
+  }
+
   const transferTokenFromUP = async (tokenAddress: string) => {
     // if (isProcessing || (await disconnectIfNetworkChanged())) {
     //   return;
     // }
-    // setIsProcessing(true);
+    setIsSubmitting(true);
     try {
-      const signer = provider.getSigner();
 
-      const LSP1GraveForwarderContract = new ethers.Contract(
-        networkConfig.universalGraveForwarder,
-        LSP1GraveForwarder.abi,
-        signer
-      );
+      removeTokenFromAllowList();
 
-      const upAddress = await signer.getAddress();
-      if (
-        await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
-      ) {
-        await LSP1GraveForwarderContract.removeTokenFromAllowlist(
-          tokenAddress,
-          {
-            gasLimit: 400_00,
-          }
-        );
-      }
+      // const tokenContract = new ethers.Contract(
+      //   tokenAddress,
+      //   LSP7DigitalAsset.abi,
+      //   signer
+      // );
+      // const lsp7 = tokenContract.connect(signer);
 
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        LSP7DigitalAsset.abi,
-        signer
-      );
-      const lsp7 = tokenContract.connect(signer);
+      // const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+      //   await signer.getAddress(),
+      //   vaultAddress,
+      //   rawTokenAmount,
+      //   false,
+      //   '0x',
+      // ]);
 
-      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
-        await signer.getAddress(),
-        vaultAddress,
-        rawTokenAmount,
-        false,
-        '0x',
-      ]);
+      // const vaultContract = new ethers.Contract(
+      //   vaultAddress,
+      //   LSP9Vault.abi,
+      //   signer
+      // );
+      // const lsp9 = vaultContract.connect(signer);
+      // await lsp9
+      //   .connect(signer)
+      //   .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
 
-      const vaultContract = new ethers.Contract(
-        vaultAddress,
-        LSP9Vault.abi,
-        signer
-      );
-      const lsp9 = vaultContract.connect(signer);
-      await lsp9
-        .connect(signer)
-        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
-
-      // setIsProcessing(false);
-      // onReviveSuccess(tokenAddress);
-      toast({
-        title: `Gone but not forgotten! See you in the afterlife.`,
-        status: 'success',
-        position: 'bottom-left',
-        duration: 9000,
-        isClosable: true,
-      });
+      // setIsSubmitting(false);
+      // toast({
+      //   title: `Gone but not forgotten! See you in the afterlife.`,
+      //   status: 'success',
+      //   position: 'bottom-left',
+      //   duration: 9000,
+      //   isClosable: true,
+      // });
     } catch (error: any) {
-      // setIsProcessing(false);
+      setIsSubmitting(false);
       console.error(error);
       toast({
-        title: `Error fetching UP data. ${error.message}`,
+        title: `Error sending token to Grave. ${error.message}`,
         status: 'error',
         position: 'bottom-left',
         duration: 9000,
@@ -278,7 +279,7 @@ export default function ManageAllowList() {
           mr="10px"
           isDisabled={!canSubmit}
           isLoading={null}
-          onClick={transferTokenFromUP}
+          onClick={()=>{transferTokenFromUP(tokenAddress)}}
           type="submit"
         >
           POOF!
