@@ -30,15 +30,9 @@ const messageState = {
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
-  const { networkConfig, provider, disconnectIfNetworkChanged } = walletContext;
+  const { networkConfig, provider, disconnectIfNetworkChanged, graveVault} = walletContext;
   const toast = useToast();
   const signer = provider.getSigner();
-
-  const graveForwarder = new ethers.Contract(
-    networkConfig.universalGraveForwarder,
-    LSP1GraveForwarderAbi.abi,
-    provider
-  ) as LSP1GraveForwarder;
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
@@ -160,41 +154,43 @@ export default function ManageAllowList() {
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
 
-      // const tokenContract = new ethers.Contract(
-      //   tokenAddress,
-      //   LSP7DigitalAsset.abi,
-      //   signer
-      // );
-      // const lsp7 = tokenContract.connect(signer);
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        LSP7DigitalAsset.abi,
+        signer
+      );
+      const lsp7 = tokenContract.connect(signer);
 
-      // const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
-      //   await signer.getAddress(),
-      //   vaultAddress,
-      //   rawTokenAmount,
-      //   false,
-      //   '0x',
-      // ]);
+      const lsp7Tx = lsp7.interface.encodeFunctionData('transfer', [
+        await signer.getAddress(),
+        graveVault,
+        rawTokenAmount,
+        false,
+        '0x',
+      ]);
 
-      // const vaultContract = new ethers.Contract(
-      //   vaultAddress,
-      //   LSP9Vault.abi,
-      //   signer
-      // );
-      // const lsp9 = vaultContract.connect(signer);
-      // await lsp9
-      //   .connect(signer)
-      //   .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
+      const vaultContract = new ethers.Contract(
+        graveVault as string,
+        LSP9Vault.abi,
+        signer
+      );
+      const lsp9 = vaultContract.connect(signer);
+      await lsp9
+        .connect(signer)
+        .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
 
-      // setIsSubmitting(false);
-      // toast({
-      //   title: `Gone but not forgotten! See you in the afterlife.`,
-      //   status: 'success',
-      //   position: 'bottom-left',
-      //   duration: 9000,
-      //   isClosable: true,
-      // });
+      setIsSubmitting(false);
+      setTokenCheckMessage('');
+      toast({
+        title: `Gone but not forgotten! See you in the afterlife.`,
+        status: 'success',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
     } catch (error: any) {
       setIsSubmitting(false);
+      setTokenCheckMessage('');
       console.error(error);
       toast({
         title: `Error sending token to Grave. ${error.message}`,
@@ -280,7 +276,7 @@ export default function ManageAllowList() {
           h={'33px'}
           mr="10px"
           isDisabled={!canSubmit}
-          isLoading={null}
+          isLoading={isSubmitting}
           onClick={()=>{transferTokenFromUP(tokenAddress)}}
           type="submit"
         >
