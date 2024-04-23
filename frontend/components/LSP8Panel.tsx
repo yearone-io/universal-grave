@@ -157,7 +157,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             _hover={{ bg: createButtonBg }}
             border={createButtonBorder}
             size={'xs'}
-            onClick={() => transferTokenToUP(tokenData)}
+            onClick={() => transferTokenToUP(tokenData.address)}
           >
             {isProcessing ? 'Reviving...' : `Revive`}
           </Button>

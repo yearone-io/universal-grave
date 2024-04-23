@@ -123,7 +123,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
       setIsProcessing(false);
-      onReviveSuccess(tokenData[0].tokenId as string);
+      onReviveSuccess(tokenAddress, tokenData[0].tokenId as string);
       toast({
         title: `it's alive! ⚡`,
         status: 'success',
