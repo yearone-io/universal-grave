@@ -36,12 +36,11 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [inProcessingText, setInProcessingText] = useState('');
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
   );
-  const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
 
   const createButtonBg = useColorModeValue('light.green.brand', 'dark.white');
   const createButtonColor = useColorModeValue(
@@ -52,7 +51,6 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     '1px solid black',
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
-  const interestsBgColor = useColorModeValue('light.white', 'dark.white');
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
@@ -60,11 +58,11 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (isProcessing || (await disconnectIfNetworkChanged())) {
+    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
       return;
     }
 
-    setIsProcessing(true);
+    setInProcessingText('Marking safe...');
     try {
       const signer = provider.getSigner();
 
@@ -85,6 +83,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
           gasLimit: 400_00,
         });
       }
+      setInProcessingText('Reviving...');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -110,36 +109,43 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      setIsProcessing(false);
       onReviveSuccess(tokenAddress, tokenData.tokenId as string);
       toast({
-        title: `it's alive! ⚡`,
+        title: `It's alive! 😇 ⚡`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
         isClosable: true,
       });
     } catch (error: any) {
-      setIsProcessing(false);
       console.error(error);
       toast({
-        title: `Error fetching UP data. ${error.message}`,
+        title: `Error: ${error.message}`,
         status: 'error',
         position: 'bottom-left',
         duration: 9000,
         isClosable: true,
       });
+    } finally {
+      setInProcessingText('');
     }
   };
 
   return (
-    <Flex w={['s']} flexDirection={'column'} padding={2} gap={2}>
+    <Flex
+      w={['s']}
+      border={'1px solid ' + containerBorderColor}
+      flexDirection={'column'}
+      gap={2}
+      borderBottomRadius={'md'}
+    >
       {tokenData?.image && (
         <Flex justifyContent={'center'}>
           <Image
             src={tokenData?.image}
             alt={tokenData?.name}
             border={'1px solid ' + containerBorderColor}
+            minW={'250px'}
           />
         </Flex>
       )}
@@ -147,32 +153,18 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         flexDirection={'row'}
         justifyContent={'space-between'}
         alignItems={'center'}
+        padding={2}
       >
-        {vaultOwner === connectedUPAddress && (
-          <Button
-            px={3}
-            color={createButtonColor}
-            bg={createButtonBg}
-            _hover={{ bg: createButtonBg }}
-            border={createButtonBorder}
-            size={'xs'}
-            onClick={() => transferTokenToUP(tokenData.address)}
-          >
-            {isProcessing ? 'Reviving...' : `Revive`}
-          </Button>
-        )}
         <Flex align="center">
-          <Text fontSize="sm" pr={2} color={fontColor}>
-            Id:
-          </Text>
-          <Text fontSize="sm" fontWeight="bold" pr={1} color={fontColor}>
-            {tokenAddressDisplay}
+          <Text fontSize="sm" fontWeight="bold" color={fontColor}>
+            {`Id: ${tokenAddressDisplay}`}
           </Text>
           <IconButton
             aria-label="View on universal page"
             icon={<FaExternalLinkAlt color={fontColor} />}
             color={fontColor}
             size="sm"
+            px={0}
             variant="ghost"
             onClick={() =>
               window.open(
@@ -184,6 +176,19 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             }
           />
         </Flex>
+        {vaultOwner === connectedUPAddress && (
+          <Button
+            px={3}
+            color={createButtonColor}
+            bg={createButtonBg}
+            _hover={{ bg: createButtonBg }}
+            border={createButtonBorder}
+            size={'xs'}
+            onClick={() => transferTokenToUP(tokenData.address)}
+          >
+            {!!inProcessingText ? inProcessingText : `Revive`}
+          </Button>
+        )}
       </Flex>
     </Flex>
   );

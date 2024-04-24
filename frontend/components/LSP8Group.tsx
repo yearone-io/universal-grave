@@ -48,7 +48,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [inProcessingText, setInProcessingText] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -75,11 +75,11 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (isProcessing || (await disconnectIfNetworkChanged())) {
+    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
       return;
     }
 
-    setIsProcessing(true);
+    setInProcessingText('Marking safe...');
     try {
       const signer = provider.getSigner();
 
@@ -100,6 +100,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
           gasLimit: 400_00,
         });
       }
+      setInProcessingText('Reviving...');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -125,25 +126,25 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      setIsProcessing(false);
       onReviveSuccess(tokenAddress, collectionTokenData.tokenId as string);
       toast({
-        title: `it's alive! ⚡`,
+        title: `It's alive! 😇 ⚡`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
         isClosable: true,
       });
     } catch (error: any) {
-      setIsProcessing(false);
       console.error(error);
       toast({
-        title: `Error fetching UP data. ${error.message}`,
+        title: `Error: ${error.message}`,
         status: 'error',
         position: 'bottom-left',
         duration: 9000,
         isClosable: true,
       });
+    } finally {
+      setInProcessingText('');
     }
   };
 
@@ -228,6 +229,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               icon={<FaExternalLinkAlt color={fontColor} />}
               color={fontColor}
               size="sm"
+              height={'14px'}
               variant="ghost"
               onClick={() =>
                 window.open(
@@ -247,84 +249,104 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               size={'xs'}
               onClick={() => transferTokenToUP(collectionTokenData?.address)}
             >
-              {isProcessing ? 'Reviving...' : `Mark safe & revive`}
+              {!!inProcessingText ? 'Reviving...' : `Mark safe & revive`}
             </Button>
           )}
-          {tokenData.length > 1 && (
-            <>
-              <Button onClick={onOpen}>View all</Button>
-
-              <Modal
-                isOpen={isOpen}
-                onClose={onClose}
-                size={{ sm: '2xl', lg: '4xl' }}
-              >
-                <ModalOverlay
-                  bg="none"
-                  backdropFilter="auto"
-                  backdropBlur="2px"
-                />
-                <ModalContent background={panelBgColor}>
-                  <ModalHeader>
-                    <Flex>
-                      {getTokenIcon()}
-                      <Box ml="3">
-                        <Text fontWeight="bold" color={fontColor}>
-                          {collectionTokenData?.name}
-                        </Text>
-                        <Text fontSize="sm" color={fontColor}>
-                          {tokenData.length} items detected
-                        </Text>
-                        <Flex align="center">
-                          <Text fontSize="sm" pr={2} color={fontColor}>
-                            Address:
-                          </Text>
-                          <Text
-                            fontSize="sm"
-                            fontWeight="bold"
-                            pr={1}
-                            color={fontColor}
-                          >
-                            {tokenAddressDisplay}
-                          </Text>
-                          <IconButton
-                            aria-label="View on universal page"
-                            icon={<FaExternalLinkAlt color={fontColor} />}
-                            color={fontColor}
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              window.open(
-                                `${networkConfig.marketplaceCollectionsURL}/${collectionTokenData?.address}`,
-                                '_blank'
-                              )
-                            }
-                          />
-                        </Flex>
-                      </Box>
-                    </Flex>
-                  </ModalHeader>
-                  <ModalCloseButton color={closeButtonColor} />
-                  <ModalBody>
-                    <SimpleGrid columns={[1, 1, 2, 2, 3, 3]} spacing={'m'}>
-                      {tokenData.map(token => (
-                        <LSP8Panel
-                          tokenData={token}
-                          vaultAddress={vaultAddress}
-                          vaultOwner={vaultOwner}
-                          onReviveSuccess={onReviveSuccess}
-                        />
-                      ))}
-                    </SimpleGrid>
-                  </ModalBody>
-                  <ModalFooter>
-                    <Button onClick={onClose}>Close</Button>
-                  </ModalFooter>
-                </ModalContent>
-              </Modal>
-            </>
-          )}
         </Flex>
+        {tokenData.length > 1 && (
+          <Flex
+            w={'100%'}
+            alignItems={'center'}
+            justifyContent={'flex-end'}
+            gap={2}
+          >
+            <Button
+              px={3}
+              color={createButtonColor}
+              bg={createButtonBg}
+              _hover={{ bg: createButtonBg }}
+              border={createButtonBorder}
+              size={'xs'}
+              onClick={onOpen}
+            >
+              View all
+            </Button>
+            <Modal
+              isOpen={isOpen}
+              onClose={onClose}
+              size={{ sm: '2xl', lg: '4xl' }}
+            >
+              <ModalOverlay
+                bg="none"
+                backdropFilter="auto"
+                backdropBlur="2px"
+              />
+              <ModalContent background={panelBgColor}>
+                <ModalHeader>
+                  <Flex>
+                    {getTokenIcon()}
+                    <Box ml="3">
+                      <Text fontWeight="bold" color={fontColor}>
+                        {collectionTokenData?.name}
+                      </Text>
+                      <Text fontSize="sm" color={fontColor}>
+                        {tokenData.length} items detected
+                      </Text>
+                      <Flex align="center">
+                        <Text fontSize="sm" pr={2} color={fontColor}>
+                          Address:
+                        </Text>
+                        <Text
+                          fontSize="sm"
+                          fontWeight="bold"
+                          pr={1}
+                          color={fontColor}
+                        >
+                          {tokenAddressDisplay}
+                        </Text>
+                        <IconButton
+                          aria-label="View on universal page"
+                          icon={<FaExternalLinkAlt color={fontColor} />}
+                          color={fontColor}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            window.open(
+                              `${networkConfig.marketplaceCollectionsURL}/${collectionTokenData?.address}`,
+                              '_blank'
+                            )
+                          }
+                        />
+                      </Flex>
+                    </Box>
+                  </Flex>
+                </ModalHeader>
+                <ModalCloseButton color={closeButtonColor} />
+                <ModalBody>
+                  <Flex
+                    w={'100%'}
+                    alignItems={'center'}
+                    justifyContent={'center'}
+                    flexWrap={'wrap'}
+                    gap={7}
+                  >
+                    {tokenData.map(token => (
+                      <LSP8Panel
+                        tokenData={token}
+                        vaultAddress={vaultAddress}
+                        vaultOwner={vaultOwner}
+                        onReviveSuccess={onReviveSuccess}
+                      />
+                    ))}
+                  </Flex>
+                </ModalBody>
+                <ModalFooter>
+                  <Button onClick={onClose}>Close</Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+          </Flex>
+        )}
       </Flex>
     </Flex>
   );
