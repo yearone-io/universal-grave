@@ -241,29 +241,33 @@ export async function processLSP8Asset(
   const nfts: TokenData[] = [];
   for (const tokenId of tokenIds) {
     if (asset.tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
-      const tokenMetadata = await contract.getDataForTokenId(
-        tokenId,
-        ERC725.encodeKeyName('LSP4Metadata')
-      );
-      const decodedMetadata = ERC725.decodeData(
-        [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
-        [
-          {
-            name: 'LSP4Metadata',
-            key: ERC725.encodeKeyName('LSP4Metadata'),
-            keyType: 'Singleton',
-            valueType: 'bytes',
-            valueContent: 'VerifiableURI',
-          },
-        ]
-      );
+      try {
+        const tokenMetadata = await contract.getDataForTokenId(
+          tokenId,
+          ERC725.encodeKeyName('LSP4Metadata')
+        );
+        const decodedMetadata = ERC725.decodeData(
+          [{ value: tokenMetadata, keyName: 'LSP4Metadata' }],
+          [
+            {
+              name: 'LSP4Metadata',
+              key: ERC725.encodeKeyName('LSP4Metadata'),
+              keyType: 'Singleton',
+              valueType: 'bytes',
+              valueContent: 'VerifiableURI',
+            },
+          ]
+        );
 
-      let image;
-      if (decodedMetadata[0]?.value?.url) {
-        const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
-        image = getTokenImageURL(parsedMetadata.LSP4Metadata);
+        let image;
+        if (decodedMetadata[0]?.value?.url) {
+          const parsedMetadata = parseDataURI(decodedMetadata[0].value.url);
+          image = getTokenImageURL(parsedMetadata.LSP4Metadata);
+        }
+        asset.image = image;
+      } catch (e) {
+        console.error('Error fetching metadata', e);
       }
-      asset.image = image;
     }
     nfts.push({ ...asset, tokenId: tokenId.toString() });
   }

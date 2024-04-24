@@ -55,10 +55,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   // Assuming rawTokenAmount is a BigNumber representing the amount in base units
   const rawTokenAmount = tokenData?.balance;
 
-  const reviveText =
-    tokenData.tokenType === LSP4_TOKEN_TYPES.NFT
-      ? 'Revive NFT'
-      : 'Revive Tokens';
+  const reviveText = 'Mark Safe & Revive';
   const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
@@ -66,7 +63,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [inProcessingText, setInProcessingText] = useState('');
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -90,10 +87,10 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (isProcessing || (await disconnectIfNetworkChanged())) {
+    if (inProcessingText || (await disconnectIfNetworkChanged())) {
       return;
     }
-    setIsProcessing(true);
+    setInProcessingText('Marking safe...');
     try {
       const signer = provider.getSigner();
 
@@ -114,6 +111,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
           gasLimit: 400_00,
         });
       }
+      setInProcessingText('Reviving...');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -140,25 +138,25 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp7Tx, { gasLimit: 400_00 });
 
-      setIsProcessing(false);
       onReviveSuccess(tokenAddress);
       toast({
-        title: `it's alive! ⚡`,
+        title: `It's alive! 😇 ⚡`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
         isClosable: true,
       });
     } catch (error: any) {
-      setIsProcessing(false);
       console.error(error);
       toast({
-        title: `Error fetching UP data. ${error.message}`,
+        title: `Error: ${error.message}`,
         status: 'error',
         position: 'bottom-left',
         duration: 9000,
         isClosable: true,
       });
+    } finally {
+      setInProcessingText('');
     }
   };
 
@@ -232,14 +230,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               {tokenAddressDisplay}
             </Text>
             <IconButton
-              aria-label="View on blockchain explorer"
+              aria-label="View on universal page"
               icon={<FaExternalLinkAlt color={fontColor} />}
               color={fontColor}
               size="sm"
               variant="ghost"
               onClick={() =>
                 window.open(
-                  `${networkConfig.explorerURL}/address/${tokenData?.address}`,
+                  `${networkConfig.marketplaceCollectionsURL}/${tokenData?.address}`,
                   '_blank'
                 )
               }
@@ -254,8 +252,9 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               border={createButtonBorder}
               size={'xs'}
               onClick={() => transferTokenToUP(tokenData?.address)}
+              isDisabled={!!inProcessingText}
             >
-              {isProcessing ? 'Reviving...' : reviveText}
+              {!!inProcessingText ? inProcessingText : reviveText}
             </Button>
           )}
         </Flex>

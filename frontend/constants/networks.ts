@@ -4,6 +4,7 @@ export interface Network {
   symbol: string;
   rpcUrl: string;
   explorerURL: string;
+  marketplaceCollectionsURL: string;
   universalGraveForwarder: string;
   previousGraveForwarders: string[];
   lsp1UrdVault: string;
@@ -17,6 +18,7 @@ const NETWORKS = {
     symbol: 'LYX',
     rpcUrl: 'https://lukso.rpc.thirdweb.com',
     explorerURL: 'https://explorer.execution.mainnet.lukso.network',
+    marketplaceCollectionsURL: 'https://universal.page/collections',
     universalGraveForwarder: '0x42562196ee7aac3e8501db777b25ffc976ed8463',
     previousGraveForwarders: ['0x433908ce6457b302a6452257Bc40e466d95c78E9'],
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
@@ -28,6 +30,7 @@ const NETWORKS = {
     symbol: 'LYXt',
     rpcUrl: 'https://lukso-testnet.rpc.thirdweb.com',
     explorerURL: 'https://explorer.execution.testnet.lukso.network',
+    marketplaceCollectionsURL: 'https://universalpage.dev/collections',
     universalGraveForwarder: '0x72e5b0aeaa8456fa43ba94db703f74052b4cdaac',
     previousGraveForwarders: [
       '0x7e77c704be7a6bba042f66eaba0b9557a872902d',
