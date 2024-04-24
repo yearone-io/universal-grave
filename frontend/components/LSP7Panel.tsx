@@ -55,7 +55,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   // Assuming rawTokenAmount is a BigNumber representing the amount in base units
   const rawTokenAmount = tokenData?.balance;
 
-  const reviveText = 'Mark Safe & Revive';
   const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
@@ -254,7 +253,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined}
             >
-              reviveText
+              Mark Safe & Revive
             </Button>
           )}
         </Flex>
