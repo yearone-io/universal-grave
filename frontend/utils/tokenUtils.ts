@@ -272,7 +272,9 @@ export async function processLSP8Asset(
 }
 
 export const getEnoughDecimals = (value: number) => {
-  if (value < 0.01 && value >= 0.0001) {
+  if (value < 1 && value >= 0.01) {
+    return 2;
+  } else if (value < 0.01 && value >= 0.0001) {
     return 4;
   } else if (value < 0.0001 && value >= 0.000001) {
     return 6;
@@ -290,5 +292,5 @@ export const getEnoughDecimals = (value: number) => {
     return 18;
   }
 
-  return 2;
+  return 0;
 };

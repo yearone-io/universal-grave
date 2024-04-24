@@ -17,7 +17,6 @@ import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/L
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
 import { LSP4TokenTypeValues } from '@lukso/lsp-factory.js/build/main/src/lib/interfaces/digital-asset-deployment';
-import ERC725 from '@erc725/erc725.js';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
@@ -163,21 +162,19 @@ export default function ManageAllowList() {
     const wallet = await signer.getAddress()
     const walletNftIds = await tokenContract.tokenIdsOf(wallet);
   
-
     const vaultAddresses: string[] = [];
     const signerAddresses: string[] = [];
     const tokenIds: string[] = [];
     const forceValues: boolean[] = [];
     const dataValues: string[] = [];
 
-    walletNftIds.forEach(id => {
+    walletNftIds.forEach((id: string) => {
       signerAddresses.push(wallet);
-      vaultAddresses.push(graveVault);
+      vaultAddresses.push(graveVault as string);
       tokenIds.push(id);
       forceValues.push(false);
       dataValues.push('0x');
     });
-
 
     const tx = await tokenContract.transferBatch(
       signerAddresses,
@@ -270,7 +267,9 @@ export default function ManageAllowList() {
         fontFamily="Montserrat"
         textAlign="start"
       >
-        BLA BLA BLA
+        You can manually send assets from your UP to your grave. 
+        Whether it is NFT collection or a token, they will be removed from the allowlist and sent to the grave.
+        Click on Poof and let them rest in peace!
       </Text>
       <FormControl textAlign="start">
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
