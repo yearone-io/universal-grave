@@ -1,16 +1,15 @@
 import { ethers } from 'ethers';
 import { SiweMessage } from 'siwe';
 import { getNetworkConfig } from '@/constants/networks';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
 export const getGraveVaultFor = async (
   provider: any,
   account: string,
   universalGraveForwarder: string
 ): Promise<string | null> => {
-  const graveForwarder = new ethers.Contract(
+  const graveForwarder = LSP1GraveForwarder__factory.connect(
     universalGraveForwarder,
-    LSP1GraveForwarder.abi,
     provider
   );
   const graveVaultAddress = await graveForwarder.graveVaults(account);

@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Flex,
+  HStack,
   IconButton,
   Image,
   Modal,
@@ -17,15 +18,16 @@ import {
   useColorModeValue,
   useDisclosure,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8Panel from '@/components/LSP8Panel';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
 interface LSP8PanelProps {
   readonly tokenData: TokenData[];
@@ -82,9 +84,8 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     try {
       const signer = provider.getSigner();
 
-      const LSP1GraveForwarderContract = new ethers.Contract(
+      const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
         networkConfig.universalGraveForwarder,
-        LSP1GraveForwarder.abi,
         signer
       );
 
@@ -146,6 +147,100 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       setInProcessingText('');
     }
   };
+
+  const reviveAll = async (tokenData: TokenData[], markSafe: boolean) => {
+    console.log("foobar", inProcessingText);
+
+    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
+      return;
+    }
+
+    const tokenAddress = tokenData[0].address;
+    setInProcessingText('Marking safe...');
+    try {
+      const signer = provider.getSigner();
+
+      const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
+        networkConfig.universalGraveForwarder,
+        signer
+      );
+
+      let signerAddress = await signer.getAddress();
+      const upAddress = signerAddress;
+      if (
+        markSafe &&
+        !(await LSP1GraveForwarderContract.tokenAllowlist(
+          upAddress,
+          tokenAddress
+        ))
+      ) {
+        await LSP1GraveForwarderContract.addTokenToAllowlist(tokenAddress, {
+          gasLimit: 400_00,
+        });
+      }
+      setInProcessingText('Reviving...');
+
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        LSP8IdentifiableDigitalAsset.abi,
+        signer
+      );
+      const lsp8 = tokenContract.connect(signer);
+
+      const vaultAddresses: string[] = [];
+      const signerAddresses: string[] = [];
+      const tokenIds: string[] = [];
+      const forceValues: boolean[] = [];
+      const dataValues: string[] = [];
+
+      tokenData.forEach(token => {
+        vaultAddresses.push(vaultAddress);
+        signerAddresses.push(signerAddress);
+        tokenIds.push(token.tokenId!);
+        forceValues.push(false);
+        dataValues.push("0x");
+      });
+
+      const lsp8Tx = lsp8.interface.encodeFunctionData('transferBatch', [
+        vaultAddresses,
+        signerAddresses,
+        tokenIds,
+        forceValues,
+        dataValues,
+      ]);
+
+      const vaultContract = new ethers.Contract(
+        vaultAddress,
+        LSP9Vault.abi,
+        signer
+      );
+      const lsp9 = vaultContract.connect(signer);
+      await lsp9
+        .connect(signer)
+        .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
+
+      onReviveSuccess(tokenAddress, collectionTokenData.tokenId as string);
+      toast({
+        title: `They're alive! ⚡`,
+        status: 'success',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        title: `Error reviving collection . ${error.message}`,
+        status: 'error',
+        position: 'bottom-left',
+        duration: 9000,
+        isClosable: true,
+      });
+    } finally {
+      setInProcessingText('');
+    }
+  };
+
 
   const getTokenIcon = () => {
     const iconURL = getTokenIconURL(collectionTokenData.metadata?.LSP4Metadata);
@@ -282,43 +377,63 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               />
               <ModalContent background={panelBgColor}>
                 <ModalHeader>
-                  <Flex>
-                    {getTokenIcon()}
-                    <Box ml="3">
-                      <Text fontWeight="bold" color={fontColor}>
-                        {collectionTokenData?.name}
-                      </Text>
-                      <Text fontSize="sm" color={fontColor}>
-                        {tokenData.length} items detected
-                      </Text>
-                      <Flex align="center">
-                        <Text fontSize="sm" pr={2} color={fontColor}>
-                          Address:
+                  <HStack>
+                    <Flex>
+                      {getTokenIcon()}
+                      <Box ml="3">
+                        <Text fontWeight="bold" color={fontColor}>
+                          {collectionTokenData?.name}
                         </Text>
-                        <Text
-                          fontSize="sm"
-                          fontWeight="bold"
-                          pr={1}
-                          color={fontColor}
-                        >
-                          {tokenAddressDisplay}
+                        <Text fontSize="sm" color={fontColor}>
+                          {tokenData.length} items detected
                         </Text>
-                        <IconButton
-                          aria-label="View on universal page"
-                          icon={<FaExternalLinkAlt color={fontColor} />}
-                          color={fontColor}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            window.open(
-                              `${networkConfig.marketplaceCollectionsURL}/${collectionTokenData?.address}`,
-                              '_blank'
-                            )
-                          }
-                        />
-                      </Flex>
-                    </Box>
-                  </Flex>
+                        <Flex align="center">
+                          <Text fontSize="sm" pr={2} color={fontColor}>
+                            Address:
+                          </Text>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="bold"
+                            pr={1}
+                            color={fontColor}
+                          >
+                            {tokenAddressDisplay}
+                          </Text>
+                          <IconButton
+                            aria-label="View on universal page"
+                            icon={<FaExternalLinkAlt color={fontColor} />}
+                            color={fontColor}
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              window.open(
+                                `${networkConfig.marketplaceCollectionsURL}/${collectionTokenData?.address}`,
+                                '_blank'
+                              )
+                            }
+                          />
+                        </Flex>
+                      </Box>
+                    </Flex>
+                    <VStack alignItems={'left'}>
+                      <Button
+                        size={'xs'}
+                        onClick={() =>
+                          reviveAll(tokenData, true)
+                        }
+                      >
+                        MARK SAFE & REVIVE ALL
+                      </Button>
+                      <Button
+                        size={'xs'}
+                        onClick={() =>
+                          reviveAll(tokenData, false)
+                        }
+                      >
+                        DON'T MARK SAFE & REVIVE ALL
+                      </Button>
+                    </VStack>
+                  </HStack>
                 </ModalHeader>
                 <ModalCloseButton color={closeButtonColor} />
                 <ModalBody>
@@ -331,6 +446,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                   >
                     {tokenData.map(token => (
                       <LSP8Panel
+                        key={token.tokenId}
                         tokenData={token}
                         vaultAddress={vaultAddress}
                         vaultOwner={vaultOwner}

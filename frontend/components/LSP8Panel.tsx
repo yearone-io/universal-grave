@@ -12,9 +12,9 @@ import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
 interface LSP8PanelProps {
   readonly tokenData: TokenData;
@@ -66,9 +66,8 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     try {
       const signer = provider.getSigner();
 
-      const LSP1GraveForwarderContract = new ethers.Contract(
+      const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
         networkConfig.universalGraveForwarder,
-        LSP1GraveForwarder.abi,
         signer
       );
 
