@@ -176,9 +176,7 @@ export default function Landing() {
             }
           />
           <LSPExplainer
-            title={
-              'Allows you to recover assets you approve of to your 🆙'
-            }
+            title={'Allows you to recover assets you approve of to your 🆙'}
             badgeText={<Icon as={BsActivity} color={customColor} boxSize={7} />}
           />
           <LSPExplainer
