@@ -302,6 +302,7 @@ export default function LSPAssets({
                   tokenData={asset}
                   vaultAddress={graveVault!}
                   onReviveSuccess={onReviveUnrecognizedLSP8Success}
+                  isRevivingAll={false}
                 />
               </Box>
             ))}

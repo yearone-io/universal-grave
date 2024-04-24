@@ -50,6 +50,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     disconnectIfNetworkChanged,
   } = walletContext;
   const [inProcessingText, setInProcessingText] = useState<string>();
+  const [isRevivingAll, setIsRevivingAll] = useState<boolean>(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -76,10 +77,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (
-      inProcessingText !== undefined ||
-      (await disconnectIfNetworkChanged())
-    ) {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
 
@@ -151,16 +149,14 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     }
   };
 
-  const reviveAll = async (tokenData: TokenData[], markSafe: boolean) => {
-    if (
-      inProcessingText !== undefined ||
-      (await disconnectIfNetworkChanged())
-    ) {
+  const reviveAll = async (tokenData: TokenData[]) => {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
 
     const tokenAddress = tokenData[0].address;
     setInProcessingText('Marking safe...');
+    setIsRevivingAll(true);
     try {
       const signer = provider.getSigner();
 
@@ -172,7 +168,6 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       let signerAddress = await signer.getAddress();
       const upAddress = signerAddress;
       if (
-        markSafe &&
         !(await LSP1GraveForwarderContract.tokenAllowlist(
           upAddress,
           tokenAddress
@@ -242,6 +237,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       });
     } finally {
       setInProcessingText(undefined);
+      setIsRevivingAll(false);
     }
   };
 
@@ -423,19 +419,11 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                     <VStack alignItems={'left'}>
                       <Button
                         size={'xs'}
-                        onClick={() => reviveAll(tokenData, true)}
+                        onClick={() => reviveAll(tokenData)}
                         loadingText={'Reviving...'}
                         isLoading={inProcessingText !== undefined}
                       >
                         MARK SAFE & REVIVE ALL
-                      </Button>
-                      <Button
-                        size={'xs'}
-                        onClick={() => reviveAll(tokenData, false)}
-                        loadingText={'Reviving...'}
-                        isLoading={inProcessingText !== undefined}
-                      >
-                        DON'T MARK SAFE & REVIVE ALL
                       </Button>
                     </VStack>
                   </HStack>
@@ -456,6 +444,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                         vaultAddress={vaultAddress}
                         vaultOwner={vaultOwner}
                         onReviveSuccess={onReviveSuccess}
+                        isRevivingAll={isRevivingAll}
                       />
                     ))}
                   </Flex>

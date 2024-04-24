@@ -87,7 +87,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (inProcessingText || (await disconnectIfNetworkChanged())) {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
     setInProcessingText('Marking safe...');

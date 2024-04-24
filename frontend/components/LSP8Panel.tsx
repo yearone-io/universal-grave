@@ -21,6 +21,7 @@ interface LSP8PanelProps {
   readonly vaultAddress: string;
   readonly vaultOwner: string;
   onReviveSuccess: (assetAddress: string, tokenId: string) => void;
+  isRevivingAll: boolean;
 }
 
 const LSP8Panel: React.FC<LSP8PanelProps> = ({
@@ -28,6 +29,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   vaultAddress,
   vaultOwner,
   onReviveSuccess,
+  isRevivingAll,
 }) => {
   const walletContext = useContext(WalletContext);
   const {
@@ -36,7 +38,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [inProcessingText, setInProcessingText] = useState('');
+  const [inProcessingText, setInProcessingText] = useState<string>();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -129,7 +131,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         isClosable: true,
       });
     } finally {
-      setInProcessingText('');
+      setInProcessingText(undefined);
     }
   };
 
@@ -187,7 +189,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             border={createButtonBorder}
             size={'xs'}
             loadingText={inProcessingText}
-            isLoading={!!inProcessingText}
+            isLoading={inProcessingText !== undefined || isRevivingAll}
             onClick={() => transferTokenToUP(tokenData.address)}
           >
             Revive
