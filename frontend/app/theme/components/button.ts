@@ -1,10 +1,7 @@
 const solidLightVariant = {
   disabled: {
-    bg: 'light.gray.200',
     opacity: 0.6,
-    border: 'none',
     boxShadow: 'none',
-    color: 'light.white',
   },
   active: {
     bg: 'light.gray.300',
