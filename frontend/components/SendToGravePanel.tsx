@@ -13,8 +13,11 @@ import { WalletContext } from '@/components/wallet/WalletContext';
 import { BigNumber, ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
+import { LSP4TokenTypeValues } from '@lukso/lsp-factory.js/build/main/src/lib/interfaces/digital-asset-deployment';
+import ERC725 from '@erc725/erc725.js';
 
 export default function ManageAllowList() {
   const walletContext = useContext(WalletContext);
@@ -22,6 +25,7 @@ export default function ManageAllowList() {
     walletContext;
   const toast = useToast();
   const signer = provider.getSigner();
+
   const [showGhosts, setShowGhosts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
@@ -30,6 +34,7 @@ export default function ManageAllowList() {
   const [rawTokenAmount, setRawTokenAmount] = useState<BigNumber>(
     BigNumber.from(0)
   );
+  const [tokenType, setTokenType] = useState<LSP4TokenTypeValues | undefined>(undefined);
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(tokenAddress);
 
@@ -78,11 +83,13 @@ export default function ManageAllowList() {
 
   const processTokenData = async () => {
     setCanSubmit(false);
+    setTokenType(undefined)
     setTokenCheckMessage('Checking...');
     setRawTokenAmount(BigNumber.from(0));
 
     const assetData = await getTokenData();
-    if (!assetData || !assetData.balance || !assetData?.decimals) {
+    setTokenType(assetData?.tokenType);
+    if (!assetData || !assetData.balance) {
       setTokenCheckMessage('No balance for this Token');
       setCanSubmit(false);
       return;
@@ -130,7 +137,7 @@ export default function ManageAllowList() {
     }
   };
 
-  const transferToGrave = async () => {
+  const transferLSP7ToGrave = async () => {
     const tokenContract = new ethers.Contract(
       tokenAddress,
       LSP7DigitalAsset.abi,
@@ -146,6 +153,42 @@ export default function ManageAllowList() {
     await tx.wait();
   };
 
+  const transferLSP8ToGrave = async () => {
+    
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      LSP8IdentifiableDigitalAsset.abi,
+      signer
+    );
+    const wallet = await signer.getAddress()
+    const walletNftIds = await tokenContract.tokenIdsOf(wallet);
+  
+
+    const vaultAddresses: string[] = [];
+    const signerAddresses: string[] = [];
+    const tokenIds: string[] = [];
+    const forceValues: boolean[] = [];
+    const dataValues: string[] = [];
+
+    walletNftIds.forEach(id => {
+      signerAddresses.push(wallet);
+      vaultAddresses.push(graveVault);
+      tokenIds.push(id);
+      forceValues.push(false);
+      dataValues.push('0x');
+    });
+
+
+    const tx = await tokenContract.transferBatch(
+      signerAddresses,
+      vaultAddresses,
+      tokenIds,
+      forceValues,
+      dataValues
+    );
+    await tx.wait();
+  };
+
   const transferTokenFromUP = async () => {
     if (await disconnectIfNetworkChanged()) {
       return;
@@ -154,8 +197,14 @@ export default function ManageAllowList() {
     try {
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
-
-      await transferToGrave();
+      if (tokenType === LSP4_TOKEN_TYPES.TOKEN) {
+      await transferLSP7ToGrave();
+      } else if (tokenType === LSP4_TOKEN_TYPES.NFT) {
+        await transferLSP8ToGrave();
+      } else if (tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
+      } else {
+        console.error('Unrecognized token type');
+      }
       setIsSubmitting(false);
       setTokenAddress('');
       setTokenCheckMessage('');
