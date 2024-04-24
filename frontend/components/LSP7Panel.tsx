@@ -63,7 +63,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [inProcessingText, setInProcessingText] = useState('');
+  const [inProcessingText, setInProcessingText] = useState<string>();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -155,7 +155,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         isClosable: true,
       });
     } finally {
-      setInProcessingText('');
+      setInProcessingText(undefined);
     }
   };
 
@@ -251,9 +251,10 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               border={createButtonBorder}
               size={'xs'}
               onClick={() => transferTokenToUP(tokenData?.address)}
-              isDisabled={!!inProcessingText}
+              loadingText={inProcessingText}
+              isLoading={inProcessingText !== undefined}
             >
-              {!!inProcessingText ? inProcessingText : reviveText}
+              reviveText
             </Button>
           )}
         </Flex>

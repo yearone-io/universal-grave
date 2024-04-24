@@ -49,7 +49,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [inProcessingText, setInProcessingText] = useState('');
+  const [inProcessingText, setInProcessingText] = useState<string>();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
@@ -76,7 +76,10 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
+    if (
+      inProcessingText !== undefined ||
+      (await disconnectIfNetworkChanged())
+    ) {
       return;
     }
 
@@ -144,14 +147,15 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         isClosable: true,
       });
     } finally {
-      setInProcessingText('');
+      setInProcessingText(undefined);
     }
   };
 
   const reviveAll = async (tokenData: TokenData[], markSafe: boolean) => {
-    console.log("foobar", inProcessingText);
-
-    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
+    if (
+      inProcessingText !== undefined ||
+      (await disconnectIfNetworkChanged())
+    ) {
       return;
     }
 
@@ -198,7 +202,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         signerAddresses.push(signerAddress);
         tokenIds.push(token.tokenId!);
         forceValues.push(false);
-        dataValues.push("0x");
+        dataValues.push('0x');
       });
 
       const lsp8Tx = lsp8.interface.encodeFunctionData('transferBatch', [
@@ -237,10 +241,9 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         isClosable: true,
       });
     } finally {
-      setInProcessingText('');
+      setInProcessingText(undefined);
     }
   };
-
 
   const getTokenIcon = () => {
     const iconURL = getTokenIconURL(collectionTokenData.metadata?.LSP4Metadata);
@@ -342,8 +345,10 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               border={createButtonBorder}
               size={'xs'}
               onClick={() => transferTokenToUP(collectionTokenData?.address)}
+              loadingText={'Reviving...'}
+              isLoading={inProcessingText !== undefined}
             >
-              {!!inProcessingText ? 'Reviving...' : `Mark safe & revive`}
+              Mark safe & revive
             </Button>
           )}
         </Flex>
@@ -418,17 +423,17 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                     <VStack alignItems={'left'}>
                       <Button
                         size={'xs'}
-                        onClick={() =>
-                          reviveAll(tokenData, true)
-                        }
+                        onClick={() => reviveAll(tokenData, true)}
+                        loadingText={'Reviving...'}
+                        isLoading={inProcessingText !== undefined}
                       >
                         MARK SAFE & REVIVE ALL
                       </Button>
                       <Button
                         size={'xs'}
-                        onClick={() =>
-                          reviveAll(tokenData, false)
-                        }
+                        onClick={() => reviveAll(tokenData, false)}
+                        loadingText={'Reviving...'}
+                        isLoading={inProcessingText !== undefined}
                       >
                         DON'T MARK SAFE & REVIVE ALL
                       </Button>

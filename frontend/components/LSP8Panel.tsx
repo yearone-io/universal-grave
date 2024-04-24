@@ -58,7 +58,10 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
+    if (
+      inProcessingText !== undefined ||
+      (await disconnectIfNetworkChanged())
+    ) {
       return;
     }
 
@@ -183,9 +186,11 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             _hover={{ bg: createButtonBg }}
             border={createButtonBorder}
             size={'xs'}
+            loadingText={inProcessingText}
+            isLoading={!!inProcessingText}
             onClick={() => transferTokenToUP(tokenData.address)}
           >
-            {!!inProcessingText ? inProcessingText : `Revive`}
+            Revive
           </Button>
         )}
       </Flex>
