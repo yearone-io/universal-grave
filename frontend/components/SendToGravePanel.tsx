@@ -15,7 +15,11 @@ import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
-import { getEnoughDecimals, getLSPAssetBasicInfo } from '@/utils/tokenUtils';
+import {
+  TokenData,
+  getEnoughDecimals,
+  getLSPAssetBasicInfo,
+} from '@/utils/tokenUtils';
 import { LSP4TokenTypeValues } from '@lukso/lsp-factory.js/build/main/src/lib/interfaces/digital-asset-deployment';
 
 export default function ManageAllowList() {
@@ -24,28 +28,25 @@ export default function ManageAllowList() {
     walletContext;
   const toast = useToast();
   const signer = provider.getSigner();
-
   const [showGhosts, setShowGhosts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
-  const [tokenAddress, setTokenAddress] = useState<string>('');
+  const [inputTokenAddress, setInputTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
-  const [rawTokenAmount, setRawTokenAmount] = useState<BigNumber>(
-    BigNumber.from(0)
-  );
-  const [tokenType, setTokenType] = useState<LSP4TokenTypeValues | undefined>(undefined);
+
+  const [tokenData, setTokenData] = useState<TokenData | undefined>(undefined);
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
-    useState(tokenAddress);
+    useState(inputTokenAddress);
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedTokenAddress(tokenAddress);
+      setDebouncedTokenAddress(inputTokenAddress);
     }, 500);
 
     return () => {
       clearTimeout(handler);
     };
-  }, [tokenAddress]);
+  }, [inputTokenAddress]);
 
   useEffect(() => {
     setTokenCheckMessage('');
@@ -55,14 +56,19 @@ export default function ManageAllowList() {
   }, [debouncedTokenAddress]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setTokenAddress(event.target.value.toLowerCase());
+    setInputTokenAddress(event.target.value.toLowerCase());
   };
 
   const getTokenData = async () => {
     let assetData;
     try {
       const wallet = await signer.getAddress();
-      assetData = await getLSPAssetBasicInfo(provider, tokenAddress, wallet);
+      assetData = await getLSPAssetBasicInfo(
+        provider,
+        inputTokenAddress,
+        wallet
+      );
+      setTokenData(assetData);
       return assetData;
     } catch (error: any) {
       setTokenCheckMessage('Error fetching token data');
@@ -82,12 +88,10 @@ export default function ManageAllowList() {
 
   const processTokenData = async () => {
     setCanSubmit(false);
-    setTokenType(undefined)
     setTokenCheckMessage('Checking...');
-    setRawTokenAmount(BigNumber.from(0));
+    setTokenData(undefined);
 
     const assetData = await getTokenData();
-    setTokenType(assetData?.tokenType);
     if (!assetData || !assetData.balance) {
       setTokenCheckMessage('No balance for this Token');
       setCanSubmit(false);
@@ -111,7 +115,6 @@ export default function ManageAllowList() {
       getEnoughDecimals(Number(readableTokenAmount))
     );
 
-    setRawTokenAmount(assetData?.balance as BigNumber);
     setTokenCheckMessage(
       `Token balance: ${assetData?.symbol} ${roundedTokenAmount}`
     );
@@ -127,25 +130,31 @@ export default function ManageAllowList() {
 
     const upAddress = await signer.getAddress();
     if (
-      await LSP1GraveForwarderContract.tokenAllowlist(upAddress, tokenAddress)
+      await LSP1GraveForwarderContract.tokenAllowlist(
+        upAddress,
+        tokenData?.address
+      )
     ) {
       setTokenCheckMessage('Removing from allowlist...');
-      await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
-        gasLimit: 400_00,
-      });
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(
+        tokenData?.address,
+        {
+          gasLimit: 400_00,
+        }
+      );
     }
   };
 
   const transferLSP7ToGrave = async () => {
     const tokenContract = new ethers.Contract(
-      tokenAddress,
+      tokenData?.address as string,
       LSP7DigitalAsset.abi,
       signer
     );
     const tx = await tokenContract.transfer(
       await signer.getAddress(),
       graveVault,
-      rawTokenAmount,
+      tokenData?.balance,
       false,
       '0x'
     );
@@ -153,15 +162,14 @@ export default function ManageAllowList() {
   };
 
   const transferLSP8ToGrave = async () => {
-    
     const tokenContract = new ethers.Contract(
-      tokenAddress,
+      inputTokenAddress,
       LSP8IdentifiableDigitalAsset.abi,
       signer
     );
-    const wallet = await signer.getAddress()
+    const wallet = await signer.getAddress();
     const walletNftIds = await tokenContract.tokenIdsOf(wallet);
-  
+
     const vaultAddresses: string[] = [];
     const signerAddresses: string[] = [];
     const tokenIds: string[] = [];
@@ -194,16 +202,15 @@ export default function ManageAllowList() {
     try {
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
-      if (tokenType === LSP4_TOKEN_TYPES.TOKEN) {
-      await transferLSP7ToGrave();
-      } else if (tokenType === LSP4_TOKEN_TYPES.NFT) {
+      if (tokenData?.tokenType === LSP4_TOKEN_TYPES.TOKEN) {
+        await transferLSP7ToGrave();
+      } else if (tokenData?.tokenType === LSP4_TOKEN_TYPES.NFT) {
         await transferLSP8ToGrave();
-      } else if (tokenType === LSP4_TOKEN_TYPES.COLLECTION) {
       } else {
         console.error('Unrecognized token type');
       }
       setIsSubmitting(false);
-      setTokenAddress('');
+      setInputTokenAddress('');
       setTokenCheckMessage('');
       setShowGhosts(true);
       setTimeout(() => setShowGhosts(false), 4000);
@@ -267,9 +274,9 @@ export default function ManageAllowList() {
         fontFamily="Montserrat"
         textAlign="start"
       >
-        You can manually send assets from your UP to your grave. 
-        Whether it is NFT collection or a token, they will be removed from the allowlist and sent to the grave.
-        Click on Poof and let them rest in peace!
+        You can manually send assets from your UP to your grave. Whether it is
+        NFT collection or a token, they will be removed from the allowlist and
+        sent to the grave. Click on Poof and let them rest in peace!
       </Text>
       <FormControl textAlign="start">
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
@@ -292,7 +299,7 @@ export default function ManageAllowList() {
                 borderColor: 'var(--chakra-colors-dark-purple-500)',
                 boxShadow: 'none',
               }}
-              value={tokenAddress}
+              value={inputTokenAddress}
               onChange={handleChange}
               placeholder="PASTE ASSET ADDRESS"
               _placeholder={{
