@@ -229,7 +229,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     } catch (error: any) {
       console.error(error);
       toast({
-        title: `Error reviving collection . ${error.message}`,
+        title: `Error reviving collection: ${error.message}`,
         status: 'error',
         position: 'bottom-left',
         duration: 9000,
@@ -341,7 +341,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               border={createButtonBorder}
               size={'xs'}
               onClick={() => transferTokenToUP(collectionTokenData?.address)}
-              loadingText={'Reviving...'}
+              loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined}
             >
               Mark safe & revive
@@ -420,7 +420,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                       <Button
                         size={'xs'}
                         onClick={() => reviveAll(tokenData)}
-                        loadingText={'Reviving...'}
+                        loadingText={inProcessingText}
                         isLoading={inProcessingText !== undefined}
                       >
                         MARK SAFE & REVIVE ALL
