@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { BigNumber, ethers } from 'ethers';
+import { ethers } from 'ethers';
 import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
@@ -20,9 +20,8 @@ import {
   getEnoughDecimals,
   getLSPAssetBasicInfo,
 } from '@/utils/tokenUtils';
-import { LSP4TokenTypeValues } from '@lukso/lsp-factory.js/build/main/src/lib/interfaces/digital-asset-deployment';
 
-export default function ManageAllowList() {
+export default function SendToGravePanel() {
   const walletContext = useContext(WalletContext);
   const { networkConfig, provider, disconnectIfNetworkChanged, graveVault } =
     walletContext;
