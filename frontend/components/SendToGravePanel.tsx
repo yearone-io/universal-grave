@@ -16,6 +16,7 @@ import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAs
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import {
+  GRAVE_ASSET_TYPES,
   TokenData,
   getEnoughDecimals,
   getLSPAssetBasicInfo,
@@ -201,12 +202,20 @@ export default function SendToGravePanel() {
     try {
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
-      if (tokenData?.tokenType === LSP4_TOKEN_TYPES.TOKEN) {
+     if (
+        tokenData?.interface === GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
+        tokenData?.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
+        ) {
         await transferLSP7ToGrave();
-      } else if (tokenData?.tokenType === LSP4_TOKEN_TYPES.NFT) {
+      } else if (
+        tokenData?.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset ||
+        tokenData?.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
+        ) {  
         await transferLSP8ToGrave();
       } else {
-        console.error('Unrecognized token type');
+        setTokenCheckMessage('Unrecognized token interface. Cannot send to Grave.');
+        setIsSubmitting(false);
+        return;
       }
       setIsSubmitting(false);
       setInputTokenAddress('');
