@@ -46,23 +46,40 @@ export default function LSPAssets({
    */
   const onReviveLSP7Success = (assetAddress: string) => {
     const lsp7AssetsCopy = lsp7Assets.filter(
-      asset => asset.address !== assetAddress
+      asset => asset.address.toLowerCase() !== assetAddress.toLowerCase()
     );
     setLsp7Assets(lsp7AssetsCopy);
   };
 
   const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
-    const lsp8AssetsCopy = lsp8Assets.map(subArray => {
-      return subArray.filter(
-        asset => !(asset.address === assetAddress && asset.tokenId === tokenId)
-      );
-    });
+    const lsp8AssetsCopy = lsp8Assets
+      .map(subArray => {
+        return subArray.filter(
+          asset =>
+            !(
+              asset.address.toLowerCase() === assetAddress.toLowerCase() &&
+              asset.tokenId!.toLowerCase() === tokenId.toLowerCase()
+            )
+        );
+      })
+      .filter(value => value.length > 0);
+    setLsp8Assets(lsp8AssetsCopy);
+  };
+
+  const onReviveAllLSP8Success = (assetAddress: string) => {
+    const lsp8AssetsCopy = lsp8Assets
+      .filter(
+        subArray =>
+          subArray.length > 0 &&
+          !(subArray[0].address.toLowerCase() === assetAddress.toLowerCase())
+      )
+      .filter(subArray => subArray.length > 0);
     setLsp8Assets(lsp8AssetsCopy);
   };
 
   const onReviveUnrecognizedLSP7Success = (assetAddress: string) => {
     const lsp7AssetsCopy = unrecognisedLsp7Assets.filter(
-      asset => asset.address !== assetAddress
+      asset => asset.address.toLowerCase() !== assetAddress.toLowerCase()
     );
     setUnrecognisedLsp7Assets(lsp7AssetsCopy);
   };
@@ -256,6 +273,7 @@ export default function LSPAssets({
                     vaultAddress={graveVault!}
                     vaultOwner={graveOwner}
                     onReviveSuccess={onReviveLSP8Success}
+                    onReviveAllSuccess={onReviveAllLSP8Success}
                   />
                 </Box>
               ))

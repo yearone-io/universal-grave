@@ -34,6 +34,7 @@ interface LSP8PanelProps {
   readonly vaultAddress: string;
   readonly vaultOwner: string;
   onReviveSuccess: (assetAddress: string, tokenId: string) => void;
+  onReviveAllSuccess: (assetAddress: string) => void;
 }
 
 const LSP8Group: React.FC<LSP8PanelProps> = ({
@@ -41,6 +42,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   vaultAddress,
   vaultOwner,
   onReviveSuccess,
+  onReviveAllSuccess,
 }) => {
   const walletContext = useContext(WalletContext);
   const {
@@ -76,7 +78,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
   const tokenAddressDisplay = formatAddress(collectionTokenData.address);
   const toast = useToast();
 
-  const transferTokenToUP = async (tokenAddress: string) => {
+  const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
     if (await disconnectIfNetworkChanged()) {
       return;
     }
@@ -127,7 +129,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      onReviveSuccess(tokenAddress, collectionTokenData.tokenId as string);
+      onReviveSuccess(tokenAddress, tokenId);
       toast({
         title: `It's alive! 😇 ⚡`,
         status: 'success',
@@ -154,7 +156,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       return;
     }
 
-    const tokenAddress = tokenData[0].address;
+    const tokenAddress = collectionTokenData.address;
     setInProcessingText('Marking safe...');
     setIsRevivingAll(true);
     try {
@@ -218,7 +220,9 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      onReviveSuccess(tokenAddress, collectionTokenData.tokenId as string);
+      tokenData.forEach(token => {
+        onReviveAllSuccess(collectionTokenData.address!);
+      });
       toast({
         title: `They're alive! ⚡`,
         status: 'success',
@@ -226,6 +230,8 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         duration: 9000,
         isClosable: true,
       });
+
+      onClose();
     } catch (error: any) {
       console.error(error);
       toast({
@@ -340,7 +346,9 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
               _hover={{ bg: createButtonBg }}
               border={createButtonBorder}
               size={'xs'}
-              onClick={() => transferTokenToUP(collectionTokenData?.address)}
+              onClick={() =>
+                transferTokenToUP(tokenData[0].address, tokenData[0].tokenId!)
+              }
               loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined}
             >

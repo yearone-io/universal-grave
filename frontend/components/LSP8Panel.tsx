@@ -59,7 +59,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   const tokenAddressDisplay = formatAddress(tokenData.tokenId!);
   const toast = useToast();
 
-  const transferTokenToUP = async (tokenAddress: string) => {
+  const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
     if (
       inProcessingText !== undefined ||
       (await disconnectIfNetworkChanged())
@@ -118,7 +118,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         gasLimit: 400_00,
       });
 
-      onReviveSuccess(tokenAddress, tokenData.tokenId as string);
+      onReviveSuccess(tokenAddress, tokenId);
 
       toast({
         title: `It's alive! 😇 ⚡`,
@@ -196,7 +196,9 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             size={'xs'}
             loadingText={inProcessingText}
             isLoading={inProcessingText !== undefined || isRevivingAll}
-            onClick={() => transferTokenToUP(tokenData.address)}
+            onClick={() =>
+              transferTokenToUP(tokenData.address, tokenData.tokenId!)
+            }
           >
             Revive
           </Button>
