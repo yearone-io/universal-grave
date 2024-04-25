@@ -113,7 +113,13 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
+      setInProcessingText('Marking unsafe...');
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
+        gasLimit: 400_00,
+      });
+
       onReviveSuccess(tokenAddress, tokenData.tokenId as string);
+
       toast({
         title: `It's alive! 😇 ⚡`,
         status: 'success',
