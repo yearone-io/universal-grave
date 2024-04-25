@@ -273,9 +273,8 @@ export default function SendToGravePanel() {
         fontFamily="Montserrat"
         textAlign="start"
       >
-        You can manually send assets from your UP to your grave. Whether it is
-        NFT collection or a token, they will be removed from the allowlist and
-        sent to the grave. Click on Poof and let them rest in peace!
+        Have some trash in your 🆙? Send it to the GRAVE! Whether it's NFTs or
+        tokens, click "POOF!" and let them rest in peace!
       </Text>
       <FormControl textAlign="start">
         <FormLabel fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
