@@ -67,7 +67,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
       return;
     }
 
-    setInProcessingText('Marking safe...');
+    setInProcessingText('Allowing Revive');
     try {
       const signer = provider.getSigner();
 
@@ -87,7 +87,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
           gasLimit: 400_00,
         });
       }
-      setInProcessingText('Reviving...');
+      setInProcessingText('Reviving Item');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -102,7 +102,6 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
         false,
         '0x',
       ]);
-
       const vaultContract = new ethers.Contract(
         vaultAddress,
         LSP9Vault.abi,
@@ -113,10 +112,14 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      onReviveSuccess(tokenAddress, tokenId);
+      setInProcessingText('Blocking Collection');
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
+        gasLimit: 400_00,
+      });
 
+      onReviveSuccess(tokenAddress, tokenId);
       toast({
-        title: `It's alive! 😇 ⚡`,
+        title: `It's alive! 🧟‍♂️`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
@@ -141,7 +144,6 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
       w={['s']}
       border={'1px solid ' + containerBorderColor}
       flexDirection={'column'}
-      gap={2}
       borderBottomRadius={'md'}
     >
       {tokenData?.image && (
@@ -156,10 +158,10 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
         </Flex>
       )}
       <Flex
-        flexDirection={'row'}
-        justifyContent={'space-between'}
-        alignItems={'center'}
-        padding={2}
+        flexDirection={'column'}
+        alignItems={'flex-start'}
+        gap={1}
+        padding={3}
       >
         <Flex align="center">
           <Text fontSize="sm" fontWeight="bold" color={fontColor}>
@@ -171,6 +173,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
             color={fontColor}
             size="sm"
             px={0}
+            maxHeight={'14px'}
             variant="ghost"
             onClick={() =>
               window.open(

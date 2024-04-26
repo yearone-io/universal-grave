@@ -257,7 +257,7 @@ export default function SendToGravePanel() {
     return Array.from({ length: 10 }).map((_, index) => (
       <div
         key={index}
-        className="ghost"
+        className="emoji-rain"
         style={{
           left: `${Math.random() * window.innerWidth}px`,
           top: `${Math.random() * window.innerHeight}px`,

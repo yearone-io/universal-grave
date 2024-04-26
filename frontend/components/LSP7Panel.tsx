@@ -86,7 +86,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     if (await disconnectIfNetworkChanged()) {
       return;
     }
-    setInProcessingText('Marking safe...');
+    setInProcessingText('Unblocking');
     try {
       const signer = provider.getSigner();
 
@@ -106,7 +106,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
           gasLimit: 400_00,
         });
       }
-      setInProcessingText('Reviving...');
+      setInProcessingText('Reviving');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -135,7 +135,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
       onReviveSuccess(tokenAddress);
       toast({
-        title: `It's alive! 😇 ⚡`,
+        title: `It's alive! 🧟‍♂️`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
@@ -229,7 +229,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined}
             >
-              Mark Safe & Revive
+              Unblock & revive
             </Button>
           )}
         </Flex>

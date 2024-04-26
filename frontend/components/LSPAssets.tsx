@@ -38,6 +38,26 @@ export default function LSPAssets({
   const [unrecognisedLsp8Assets, setUnrecognisedLsp8Assets] = useState<
     TokenData[]
   >([]);
+  const [showFrank, setShowFrank] = useState(false);
+  const renderFranks = () => {
+    return Array.from({ length: 20 }).map((_, index) => (
+      <div
+        key={index}
+        className="emoji-rain"
+        style={{
+          left: `${Math.random() * window.innerWidth}px`,
+          top: `${Math.random() * window.innerHeight}px`,
+        }}
+      >
+        🧟
+      </div>
+    ));
+  };
+
+  const makeItEmojiRain = () => {
+    setShowFrank(true);
+    setTimeout(() => setShowFrank(false), 6000);
+  };
 
   const toast = useToast();
 
@@ -49,6 +69,7 @@ export default function LSPAssets({
       asset => asset.address.toLowerCase() !== assetAddress.toLowerCase()
     );
     setLsp7Assets(lsp7AssetsCopy);
+    makeItEmojiRain();
   };
 
   const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
@@ -64,6 +85,7 @@ export default function LSPAssets({
       })
       .filter(value => value.length > 0);
     setLsp8Assets(lsp8AssetsCopy);
+    makeItEmojiRain();
   };
 
   const onReviveAllLSP8Success = (assetAddress: string) => {
@@ -75,6 +97,7 @@ export default function LSPAssets({
       )
       .filter(subArray => subArray.length > 0);
     setLsp8Assets(lsp8AssetsCopy);
+    makeItEmojiRain();
   };
 
   const onReviveUnrecognizedLSP7Success = (assetAddress: string) => {
@@ -352,6 +375,7 @@ export default function LSPAssets({
           </Box>
         )}
       </Flex>
+      {showFrank && renderFranks()}
     </Box>
   );
 }
