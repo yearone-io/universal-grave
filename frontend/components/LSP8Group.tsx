@@ -1,6 +1,5 @@
 import { useContext, useState } from 'react';
 import {
-  Avatar,
   Box,
   Button,
   Flex,
@@ -21,15 +20,16 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
+import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { ethers } from 'ethers';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP8Panel from '@/components/LSP8Panel';
+import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { LSP1GraveForwarder__factory } from '@/contracts';
+import { AssetIcon } from './AssetIcon';
 
-interface LSP8PanelProps {
+interface LSP8SimplePanelProps {
   readonly tokenData: TokenData[];
   readonly vaultAddress: string;
   readonly vaultOwner: string;
@@ -37,7 +37,7 @@ interface LSP8PanelProps {
   onReviveAllSuccess: (assetAddress: string) => void;
 }
 
-const LSP8Group: React.FC<LSP8PanelProps> = ({
+const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   tokenData,
   vaultAddress,
   vaultOwner,
@@ -69,7 +69,6 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     '1px solid black',
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
-  const interestsBgColor = useColorModeValue('light.white', 'dark.white');
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
   const closeButtonColor = useColorModeValue('light.black', 'dark.purple.500');
@@ -249,22 +248,6 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
     }
   };
 
-  const getTokenIcon = () => {
-    const iconURL = getTokenIconURL(collectionTokenData.metadata?.LSP4Metadata);
-    return !iconURL ? (
-      <Box padding={1} fontWeight={'bold'}>
-        LSP8
-      </Box>
-    ) : (
-      <Avatar
-        height={16}
-        minW={16}
-        name={collectionTokenData?.name}
-        src={iconURL}
-      />
-    );
-  };
-
   return (
     <Flex
       bg={panelBgColor}
@@ -277,21 +260,11 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       minWidth={'lg'}
       mb={2}
     >
-      <Flex
-        bg={interestsBgColor}
-        borderRadius="full"
-        color={fontColor}
-        border={`1px solid ${containerBorderColor}`}
-        fontSize="md"
-        height={16}
-        minW={16}
-        justifyContent={'center'}
-        alignItems={'center'}
-        boxSizing={'content-box'}
-      >
-        {getTokenIcon()}
-      </Flex>
-
+      <AssetIcon
+        name={collectionTokenData?.name}
+        lspType="LSP8"
+        LSP4Metadata={collectionTokenData?.metadata?.LSP4Metadata}
+      />
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
         {tokenData.length === 1 && collectionTokenData?.image && (
           <Flex justifyContent={'center'}>
@@ -389,7 +362,13 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                 <ModalHeader>
                   <HStack>
                     <Flex>
-                      {getTokenIcon()}
+                      <AssetIcon
+                        name={collectionTokenData?.name}
+                        lspType="LSP8"
+                        LSP4Metadata={
+                          collectionTokenData?.metadata?.LSP4Metadata
+                        }
+                      />
                       <Box ml="3">
                         <Text fontWeight="bold" color={fontColor}>
                           {collectionTokenData?.name}
@@ -447,7 +426,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
                     gap={7}
                   >
                     {tokenData.map(token => (
-                      <LSP8Panel
+                      <LSP8SimplePanel
                         key={token.tokenId}
                         tokenData={token}
                         vaultAddress={vaultAddress}

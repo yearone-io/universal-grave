@@ -11,7 +11,7 @@ import {
   TokenData,
 } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
-import LSP8Panel from '@/components/LSP8Panel';
+import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
 import { WalletContext } from '@/components/wallet/WalletContext';
@@ -315,7 +315,7 @@ export default function LSPAssets({
             </Text>
             {unrecognisedLsp8Assets.map((asset, index) => (
               <Box key={'unrecognised-lsp8-' + index}>
-                <LSP8Panel
+                <LSP8SimplePanel
                   vaultOwner={graveOwner}
                   tokenData={asset}
                   vaultAddress={graveVault!}

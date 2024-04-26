@@ -16,7 +16,7 @@ import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 
-interface LSP8PanelProps {
+interface LSP8SimplePanelProps {
   readonly tokenData: TokenData;
   readonly vaultAddress: string;
   readonly vaultOwner: string;
@@ -24,7 +24,7 @@ interface LSP8PanelProps {
   isRevivingAll: boolean;
 }
 
-const LSP8Panel: React.FC<LSP8PanelProps> = ({
+const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   tokenData,
   vaultAddress,
   vaultOwner,
@@ -151,6 +151,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             alt={tokenData?.name}
             border={'1px solid ' + containerBorderColor}
             minW={'250px'}
+            maxW={'300px'}
           />
         </Flex>
       )}
@@ -203,4 +204,4 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   );
 };
 
-export default LSP8Panel;
+export default LSP8SimplePanel;
