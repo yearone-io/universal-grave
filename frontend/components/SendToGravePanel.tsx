@@ -10,8 +10,8 @@ import {
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 import { ethers } from 'ethers';
-import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
@@ -122,9 +122,8 @@ export default function SendToGravePanel() {
   };
 
   const removeTokenFromAllowList = async () => {
-    const LSP1GraveForwarderContract = new ethers.Contract(
+    const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
       networkConfig.universalGraveForwarder,
-      LSP1GraveForwarderAbi.abi,
       signer
     );
 
@@ -132,12 +131,12 @@ export default function SendToGravePanel() {
     if (
       await LSP1GraveForwarderContract.tokenAllowlist(
         upAddress,
-        tokenData?.address
+        tokenData!.address
       )
     ) {
       setTokenCheckMessage('Removing from allowlist...');
       await LSP1GraveForwarderContract.removeTokenFromAllowlist(
-        tokenData?.address,
+        tokenData!.address,
         {
           gasLimit: 400_00,
         }
@@ -202,18 +201,22 @@ export default function SendToGravePanel() {
     try {
       await removeTokenFromAllowList();
       setTokenCheckMessage('Sending token to Grave...');
-     if (
+      if (
         tokenData?.interface === GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
         tokenData?.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
-        ) {
+      ) {
         await transferLSP7ToGrave();
       } else if (
-        tokenData?.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset ||
-        tokenData?.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
-        ) {  
+        tokenData?.interface ===
+          GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset ||
+        tokenData?.interface ===
+          GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
+      ) {
         await transferLSP8ToGrave();
       } else {
-        setTokenCheckMessage('Unrecognized token interface. Cannot send to Grave.');
+        setTokenCheckMessage(
+          'Unrecognized token interface. Cannot send to Grave.'
+        );
         setIsSubmitting(false);
         return;
       }
@@ -243,7 +246,7 @@ export default function SendToGravePanel() {
     }
   };
 
-  const FieldMessage = () => {
+  const getFieldMessage = () => {
     if (tokenCheckMessage) {
       return tokenCheckMessage;
     }
@@ -315,7 +318,7 @@ export default function SendToGravePanel() {
               }}
             />
             <Text ml={2} fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
-              {FieldMessage()}
+              {getFieldMessage()}
             </Text>
           </Flex>
         </Box>
