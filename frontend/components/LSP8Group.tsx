@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState } from 'react';
 import {
   Avatar,
   Box,
@@ -18,16 +18,16 @@ import {
   useColorModeValue,
   useDisclosure,
   useToast,
-  VStack
-} from "@chakra-ui/react";
-import { FaExternalLinkAlt } from "react-icons/fa";
-import { formatAddress, getTokenIconURL, TokenData } from "@/utils/tokenUtils";
-import { WalletContext } from "@/components/wallet/WalletContext";
-import { ethers } from "ethers";
-import LSP8IdentifiableDigitalAsset from "@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json";
-import LSP9Vault from "@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json";
-import LSP8Panel from "@/components/LSP8Panel";
-import { LSP1GraveForwarder__factory } from "@/contracts";
+  VStack,
+} from '@chakra-ui/react';
+import { FaExternalLinkAlt } from 'react-icons/fa';
+import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
+import { WalletContext } from '@/components/wallet/WalletContext';
+import { ethers } from 'ethers';
+import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
+import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
+import LSP8Panel from '@/components/LSP8Panel';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
 interface LSP8PanelProps {
   readonly tokenData: TokenData[];
@@ -128,6 +128,11 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
       await lsp9
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
+
+      setInProcessingText('Marking unsafe...');
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
+        gasLimit: 400_00,
+      });
 
       onReviveSuccess(tokenAddress, tokenId);
       toast({
