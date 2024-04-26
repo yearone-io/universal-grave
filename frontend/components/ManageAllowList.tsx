@@ -10,9 +10,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { ethers } from 'ethers';
-import LSP1GraveForwarderAbi from '@/abis/LSP1GraveForwarder.json';
-import { LSP1GraveForwarder } from '@/contracts';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 import { BiSolidCheckCircle } from 'react-icons/bi';
 
 const messageState = {
@@ -31,11 +29,10 @@ export default function ManageAllowList() {
   const toast = useToast();
   const signer = provider.getSigner();
 
-  const graveForwarder = new ethers.Contract(
+  const graveForwarder = LSP1GraveForwarder__factory.connect(
     networkConfig.universalGraveForwarder,
-    LSP1GraveForwarderAbi.abi,
     provider
-  ) as LSP1GraveForwarder;
+  );
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);

@@ -12,7 +12,7 @@ import {
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -263,9 +263,8 @@ export const setGraveInForwarder = async (
   // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
   // Note: remember to update ABIs if the delegate contracts change
   const signer = provider.getSigner();
-  const graveForwarder = new ethers.Contract(
+  const graveForwarder = LSP1GraveForwarder__factory.connect(
     forwarderAddress,
-    LSP1GraveForwarder.abi,
     provider
   );
   // first check if the grave address is already set

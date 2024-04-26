@@ -11,7 +11,7 @@ import {
   TokenData,
 } from '@/utils/tokenUtils';
 import LSP7Panel from '@/components/LSP7Panel';
-import LSP8Panel from '@/components/LSP8Panel';
+import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
 import { WalletContext } from '@/components/wallet/WalletContext';
@@ -38,6 +38,26 @@ export default function LSPAssets({
   const [unrecognisedLsp8Assets, setUnrecognisedLsp8Assets] = useState<
     TokenData[]
   >([]);
+  const [showFrank, setShowFrank] = useState(false);
+  const renderFranks = () => {
+    return Array.from({ length: 20 }).map((_, index) => (
+      <div
+        key={index}
+        className="emoji-rain"
+        style={{
+          left: `${Math.random() * window.innerWidth}px`,
+          top: `${Math.random() * window.innerHeight}px`,
+        }}
+      >
+        🧟
+      </div>
+    ));
+  };
+
+  const makeItEmojiRain = () => {
+    setShowFrank(true);
+    setTimeout(() => setShowFrank(false), 6000);
+  };
 
   const toast = useToast();
 
@@ -46,23 +66,43 @@ export default function LSPAssets({
    */
   const onReviveLSP7Success = (assetAddress: string) => {
     const lsp7AssetsCopy = lsp7Assets.filter(
-      asset => asset.address !== assetAddress
+      asset => asset.address.toLowerCase() !== assetAddress.toLowerCase()
     );
     setLsp7Assets(lsp7AssetsCopy);
+    makeItEmojiRain();
   };
 
   const onReviveLSP8Success = (assetAddress: string, tokenId: string) => {
-    const lsp8AssetsCopy = lsp8Assets.map(subArray => {
-      return subArray.filter(
-        asset => !(asset.address === assetAddress && asset.tokenId === tokenId)
-      );
-    });
+    const lsp8AssetsCopy = lsp8Assets
+      .map(subArray => {
+        return subArray.filter(
+          asset =>
+            !(
+              asset.address.toLowerCase() === assetAddress.toLowerCase() &&
+              asset.tokenId!.toLowerCase() === tokenId.toLowerCase()
+            )
+        );
+      })
+      .filter(value => value.length > 0);
     setLsp8Assets(lsp8AssetsCopy);
+    makeItEmojiRain();
+  };
+
+  const onReviveAllLSP8Success = (assetAddress: string) => {
+    const lsp8AssetsCopy = lsp8Assets
+      .filter(
+        subArray =>
+          subArray.length > 0 &&
+          !(subArray[0].address.toLowerCase() === assetAddress.toLowerCase())
+      )
+      .filter(subArray => subArray.length > 0);
+    setLsp8Assets(lsp8AssetsCopy);
+    makeItEmojiRain();
   };
 
   const onReviveUnrecognizedLSP7Success = (assetAddress: string) => {
     const lsp7AssetsCopy = unrecognisedLsp7Assets.filter(
-      asset => asset.address !== assetAddress
+      asset => asset.address.toLowerCase() !== assetAddress.toLowerCase()
     );
     setUnrecognisedLsp7Assets(lsp7AssetsCopy);
   };
@@ -256,6 +296,7 @@ export default function LSPAssets({
                     vaultAddress={graveVault!}
                     vaultOwner={graveOwner}
                     onReviveSuccess={onReviveLSP8Success}
+                    onReviveAllSuccess={onReviveAllLSP8Success}
                   />
                 </Box>
               ))
@@ -297,11 +338,12 @@ export default function LSPAssets({
             </Text>
             {unrecognisedLsp8Assets.map((asset, index) => (
               <Box key={'unrecognised-lsp8-' + index}>
-                <LSP8Panel
+                <LSP8SimplePanel
                   vaultOwner={graveOwner}
                   tokenData={asset}
                   vaultAddress={graveVault!}
                   onReviveSuccess={onReviveUnrecognizedLSP8Success}
+                  isRevivingAll={false}
                 />
               </Box>
             ))}
@@ -333,6 +375,7 @@ export default function LSPAssets({
           </Box>
         )}
       </Flex>
+      {showFrank && renderFranks()}
     </Box>
   );
 }

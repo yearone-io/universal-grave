@@ -12,22 +12,24 @@ import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
-interface LSP8PanelProps {
+interface LSP8SimplePanelProps {
   readonly tokenData: TokenData;
   readonly vaultAddress: string;
   readonly vaultOwner: string;
   onReviveSuccess: (assetAddress: string, tokenId: string) => void;
+  isRevivingAll: boolean;
 }
 
-const LSP8Panel: React.FC<LSP8PanelProps> = ({
+const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   tokenData,
   vaultAddress,
   vaultOwner,
   onReviveSuccess,
+  isRevivingAll,
 }) => {
   const walletContext = useContext(WalletContext);
   const {
@@ -36,7 +38,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [inProcessingText, setInProcessingText] = useState('');
+  const [inProcessingText, setInProcessingText] = useState<string>();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -57,18 +59,20 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   const tokenAddressDisplay = formatAddress(tokenData.tokenId!);
   const toast = useToast();
 
-  const transferTokenToUP = async (tokenAddress: string) => {
-    if (!!inProcessingText || (await disconnectIfNetworkChanged())) {
+  const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
+    if (
+      inProcessingText !== undefined ||
+      (await disconnectIfNetworkChanged())
+    ) {
       return;
     }
 
-    setInProcessingText('Marking safe...');
+    setInProcessingText('Allowing Revive');
     try {
       const signer = provider.getSigner();
 
-      const LSP1GraveForwarderContract = new ethers.Contract(
+      const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
         networkConfig.universalGraveForwarder,
-        LSP1GraveForwarder.abi,
         signer
       );
 
@@ -83,7 +87,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
           gasLimit: 400_00,
         });
       }
-      setInProcessingText('Reviving...');
+      setInProcessingText('Reviving Item');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -98,7 +102,6 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         false,
         '0x',
       ]);
-
       const vaultContract = new ethers.Contract(
         vaultAddress,
         LSP9Vault.abi,
@@ -109,9 +112,14 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      onReviveSuccess(tokenAddress, tokenData.tokenId as string);
+      setInProcessingText('Blocking Collection');
+      await LSP1GraveForwarderContract.removeTokenFromAllowlist(tokenAddress, {
+        gasLimit: 400_00,
+      });
+
+      onReviveSuccess(tokenAddress, tokenId);
       toast({
-        title: `It's alive! 😇 ⚡`,
+        title: `It's alive! 🧟‍♂️`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
@@ -127,7 +135,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
         isClosable: true,
       });
     } finally {
-      setInProcessingText('');
+      setInProcessingText(undefined);
     }
   };
 
@@ -136,7 +144,6 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
       w={['s']}
       border={'1px solid ' + containerBorderColor}
       flexDirection={'column'}
-      gap={2}
       borderBottomRadius={'md'}
     >
       {tokenData?.image && (
@@ -146,14 +153,15 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             alt={tokenData?.name}
             border={'1px solid ' + containerBorderColor}
             minW={'250px'}
+            maxW={'300px'}
           />
         </Flex>
       )}
       <Flex
-        flexDirection={'row'}
-        justifyContent={'space-between'}
-        alignItems={'center'}
-        padding={2}
+        flexDirection={'column'}
+        alignItems={'flex-start'}
+        gap={1}
+        padding={3}
       >
         <Flex align="center">
           <Text fontSize="sm" fontWeight="bold" color={fontColor}>
@@ -165,6 +173,7 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             color={fontColor}
             size="sm"
             px={0}
+            maxHeight={'14px'}
             variant="ghost"
             onClick={() =>
               window.open(
@@ -184,9 +193,13 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
             _hover={{ bg: createButtonBg }}
             border={createButtonBorder}
             size={'xs'}
-            onClick={() => transferTokenToUP(tokenData.address)}
+            loadingText={inProcessingText}
+            isLoading={inProcessingText !== undefined || isRevivingAll}
+            onClick={() =>
+              transferTokenToUP(tokenData.address, tokenData.tokenId!)
+            }
           >
-            {!!inProcessingText ? inProcessingText : `Revive`}
+            Revive
           </Button>
         )}
       </Flex>
@@ -194,4 +207,4 @@ const LSP8Panel: React.FC<LSP8PanelProps> = ({
   );
 };
 
-export default LSP8Panel;
+export default LSP8SimplePanel;
