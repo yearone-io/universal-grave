@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState } from "react";
 import {
   Avatar,
   Box,
@@ -18,16 +18,16 @@ import {
   useColorModeValue,
   useDisclosure,
   useToast,
-  VStack,
-} from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
-import { formatAddress, getTokenIconURL, TokenData } from '@/utils/tokenUtils';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import { ethers } from 'ethers';
-import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
-import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP8Panel from '@/components/LSP8Panel';
-import { LSP1GraveForwarder__factory } from '@/contracts';
+  VStack
+} from "@chakra-ui/react";
+import { FaExternalLinkAlt } from "react-icons/fa";
+import { formatAddress, getTokenIconURL, TokenData } from "@/utils/tokenUtils";
+import { WalletContext } from "@/components/wallet/WalletContext";
+import { ethers } from "ethers";
+import LSP8IdentifiableDigitalAsset from "@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json";
+import LSP9Vault from "@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json";
+import LSP8Panel from "@/components/LSP8Panel";
+import { LSP1GraveForwarder__factory } from "@/contracts";
 
 interface LSP8PanelProps {
   readonly tokenData: TokenData[];
@@ -167,11 +167,10 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         signer
       );
 
-      let signerAddress = await signer.getAddress();
-      const upAddress = signerAddress;
+      const signerAddress = await signer.getAddress();
       if (
         !(await LSP1GraveForwarderContract.tokenAllowlist(
-          upAddress,
+          signerAddress,
           tokenAddress
         ))
       ) {
@@ -220,9 +219,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         .connect(signer)
         .execute(0, tokenAddress, 0, lsp8Tx, { gasLimit: 400_00 });
 
-      tokenData.forEach(token => {
-        onReviveAllSuccess(collectionTokenData.address!);
-      });
+      onReviveAllSuccess(collectionTokenData.address!);
       toast({
         title: `They're alive! ⚡`,
         status: 'success',
@@ -249,7 +246,7 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
 
   const getTokenIcon = () => {
     const iconURL = getTokenIconURL(collectionTokenData.metadata?.LSP4Metadata);
-    let tokenIcon = !iconURL ? (
+    return !iconURL ? (
       <Box padding={1} fontWeight={'bold'}>
         LSP8
       </Box>
@@ -261,7 +258,6 @@ const LSP8Group: React.FC<LSP8PanelProps> = ({
         src={iconURL}
       />
     );
-    return tokenIcon;
   };
 
   return (
