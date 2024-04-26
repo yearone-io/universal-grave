@@ -1,6 +1,6 @@
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import { INTERFACE_IDS, LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { eip165ABI } from '@/abis/eip165ABI';
 import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
@@ -16,7 +16,7 @@ export type TokenData = {
   readonly name?: string;
   readonly symbol?: string;
   readonly decimals?: string;
-  readonly balance?: string;
+  readonly balance?: string | BigNumber;
   readonly tokenId?: string;
   metadata?: Record<string, any>;
   image?: string;
@@ -276,7 +276,9 @@ export async function processLSP8Asset(
 }
 
 export const getEnoughDecimals = (value: number) => {
-  if (value < 0.01 && value >= 0.0001) {
+  if (value < 1 && value >= 0.01) {
+    return 2;
+  } else if (value < 0.01 && value >= 0.0001) {
     return 4;
   } else if (value < 0.0001 && value >= 0.000001) {
     return 6;
@@ -294,5 +296,5 @@ export const getEnoughDecimals = (value: number) => {
     return 18;
   }
 
-  return 2;
+  return 0;
 };

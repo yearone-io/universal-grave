@@ -1,17 +1,11 @@
 import { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP1GraveForwarder__factory } from '@/contracts';
-import { Flex, HStack, Icon, Text, useColorModeValue } from '@chakra-ui/react';
-import { TbGrave2 } from 'react-icons/tb';
+import { Flex, HStack, Text, useColorModeValue } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 
 export default function InstallationCounter() {
-  const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
   const customColor = useColorModeValue('light.black', 'white');
-  const borderColor = useColorModeValue(
-    'var(--chakra-colors-light-black)',
-    'var(--chakra-colors-dark-purple-200)'
-  );
 
   const walletContext = useContext(WalletContext);
   const { networkConfig, provider } = walletContext;
