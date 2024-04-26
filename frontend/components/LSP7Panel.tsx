@@ -1,7 +1,5 @@
 import { useContext, useState } from 'react';
 import {
-  Avatar,
-  Box,
   Button,
   Flex,
   IconButton,
@@ -14,15 +12,15 @@ import { FaExternalLinkAlt } from 'react-icons/fa';
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import {
   formatAddress,
   getEnoughDecimals,
-  getTokenIconURL,
   TokenData,
 } from '@/utils/tokenUtils';
 import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
+import { LSP1GraveForwarder__factory } from '@/contracts';
+import { AssetIcon } from './AssetIcon';
 
 interface LSP7PanelProps {
   readonly tokenData: TokenData;
@@ -55,7 +53,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   // Assuming rawTokenAmount is a BigNumber representing the amount in base units
   const rawTokenAmount = tokenData?.balance;
 
-  const reviveText = 'Mark Safe & Revive';
   const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
@@ -63,7 +60,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     provider,
     disconnectIfNetworkChanged,
   } = walletContext;
-  const [inProcessingText, setInProcessingText] = useState('');
+  const [inProcessingText, setInProcessingText] = useState<string>();
   const containerBorderColor = useColorModeValue(
     'var(--chakra-colors-light-black)',
     'var(--chakra-colors-dark-purple-500)'
@@ -79,7 +76,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     '1px solid black',
     '1px solid var(--chakra-colors-dark-purple-500)'
   );
-  const interestsBgColor = useColorModeValue('light.white', 'dark.white');
 
   const fontColor = useColorModeValue('light.black', 'dark.purple.500');
 
@@ -87,16 +83,15 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (inProcessingText || (await disconnectIfNetworkChanged())) {
+    if (await disconnectIfNetworkChanged()) {
       return;
     }
-    setInProcessingText('Marking safe...');
+    setInProcessingText('Unblocking');
     try {
       const signer = provider.getSigner();
 
-      const LSP1GraveForwarderContract = new ethers.Contract(
+      const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
         networkConfig.universalGraveForwarder,
-        LSP1GraveForwarder.abi,
         signer
       );
 
@@ -111,7 +106,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
           gasLimit: 400_00,
         });
       }
-      setInProcessingText('Reviving...');
+      setInProcessingText('Reviving');
 
       const tokenContract = new ethers.Contract(
         tokenAddress,
@@ -140,7 +135,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
       onReviveSuccess(tokenAddress);
       toast({
-        title: `It's alive! 😇 ⚡`,
+        title: `It's alive! 🧟‍♂️`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
@@ -156,19 +151,8 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         isClosable: true,
       });
     } finally {
-      setInProcessingText('');
+      setInProcessingText(undefined);
     }
-  };
-
-  const getTokenIcon = () => {
-    const iconURL = getTokenIconURL(tokenData?.metadata?.LSP4Metadata);
-    return !iconURL ? (
-      <Box padding={1} fontWeight={'bold'}>
-        LSP7
-      </Box>
-    ) : (
-      <Avatar height={16} minW={16} name={tokenData?.name} src={iconURL} />
-    );
   };
 
   return (
@@ -183,21 +167,11 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       minWidth={'lg'}
       mb={2}
     >
-      <Flex
-        bg={interestsBgColor}
-        borderRadius="full"
-        color={fontColor}
-        border={`1px solid ${containerBorderColor}`}
-        fontSize="md"
-        height={16}
-        minW={16}
-        justifyContent={'center'}
-        alignItems={'center'}
-        boxSizing={'content-box'}
-      >
-        {getTokenIcon()}
-      </Flex>
-
+      <AssetIcon
+        name={tokenData?.name}
+        lspType="LSP7"
+        LSP4Metadata={tokenData?.metadata?.LSP4Metadata}
+      />
       <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
         <Flex flexDirection={'row'} justifyContent={'space-between'}>
           <Text color={fontColor} fontFamily={'Bungee'}>
@@ -252,9 +226,10 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               border={createButtonBorder}
               size={'xs'}
               onClick={() => transferTokenToUP(tokenData?.address)}
-              isDisabled={!!inProcessingText}
+              loadingText={inProcessingText}
+              isLoading={inProcessingText !== undefined}
             >
-              {!!inProcessingText ? inProcessingText : reviveText}
+              Unblock & revive
             </Button>
           )}
         </Flex>

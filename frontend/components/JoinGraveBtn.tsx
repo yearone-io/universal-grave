@@ -353,13 +353,14 @@ export default function JoinGraveBtn({
           color={'dark.purple.500'}
           border={'1px solid var(--chakra-colors-dark-purple-500)'}
           onClick={handleReset}
-          disabled={loading}
           mb="10px"
           fontFamily="Bungee"
           fontSize="16px"
           fontWeight="400"
+          loadingText={'Processing...'}
+          isLoading={loading}
         >
-          {loading ? 'Processing...' : 'UNSUBSCRIBE'}
+          UNSUBSCRIBE
         </Button>
       );
     } else {
@@ -379,13 +380,14 @@ export default function JoinGraveBtn({
                 handleJoin();
               }
             }}
-            disabled={loading}
             mb="10px"
             fontFamily="Bungee"
             fontSize="16px"
             fontWeight="400"
+            loadingText={'Processing...'}
+            isLoading={loading}
           >
-            {loading ? 'Processing...' : 'START'}
+            START
           </Button>
         </>
       );

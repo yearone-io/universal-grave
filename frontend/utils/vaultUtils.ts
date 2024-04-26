@@ -1,8 +1,8 @@
 import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
-import LSP1GraveForwarder from '@/abis/LSP1GraveForwarder.json';
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
+import { LSP1GraveForwarder__factory } from '@/contracts';
 
 export const createUpVault = async (
   provider: JsonRpcProvider | Web3Provider,
@@ -55,15 +55,13 @@ export const migrateVaultToNewForwarder = async (
   newForwarderAddress: string
 ) => {
   const signer = provider.getSigner();
-  const oldForwarder = new ethers.Contract(
+  const oldForwarder = LSP1GraveForwarder__factory.connect(
     oldForwarderAddress,
-    LSP1GraveForwarder.abi,
     provider
   );
   const vaultAddress = await oldForwarder.connect(signer).getGrave();
-  const newForwarder = new ethers.Contract(
+  const newForwarder = LSP1GraveForwarder__factory.connect(
     newForwarderAddress,
-    LSP1GraveForwarder.abi,
     provider
   );
   return await newForwarder.connect(signer).setGrave(vaultAddress);
