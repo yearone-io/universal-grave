@@ -47,6 +47,22 @@ const lsp8TransferSelector = computeSelector(
   'transfer(address,address,bytes32,bool,bytes)'
 );
 
+async function getImplementationBytecode(
+  provider: JsonRpcProvider | Web3Provider,
+  assetAddress: string
+) {
+  const bytecode = await provider.getCode(assetAddress);
+  // https://eips.ethereum.org/EIPS/eip-1167 Minimal Proxy Implementation
+  const proxyPattern =
+    '363d3d373d3d3d363d73[a-fA-F0-9]{40}5af43d82803e903d91602b57fd5bf3';
+  const regex = new RegExp(proxyPattern);
+  return regex.test(bytecode)
+    ? await provider.getCode(
+        ethers.utils.getAddress('0x' + bytecode.slice(22, 62))
+      )
+    : bytecode;
+}
+
 export const detectLSP = async (
   provider: JsonRpcProvider | Web3Provider,
   assetAddress: string
@@ -69,7 +85,7 @@ export const detectLSP = async (
       return GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset;
     }
 
-    const bytecode = await provider.getCode(assetAddress);
+    const bytecode = await getImplementationBytecode(provider, assetAddress);
     if (supportsFunction(bytecode, lsp7TransferSelector)) {
       return GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
     }
