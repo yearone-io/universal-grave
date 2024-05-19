@@ -263,6 +263,8 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
               src={collectionTokenData?.image}
               alt={collectionTokenData?.name}
               border={'1px solid ' + containerBorderColor}
+              minW={'250px'}
+              maxW={'300px'}
             />
           </Flex>
         )}

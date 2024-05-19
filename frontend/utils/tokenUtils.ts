@@ -47,20 +47,65 @@ const lsp8TransferSelector = computeSelector(
   'transfer(address,address,bytes32,bool,bytes)'
 );
 
-async function getImplementationBytecode(
-  provider: JsonRpcProvider | Web3Provider,
-  assetAddress: string
-) {
-  const bytecode = await provider.getCode(assetAddress);
+async function getMinimalProxyImplementationAddress(bytecode: string) {
   // https://eips.ethereum.org/EIPS/eip-1167 Minimal Proxy Implementation
   const proxyPattern =
     '363d3d373d3d3d363d73[a-fA-F0-9]{40}5af43d82803e903d91602b57fd5bf3';
   const regex = new RegExp(proxyPattern);
-  return regex.test(bytecode)
-    ? await provider.getCode(
-        ethers.utils.getAddress('0x' + bytecode.slice(22, 62))
-      )
-    : bytecode;
+  return regex.test(bytecode) ? '0x' + bytecode.slice(22, 62) : null;
+}
+
+async function getBeaconProxyImplementationAddress(
+  provider: JsonRpcProvider | Web3Provider,
+  assetAddress: string
+) {
+  try {
+    const hash = ethers.utils.keccak256(
+      ethers.utils.toUtf8Bytes('eip1967.proxy.beacon')
+    );
+    const beaconSlot = ethers.utils.hexZeroPad(
+      ethers.utils.hexlify(BigInt(hash) - BigInt(1)),
+      32
+    );
+    const beaconAddressHex = await provider.getStorageAt(
+      assetAddress,
+      beaconSlot
+    );
+    const beaconAddress = ethers.utils.getAddress(
+      ethers.utils.hexStripZeros(beaconAddressHex)
+    );
+    const beaconContract = new ethers.Contract(
+      beaconAddress,
+      ['function implementation() view returns (address)'],
+      provider
+    );
+    const implementationAddress = await beaconContract.implementation();
+    return implementationAddress;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function getImplementationBytecode(
+  provider: JsonRpcProvider | Web3Provider,
+  assetAddress: string
+) {
+  try {
+    const bytecode = await provider.getCode(assetAddress);
+    let implementationAddress: string | null =
+      await getMinimalProxyImplementationAddress(bytecode);
+    if (!implementationAddress) {
+      implementationAddress = await getBeaconProxyImplementationAddress(
+        provider,
+        assetAddress
+      );
+    }
+    return !!implementationAddress
+      ? await provider.getCode(implementationAddress)
+      : bytecode;
+  } catch (error) {
+    return '';
+  }
 }
 
 export const detectLSP = async (
@@ -95,7 +140,6 @@ export const detectLSP = async (
   } catch (error) {
     console.error('error detecting LSP asset interface', error);
   }
-
   return GRAVE_ASSET_TYPES.Unrecognised;
 };
 
