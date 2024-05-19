@@ -64,7 +64,7 @@ async function getBeaconProxyImplementationAddress(
       ethers.utils.toUtf8Bytes('eip1967.proxy.beacon')
     );
     const beaconSlot = ethers.utils.hexZeroPad(
-      ethers.utils.hexlify(BigInt(hash) - 1n),
+      ethers.utils.hexlify(BigInt(hash) - BigInt(1)),
       32
     );
     const beaconAddressHex = await provider.getStorageAt(

@@ -311,7 +311,7 @@ export default function LSPAssets({
               fontFamily="Bungee"
               mb="20px"
             >
-              Unrecognized LSP7 Assets
+              Nonstandard LSP7 Assets
             </Text>
             {unrecognisedLsp7Assets.map((asset, index) => (
               <Box key={'unrecognised-lsp7-' + index}>
@@ -334,7 +334,7 @@ export default function LSPAssets({
               fontFamily="Bungee"
               mb="20px"
             >
-              Unrecognized LSP8 Assets
+              Nonstandard LSP8 Assets
             </Text>
             {unrecognisedLsp8Assets.map((asset, index) => (
               <Box key={'unrecognised-lsp8-' + index}>
