@@ -33,10 +33,10 @@ export default function SendToGravePanel() {
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [inputTokenAddress, setInputTokenAddress] = useState<string>('');
   const [tokenCheckMessage, setTokenCheckMessage] = useState<string>('');
-
   const [tokenData, setTokenData] = useState<TokenData | undefined>(undefined);
   const [debouncedTokenAddress, setDebouncedTokenAddress] =
     useState(inputTokenAddress);
+  const [transferBatchSize, setTransferBatchSize] = useState<number>(1);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -160,6 +160,97 @@ export default function SendToGravePanel() {
     await tx.wait();
   };
 
+  const estimateBatchSize = async (
+    walletNftIds: string[],
+    maxGasLimit: BigInt
+  ) => {
+    let batchSize = walletNftIds.length;
+    const tokenContract = new ethers.Contract(
+      inputTokenAddress,
+      LSP8IdentifiableDigitalAsset.abi,
+      signer
+    );
+    const wallet = await signer.getAddress();
+
+    while (batchSize > 1) {
+      try {
+        const batch = walletNftIds.slice(0, batchSize);
+
+        const vaultAddresses: string[] = [];
+        const signerAddresses: string[] = [];
+        const tokenIds: string[] = [];
+        const forceValues: boolean[] = [];
+        const dataValues: string[] = [];
+
+        batch.forEach((id: string) => {
+          signerAddresses.push(wallet);
+          vaultAddresses.push(graveVault as string);
+          tokenIds.push(id);
+          forceValues.push(false);
+          dataValues.push('0x');
+        });
+
+        const estimatedGas = await tokenContract.estimateGas.transferBatch(
+          signerAddresses,
+          vaultAddresses,
+          tokenIds,
+          forceValues,
+          dataValues
+        );
+
+        if (estimatedGas.lt(ethers.BigNumber.from(maxGasLimit))) {
+          break;
+        } else {
+          // make the batch 25% smaller
+          batchSize = Math.floor(batchSize * 0.75);
+        }
+      } catch (error) {
+        batchSize = Math.floor(batchSize * 0.75);
+      }
+    }
+    setTransferBatchSize(batchSize);
+    return batchSize;
+  };
+
+  const transferLSP8InBatches = async (
+    walletNftIds: string[],
+    batchSize: number
+  ) => {
+    const tokenContract = new ethers.Contract(
+      inputTokenAddress,
+      LSP8IdentifiableDigitalAsset.abi,
+      signer
+    );
+    const wallet = await signer.getAddress();
+
+    for (let i = 0; i < walletNftIds.length; i += batchSize) {
+      const batch = walletNftIds.slice(i, i + batchSize);
+
+      const vaultAddresses: string[] = [];
+      const signerAddresses: string[] = [];
+      const tokenIds: string[] = [];
+      const forceValues: boolean[] = [];
+      const dataValues: string[] = [];
+
+      batch.forEach((id: string) => {
+        signerAddresses.push(wallet);
+        vaultAddresses.push(graveVault as string);
+        tokenIds.push(id);
+        forceValues.push(false);
+        dataValues.push('0x');
+      });
+
+      const tx = await tokenContract.transferBatch(
+        signerAddresses,
+        vaultAddresses,
+        tokenIds,
+        forceValues,
+        dataValues
+      );
+      await tx.wait();
+    }
+  };
+
   const transferLSP8ToGrave = async () => {
     const tokenContract = new ethers.Contract(
       inputTokenAddress,
@@ -169,28 +260,25 @@ export default function SendToGravePanel() {
     const wallet = await signer.getAddress();
     const walletNftIds = await tokenContract.tokenIdsOf(wallet);
 
-    const vaultAddresses: string[] = [];
-    const signerAddresses: string[] = [];
-    const tokenIds: string[] = [];
-    const forceValues: boolean[] = [];
-    const dataValues: string[] = [];
+    const maxGasLimit = (BigInt(1_000_000) * BigInt(80)) / BigInt(100); // Adjust this value based on your needs
+    const batchSize = await estimateBatchSize(walletNftIds, maxGasLimit);
 
-    walletNftIds.forEach((id: string) => {
-      signerAddresses.push(wallet);
-      vaultAddresses.push(graveVault as string);
-      tokenIds.push(id);
-      forceValues.push(false);
-      dataValues.push('0x');
-    });
+    await transferLSP8InBatches(walletNftIds, batchSize);
+  };
 
-    const tx = await tokenContract.transferBatch(
-      signerAddresses,
-      vaultAddresses,
-      tokenIds,
-      forceValues,
-      dataValues
-    );
-    await tx.wait();
+  const getBatchDetailsMessage = () => {
+    if (
+      isSubmitting &&
+      (tokenData?.interface ===
+        GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset ||
+        tokenData?.interface ===
+          GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset) &&
+      transferBatchSize > 1
+    ) {
+      return ` Batches of ${transferBatchSize}.`;
+    } else {
+      return null;
+    }
   };
 
   const transferTokenFromUP = async () => {
@@ -319,6 +407,7 @@ export default function SendToGravePanel() {
             />
             <Text ml={2} fontFamily="Bungee" fontWeight={400} fontSize={'14px'}>
               {getFieldMessage()}
+              {getBatchDetailsMessage()}
             </Text>
           </Flex>
         </Box>
