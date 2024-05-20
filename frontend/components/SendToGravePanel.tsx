@@ -260,7 +260,7 @@ export default function SendToGravePanel() {
     const wallet = await signer.getAddress();
     const walletNftIds = await tokenContract.tokenIdsOf(wallet);
 
-    const maxGasLimit = (BigInt(1_000_000) * BigInt(80)) / BigInt(100); // Adjust this value based on your needs
+    const maxGasLimit = (BigInt(42_000_000) * BigInt(80)) / BigInt(100); // Adjust this value based on your needs
     const batchSize = await estimateBatchSize(walletNftIds, maxGasLimit);
 
     await transferLSP8InBatches(walletNftIds, batchSize);
