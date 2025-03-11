@@ -1,14 +1,21 @@
 'use client';
-import { Flex, useColorModeValue, Container, Image } from '@chakra-ui/react';
+import { Flex, Container, Image } from '@chakra-ui/react';
 import React from 'react';
-import WalletConnector from './wallet/WalletConnector';
+import WalletConnectButton from '@/components/WalletConnectButton';
 import Link from 'next/link';
+import { getUrlNameByChainId } from '@/utils/universalProfile';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { supportedNetworks } from '@/constants/supportedNetworks';
 
 export default function Header() {
+  const { chainId } = useProfile();
   const bgColor = 'dark.purple.300';
   const color = 'dark.black';
   const logoPath = '/images/logo-text.png';
   const betaPath = '/images/beta.png';
+  const networkName = chainId
+    ? getUrlNameByChainId(chainId)
+    : supportedNetworks['42'].urlName;
 
   return (
     <Flex
@@ -30,7 +37,7 @@ export default function Header() {
         justifyContent={'space-between'}
         alignItems={'center'}
       >
-        <Link href="/">
+        <Link href={`/${networkName}`}>
           <Flex ml={2} gap={2} alignItems={'center'} justifyContent={'center'}>
             <Image src={betaPath} alt="Universal-Grave-logo" height={'60px'} />
             <Image
@@ -42,7 +49,7 @@ export default function Header() {
           </Flex>
         </Link>
         <Flex justifyContent={'flex-end'} alignItems={'center'} gap={2}>
-          <WalletConnector />
+          <WalletConnectButton />
         </Flex>
       </Container>
     </Flex>

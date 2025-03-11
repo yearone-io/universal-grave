@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, useColorModeValue, VStack } from '@chakra-ui/react';
-import SignInButton from '@/components/SignInButton';
+import WalletConnectButton from './WalletConnectButton';
 
 const SignInBox: React.FC = () => {
   const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200'); // Adjusts color based on the theme
@@ -28,7 +28,7 @@ const SignInBox: React.FC = () => {
       >
         Please sign in with your Universal Profile to connect a GRAVE spambox.
       </Text>
-      <SignInButton />
+      <WalletConnectButton />
     </VStack>
   );
 };

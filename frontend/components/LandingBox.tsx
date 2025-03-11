@@ -11,39 +11,25 @@ import {
   InputRightElement,
   Stack,
   Text,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import Link from 'next/link';
 import { BsActivity, BsArrow90DegRight } from 'react-icons/bs';
 import LSPExplainer from '@/components/LSPExplainer';
 import { ChangeEvent, useState } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import { useContext, useEffect } from 'react';
-import InstallationCounter from '@/components/InstallationCounter';
+import { useEffect } from 'react';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { CHAINS, networkNameToIdMapping, supportedNetworks } from '@/constants/supportedNetworks';
 
-export default function Landing() {
-  const walletContext = useContext(WalletContext);
-  const { graveVault, account } = walletContext;
+const LandingBox = ({ networkName }: { networkName: CHAINS }) => {
+  const networkConfig = supportedNetworks[networkNameToIdMapping[networkName]];
+  const { profileDetailsData, graveVault } = useProfile();
   const logoPath = '/images/logo-full.png';
-  const subheadingColor = useColorModeValue('light.black', 'dark.white');
-  const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
-  const customColor = useColorModeValue(
-    'light.black',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const borderColor = useColorModeValue(
-    'var(--chakra-colors-light-black)',
-    'var(--chakra-colors-dark-purple-200)'
-  );
-  const createButtonBg = useColorModeValue('light.green.brand', 'dark.white');
-  const createButtonColor = useColorModeValue(
-    'light.black',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const createButtonBorder = useColorModeValue(
-    '1px solid black',
-    '1px solid var(--chakra-colors-dark-purple-500)'
-  );
+  const subheadingColor = 'dark.white';
+  const customColor = 'var(--chakra-colors-dark-purple-500)';
+  const borderColor = 'var(--chakra-colors-dark-purple-200)';
+  const createButtonBg = 'dark.white';
+  const createButtonColor = 'var(--chakra-colors-dark-purple-500)';
+  const createButtonBorder = '1px solid var(--chakra-colors-dark-purple-500)';
   const [inputValue, setInputValue] = useState<string>();
   const defaultGraveButtonText = 'Protect your 🆙 with a GRAVE';
   const [graveButtonText, setGraveButtonText] = useState<string>(
@@ -56,7 +42,7 @@ export default function Landing() {
     } else {
       setGraveButtonText('Manage the assets in your 🆙 Grave');
     }
-  }, [graveVault, account]);
+  }, [graveVault, profileDetailsData]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -66,6 +52,10 @@ export default function Landing() {
     console.log('inputValue', inputValue);
     window.location.href = `/grave/${inputValue}`;
   };
+
+  if (!networkConfig) {
+    return <div>Network not supported</div>;
+  }
 
   return (
     <Container
@@ -149,7 +139,6 @@ export default function Landing() {
           <Image src={logoPath} alt="Universal-Grave-logo" minWidth={'300px'} />
         </Flex>
       </Flex>
-      <InstallationCounter />
       <Box mb={{ base: 5, sm: 8, lg: 16 }}>
         <Text
           pb={5}
@@ -190,3 +179,5 @@ export default function Landing() {
     </Container>
   );
 }
+
+export default LandingBox;

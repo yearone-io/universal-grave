@@ -5,9 +5,8 @@ import '@fontsource/montserrat/600.css';
 import '@fontsource/montserrat/700.css';
 import '@fontsource/montserrat/800.css';
 import './globals.css';
-import { WalletProvider } from '@/components/wallet/WalletProvider';
 import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import NavBar from '@/components/NavBar';
 import Head from 'next/head';
 import { Providers } from '@/app/providers';
 import { Metadata } from 'next';
@@ -46,7 +45,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <WalletProvider>
         <Head>
           <meta
             name="viewport"
@@ -62,13 +60,12 @@ export default function RootLayout({
                 minHeight: '105vh',
               }}
             >
-              <Header />
+              <NavBar />
               <div style={{ flexGrow: 0.9 }}>{children}</div>
               <Footer />
             </div>
           </Providers>
         </body>
-      </WalletProvider>
     </html>
   );
 }

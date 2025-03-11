@@ -1,12 +1,13 @@
 import './globals.css';
 import { Metadata } from 'next';
-import Landing from '@/components/Landing';
+import { CHAINS } from '@/constants/supportedNetworks';
+import LandingBox from '@/components/LandingBox';
 
 export const metadata: Metadata = {
   title: 'GRAVE',
   description: 'A cemetery for unwanted digital assets',
 };
 
-export default function Home() {
-  return <Landing />;
+export default function HomePage() {
+  return <LandingBox networkName={CHAINS.LUKSO} />;
 }

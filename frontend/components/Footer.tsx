@@ -11,10 +11,9 @@ import {
   Image,
   Select,
 } from '@chakra-ui/react';
-import { FaTwitter, FaMoon, FaGithub } from 'react-icons/fa';
+import { FaTwitter, FaGithub } from 'react-icons/fa';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { WalletContext } from '@/components/wallet/WalletContext';
-import { getNetworkConfig } from '@/constants/networks';
 
 const SocialButton = ({
   children,
@@ -50,10 +49,27 @@ const SocialButton = ({
 };
 
 export default function SmallWithLogoLeft() {
-  const colorModeIcon = FaMoon;
   const logoPath = '/images/logo-text.png';
-  const walletContext = useContext(WalletContext);
-  const { networkConfig } = walletContext;
+  // Get the current pathname (e.g. "/lukso/catalog")
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Split the pathname and filter out empty segments.
+  const pathSegments = pathname.split('/').filter(seg => seg.length > 0);
+  // The network name is assumed to be the first segment in the URL.
+  const networkNameFromUrl = pathSegments[0] || '';
+
+  // Determine the current network: if the URL contains "lukso-testnet" then use that, otherwise default to "lukso".
+  const currentNetwork =
+    networkNameFromUrl.toLowerCase() === 'lukso-testnet'
+      ? 'lukso-testnet'
+      : '/';
+
+  // When the network selection changes, redirect the user to the new network's home page.
+  const handleNetworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedNetwork = e.target.value;
+    router.push(`/${selectedNetwork}`);
+  };
   return (
     <Box
       bg={useColorModeValue('light.gray.100', 'dark.purple.500')}
@@ -98,15 +114,15 @@ export default function SmallWithLogoLeft() {
           <Link href={'/feedback'}>Feedback</Link>
           <Box minWidth={'170'}>
             <Select
-              defaultValue={process.env.NEXT_PUBLIC_DEFAULT_NETWORK!}
-              onChange={event =>
-                (window.location.href = getNetworkConfig(
-                  event.target.value
-                ).baseUrl)
-              }
+              size="sm"
+              value={currentNetwork}
+              onChange={handleNetworkChange}
+              focusBorderColor="transparent"
+              _focus={{ boxShadow: 'none' }}
+              cursor={'pointer'}
             >
-              <option value={'mainnet'}>LUKSO Mainnet</option>
-              <option value={'testnet'}>LUKSO Testnet</option>
+              <option value="/">LUKSO</option>
+              <option value="lukso-testnet">LUKSO Testnet</option>
             </Select>
           </Box>
         </Flex>
