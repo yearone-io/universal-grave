@@ -5,7 +5,6 @@ import {
   IconButton,
   Image,
   Text,
-  useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
@@ -39,22 +38,13 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
     disconnectIfNetworkChanged,
   } = walletContext;
   const [inProcessingText, setInProcessingText] = useState<string>();
-  const containerBorderColor = useColorModeValue(
-    'var(--chakra-colors-light-black)',
-    'var(--chakra-colors-dark-purple-500)'
-  );
+  const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
 
-  const createButtonBg = useColorModeValue('light.green.brand', 'dark.white');
-  const createButtonColor = useColorModeValue(
-    'light.black',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const createButtonBorder = useColorModeValue(
-    '1px solid black',
-    '1px solid var(--chakra-colors-dark-purple-500)'
-  );
+  const createButtonBg = 'dark.white';
+  const createButtonColor = 'var(--chakra-colors-dark-purple-500)';
+  const createButtonBorder = '1px solid var(--chakra-colors-dark-purple-500)';
 
-  const fontColor = useColorModeValue('light.black', 'dark.purple.500');
+  const fontColor = 'dark.purple.500';
 
   const tokenAddressDisplay = formatAddress(tokenData.tokenId!);
   const toast = useToast();

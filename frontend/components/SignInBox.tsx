@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, useColorModeValue, VStack } from '@chakra-ui/react';
+import { Text, VStack } from '@chakra-ui/react';
 import WalletConnectButton from './WalletConnectButton';
 
 const SignInBox: React.FC = () => {
-  const bgColor = useColorModeValue('light.green.brand', 'dark.purple.200'); // Adjusts color based on the theme
+  const bgColor = 'dark.purple.200'; // Adjusts color based on the theme
 
   return (
     <VStack

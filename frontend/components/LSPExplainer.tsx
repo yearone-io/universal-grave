@@ -3,7 +3,6 @@ import {
   Flex,
   Text,
   IconButton,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 

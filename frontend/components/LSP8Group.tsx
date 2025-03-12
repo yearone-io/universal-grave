@@ -13,7 +13,6 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
-  useColorModeValue,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
@@ -52,24 +51,15 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   const [inProcessingText, setInProcessingText] = useState<string>();
   const [isRevivingAll, setIsRevivingAll] = useState<boolean>(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const containerBorderColor = useColorModeValue(
-    'var(--chakra-colors-light-black)',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
+  const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
+  const panelBgColor = 'dark.purple.200';
 
-  const createButtonBg = useColorModeValue('light.green.brand', 'dark.white');
-  const createButtonColor = useColorModeValue(
-    'light.black',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const createButtonBorder = useColorModeValue(
-    '1px solid black',
-    '1px solid var(--chakra-colors-dark-purple-500)'
-  );
+  const createButtonBg = 'dark.white';
+  const createButtonColor = 'var(--chakra-colors-dark-purple-500)';
+  const createButtonBorder = '1px solid var(--chakra-colors-dark-purple-500)';
 
-  const fontColor = useColorModeValue('light.black', 'dark.purple.500');
-  const closeButtonColor = useColorModeValue('light.black', 'dark.purple.500');
+  const fontColor = 'dark.purple.500';
+  const closeButtonColor = 'dark.purple.500';
 
   const collectionTokenData = tokenData[0];
   const tokenAddressDisplay = formatAddress(collectionTokenData.address);

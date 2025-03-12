@@ -1,11 +1,10 @@
 'use client';
-import React, { ReactNode, useContext } from 'react';
+import React, { ReactNode } from 'react';
 import {
   Box,
   chakra,
   Container,
   Stack,
-  useColorModeValue,
   VisuallyHidden,
   Flex,
   Image,
@@ -26,7 +25,7 @@ const SocialButton = ({
 }) => {
   return (
     <chakra.button
-      bg={useColorModeValue('light.gray.100', 'dark.purple.500')}
+      bg={'dark.purple.500'}
       rounded={'full'}
       w={8}
       h={8}
@@ -39,7 +38,7 @@ const SocialButton = ({
       justifyContent={'center'}
       transition={'background 0.3s ease'}
       _hover={{
-        bg: useColorModeValue('light.green.brand', 'dark.purple.300'),
+        bg: 'dark.purple.300',
       }}
     >
       <VisuallyHidden>{label}</VisuallyHidden>
@@ -72,12 +71,9 @@ export default function SmallWithLogoLeft() {
   };
   return (
     <Box
-      bg={useColorModeValue('light.gray.100', 'dark.purple.500')}
-      color={useColorModeValue('light.black', 'dark.white')}
-      borderTop={useColorModeValue(
-        '1px solid var(--chakra-colors-light-black)',
-        '1px solid var(--chakra-colors-dark-purple-100)'
-      )}
+      bg={'dark.purple.500'}
+      color={'dark.white'}
+      borderTop={'1px solid var(--chakra-colors-dark-purple-100)'}
       mt={5}
     >
       <Container

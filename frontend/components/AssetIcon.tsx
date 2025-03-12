@@ -1,5 +1,5 @@
 import React from 'react';
-import { Avatar, Box, Flex, useColorModeValue } from '@chakra-ui/react';
+import { Avatar, Box, Flex } from '@chakra-ui/react';
 import { getTokenIconURL } from '@/utils/tokenUtils';
 
 export interface IAssetIcon {
@@ -9,12 +9,9 @@ export interface IAssetIcon {
 }
 
 export const AssetIcon = ({ lspType, name, LSP4Metadata }: IAssetIcon) => {
-  const containerBorderColor = useColorModeValue(
-    'var(--chakra-colors-light-black)',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const interestsBgColor = useColorModeValue('light.white', 'dark.white');
-  const fontColor = useColorModeValue('light.black', 'dark.purple.500');
+  const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
+  const interestsBgColor = 'dark.white';
+  const fontColor = 'dark.purple.500';
   const getTokenIcon = () => {
     const iconURL = getTokenIconURL(LSP4Metadata);
     return !iconURL ? (

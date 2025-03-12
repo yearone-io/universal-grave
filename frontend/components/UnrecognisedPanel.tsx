@@ -4,7 +4,6 @@ import {
   Flex,
   IconButton,
   Text,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { constants } from '@/app/constants';
@@ -29,15 +28,12 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
   const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
 
-  const containerBorderColor = useColorModeValue(
-    'var(--chakra-colors-light-black)',
-    'var(--chakra-colors-dark-purple-500)'
-  );
-  const panelBgColor = useColorModeValue('light.white', 'dark.purple.200');
+  const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
+  const panelBgColor = 'dark.purple.200';
 
-  const interestsBgColor = useColorModeValue('light.white', 'dark.white');
+  const interestsBgColor = 'dark.white';
 
-  const fontColor = useColorModeValue('light.black', 'dark.purple.500');
+  const fontColor = 'dark.purple.500';
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
 
