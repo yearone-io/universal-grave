@@ -14,20 +14,27 @@ import LSP7Panel from '@/components/LSP7Panel';
 import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
-import { WalletContext } from '@/components/wallet/WalletContext';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import LSP8Group from '@/components/LSP8Group';
+import { BrowserProvider, JsonRpcProvider } from 'ethers';
+import { networkNameToIdMapping, supportedNetworks } from '@/constants/supportedNetworks';
 
 export default function LSPAssets({
+  networkName,
   graveVault,
   graveOwner,
 }: {
+  networkName: string;
   graveVault: string | null;
   graveOwner: string;
 }) {
-  const walletContext = useContext(WalletContext);
-  const { provider } = walletContext;
+  const networkId = networkNameToIdMapping[networkName];
+  const { rpcUrl, name, graveAssistant } = supportedNetworks[networkId];
+  const provider = new JsonRpcProvider(rpcUrl, {
+    name: name,
+    chainId: networkId,
+  }) as (JsonRpcProvider | BrowserProvider);
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenData[][]>([]);

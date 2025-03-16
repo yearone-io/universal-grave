@@ -9,7 +9,8 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useState } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { ethers } from 'ethers';
 import LSP7DigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP7DigitalAsset.json';
@@ -23,7 +24,6 @@ import {
 } from '@/utils/tokenUtils';
 
 export default function SendToGravePanel() {
-  const walletContext = useContext(WalletContext);
   const { networkConfig, provider, disconnectIfNetworkChanged, graveVault } =
     walletContext;
   const toast = useToast();

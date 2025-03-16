@@ -1,9 +1,9 @@
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
-import foundations from './theme/foundations';
-import { Button } from './theme/components/button';
-import { Heading } from './theme/components/heading';
-import { Text } from './theme/components/text';
-import { Link } from './theme/components/link';
+import foundations from '../theme/foundations';
+import { Button } from '../theme/components/button';
+import { Heading } from '../theme/components/heading';
+import { Text } from '../theme/components/text';
+import { Link } from '../theme/components/link';
 
 const config = {
   initialColorMode: 'dark',

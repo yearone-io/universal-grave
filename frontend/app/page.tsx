@@ -1,6 +1,6 @@
 import './globals.css';
 import { Metadata } from 'next';
-import { CHAINS } from '@/constants/supportedNetworks';
+import { ChainSlugs } from '@/constants/supportedNetworks';
 import LandingBox from '@/components/LandingBox';
 
 export const metadata: Metadata = {
@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <LandingBox networkName={CHAINS.LUKSO} />;
+  return <LandingBox networkName={ChainSlugs.LUKSO} />;
 }

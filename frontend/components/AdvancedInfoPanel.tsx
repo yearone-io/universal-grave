@@ -1,12 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Box, Text } from '@chakra-ui/react';
-import { WalletContext } from '@/components/wallet/WalletContext';
 import { formatAddress } from '@/utils/tokenUtils';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 const AdvancedInfoPanel = () => {
-  const walletContext = useContext(WalletContext);
-  const { URDLsp7, URDLsp8, networkConfig, graveVault } = walletContext;
-
+  const { URDLsp7, URDLsp8, appNetworkConfig: networkConfig, graveVault } = useConnectedAccount();
   return (
     <>
       <Text
@@ -22,7 +20,7 @@ const AdvancedInfoPanel = () => {
           <strong>LSP7</strong> Universal Receiver Delegate
         </Text>
         <a
-          href={`${networkConfig.explorerURL}/address/${URDLsp7}`}
+          href={`${networkConfig.explorer}/address/${URDLsp7}`}
           style={{ textDecoration: 'underline' }}
           target="_blank"
         >
@@ -34,7 +32,7 @@ const AdvancedInfoPanel = () => {
           <strong>LSP8</strong> Universal Receiver Delegate
         </Text>
         <a
-          href={`${networkConfig.explorerURL}/address/${URDLsp8}`}
+          href={`${networkConfig.explorer}/address/${URDLsp8}`}
           style={{ textDecoration: 'underline' }}
           target="_blank"
         >
@@ -47,7 +45,7 @@ const AdvancedInfoPanel = () => {
             <strong>Vault</strong>
           </Text>
           <a
-            href={`${networkConfig.explorerURL}/address/${graveVault}`}
+            href={`${networkConfig.explorer}/address/${graveVault}`}
             style={{ textDecoration: 'underline' }}
             target="_blank"
           >

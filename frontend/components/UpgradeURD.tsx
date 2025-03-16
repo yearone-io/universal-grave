@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -15,7 +15,8 @@ import {
   useSteps,
   useToast,
 } from '@chakra-ui/react';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { formatAddress } from '@/utils/tokenUtils';
 import { FaCheckCircle } from 'react-icons/fa';
 import {
@@ -23,6 +24,7 @@ import {
   updateBECPermissions,
 } from '@/utils/urdUtils';
 import { migrateVaultToNewForwarder } from '@/utils/vaultUtils';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 const initialLeavingSteps = [
   {
@@ -54,16 +56,13 @@ export const UpgradeURD = ({
 }: {
   oldForwarderAddress: string;
 }) => {
-  const walletContext = useContext(WalletContext);
   const {
-    account,
-    provider,
-    networkConfig,
+    universalProfile,
+    appNetworkConfig,
+    globalProvider: provider,
     setURDLsp7,
     setURDLsp8,
-    mainUPController,
-    disconnectIfNetworkChanged,
-  } = walletContext;
+  } = useConnectedAccount();;
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
@@ -78,14 +77,11 @@ export const UpgradeURD = ({
   const toast = useToast();
 
   const handleUpgrade = async () => {
-    if (await disconnectIfNetworkChanged()) {
-      return;
-    }
     setIsSubmitting(true);
     setLeavingStep(0);
 
     try {
-      await updateBECPermissions(provider, account!, mainUPController!);
+      await updateBECPermissions(provider, universalProfile!.address, universalProfile!.mainUPController);
     } catch (e: any) {
       console.error('Error updating permissions', e);
       toast({
@@ -105,7 +101,7 @@ export const UpgradeURD = ({
     try {
       await toggleForwarderAsLSPDelegate(
         provider,
-        account!,
+        universalProfile!.address,
         oldForwarderAddress,
         false
       );
@@ -129,7 +125,7 @@ export const UpgradeURD = ({
       await migrateVaultToNewForwarder(
         provider,
         oldForwarderAddress,
-        networkConfig.universalGraveForwarder
+        appNetworkConfig.assistantsProtocolAddress,
       );
     } catch (e: any) {
       console.error(
@@ -153,12 +149,13 @@ export const UpgradeURD = ({
     try {
       await toggleForwarderAsLSPDelegate(
         provider,
-        account!,
-        networkConfig.universalGraveForwarder,
+        universalProfile!.address,
+        appNetworkConfig.assistantsProtocolAddress,
         true
       );
-      setURDLsp7(networkConfig.universalGraveForwarder);
-      setURDLsp8(networkConfig.universalGraveForwarder);
+      // todo: URD needs to be set on main level and not LSP7/LSP8
+      setURDLsp7(appNetworkConfig.assistantsProtocolAddress);
+      setURDLsp8(appNetworkConfig.assistantsProtocolAddress);
     } catch (e: any) {
       console.error('Error setting forwarder as LSP delegate', e);
       toast({
@@ -233,7 +230,7 @@ export const UpgradeURD = ({
                 <Flex>
                   <Box mr="2px">{step.instructions2.text}</Box>
                   <a
-                    href={`${networkConfig.explorerURL}/address/${step.instructions2.address}`}
+                    href={`${appNetworkConfig.explorerURL}/address/${step.instructions2.address}`}
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >
@@ -248,7 +245,7 @@ export const UpgradeURD = ({
                 {step.completeText.text}
                 {step.completeText.address && (
                   <a
-                    href={`${networkConfig.explorerURL}/address/${step.completeText.address}`}
+                    href={`${appNetworkConfig.explorerURL}/address/${step.completeText.address}`}
                     style={{ textDecoration: 'underline' }}
                     target="_blank"
                   >

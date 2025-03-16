@@ -12,7 +12,8 @@ import { ethers } from 'ethers';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { LSP1GraveForwarder__factory } from '@/contracts';
 
 interface LSP8SimplePanelProps {
@@ -30,7 +31,6 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   onReviveSuccess,
   isRevivingAll,
 }) => {
-  const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
     networkConfig,

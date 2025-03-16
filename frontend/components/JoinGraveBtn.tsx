@@ -1,6 +1,5 @@
 'use client';
-import { useContext, useEffect, useState } from 'react';
-import { WalletContext } from './wallet/WalletContext';
+import { useEffect, useState } from 'react';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import {
@@ -11,6 +10,7 @@ import {
   setGraveInForwarder,
 } from '@/utils/urdUtils';
 import { createUpVault, setVaultURD } from '@/utils/vaultUtils';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -40,33 +40,28 @@ export default function JoinGraveBtn({
   onLeavingStepChange?: (newStep: number, data?: any) => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const walletContext = useContext(WalletContext);
   const [joiningStep, setJoiningStep] = useState<number>(0);
   const [leavingStep, setLeavingStep] = useState<number>(-1);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   // Checking if the walletContext is available
-  if (!walletContext) {
-    throw new Error('WalletConnector must be used within a WalletProvider.');
-  }
   const {
-    provider,
-    account,
+    globalProvider: provider,
+    universalProfile,
+    appNetworkConfig: networkConfig,
     graveVault,
-    mainUPController,
     addGraveVault,
     setURDLsp7,
     setURDLsp8,
     URDLsp7,
     URDLsp8,
-    networkConfig,
-    disconnectIfNetworkChanged,
-  } = walletContext;
+    disconnect,
+  } = useConnectedAccount();
 
   // ========================= HOOKS =========================
   useEffect(() => {
     // Request account access on component mount
-    if (window.lukso && account) {
+    if (window.lukso && universalProfile?.address) {
       fetchProfileUrdData().then(() => {
         // Update steps if the user has already joined the Grave
         if (
@@ -80,17 +75,17 @@ export default function JoinGraveBtn({
         }
       });
     }
-  }, [account, URDLsp7, URDLsp8]);
+  }, [universalProfile, URDLsp7, URDLsp8]);
 
   // Update the joining step and add extra data if needed
   useEffect(() => {
     const transactionsData = {
-      0: mainUPController,
+      0: universalProfile?.mainUPController,
       1: graveVault,
     };
 
     onJoiningStepChange(joiningStep, transactionsData);
-  }, [joiningStep, mainUPController, graveVault]);
+  }, [joiningStep, universalProfile, graveVault]);
 
   // Notify the parent component when the leaving step changes
   useEffect(() => {
@@ -104,7 +99,7 @@ export default function JoinGraveBtn({
    */
   const fetchProfileUrdData = async () => {
     try {
-      const urdData = await getUpAddressUrds(provider, account as string);
+      const urdData = await getUpAddressUrds(provider, universalProfile?.address as string);
       urdData.lsp7Urd && setURDLsp7(urdData.lsp7Urd);
       urdData.lsp8Urd && setURDLsp8(urdData.lsp8Urd);
     } catch (err) {
@@ -135,7 +130,7 @@ export default function JoinGraveBtn({
     console.log('step 0');
     let vaultAddress = graveVault;
     try {
-      await updateBECPermissions(provider, account!, mainUPController!);
+      await updateBECPermissions(provider, universalProfile?.address!, universalProfile?.mainUPController!);
       setJoiningStep(1);
       console.log('step 1');
     } catch (err: any) {
@@ -147,7 +142,7 @@ export default function JoinGraveBtn({
       try {
         const vaultTranx = (await createUpVault(
           provider,
-          account as string
+          universalProfile?.address as string
         )) as any;
         // Find the vault address from the event
         const creationEvent = vaultTranx.events.find((event: any) => {
@@ -199,7 +194,7 @@ export default function JoinGraveBtn({
     try {
       await toggleForwarderAsLSPDelegate(
         provider,
-        account!,
+        universalProfile?.address!,
         networkConfig.universalGraveForwarder,
         true
       );
@@ -241,7 +236,7 @@ export default function JoinGraveBtn({
 
     // 1- Set Permissions on Browser Extension Controller
     try {
-      await updateBECPermissions(provider, account!, mainUPController!);
+      await updateBECPermissions(provider, universalProfile?.address!, universalProfile?.mainUPController!);
       setLeavingStep(1);
     } catch (err: any) {
       console.error('Error: ', err);
@@ -259,7 +254,7 @@ export default function JoinGraveBtn({
     try {
       await toggleForwarderAsLSPDelegate(
         provider,
-        account!,
+        universalProfile?.address!,
         networkConfig.universalGraveForwarder,
         false
       );
@@ -306,7 +301,7 @@ export default function JoinGraveBtn({
    * This way no more assets are redirected but the UP still has access to the Grave vault.
    */
   const handleReset = async () => {
-    if (loading || (await disconnectIfNetworkChanged())) return;
+    if (loading) return;
     setLoading(true);
     try {
       await leaveTheGrave();
@@ -320,7 +315,7 @@ export default function JoinGraveBtn({
    * transactions is triggered.
    */
   const handleJoin = async () => {
-    if (loading || (await disconnectIfNetworkChanged())) return;
+    if (loading) return;
     setLoading(true);
     try {
       await initJoinProcess();
@@ -394,7 +389,7 @@ export default function JoinGraveBtn({
     }
   };
 
-  if (!account) {
+  if (!universalProfile?.address) {
     return <></>;
   }
 

@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { BrowserProvider, ethers, JsonRpcProvider } from 'ethers';
 import { Network, getNetworkConfig } from '@/constants/networks';
 import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
@@ -7,12 +7,16 @@ import { getLuksoProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
-  GRAVE_CONTROLLER_PERMISSIONS,
+  UAP_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
-import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 import { LSP1GraveForwarder__factory } from '@/contracts';
+import { ERC725__factory } from '@/types';
+
+export const isUAPURDSet = (protocolURD: string | null, coreURD: string | null, URDLsp7: string | null, URDLsp8: string | null) => {
+  return protocolURD === coreURD && URDLsp7 === "0x" && URDLsp8 === "0x";
+}
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -41,7 +45,7 @@ export interface IUPForwarderData {
 }
 
 export const getUpAddressUrds = async (
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   upAddress: string
 ): Promise<IUPForwarderData> => {
   const urdData: IUPForwarderData = {
@@ -50,12 +54,8 @@ export const getUpAddressUrds = async (
     oldUrdVersion: null,
   };
   try {
-    const UP = new ethers.Contract(
-      upAddress as string,
-      UniversalProfile.abi,
-      provider
-    );
-    const UPData = await UP.connect(provider.getSigner()).getDataBatch([
+    const UP = ERC725__factory.connect(upAddress, provider);
+    const UPData = await UP.getDataBatch([
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
@@ -80,7 +80,7 @@ export const getUpAddressUrds = async (
  * Function to update the permissions of the Browser Extension controller.
  */
 export const updateBECPermissions = async (
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   account: string,
   mainUPController: string
 ) => {
@@ -103,7 +103,7 @@ export const updateBECPermissions = async (
 
   const newPermissions = erc725.encodePermissions({
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-    ...GRAVE_CONTROLLER_PERMISSIONS,
+    ...UAP_CONTROLLER_PERMISSIONS,
   });
   const permissionsData = erc725.encodeData([
     {
@@ -121,7 +121,7 @@ export const updateBECPermissions = async (
 };
 
 export const toggleForwarderAsLSPDelegate = async (
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   upAccount: string,
   forwarderAddress: string,
   isDelegate: boolean
@@ -231,7 +231,7 @@ export const doesControllerHaveMissingPermissions = async (
   );
   const missingPermissions = getMissingPermissions(currentPermissions, {
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-    ...GRAVE_CONTROLLER_PERMISSIONS,
+    ...UAP_CONTROLLER_PERMISSIONS,
   });
   return missingPermissions;
 };
@@ -256,7 +256,7 @@ export const urdsMatchLatestForwarder = (
  * Function to set the vault address in the forwarder contract.
  */
 export const setGraveInForwarder = async (
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   vaultAddress: string,
   forwarderAddress: string
 ) => {

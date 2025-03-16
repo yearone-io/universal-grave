@@ -63,11 +63,12 @@ const getProfileData = async (
 };
 
 // todo: change so that config for executive is read from user profile
-export const getGraveVaultFor = async (
+export const getGraveVault = async (
   provider: any,
   account: string,
   assistantAddress: string
 ): Promise<string | null> => {
+  return null;
   const graveForwarder = LSP1GraveForwarder__factory.connect(
     assistantAddress,
     provider
@@ -97,13 +98,13 @@ export const buildSIWEMessage = (upAddress: string): string => {
 };
 
 export const getUrlNameByChainId = (chainId: number): string => {
-  return supportedNetworks[chainId].urlName;
+  return supportedNetworks[chainId].chainSlug;
 };
 
-export const getChainIdByUrlName = (urlName: string): number => {
+export const getChainIdByUrlName = (chainSlug: string): number => {
   return (
     Object.values(supportedNetworks).find(
-      network => network.urlName === urlName
+      network => network.chainSlug === chainSlug
     )?.chainId || 42
   );
 };

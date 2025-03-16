@@ -4,18 +4,18 @@ import React from 'react';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import Link from 'next/link';
 import { getUrlNameByChainId } from '@/utils/universalProfile';
-import { useProfile } from '@/contexts/ProfileProvider';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 
 export default function Header() {
-  const { chainId } = useProfile();
+  const { chainId } = useConnectedAccount();
   const bgColor = 'dark.purple.300';
   const color = 'dark.black';
   const logoPath = '/images/logo-text.png';
   const betaPath = '/images/beta.png';
   const networkName = chainId
     ? getUrlNameByChainId(chainId)
-    : supportedNetworks['42'].urlName;
+    : supportedNetworks['42'].chainSlug;
 
   return (
     <Flex

@@ -5,6 +5,7 @@ export async function getImageFromIPFS(
   chainId: number
 ): Promise<string> {
   // Replace the 'ipfs://' prefix with the IPFS gateway URL
+  console.log('getImageFromIPFS:', ipfsUrl, chainId);
   const currentNetwork = getNetwork(chainId);
   const gatewayUrl = ipfsUrl.replace(
     'ipfs://',

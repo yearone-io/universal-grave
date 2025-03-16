@@ -1,39 +1,44 @@
 'use client';
 import LSPAssets from '@/components/LSPAssets';
-import { useContext, useEffect, useState } from 'react';
-import { getGraveVaultFor } from '@/utils/universalProfile';
+import { useEffect, useState } from 'react';
+import { getGraveVault } from '@/utils/universalProfile';
 import { Text } from '@chakra-ui/react';
-import { WalletContext } from '@/components/wallet/WalletContext';
 import { getUpAddressUrds } from '@/utils/urdUtils';
+import { networkNameToIdMapping, supportedNetworks } from '@/constants/supportedNetworks';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 export default function GravePageAssets({
+  networkName,
   graveOwner,
 }: {
+  networkName: string;
   graveOwner: string;
 }) {
-  const walletContext = useContext(WalletContext);
-  const { networkConfig, provider } = walletContext;
   const [graveVault, setGraveVault] = useState<string | null>(null);
   const [error, setError] = useState<string>();
+  const networkId = networkNameToIdMapping[networkName];
+  const { graveAssistant } = supportedNetworks[networkId];
+  const { globalProvider } = useConnectedAccount();
 
   useEffect(() => {
     const fetchGraveVault = async () => {
       if (!graveVault) {
         try {
-          const graveVault = await getGraveVaultFor(
-            provider,
+          const graveVault = await getGraveVault(
+            globalProvider,
             graveOwner,
-            networkConfig.universalGraveForwarder
+            graveAssistant.address
           );
           if (graveVault) {
             setGraveVault(graveVault);
             return;
           }
           // Attempt to retrieve grave vault for users with an old Urd version
-          const urdData = await getUpAddressUrds(provider, graveOwner);
+          console.log('Attempting to retrieve existing grave vault');
+          const urdData = await getUpAddressUrds(globalProvider, graveOwner);
           if (urdData.oldUrdVersion) {
-            const oldGraveVault = await getGraveVaultFor(
-              provider,
+            const oldGraveVault = await getGraveVault(
+              globalProvider,
               graveOwner,
               urdData.oldUrdVersion
             );
@@ -54,8 +59,7 @@ export default function GravePageAssets({
   }, [
     graveOwner,
     graveVault,
-    provider,
-    networkConfig,
+    networkId,
     setGraveVault,
     setError,
   ]);
@@ -64,7 +68,7 @@ export default function GravePageAssets({
     return <Text>{error}</Text>;
   }
   return graveVault ? (
-    <LSPAssets graveVault={graveVault} graveOwner={graveOwner} />
+    <LSPAssets networkName={networkName} graveVault={graveVault} graveOwner={graveOwner} />
   ) : (
     <>Loading...</>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Container } from '@chakra-ui/react';
-import GraveContents from '@/components/GraveContents';
+import GraveClient from '@/components/GraveClient';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -8,10 +8,10 @@ export const metadata: Metadata = {
   description: 'List of assets in your graveyard',
 };
 
-export default function Grave({ params }: { params: { account: string } }) {
+export default function Grave({ params }: { params: { networkName: string; account: string; } }) {
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
-      <GraveContents graveOwner={params.account} />
+      <GraveClient networkName={params.networkName} graveOwner={params.account} />
     </Container>
   );
 }

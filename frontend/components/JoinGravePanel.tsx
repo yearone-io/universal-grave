@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import {
   Box,
   Flex,
@@ -15,8 +15,10 @@ import {
 } from '@chakra-ui/react';
 import JoinGraveBtn from './JoinGraveBtn';
 import { FaCheckCircle } from 'react-icons/fa';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { formatAddress } from '@/utils/tokenUtils';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 const initialSteps = [
   {
@@ -63,10 +65,9 @@ const initialLeavingSteps = [
 ];
 
 const JoinGravePanel: React.FC = () => {
-  const walletContext = useContext(WalletContext);
-  const { networkConfig } = walletContext;
   const [steps, setSteps] = React.useState([...initialSteps]);
   const [leaveSteps, setLeaveSteps] = React.useState([...initialLeavingSteps]);
+  const { appNetworkConfig: networkConfig } = useConnectedAccount();
 
   /**
    * Update the data in the steps according to the step number

@@ -1,12 +1,12 @@
 'use client';
-import React, { useContext } from 'react';
+import React from 'react';
 import { Box, Text, Flex, Icon } from '@chakra-ui/react';
 import { FaCog } from 'react-icons/fa';
 import GravePageAssets from '@/components/GravePageAssets';
 import ShareButton from '@/components/ShareButton';
-import { WalletContext } from '@/components/wallet/WalletContext';
 import { formatAddress } from '@/utils/tokenUtils';
 import Link from 'next/link';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 /**
  *  GraveContents: Renders the main content for a user's "graveyard" page.
@@ -16,11 +16,10 @@ import Link from 'next/link';
  *  Returns a layout with the graveyard title, a settings icon (for the owner's graveyard),
  *  a share button, and the GravePageAssets component showing the graveyard's LSP7s & LSP8s
  */
-export default function GraveContents({ graveOwner }: { graveOwner: string }) {
-  const walletContext = useContext(WalletContext);
-  const { account: connectedAccount } = walletContext;
+export default function GraveContents({ networkName, graveOwner }: { networkName: string; graveOwner: string }) {
+  const { universalProfile } = useConnectedAccount();
   let graveTitle = 'YOUR GRAVEYARD';
-  if (connectedAccount === graveOwner) {
+  if (universalProfile?.address === graveOwner) {
     graveTitle = 'YOUR GRAVEYARD';
   } else {
     graveTitle = `${formatAddress(graveOwner)}'s GRAVEYARD`;
@@ -37,14 +36,14 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
         >
           {graveTitle}
         </Text>
-        {graveOwner === connectedAccount && (
-          <Link href="/grave/settings" passHref>
+        {universalProfile?.address === graveOwner && (
+          <Link href={`/${networkName}/grave/configuration`} passHref>
             <Icon as={FaCog} color={'light.white'} h={5} w={6} />
           </Link>
         )}
-        <ShareButton pageAccount={graveOwner} />
+        <ShareButton networkName={networkName} pageAccount={graveOwner} />
       </Flex>
-      <GravePageAssets graveOwner={graveOwner} />
+      <GravePageAssets networkName={networkName} graveOwner={graveOwner} />
     </Box>
   );
 }

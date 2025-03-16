@@ -1,6 +1,6 @@
 import LandingBox from '@/components/LandingBox';
-import { CHAINS } from '@/constants/supportedNetworks';
+import { ChainSlugs } from '@/constants/supportedNetworks';
 
 export default function HomePage() {
-  return <LandingBox networkName={CHAINS.LUKSO} />;
+  return <LandingBox networkName={ChainSlugs.LUKSO} />;
 }

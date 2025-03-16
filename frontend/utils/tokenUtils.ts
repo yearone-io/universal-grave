@@ -1,13 +1,12 @@
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import { INTERFACE_IDS, LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
-import { BigNumber, ethers } from 'ethers';
+import { BrowserProvider, JsonRpcProvider, Contract, getAddress, ZeroAddress, toBeHex, keccak256, toUtf8Bytes, isAddress } from 'ethers';
 import { eip165ABI } from '@/abis/eip165ABI';
 import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import { constants } from '@/app/constants';
 import { getLuksoProvider } from '@/utils/provider';
-import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 
 export type TokenData = {
   readonly interface: GRAVE_ASSET_TYPES;
@@ -16,7 +15,7 @@ export type TokenData = {
   readonly name?: string;
   readonly symbol?: string;
   readonly decimals?: string;
-  readonly balance?: string | BigNumber;
+  readonly balance?: string | bigint;
   readonly tokenId?: string;
   metadata?: Record<string, any>;
   image?: string;
@@ -31,13 +30,11 @@ export enum GRAVE_ASSET_TYPES {
 }
 
 function computeSelector(signature: string): string {
-  return ethers.utils
-    .keccak256(ethers.utils.toUtf8Bytes(signature))
-    .slice(0, 10); // First 4 bytes (8 characters + '0x')
+  return keccak256(toUtf8Bytes(signature)).slice(0, 10);
 }
 
 function supportsFunction(bytecode: string, selector: string): boolean {
-  return bytecode.includes(selector.slice(2)); // Remove '0x' when searching in bytecode
+  return bytecode.includes(selector.slice(2));
 }
 
 const lsp7TransferSelector = computeSelector(
@@ -48,7 +45,6 @@ const lsp8TransferSelector = computeSelector(
 );
 
 async function getMinimalProxyImplementationAddress(bytecode: string) {
-  // https://eips.ethereum.org/EIPS/eip-1167 Minimal Proxy Implementation
   const proxyPattern =
     '363d3d373d3d3d363d73[a-fA-F0-9]{40}5af43d82803e903d91602b57fd5bf3';
   const regex = new RegExp(proxyPattern);
@@ -56,25 +52,15 @@ async function getMinimalProxyImplementationAddress(bytecode: string) {
 }
 
 async function getBeaconProxyImplementationAddress(
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   assetAddress: string
 ) {
   try {
-    const hash = ethers.utils.keccak256(
-      ethers.utils.toUtf8Bytes('eip1967.proxy.beacon')
-    );
-    const beaconSlot = ethers.utils.hexZeroPad(
-      ethers.utils.hexlify(BigInt(hash) - BigInt(1)),
-      32
-    );
-    const beaconAddressHex = await provider.getStorageAt(
-      assetAddress,
-      beaconSlot
-    );
-    const beaconAddress = ethers.utils.getAddress(
-      ethers.utils.hexStripZeros(beaconAddressHex)
-    );
-    const beaconContract = new ethers.Contract(
+    const hash = keccak256(toUtf8Bytes('eip1967.proxy.beacon'));
+    const beaconSlot = toBeHex(BigInt(hash) - 1n, 32);
+    const beaconAddressHex = await provider.getStorage(assetAddress, beaconSlot);
+    const beaconAddress = getAddress(beaconAddressHex === '0x' ? ZeroAddress : beaconAddressHex);
+    const beaconContract = new Contract(
       beaconAddress,
       ['function implementation() view returns (address)'],
       provider
@@ -87,7 +73,7 @@ async function getBeaconProxyImplementationAddress(
 }
 
 async function getImplementationBytecode(
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   assetAddress: string
 ) {
   try {
@@ -109,10 +95,9 @@ async function getImplementationBytecode(
 }
 
 export const detectLSP = async (
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   assetAddress: string
 ): Promise<GRAVE_ASSET_TYPES> => {
-  // fetch digital asset interface details
   try {
     const lspAsset = new ERC725(
       lsp4Schema as ERC725JSONSchema[],
@@ -144,7 +129,7 @@ export const detectLSP = async (
 };
 
 export const getLSPAssetBasicInfo = async (
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   assetAddress: string,
   ownerAddress: string
 ): Promise<TokenData> => {
@@ -162,7 +147,6 @@ export const getLSPAssetBasicInfo = async (
   let balance: string = '0',
     decimals;
 
-  // fetch metadata details
   try {
     const lspAsset = new ERC725(
       lsp4Schema as ERC725JSONSchema[],
@@ -187,11 +171,10 @@ export const getLSPAssetBasicInfo = async (
     console.error('error getting metadata', error);
     return unrecognizedLsp;
   }
-  // fetch balance details
   try {
-    const contract = new ethers.Contract(
+    const contract = new Contract(
       assetAddress,
-      eip165ABI.concat(erc20ABI) as any,
+      [...eip165ABI, ...erc20ABI],
       provider
     );
     decimals =
@@ -223,19 +206,15 @@ export const getLSPAssetBasicInfo = async (
 };
 
 export const getChecksumAddress = (address: string | null) => {
-  // Check if the address is valid
-  if (!address || !ethers.utils.isAddress(address)) {
-    // Handle invalid address
+  if (!address || !isAddress(address)) {
     return address;
   }
-
-  // Convert to checksum address
-  return ethers.utils.getAddress(address);
+  return getAddress(address);
 };
 
 export const formatAddress = (address: string | null) => {
   if (!address) return '0x';
-  if (address.length < 10) return address; // '0x' is an address
+  if (address.length < 10) return address;
   return `${address.slice(0, 5)}...${address.slice(-4)}`;
 };
 
@@ -288,11 +267,11 @@ export const parseDataURI = (dataUri: string) => {
 };
 
 export async function processLSP8Asset(
-  provider: JsonRpcProvider | Web3Provider,
+  provider: JsonRpcProvider | BrowserProvider,
   asset: TokenData,
   assetOwner: string
 ): Promise<TokenData[]> {
-  const contract = new ethers.Contract(
+  const contract = new Contract(
     asset.address as string,
     LSP8IdentifiableDigitalAsset.abi,
     provider

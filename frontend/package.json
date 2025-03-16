@@ -18,7 +18,6 @@
     "@erc725/erc725.js": "^0.27.2",
     "@fontsource/bungee": "^5.0.1",
     "@fontsource/montserrat": "^5.0.13",
-    "@lukso/lsp-factory.js": "^3.3.1",
     "@lukso/lsp-smart-contracts": "^0.16.2",
     "axios": "^1.7.2",
     "ethers": "^6.13.5",
@@ -41,7 +40,7 @@
     "eslint-plugin-prettier": "^5.0.1",
     "pino-pretty": "^10.0.0",
     "prettier": "^3.1.0",
-    "typescript": "^5",
-    "typechain": "^8.3.2"
+    "typechain": "^8.3.2",
+    "typescript": "^5"
   }
 }

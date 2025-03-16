@@ -18,7 +18,8 @@ import {
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { ethers } from 'ethers';
 import LSP8IdentifiableDigitalAsset from '@lukso/lsp-smart-contracts/artifacts/LSP8IdentifiableDigitalAsset.json';
 import LSP9Vault from '@lukso/lsp-smart-contracts/artifacts/LSP9Vault.json';
@@ -41,7 +42,6 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   onReviveSuccess,
   onReviveAllSuccess,
 }) => {
-  const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
     networkConfig,

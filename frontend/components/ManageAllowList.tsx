@@ -9,7 +9,8 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useState } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { BiSolidCheckCircle } from 'react-icons/bi';
 
@@ -24,7 +25,6 @@ const messageState = {
 };
 
 export default function ManageAllowList() {
-  const walletContext = useContext(WalletContext);
   const { networkConfig, provider, disconnectIfNetworkChanged } = walletContext;
   const toast = useToast();
   const signer = provider.getSigner();

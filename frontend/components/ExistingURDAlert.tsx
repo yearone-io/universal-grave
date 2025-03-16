@@ -1,4 +1,4 @@
-import { useContext, useRef } from 'react';
+import { useRef } from 'react';
 import {
   AlertDialog,
   AlertDialogBody,
@@ -10,7 +10,7 @@ import {
   Button,
 } from '@chakra-ui/react';
 import { FocusableElement } from '@chakra-ui/utils';
-import { WalletContext } from '@/components/wallet/WalletContext';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 export const ExistingURDAlert = ({
   setLoading,
@@ -23,9 +23,8 @@ export const ExistingURDAlert = ({
   handleJoin: () => void;
   isOpen: boolean;
 }) => {
-  const walletContext = useContext(WalletContext);
 
-  const { URDLsp7, URDLsp8 } = walletContext;
+  const { URDLsp7, URDLsp8 } = useConnectedAccount();
 
   const cancelRef = useRef<FocusableElement>(null);
 

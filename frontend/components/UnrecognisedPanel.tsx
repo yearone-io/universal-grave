@@ -9,7 +9,8 @@ import { FaExternalLinkAlt } from 'react-icons/fa';
 import { constants } from '@/app/constants';
 import { formatAddress } from '@/utils/tokenUtils';
 import { useContext } from 'react';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 
 interface LSPPanelProps {
   tokenName: string;
@@ -25,7 +26,6 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
   tokenAddress,
   tokenMetadata,
 }) => {
-  const walletContext = useContext(WalletContext);
   const { networkConfig } = walletContext;
 
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';

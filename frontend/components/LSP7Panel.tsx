@@ -16,7 +16,8 @@ import {
   getEnoughDecimals,
   TokenData,
 } from '@/utils/tokenUtils';
-import { WalletContext } from '@/components/wallet/WalletContext';
+
+
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { AssetIcon } from './AssetIcon';
@@ -52,7 +53,6 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   // Assuming rawTokenAmount is a BigNumber representing the amount in base units
   const rawTokenAmount = tokenData?.balance;
 
-  const walletContext = useContext(WalletContext);
   const {
     account: connectedUPAddress,
     networkConfig,

@@ -1,28 +1,26 @@
-import { ethers } from 'ethers';
-import { getNetworkConfig, Network } from '@/constants/networks';
+import { BrowserProvider, JsonRpcProvider } from 'ethers';
+import { getNetworkConfig } from '@/constants/networks';
+import { NetworkConfig } from '@/constants/supportedNetworks';
 
-export const getProvider = (networkConfig: Network) => {
+export const getProvider = (networkConfig: NetworkConfig) => {
   const providerNetworkParams = {
     name: networkConfig.name,
     chainId: networkConfig.chainId,
   };
-  const luksoProvider = getLuksoProvider();
+  const luksoProvider = getLuksoProvider(networkConfig);
   if (typeof luksoProvider === 'string') {
-    return new ethers.providers.JsonRpcProvider(
+    return new JsonRpcProvider(
       luksoProvider,
       providerNetworkParams
     );
   }
-  return new ethers.providers.Web3Provider(
+  return new BrowserProvider(
     luksoProvider,
     providerNetworkParams
   );
 };
 
-export const getLuksoProvider = () => {
-  const networkConfig = getNetworkConfig(
-    process.env.NEXT_PUBLIC_DEFAULT_NETWORK!
-  );
+export const getLuksoProvider = (networkConfig: NetworkConfig) => {
   const rpcUrl = networkConfig.rpcUrl;
   if (window.lukso && Number(window.lukso.chainId) !== networkConfig.chainId) {
     //if extension is connected to a different network than the app then default to app's rpc url

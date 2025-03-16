@@ -13,9 +13,8 @@ import {
   Flex,
   Button,
 } from '@chakra-ui/react';
-import { WalletContext } from '@/components/wallet/WalletContext';
 import SignInBox from '@/components/SignInBox';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import JoinGravePanel from '@/components/JoinGravePanel';
 import AdvancedInfoPanel from './AdvancedInfoPanel';
 import ManageAllowList from './ManageAllowList';
@@ -26,6 +25,7 @@ import {
 import { UpgradeURD } from '@/components/UpgradeURD';
 import Link from 'next/link';
 import SendToGravePanel from './SendToGravePanel';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 
 const getTabOption = (tabName: string) => {
   return (
@@ -64,20 +64,20 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
       panel = oldForwarderAddress ? (
         <UpgradeURD oldForwarderAddress={oldForwarderAddress} />
       ) : (
-        <JoinGravePanel />
+        <JoinGravePanel/>
       );
       break;
     case 'Manage Allowlist':
-      panel = <ManageAllowList />;
+      panel = <ManageAllowList/>;
       break;
     case 'Advanced Info':
-      panel = <AdvancedInfoPanel />;
+      panel = <AdvancedInfoPanel/>;
       break;
     case 'Send To Grave':
-      panel = <SendToGravePanel />;
+      panel = <SendToGravePanel/>;
       break;
     default:
-      panel = <JoinGravePanel />;
+      panel = <JoinGravePanel/>;
       break;
   }
   return (
@@ -117,9 +117,8 @@ const getTabPanel = (tabName: string, oldForwarderAddress?: string | null) => {
   );
 };
 
-export default function GraveSettings() {
-  const walletContext = useContext(WalletContext);
-  const { account, URDLsp7, URDLsp8, networkConfig } = walletContext;
+export default function GraveConfiguration() {
+  const { universalProfile, URDLsp7, URDLsp8, appNetworkConfig } = useConnectedAccount();
   const [oldForwarderAddress, setOldForwarderAddress] = useState<
     string | null
   >();
@@ -139,7 +138,7 @@ export default function GraveSettings() {
         mb={2}
       >
         <Box width={'100%'}>
-          {account ? (
+          {universalProfile?.address ? (
             <Box width={'100%'}>
               <Box width={'100%'}>
                 <Flex
@@ -152,7 +151,7 @@ export default function GraveSettings() {
                   <Text fontSize="20px" color={'white'} fontFamily="Bungee">
                     SETTINGS
                   </Text>
-                  <Link href={`/grave/${account}`}>
+                  <Link href={`/${appNetworkConfig.chainSlug}/grave/${universalProfile?.address}`}>
                     <Button
                       color={'dark.purple.500'}
                       border={'1px solid var(--chakra-colors-dark-purple-500)'}
@@ -177,13 +176,13 @@ export default function GraveSettings() {
                       {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
-                        networkConfig.universalGraveForwarder
+                        appNetworkConfig.graveAssistant.address
                       ) && getTabOption('Manage Allowlist')}
 
                       {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
-                        networkConfig.universalGraveForwarder
+                        appNetworkConfig.graveAssistant.address
                       ) && getTabOption('Send To Grave')}
 
                       {getTabOption('Advanced Info')}
@@ -193,12 +192,12 @@ export default function GraveSettings() {
                       {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
-                        networkConfig.universalGraveForwarder
+                        appNetworkConfig.graveAssistant.address
                       ) && getTabPanel('Manage Allowlist')}
                       {urdsMatchLatestForwarder(
                         URDLsp7,
                         URDLsp8,
-                        networkConfig.universalGraveForwarder
+                        appNetworkConfig.graveAssistant.address
                       ) && getTabPanel('Send To Grave')}
                       {getTabPanel('Advanced Info')}
                     </TabPanels>

@@ -17,12 +17,12 @@ import { BsActivity, BsArrow90DegRight } from 'react-icons/bs';
 import LSPExplainer from '@/components/LSPExplainer';
 import { ChangeEvent, useState } from 'react';
 import { useEffect } from 'react';
-import { useProfile } from '@/contexts/ProfileProvider';
-import { CHAINS, networkNameToIdMapping, supportedNetworks } from '@/constants/supportedNetworks';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
+import { ChainSlugs, networkNameToIdMapping, supportedNetworks } from '@/constants/supportedNetworks';
 
-const LandingBox = ({ networkName }: { networkName: CHAINS }) => {
+const LandingBox = ({ networkName }: { networkName: ChainSlugs }) => {
   const networkConfig = supportedNetworks[networkNameToIdMapping[networkName]];
-  const { profileDetailsData, graveVault } = useProfile();
+  const { universalProfile, graveVault } = useConnectedAccount();
   const logoPath = '/images/logo-full.png';
   const subheadingColor = 'dark.white';
   const customColor = 'var(--chakra-colors-dark-purple-500)';
@@ -42,7 +42,7 @@ const LandingBox = ({ networkName }: { networkName: CHAINS }) => {
     } else {
       setGraveButtonText('Manage the assets in your 🆙 Grave');
     }
-  }, [graveVault, profileDetailsData]);
+  }, [graveVault, universalProfile]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -103,7 +103,7 @@ const LandingBox = ({ networkName }: { networkName: CHAINS }) => {
           >
             {`GRAVE - the Global Reserve For Abandoned Virtual Entities. A cemetery for unwanted digital assets. But given that one man's trash is another man's treasure, all assets have a chance at revival.`}
           </Text>
-          <Link href={'/grave/settings'} passHref>
+          <Link href={`/${networkConfig.chainSlug}/grave/configuration`} passHref>
             <Button
               px={6}
               color={createButtonColor}

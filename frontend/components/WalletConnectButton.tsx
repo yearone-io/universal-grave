@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { use, useEffect, useRef, useState } from 'react';
 import {
   Avatar,
   Box,
@@ -22,9 +22,8 @@ import {
   Text,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { formatAddress, getNetwork } from '@/utils/utils';
-import { useProfile } from '@/contexts/ProfileProvider';
+import { formatAddress } from '@/utils/utils';
+import { useConnectedAccount } from '@/contexts/ConnectedAccountProvider';
 import { getImageFromIPFS } from '@/utils/ipfs'; // Assuming this utility exists
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { FaCog } from 'react-icons/fa';
@@ -32,54 +31,36 @@ import { TbGrave2 } from 'react-icons/tb';
 
 export default function WalletConnectButton() {
   const {
-    profileDetailsData,
+    universalProfile,
     isConnected,
-    chainId,
     connectAndSign,
     disconnect,
     switchNetwork,
-  } = useProfile();
+    appNetworkConfig,
+  } = useConnectedAccount();
+  console.log('WalletConnectButton: isConnected', isConnected, universalProfile, universalProfile?.chainId);
   const toast = useToast({ position: 'bottom-left' });
   const connectTriggeredRef = useRef(false);
-  const pathname = usePathname();
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
   const [isNoWalletModalOpen, setIsNoWalletModalOpen] = useState(false);
-  const [mainImage, setMainImage] = useState<string | undefined>(undefined); // State for the main image
-
-  const address = profileDetailsData?.upWallet;
-  const profile = profileDetailsData?.profile;
-  const isSigned = isConnected && !!profileDetailsData && !!profile;
-
-  const buttonText =
-    isSigned && profile
-      ? profile.name || formatAddress(address ?? '')
-      : 'Sign In';
+  const [mainImage, setMainImage] = useState<string | undefined>(undefined);
 
   // Safely handle profile image (fetch only if needed)
   useEffect(() => {
+    console.log('WalletConnectButton: Fetching mainImage from IPFS', universalProfile);
+    const firstImage = universalProfile?.profile?.profileImage?.[0];
     if (
-      !isSigned ||
-      !profile ||
-      !profile.profileImage ||
-      profile.profileImage.length === 0 ||
-      !chainId
+      !isConnected || !universalProfile || !firstImage || !firstImage.url
     ) {
-      setMainImage(undefined); // Reset if no profile image
-      return;
-    }
-
-    const firstImage = profile.profileImage[0];
-    if (!firstImage || !firstImage.url) {
-      console.log('WalletConnectButton: No valid profile image URL found', {
-        profileImage: profile.profileImage,
-      });
       setMainImage(undefined);
       return;
     }
 
     const profileMainImage = firstImage.url;
-    getImageFromIPFS(profileMainImage, Number(chainId))
+    console.log('WalletConnectButton: Fetching mainImage from IPFS:', profileMainImage);
+    getImageFromIPFS(profileMainImage, Number(universalProfile?.chainId))
       .then(image => {
+        console.log('SETTING MAIN IMAGE:', image);
         setMainImage(image);
       })
       .catch(err => {
@@ -89,54 +70,35 @@ export default function WalletConnectButton() {
         );
         setMainImage(undefined);
       });
-  }, [isSigned, profile, chainId]); // Depend on profile and chainId to trigger re-fetch
-
-  const profileImage = mainImage ? (
-    <Avatar
-      size="sm"
-      border="1px solid #053241"
-      name={profile?.name || ''}
-      src={mainImage}
-    />
-  ) : null;
-
-  const currentNetwork = chainId ? getNetwork(chainId) : undefined;
-  const networkIcon = currentNetwork?.icon;
-  const networkName = currentNetwork?.name;
-
-  const appChainId = pathname.includes(supportedNetworks['4201'].urlName)
-    ? 4201
-    : supportedNetworks['42'].urlName || pathname === '/'
-      ? 42
-      : 4201;
+  }, [universalProfile, isConnected]); // Depend on profile and chainId to trigger re-fetch
 
   useEffect(() => {
-    if (!isConnected || !chainId || !profileDetailsData) {
+    if (!isConnected || !universalProfile?.chainId || !universalProfile) {
       connectTriggeredRef.current = false;
       setIsNetworkModalOpen(false);
       return;
     }
     console.log('WalletConnectButton: Checking network mismatch', {
-      chainId,
-      appChainId,
+      chainId: universalProfile?.chainId,
+      appChainId: appNetworkConfig.chainId,
     });
 
-    if (chainId !== appChainId) {
+    if (universalProfile?.chainId !== appNetworkConfig.chainId) {
       setIsNetworkModalOpen(true);
     } else {
       setIsNetworkModalOpen(false);
     }
 
-    if (isSigned || connectTriggeredRef.current || !address) {
+    if (isConnected || connectTriggeredRef.current || !universalProfile?.address) {
       return;
     }
 
     connectTriggeredRef.current = true;
-  }, [isConnected, chainId, address, isSigned, profileDetailsData, appChainId]);
+  }, [isConnected, universalProfile, appNetworkConfig]);
 
   const handleNetworkSwitch = async () => {
     try {
-      const targetChainId = chainId === 42 ? 4201 : 42; // Toggle between Mainnet and Testnet
+      const targetChainId = universalProfile?.chainId === 42 ? 4201 : 42; // Toggle between Mainnet and Testnet
       await switchNetwork(targetChainId);
       toast({
         title: 'Network Changed',
@@ -158,11 +120,11 @@ export default function WalletConnectButton() {
 
   const handleSwitchToAppNetwork = async () => {
     try {
-      await switchNetwork(appChainId);
+      await switchNetwork(appNetworkConfig.chainId);
       setIsNetworkModalOpen(false);
       toast({
         title: 'Network Changed',
-        description: `Switched to ${supportedNetworks[appChainId].displayName}`,
+        description: `Switched to ${appNetworkConfig.displayName}`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -179,13 +141,14 @@ export default function WalletConnectButton() {
   };
 
   const handleConnect = async () => {
+    console.log('WalletConnectButton: handleConnect');
     try {
       if (!window.lukso) {
         setIsNoWalletModalOpen(true);
         return;
       }
-      if (chainId !== appChainId) {
-        switchNetwork(appChainId);
+      if (universalProfile?.chainId !== appNetworkConfig.chainId) {
+        switchNetwork(appNetworkConfig.chainId);
         return;
       }
       const isComplete: boolean = await connectAndSign();
@@ -247,7 +210,8 @@ export default function WalletConnectButton() {
     </Modal>
   );
 
-  if (isSigned) {
+  if (isConnected) {
+    const profileAddress = universalProfile?.address;
     return (
       <>
         <Menu>
@@ -260,13 +224,18 @@ export default function WalletConnectButton() {
             size="md"
           >
             <Flex gap={2} alignItems="center" justifyContent="center">
-              {profileImage}
-              {buttonText}
+              <Avatar
+                size="sm"
+                border="1px solid #053241"
+                name={universalProfile?.profile?.name || ''}
+                src={mainImage}
+              />
+              {universalProfile?.profile?.name || formatAddress(profileAddress ?? '')}
             </Flex>
           </MenuButton>
           <MenuList bg='dark.purple.500'>
-            <MenuItem bg='dark.purple.500' as={Link} href={`/${networkName}/grave/${address}`} icon={<TbGrave2 />}>
-              My Graveyard
+            <MenuItem bg='dark.purple.500' as={Link} href={`/${appNetworkConfig.chainSlug}/grave/${profileAddress}`} icon={<TbGrave2 />}>
+              My Spam Grave
             </MenuItem>
             <MenuDivider />
             <MenuGroup bg='dark.purple.500'>
@@ -279,12 +248,10 @@ export default function WalletConnectButton() {
                 alignItems="center"
               >
                 <Box>Network:</Box>
-                {networkIcon && (
-                  <Image height="20px" src={networkIcon} alt={networkName} />
-                )}
+                <Image height="20px" src={appNetworkConfig.icon} alt={appNetworkConfig.chainSlug} />
               </Flex>
-              <MenuItem bg='dark.purple.500' as={Link} href={`/${networkName}/grave/settings`} icon={<FaCog />}>
-                Settings
+              <MenuItem bg='dark.purple.500' as={Link} href={`/${appNetworkConfig.chainSlug}/grave/configuration`} icon={<FaCog />}>
+                Configuration
               </MenuItem>
               <MenuItem bg='dark.purple.500' onClick={handleNetworkSwitch}>Change network</MenuItem>
               <MenuItem bg='dark.purple.500' onClick={disconnect}>Sign out</MenuItem>
@@ -302,13 +269,13 @@ export default function WalletConnectButton() {
             <ModalBody>
               <Text mb={4}>
                 Your wallet is connected to{' '}
-                {supportedNetworks[Number(chainId)]?.displayName} (Chain ID:{' '}
-                {chainId}), but the app is on{' '}
-                {supportedNetworks[Number(appChainId)]?.displayName} (Chain ID:{' '}
-                {appChainId}). Please switch your wallet network to continue.
+                {universalProfile?.profileNetworkConfig?.displayName} (Chain ID:{' '}
+                {universalProfile?.chainId}), but the app is on{' '}
+                {appNetworkConfig.displayName} (Chain ID:{' '}
+                {appNetworkConfig.chainId}). Please switch your wallet network to continue.
               </Text>
               <Button colorScheme="blue" onClick={handleSwitchToAppNetwork}>
-                Switch to {supportedNetworks[Number(appChainId)]?.displayName}
+                Switch to {appNetworkConfig.displayName}
               </Button>
             </ModalBody>
           </ModalContent>
@@ -332,10 +299,10 @@ export default function WalletConnectButton() {
       >
         <Flex alignItems="center" justifyContent="space-between" gap={2}>
         <Image src="/images/LYX-logo.svg" alt="Sign In" />
-        {buttonText}
+        Sign In
         </Flex>
       </Button>
-      {noLuksoWalletModal}
+        {noLuksoWalletModal}
       </>
     
   );
