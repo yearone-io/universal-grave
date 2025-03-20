@@ -1,8 +1,8 @@
 // Function to encode an array of addresses
-import { getAddress, keccak256, toUtf8Bytes } from 'ethers';
+import { AbiCoder, getAddress, keccak256, toUtf8Bytes } from 'ethers';
+import { ERC725 } from '@/types/ERC725';
 /*
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
-import UniversalProfile from '@lukso/lsp-smart-contracts/artifacts/UniversalProfile.json';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
 import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import { getChecksumAddress } from './fieldValidations';
@@ -38,6 +38,73 @@ export function generateScreenerConfigKey(typeId: string, executiveAddress: stri
   return "0x" + first6Bytes + second4Bytes + "0000" + last20Bytes;
 }
 
+export function generateCurationScreenerBlocklistKey(executiveAddress: string, screenerAddress: string, itemAddress: string): string {
+  const hashedFirstWord = keccak256(toUtf8Bytes("UAPList"));
+  const first6Bytes = hashedFirstWord.slice(2, 14);
+  const second4Bytes = executiveAddress.slice(2, 10);
+  const last20Bytes = screenerAddress.slice(2, 22) + itemAddress.slice(2, 22);
+  return "0x" + first6Bytes + second4Bytes + "0000" + last20Bytes;
+}
+
+export function generateListMappingKey(executiveAddress: string, screenerAddress: string, itemAddress: string): string {
+  const hashedFirstWord = keccak256(toUtf8Bytes("UAPList"));
+  const first6Bytes = hashedFirstWord.slice(2, 14);
+  const executiveBytes4 = executiveAddress.slice(2, 10);
+  const screenerBytes10 = screenerAddress.slice(2, 22);
+  const itemBytes10 = itemAddress.slice(2, 22);
+  return "0x" + first6Bytes + executiveBytes4 + "0000" + screenerBytes10 + itemBytes10;
+}
+
+// Generates the list set key (mirrors contract logic)
+export function generateListSetKey(executiveAddress: string, screenerAddress: string): string {
+  const hashedFirstWord = keccak256(toUtf8Bytes("UAPList"));
+  const first6Bytes = hashedFirstWord.slice(2, 14);
+  const executiveBytes4 = executiveAddress.slice(2, 10);
+  const screenerBytes10 = screenerAddress.slice(2, 22);
+  const endingBytes10 = "0".repeat(16) + "5b5d"
+  return "0x" + first6Bytes + executiveBytes4 + "0000" + screenerBytes10 + endingBytes10;
+}
+
+// Reads the current list set from the Universal Profile
+export async function getListSet(up: ERC725, executiveAddress: string, screenerAddress: string): Promise<string[]> {
+  const setKey = generateListSetKey(executiveAddress, screenerAddress);
+  const value = await up.getData(setKey);
+  if (value === "0x" || value.length === 0) return [];
+  return AbiCoder.defaultAbiCoder().decode(["address[]"], value)[0];
+}
+
+// Adds an address to the list set if not already present
+export async function addToListSetPayload(up: ERC725, executiveAddress: string, screenerAddress: string, itemAddress: string) {
+  const currentSet = await getListSet(up, executiveAddress, screenerAddress);
+  if (currentSet.includes(itemAddress)) return AbiCoder.defaultAbiCoder().encode(["address[]"], [currentSet]);
+  const newSet = [...currentSet, itemAddress];
+  const encodedValue = AbiCoder.defaultAbiCoder().encode(["address[]"], [newSet]);
+  return encodedValue;
+}
+
+// Removes an address from the list set if present
+export async function removeFromListSetPayload(up: ERC725, executiveAddress: string, screenerAddress: string, itemAddress: string) {
+  const currentSet = await getListSet(up, executiveAddress, screenerAddress);
+  const index = currentSet.indexOf(itemAddress);
+  if (index === -1) return AbiCoder.defaultAbiCoder().encode(["address[]"], [currentSet]);
+  const newSet = currentSet.filter((_, i) => i !== index);
+  const encodedValue = newSet.length ? AbiCoder.defaultAbiCoder().encode(["address[]"], [newSet]) : "0x";
+  return encodedValue;
+}
+
+// Sets or removes an address in the list (combines mapping and set operations)
+export async function setListEntry(up: ERC725, executiveAddress: string, screenerAddress: string, itemAddress: string, isInList: boolean) {
+  const mappingKey = generateListMappingKey(executiveAddress, screenerAddress, itemAddress);
+  const setKey = generateListSetKey(executiveAddress, screenerAddress);
+  const value = isInList ? AbiCoder.defaultAbiCoder().encode(["bool"], [true]) : "0x";
+  let listPayload = "0x"
+  if (isInList) {
+    listPayload = await addToListSetPayload(up, executiveAddress, screenerAddress, itemAddress);
+  } else {
+    listPayload = await removeFromListSetPayload(up, executiveAddress, screenerAddress, itemAddress);
+  }
+  await up.setDataBatch([mappingKey, setKey], [value, listPayload]);
+}
 
 // Function to decode the encoded value for protocol assistant addresses
 export function customDecodeAddresses(encoded: string): string[] {

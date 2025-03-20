@@ -224,8 +224,10 @@ export function ConnectedAccountProvider({ children }: { children: React.ReactNo
         generateMappingKey('UAPTypeConfig', LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification),
         generateMappingKey('UAPTypeConfig', LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification),
         generateMappingKey('UAPExecutiveConfig', networkConfig.graveAssistant.address),
-        generateScreenerConfigKey(LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification, networkConfig.graveAssistant.address, networkConfig.screenerAddress),
-        generateScreenerConfigKey(LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification, networkConfig.graveAssistant.address, networkConfig.screenerAddress),
+        generateScreenerConfigKey(LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification, networkConfig.graveAssistant.address, networkConfig.screenerAddressAllowlist),
+        generateScreenerConfigKey(LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification, networkConfig.graveAssistant.address, networkConfig.screenerAddressAllowlist),
+        generateScreenerConfigKey(LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification, networkConfig.graveAssistant.address, networkConfig.screenerAddressCuratedList),
+        generateScreenerConfigKey(LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification, networkConfig.graveAssistant.address, networkConfig.screenerAddressCuratedList),
         ...(mainUPController ? [ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] + mainUPController?.slice(2)] : []),
       ];
       console.log('ConnectedAccountProvider: Fetching protocol config values', keys);
@@ -287,7 +289,7 @@ export function ConnectedAccountProvider({ children }: { children: React.ReactNo
         profile,
         issuedAssets: newIssuedAssets,
         protocolConfig: {
-          hasCorrectPermissions: mainUPController ? getMissingPermissions(erc725js.decodePermissions(assistantsProtocolConfigValues[8]), {
+          hasCorrectPermissions: mainUPController ? getMissingPermissions(erc725js.decodePermissions(assistantsProtocolConfigValues[keys.length - 1]), {
             ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
             ...UAP_CONTROLLER_PERMISSIONS,
           }).length === 0 : false,

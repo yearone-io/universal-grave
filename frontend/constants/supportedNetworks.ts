@@ -30,7 +30,8 @@ export interface NetworkConfig {
   icon: string;
   universalEverything: string;
   graveAssistant: ExecutiveAssistant;
-  screenerAddress: string;
+  screenerAddressAllowlist: string;
+  screenerAddressCuratedList: string;
 }
 
 export const supportedNetworks: { [key: string]: NetworkConfig } = {
@@ -50,7 +51,8 @@ export const supportedNetworks: { [key: string]: NetworkConfig } = {
     assistantsProtocolAddress: '0xdbdf20705491e524ebd77957eed2c41ec9d7e5dc',
     defaultUniversalReceiverDelegateUP: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     graveAssistant: forwarderAssistantMainnet,
-    screenerAddress: "0x7870C5B8BC9572A8001C3f96f7ff59961B23500D", // fixme: this is a placeholder
+    screenerAddressAllowlist: "0x8360a679b0795f8822cf0b0ed47e4fb594f3d250",
+    screenerAddressCuratedList: "0xcc40d669deb3fee161850758d67d7721996432be"
   },
   '4201': {
     chainId: 4201,
@@ -68,6 +70,7 @@ export const supportedNetworks: { [key: string]: NetworkConfig } = {
     assistantsProtocolAddress: '0xcf44a050c9b1fc87141d77b646436443bdc05a2b',
     defaultUniversalReceiverDelegateUP: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     graveAssistant: forwarderAssistantTestnet,
-    screenerAddress: "0x7870C5B8BC9572A8001C3f96f7ff59961B23500D", // fixme: this is a placeholder
+    screenerAddressAllowlist: "0x6fb630db2f3fe6c69027612bc973e4923bf69820",
+    screenerAddressCuratedList: "0xea260d25c901e15bc045a83b90c590ca1c7ad033"
   },
 };
