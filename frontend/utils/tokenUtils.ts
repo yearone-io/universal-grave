@@ -86,28 +86,47 @@ async function getBeaconProxyImplementationAddress(
   }
 }
 
-async function getImplementationBytecode(
+async function getTransparentProxyImplementationAddress(
   provider: JsonRpcProvider | Web3Provider,
-  assetAddress: string
-) {
+  proxyAddress: string
+): Promise<string | null> {
+  /** EIP-1967 implementation slot = bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1) */
+  const IMPLEMENTATION_SLOT =
+  '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
   try {
-    const bytecode = await provider.getCode(assetAddress);
-    let implementationAddress: string | null =
-      await getMinimalProxyImplementationAddress(bytecode);
-    if (!implementationAddress) {
-      implementationAddress = await getBeaconProxyImplementationAddress(
-        provider,
-        assetAddress
-      );
-    }
-    return !!implementationAddress
-      ? await provider.getCode(implementationAddress)
-      : bytecode;
-  } catch (error) {
-    return '';
+    // 1. Read the raw 32-byte word in the implementation slot
+    const storageWord = await provider.getStorageAt(proxyAddress, IMPLEMENTATION_SLOT);
+
+    // 2. Last 20 bytes → address
+    const candidate = ethers.utils.getAddress('0x' + storageWord.slice(26));
+
+    // 3. Make sure it actually holds code
+    const candidateCode = await provider.getCode(candidate);
+    return candidateCode !== '0x' ? candidate : null;
+  } catch {
+    return null;
   }
 }
 
+async function getImplementationBytecode(
+  provider: JsonRpcProvider | Web3Provider,
+  assetAddress: string
+): Promise<string> {
+  try {
+    const proxyCode = await provider.getCode(assetAddress);
+
+    let implementationAddress: string | null =
+      (await getMinimalProxyImplementationAddress(proxyCode)) ||
+      (await getBeaconProxyImplementationAddress(provider, assetAddress)) ||
+      (await getTransparentProxyImplementationAddress(provider, assetAddress));
+
+    return implementationAddress
+      ? await provider.getCode(implementationAddress)
+      : proxyCode;
+  } catch {
+    return '';
+  }
+}
 export const detectLSP = async (
   provider: JsonRpcProvider | Web3Provider,
   assetAddress: string
