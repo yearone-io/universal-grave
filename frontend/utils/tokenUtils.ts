@@ -37,7 +37,6 @@ function computeSelector(signature: string): string {
 }
 
 function supportsFunction(bytecode: string, selector: string): boolean {
-  console.log("selector check", selector);
   return bytecode.includes(selector.slice(2)); // Remove '0x' when searching in bytecode
 }
 
