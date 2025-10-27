@@ -19,4 +19,3 @@ We hope that our hackathon submission inspires further exploration of practical 
 The LSP1GraveForwarder is a Universal Receiver Delegate, gets attached to a user's UP, and is activated as a forwarder whenever user gets incoming LSP7 & LSP8 assets.
 
 You can deploy a new forwarder using /solidity/scripts/deployGraveForwarder.ts
-

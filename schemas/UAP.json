@@ -1,0 +1,58 @@
+[
+  {
+    "name": "SupportedStandards:UAP",
+    "key": "0xeafec4d89fa9619884b6000003309e5fff483f30b60c116ca9764e6e9b370a0b",
+    "keyType": "Mapping",
+    "valueType": "bytes4",
+    "valueContent": "0x03309e5f"
+  },
+  {
+    "name": "UAPTypeConfig:<bytes32>",
+    "key": "0x007d1fb981483053919f0000<bytes32>",
+    "keyType": "Mapping",
+    "valueType": "address[]",
+    "valueContent": "Address"
+  },
+  {
+    "name": "UAPExecutiveScreeners:<bytes32>:<uint256>",
+    "key": "0xf71242d9035c<bytes32>0000<uint256>",
+    "keyType": "MappingWithGrouping",
+    "valueType": "address[]",
+    "valueContent": "Address"
+  },
+  {
+    "name": "UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>",
+    "key": "0x5c353a1de5ca<bytes32>0000<uint256>",
+    "keyType": "MappingWithGrouping",
+    "valueType": "bool",
+    "valueContent": "Boolean"
+  },
+  {
+    "name": "UAPExecutiveConfig:<bytes32>:<uint256>",
+    "key": "0xa2fcaddaa89b<bytes32>0000<uint256>",
+    "keyType": "MappingWithGrouping",
+    "valueType": "(address,bytes)",
+    "valueContent": "(Address,Bytes)"
+  },
+  {
+    "name": "UAPScreenerConfig:<bytes32>:<uint256>",
+    "key": "0xbad89b6f38d1<bytes32>0000<uint256>",
+    "keyType": "MappingWithGrouping",
+    "valueType": "(address,address,bytes)",
+    "valueContent": "(Address,Address,Bytes)"
+  },
+  {
+    "name": "UAPAddressListName:<bytes32>:<uint256>",
+    "key": "0xcfd5d9478c49<bytes32>0000<uint256>",
+    "keyType": "MappingWithGrouping",
+    "valueType": "string",
+    "valueContent": "String"
+  },
+  {
+    "name": "UAPRevertOnFailure",
+    "key": "0x8631ee7d1d9475e6b2c38694122192970d91cafd1c64176ecc23849e17441672",
+    "keyType": "Singleton",
+    "valueType": "bool",
+    "valueContent": "Boolean"
+  }
+]
