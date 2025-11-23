@@ -8,15 +8,44 @@ import ERC725 from '@erc725/erc725.js';
 
 /**
  * Encode a tuple key-value pair following ERC725 format
- * Manual implementation since the util isn't exported from @erc725/erc725.js
+ * This is the EXACT implementation from @erc725/erc725.js used by UP Assistants
+ * It simply concatenates the hex-encoded values (NOT ABI encoding)
  */
 function encodeTupleKeyValue(
-  schemaType: string,
-  tupleTypes: string,
-  values: any[]
+  valueContent: string, // e.g. "(Address,Bytes)"
+  valueType: string,    // e.g. "(address,bytes)"
+  decodedValues: any[]
 ): string {
-  const abiCoder = new AbiCoder();
-  return abiCoder.encode([tupleTypes], [values]);
+  const valueTypeParts = valueType
+    .substring(1, valueType.length - 1)
+    .split(',');
+  const valueContentParts = valueContent
+    .substring(1, valueContent.length - 1)
+    .split(',');
+
+  if (valueTypeParts.length !== decodedValues.length) {
+    throw new Error(
+      `Can not encode tuple key value: ${decodedValues}. Expected array of length: ${valueTypeParts.length}`
+    );
+  }
+
+  // Create a temporary ERC725 instance for encoding individual values
+  const erc725 = new ERC725([]);
+
+  const returnValue = `0x${valueContentParts
+    .map((valueContentPart, i) => {
+      const encodedKeyValue = erc725.encodeValueType(
+        valueTypeParts[i],
+        decodedValues[i]
+      );
+      if (!encodedKeyValue) {
+        return '';
+      }
+      return encodedKeyValue.slice(2); // Remove 0x prefix
+    })
+    .join('')}`;
+
+  return returnValue;
 }
 
 /**
@@ -73,15 +102,16 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
     // New assistant, add at the end
     executionOrder = currentExecutives.length;
     currentExecutives.push(assistantAddress);
-
-    // Update type config with new assistant
-    const encodedAssistants = erc725UAP.encodeValueType(
-      'address[]',
-      currentExecutives
-    );
-    keys.push(typeConfigKey);
-    values.push(encodedAssistants);
   }
+
+  // Always update type config to ensure consistency
+  // This ensures the UAPTypeConfig is written atomically with the executive config
+  const encodedAssistants = erc725UAP.encodeValueType(
+    'address[]',
+    currentExecutives
+  );
+  keys.push(typeConfigKey);
+  values.push(encodedAssistants);
 
   // STEP 2: Set Executive Config (assistant address + config data)
   const executiveConfigKey = erc725UAP.encodeKeyName(

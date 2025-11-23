@@ -13,6 +13,7 @@ interface ChainInfo {
   curatedListScreenerAddress: string; // Curated List Screener address
   addressListScreenerAddress: string; // Address List Screener address
   lsp1UrdVault: string; // Vault URD address
+  vaultImplementation?: string; // Pre-deployed LSP9VaultInit implementation for proxy pattern
   hasUPSupport: boolean;
   icon: string;
   // Legacy GRAVE support
@@ -42,6 +43,7 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     curatedListScreenerAddress: '0x9ae3cdfe679935428094eea1668d30cdad8ede8c',
     addressListScreenerAddress: '0x7fe2bf2ec24f94fd43f10d6911123a18450e3c5e',
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
+    vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation
     hasUPSupport: true,
     icon: '/lyx_icon_mainnet.svg',
     universalGraveForwarder: '0x42562196ee7aac3e8501db777b25ffc976ed8463',
@@ -63,6 +65,7 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     curatedListScreenerAddress: '0x647360684dd6ad295d1c62bebc43c11a843a4248',
     addressListScreenerAddress: '0x31c7ab87662132f5901f190032d49e0abe9fabec',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
+    vaultImplementation: '0x392e18585b89bd795204c634cce5878f1cf40a58', // Shared LSP9VaultInit implementation
     hasUPSupport: true,
     icon: '/lyx_icon_testnet.svg',
     universalGraveForwarder: '0x72e5b0aeaa8456fa43ba94db703f74052b4cdaac',

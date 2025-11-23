@@ -5,31 +5,16 @@ import {
   Box,
   Button,
   Flex,
-  Step,
-  StepDescription,
-  StepIndicator,
-  StepNumber,
-  StepSeparator,
-  StepStatus,
-  StepTitle,
-  Stepper,
   Text,
-  useSteps,
   Input,
   Textarea,
-  FormControl,
-  FormLabel,
-  FormHelperText,
   useToast,
   Link as ChakraLink,
   Select,
+  Switch,
 } from '@chakra-ui/react';
 import { FaCheckCircle } from 'react-icons/fa';
-import { BrowserProvider, AbiCoder, isAddress, Contract } from 'ethers';
-import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
-import ERC725 from '@erc725/erc725.js';
-import { ERC725JSONSchema } from '@erc725/erc725.js';
-import uapSchema from '@/schemas/UAP.json';
+import { BrowserProvider, isAddress } from 'ethers';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
@@ -39,25 +24,10 @@ import {
   isVaultRegistered,
   registerVaultWithUP,
   getRegisteredVaults,
-  deployVaultWithMetadata,
-  deployTestContract,
+  deployVault,
 } from '@/utils/vaultCreation';
 import { updateBECPermissions } from '@/utils/urdUtils';
 import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
-
-// Transaction type IDs for LSP7 and LSP8 (LSP1 Type IDs from @lukso/lsp-smart-contracts)
-const LSP7_TRANSACTION_TYPE =
-  '0x429ac7a06903dbc9c13dfcb3c9d11df8194581fa047c96d7a4171fc7402958ea';
-const LSP8_TRANSACTION_TYPE =
-  '0x0b084a55ebf70fd3c06fd755269dac2212c4d3f0f4d09079780bfa50c1b2984d';
-
-interface StepData {
-  title: string;
-  instructions?: string;
-  instructions2?: { text: string; address: string | null };
-  completeText: { text: string; address: string | null };
-  complete: boolean;
-}
 
 const GraveSubscription: React.FC = () => {
   const toast = useToast({ position: 'bottom-left' });
@@ -88,81 +58,81 @@ const GraveSubscription: React.FC = () => {
   const [isLoadingVaults, setIsLoadingVaults] = useState(false);
   const [isCreatingVault, setIsCreatingVault] = useState(false);
 
-  // Edit mode state
-  const [isEditMode, setIsEditMode] = useState(false);
-
-  // Phase tracking - similar to UP Assistants flow
+  // Phase tracking
   // Phase 0: Give permissions
   // Phase 1: Subscribe to UAP
   // Phase 2: Configure GRAVE
   const [currentPhase, setCurrentPhase] = useState<number>(0);
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
 
-  // Initial steps
-  const initialSteps: StepData[] = [
-    {
-      title: 'Give your 🆙 extension the necessary permissions',
-      instructions: 'Give permissions to your Browser Extension Controller.',
-      instructions2: { text: 'This can also be done manually.', address: null },
-      completeText: { text: 'PERMISSIONS SET', address: null },
-      complete: false,
-    },
-    {
-      title: 'Engage spam protection protocol',
-      instructions: 'Enable spam protection on your Universal Profile.',
-      completeText: { text: 'PROTOCOL ENGAGED', address: null },
-      complete: false,
-    },
-    {
-      title: 'Set your spam GRAVE address',
-      completeText: { text: 'VAULT: ', address: null },
-      complete: false,
-    },
-    {
-      title: 'Configure whitelist addresses',
-      instructions:
-        'Add trusted sender addresses (assets from these addresses will not be sent to GRAVE).',
-      completeText: { text: 'WHITELIST SET', address: null },
-      complete: false,
-    },
-    {
-      title: 'Configure curated safe list (optional)',
-      instructions:
-        'Add a curated list of safe assets (assets NOT on this list will be sent to GRAVE).',
-      completeText: { text: 'SAFE LIST SET', address: null },
-      complete: false,
-    },
-    {
-      title: 'Activate spam protection',
-      instructions: 'All unwanted assets will go to your vault.',
-      completeText: { text: 'SPAM IS DEAD', address: null },
-      complete: false,
-    },
-  ];
-
-  const [steps, setSteps] = useState<StepData[]>(initialSteps);
-  const { activeStep, setActiveStep } = useSteps({
-    index: 0,
-    count: steps.length,
-  });
-
   // Fetch available vaults when component mounts or address changes
   useEffect(() => {
     const fetchVaults = async () => {
-      if (!address || !window.lukso) return;
+      if (!address || !window.lukso || !currentNetwork) return;
 
       setIsLoadingVaults(true);
       try {
         const provider = new BrowserProvider(window.lukso);
         const vaults = await getRegisteredVaults(provider, address);
-        setAvailableVaults(vaults);
 
-        // If there's an existing vault being used, select it by default
-        if (vaultToUse && vaults.includes(vaultToUse)) {
-          setSelectedVault(vaultToUse);
-        } else if (vaults.length > 0) {
-          // Select first vault by default
-          setSelectedVault(vaults[0]);
+        // Deduplicate vaults (case-insensitive) to avoid React key warnings
+        const uniqueVaults = vaults.filter((vault, index, self) =>
+          index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
+        );
+
+        setAvailableVaults(uniqueVaults);
+
+        // Get the vault address from forwarder assistant config
+        const existingConfig = await getForwarderAssistantConfig(
+          provider,
+          address,
+          {
+            forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+            addressListScreenerAddress:
+              currentNetwork.addressListScreenerAddress,
+            curatedListScreenerAddress:
+              currentNetwork.curatedListScreenerAddress,
+          }
+        );
+
+        // Priority: If vault exists in config AND is part of owned vaults, select it
+        // Use case-insensitive comparison because config returns checksummed addresses
+        // but vault list may have different casing
+        console.log('[GRAVE UI] Vault selection logic:', {
+          configVault: existingConfig.vaultAddress,
+          configVaultLower: existingConfig.vaultAddress?.toLowerCase(),
+          legacyGraveVault: graveVault,
+          uniqueVaults,
+          uniqueVaultsLower: uniqueVaults.map(v => v.toLowerCase()),
+        });
+
+        // Find the exact vault from uniqueVaults that matches the config (case-insensitive)
+        const matchingConfigVault = existingConfig.vaultAddress &&
+          uniqueVaults.find(v => v.toLowerCase() === existingConfig.vaultAddress!.toLowerCase());
+
+        const matchingLegacyVault = graveVault &&
+          uniqueVaults.find(v => v.toLowerCase() === graveVault.toLowerCase());
+
+        console.log('[GRAVE UI] Matched vaults:', {
+          matchingConfigVault,
+          matchingLegacyVault,
+        });
+
+        if (matchingConfigVault) {
+          console.log('[GRAVE UI] ✅ Selecting vault from config:', matchingConfigVault);
+          setSelectedVault(matchingConfigVault);
+        } else if (matchingLegacyVault) {
+          // If legacy GRAVE vault exists and is in owned vaults, select it
+          console.log('[GRAVE UI] ✅ Selecting legacy GRAVE vault:', matchingLegacyVault);
+          setSelectedVault(matchingLegacyVault);
+        } else if (uniqueVaults.length > 0) {
+          // Otherwise, select first available vault if any exist
+          console.log('[GRAVE UI] ⚠️ Fallback to first vault:', uniqueVaults[0]);
+          setSelectedVault(uniqueVaults[0]);
+        } else {
+          // No vaults available - user will need to create one
+          console.log('[GRAVE UI] ⚠️ No vaults available');
+          setSelectedVault('');
         }
       } catch (error) {
         console.error('Error fetching vaults:', error);
@@ -172,7 +142,7 @@ const GraveSubscription: React.FC = () => {
     };
 
     fetchVaults();
-  }, [address, vaultToUse]);
+  }, [address, currentNetwork]);
 
   // Fetch existing configuration and determine current step
   useEffect(() => {
@@ -248,100 +218,22 @@ const GraveSubscription: React.FC = () => {
 
   // Determine current phase based on setup state
   useEffect(() => {
-    const determinePhaseState = async () => {
-      if (!isLoadingGraveData && address) {
-        const newSteps = [...initialSteps];
-
-        if (mainUPController) {
-          newSteps[0].instructions2!.address = mainUPController;
-        }
-
-        // Determine which phase we're in
-        if (!hasUAPSubscription) {
-          // If permissions not granted, show phase 0, otherwise show phase 1
-          if (!permissionsGranted) {
-            setCurrentPhase(0);
-          } else {
-            setCurrentPhase(1);
-          }
-          setActiveStep(0);
+    if (!isLoadingGraveData && address) {
+      // Determine which phase we're in
+      if (!hasUAPSubscription) {
+        // If permissions not granted, show phase 0, otherwise show phase 1
+        if (!permissionsGranted) {
+          setCurrentPhase(0);
         } else {
-          // Permissions and subscription are done
-          setPermissionsGranted(true);
-          newSteps[0].complete = true;
-          newSteps[1].complete = true;
-
-          if (vaultToUse) {
-            newSteps[2].complete = true;
-            newSteps[2].completeText.address = vaultToUse;
-          }
-
-          // Check if fully configured by reading on-chain data
-          if (setupType === 'uap' && vaultToUse && currentNetwork) {
-            try {
-              const provider = new BrowserProvider(window.lukso);
-              const existingConfig = await getForwarderAssistantConfig(
-                provider,
-                address,
-                {
-                  forwarderAssistantAddress:
-                    currentNetwork.forwarderAssistantAddress,
-                  addressListScreenerAddress:
-                    currentNetwork.addressListScreenerAddress,
-                  curatedListScreenerAddress:
-                    currentNetwork.curatedListScreenerAddress,
-                }
-              );
-
-              if (existingConfig.isConfigured && existingConfig.vaultAddress) {
-                // Fully configured - show phase 2 in completed state
-                newSteps[3].complete = true;
-                newSteps[4].complete = true;
-                newSteps[5].complete = true;
-                setCurrentPhase(2);
-                setActiveStep(6);
-              } else if (vaultToUse) {
-                // Move to configuration phase
-                setCurrentPhase(2);
-                setActiveStep(3); // Move to whitelist configuration
-              } else {
-                // Move to configuration phase (need vault)
-                setCurrentPhase(2);
-                setActiveStep(2);
-              }
-            } catch (error) {
-              console.error('Error checking configuration:', error);
-              setCurrentPhase(2);
-              if (vaultToUse) {
-                setActiveStep(3);
-              } else {
-                setActiveStep(2);
-              }
-            }
-          } else if (vaultToUse) {
-            setCurrentPhase(2);
-            setActiveStep(3); // Move to whitelist configuration
-          } else {
-            setCurrentPhase(2);
-            setActiveStep(2); // Need vault
-          }
+          setCurrentPhase(1);
         }
-
-        setSteps(newSteps);
+      } else {
+        // Subscription is done - show configuration phase
+        setPermissionsGranted(true);
+        setCurrentPhase(2);
       }
-    };
-
-    determinePhaseState();
-  }, [
-    hasUAPSubscription,
-    setupType,
-    vaultToUse,
-    isLoadingGraveData,
-    address,
-    mainUPController,
-    currentNetwork,
-    permissionsGranted,
-  ]);
+    }
+  }, [hasUAPSubscription, isLoadingGraveData, address, permissionsGranted]);
 
   // Parse whitelist addresses
   const parseAddressList = (text: string): string[] => {
@@ -402,12 +294,8 @@ const GraveSubscription: React.FC = () => {
         isClosable: true,
       });
 
-      const newSteps = [...steps];
-      newSteps[0].complete = true;
-      setSteps(newSteps);
       setPermissionsGranted(true);
       setCurrentPhase(1); // Move to subscription phase
-      setActiveStep(1);
     } catch (err: any) {
       console.error('Error setting permissions:', err);
       if (!err.message?.includes('user rejected')) {
@@ -422,7 +310,7 @@ const GraveSubscription: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [address, mainUPController, toast, steps]);
+  }, [address, mainUPController, toast]);
 
   // Step 2: Subscribe to UAP
   const handleSubscribe = useCallback(async () => {
@@ -458,12 +346,7 @@ const GraveSubscription: React.FC = () => {
       });
 
       await refreshGraveData();
-
-      const newSteps = [...steps];
-      newSteps[1].complete = true;
-      setSteps(newSteps);
       setCurrentPhase(2); // Move to configuration phase
-      setActiveStep(2);
     } catch (err: any) {
       console.error('Error subscribing:', err);
       if (!err.message?.includes('user rejected')) {
@@ -478,7 +361,7 @@ const GraveSubscription: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [address, currentNetwork, toast, refreshGraveData, steps]);
+  }, [address, currentNetwork, toast, refreshGraveData]);
 
   // Create new vault with metadata
   const handleCreateVault = useCallback(async () => {
@@ -507,11 +390,7 @@ const GraveSubscription: React.FC = () => {
         isClosable: true,
       });
 
-      const vaultAddress = await deployVaultWithMetadata(
-        provider,
-        address,
-        mainUPController
-      );
+      const vaultAddress = await deployVault(provider, address, currentNetwork);
 
       toast({
         title: 'Success! 🎉',
@@ -541,31 +420,6 @@ const GraveSubscription: React.FC = () => {
       setIsCreatingVault(false);
     }
   }, [address, currentNetwork, toast]);
-
-  // Step 3: Set vault (if needed, otherwise skip)
-  const handleSetVault = useCallback(async () => {
-    // Use selected vault from dropdown, or fall back to vaultToUse
-    const vaultAddress = selectedVault || vaultToUse;
-
-    if (!vaultAddress) {
-      toast({
-        title: 'Error',
-        description:
-          'No vault selected. Please select a vault from the dropdown or create a new vault.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    // Mark vault step as complete
-    const newSteps = [...steps];
-    newSteps[2].complete = true;
-    newSteps[2].completeText.address = vaultAddress;
-    setSteps(newSteps);
-    setActiveStep(3);
-  }, [selectedVault, vaultToUse, toast, steps]);
 
   // Configure and activate GRAVE using the new unified assistant pattern
   const handleActivateGrave = useCallback(async () => {
@@ -642,23 +496,11 @@ const GraveSubscription: React.FC = () => {
       );
 
       toast({
-        title: isEditMode
-          ? '✅ Configuration updated successfully!'
-          : '🪲👻 Beetlejuice, Beetlejuice, Beetlejuice 👻🪲',
+        title: '🪲👻 Beetlejuice, Beetlejuice, Beetlejuice 👻🪲',
         status: 'success',
         duration: 9000,
         isClosable: true,
       });
-
-      // Complete all remaining steps
-      const newSteps = steps.map(s => ({ ...s, complete: true }));
-      setSteps(newSteps);
-      setActiveStep(6);
-
-      // Exit edit mode if we were in it
-      if (isEditMode) {
-        setIsEditMode(false);
-      }
 
       await refreshGraveData();
     } catch (err: any) {
@@ -686,8 +528,6 @@ const GraveSubscription: React.FC = () => {
     vaultToUse,
     toast,
     refreshGraveData,
-    steps,
-    isEditMode,
   ]);
 
   // Unsubscribe handler
@@ -725,9 +565,7 @@ const GraveSubscription: React.FC = () => {
 
       await refreshGraveData();
 
-      // Reset steps
-      setSteps(initialSteps);
-      setActiveStep(0);
+      // Reset configuration
       setWhitelistAddresses('');
       setCuratedListAddress('');
       setUseCuratedList(false);
@@ -746,439 +584,6 @@ const GraveSubscription: React.FC = () => {
       setIsProcessing(false);
     }
   }, [address, currentNetwork, toast, refreshGraveData]);
-
-  const standardStepper = (step: StepData, index: number) => {
-    const isActive = index === activeStep;
-    // Show input if active and not complete, OR if in edit mode and this is step 2, 3, or 4 (vault, whitelist, curated list)
-    const showInput =
-      (isActive && !step.complete) || (isEditMode && index >= 2 && index <= 4);
-
-    return (
-      <Step key={index}>
-        <StepIndicator
-          color="var(--chakra-colors-dark-purple-500)"
-          borderColor="var(--chakra-colors-dark-purple-500)"
-          fontWeight={'bold'}
-        >
-          <StepStatus
-            complete={'🪦'}
-            incomplete={<StepNumber />}
-            active={<StepNumber />}
-          />
-        </StepIndicator>
-        <Box flexShrink="0" textAlign={'left'} width="100%">
-          <StepTitle
-            style={{
-              color: 'var(--chakra-colors-dark-purple-500)',
-              fontWeight: 'bold',
-              width: '100%',
-            }}
-          >
-            {step.title}
-          </StepTitle>
-          {!step.complete ? (
-            <Box>
-              {step.instructions && <Box mb={2}>{step.instructions}</Box>}
-              {step.instructions2 &&
-                step.instructions2.address &&
-                currentNetwork && (
-                  <Text fontSize="sm" color="dark.purple.500" mb={2}>
-                    {step.instructions2.text}{' '}
-                    <ChakraLink
-                      href={`${currentNetwork.explorer}/address/${step.instructions2.address}`}
-                      color="dark.purple.500"
-                      textDecoration="underline"
-                      _hover={{ color: 'dark.purple.400' }}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      ({formatAddress(step.instructions2.address)})
-                    </ChakraLink>
-                  </Text>
-                )}
-
-              {/* Step 3: Vault selection */}
-              {index === 2 && showInput && (
-                <Box mt={3} mb={3}>
-                  <FormControl>
-                    <FormLabel
-                      fontSize="sm"
-                      fontWeight="bold"
-                      color="dark.purple.500"
-                      fontFamily="Montserrat"
-                    >
-                      Select Vault (Spambox)
-                    </FormLabel>
-                    {isLoadingVaults ? (
-                      <Text fontSize="sm" color="dark.purple.500">
-                        Loading vaults...
-                      </Text>
-                    ) : availableVaults.length > 0 ? (
-                      <>
-                        <Select
-                          value={selectedVault}
-                          onChange={e => setSelectedVault(e.target.value)}
-                          fontFamily="mono"
-                          size="sm"
-                          color="dark.purple.500"
-                          borderColor="dark.purple.500"
-                          _focus={{ borderColor: 'dark.purple.400' }}
-                        >
-                          {availableVaults.map((vault, idx) => (
-                            <option key={vault} value={vault}>
-                              Vault {idx + 1}: {formatAddress(vault)}
-                            </option>
-                          ))}
-                        </Select>
-                        <FormHelperText fontSize="xs" color="dark.purple.500">
-                          Select which vault will receive spam assets. You can
-                          view your vaults in the LSP10Vaults array on your
-                          Universal Profile.
-                        </FormHelperText>
-                      </>
-                    ) : (
-                      <>
-                        <Text fontSize="sm" color="red.500" mb={2}>
-                          No vaults found on your Universal Profile
-                        </Text>
-                        <FormHelperText fontSize="xs" color="dark.purple.500">
-                          You need to create a vault first. Visit{' '}
-                          <ChakraLink
-                            href="https://docs.lukso.tech/standards/universal-profile/lsp9-vault/"
-                            target="_blank"
-                            style={{ textDecoration: 'underline' }}
-                          >
-                            LUKSO docs
-                          </ChakraLink>{' '}
-                          to learn how to create a vault.
-                        </FormHelperText>
-                      </>
-                    )}
-                  </FormControl>
-                </Box>
-              )}
-
-              {/* Step 4: Whitelist input */}
-              {index === 3 && showInput && (
-                <Box mt={3} mb={3}>
-                  <FormControl>
-                    <FormLabel
-                      fontSize="sm"
-                      fontWeight="bold"
-                      color="dark.purple.500"
-                      fontFamily="Montserrat"
-                    >
-                      Whitelist Addresses (Required)
-                    </FormLabel>
-                    <Textarea
-                      placeholder="0x123...&#10;0x456...&#10;(one per line)"
-                      value={whitelistAddresses}
-                      onChange={e => setWhitelistAddresses(e.target.value)}
-                      fontFamily="mono"
-                      size="sm"
-                      rows={4}
-                      color="dark.purple.500"
-                      borderColor="dark.purple.500"
-                      _focus={{ borderColor: 'dark.purple.400' }}
-                    />
-                    <FormHelperText fontSize="xs" color="dark.purple.500">
-                      Assets from these addresses will NOT be sent to GRAVE
-                    </FormHelperText>
-                  </FormControl>
-                </Box>
-              )}
-
-              {/* Step 5: Curated list input */}
-              {index === 4 && showInput && (
-                <Box mt={3} mb={3}>
-                  <FormControl mb={3}>
-                    <Flex align="center" mb={2}>
-                      <input
-                        type="checkbox"
-                        checked={useCuratedList}
-                        onChange={e => setUseCuratedList(e.target.checked)}
-                        style={{ marginRight: '8px' }}
-                      />
-                      <FormLabel
-                        fontSize="sm"
-                        fontWeight="bold"
-                        color="dark.purple.500"
-                        fontFamily="Montserrat"
-                        mb={0}
-                      >
-                        Use Curated Safe List (Optional)
-                      </FormLabel>
-                    </Flex>
-                    {useCuratedList && (
-                      <>
-                        <Input
-                          placeholder="0x..."
-                          value={curatedListAddress}
-                          onChange={e => setCuratedListAddress(e.target.value)}
-                          fontFamily="mono"
-                          size="sm"
-                          color="dark.purple.500"
-                          borderColor="dark.purple.500"
-                          _focus={{ borderColor: 'dark.purple.400' }}
-                        />
-                        <FormHelperText fontSize="xs" color="dark.purple.500">
-                          Assets NOT on this list will be sent to GRAVE
-                        </FormHelperText>
-                      </>
-                    )}
-                  </FormControl>
-                </Box>
-              )}
-            </Box>
-          ) : (
-            <StepDescription as={'div'}>
-              <Flex alignItems="center" gap={1}>
-                {step.completeText.text}
-                {step.completeText.address && currentNetwork && (
-                  <ChakraLink
-                    href={`${currentNetwork.explorer}/address/${step.completeText.address}`}
-                    style={{ textDecoration: 'underline' }}
-                    target="_blank"
-                  >
-                    {formatAddress(step.completeText.address)}
-                  </ChakraLink>
-                )}
-                {step.complete ? <FaCheckCircle /> : <></>}
-              </Flex>
-            </StepDescription>
-          )}
-        </Box>
-        <StepSeparator
-          style={{
-            color: 'var(--chakra-colors-dark-purple-500)',
-            backgroundColor: 'var(--chakra-colors-dark-purple-500)',
-          }}
-        />
-      </Step>
-    );
-  };
-
-  const displayMainTitle = () => {
-    if (steps[5].complete) {
-      return 'YOU HAVE A GRAVE SPAMBOX!';
-    } else {
-      return 'SET UP YOUR GRAVE SPAMBOX';
-    }
-  };
-
-  const renderActionButton = () => {
-    // Show edit/unsubscribe options if fully configured
-    if (hasUAPSubscription && steps[5].complete) {
-      if (isEditMode) {
-        return (
-          <Flex gap={2} mb={4}>
-            <Button
-              onClick={handleActivateGrave}
-              isLoading={isProcessing}
-              isDisabled={isProcessing}
-              color={'dark.purple.500'}
-              border={'1px solid var(--chakra-colors-dark-purple-500)'}
-              size={'md'}
-              fontFamily="Bungee"
-              fontSize="16px"
-              fontWeight="400"
-            >
-              {isProcessing ? 'SAVING...' : 'SAVE CHANGES'}
-            </Button>
-            <Button
-              onClick={() => setIsEditMode(false)}
-              isDisabled={isProcessing}
-              variant="outline"
-              color={'dark.purple.500'}
-              borderColor="dark.purple.500"
-              size={'md'}
-              fontFamily="Bungee"
-              fontSize="16px"
-              fontWeight="400"
-            >
-              CANCEL
-            </Button>
-          </Flex>
-        );
-      } else {
-        return (
-          <Flex gap={2} mb={4}>
-            <Button
-              onClick={() => setIsEditMode(true)}
-              isDisabled={isProcessing}
-              color={'dark.purple.500'}
-              border={'1px solid var(--chakra-colors-dark-purple-500)'}
-              size={'md'}
-              fontFamily="Bungee"
-              fontSize="16px"
-              fontWeight="400"
-            >
-              EDIT CONFIGURATION
-            </Button>
-            <Button
-              onClick={handleUnsubscribe}
-              isLoading={isProcessing}
-              isDisabled={isProcessing}
-              variant="outline"
-              color={'dark.purple.500'}
-              borderColor="dark.purple.500"
-              size={'md'}
-              fontFamily="Bungee"
-              fontSize="16px"
-              fontWeight="400"
-            >
-              UNSUBSCRIBE
-            </Button>
-          </Flex>
-        );
-      }
-    }
-
-    // Show appropriate button based on current step
-    if (activeStep === 0 && !steps[0].complete) {
-      return (
-        <Button
-          onClick={handleSetPermissions}
-          isLoading={isProcessing}
-          isDisabled={isProcessing}
-          color={'dark.purple.500'}
-          border={'1px solid var(--chakra-colors-dark-purple-500)'}
-          size={'md'}
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-          mb={4}
-        >
-          {isProcessing ? 'PROCESSING...' : 'START'}
-        </Button>
-      );
-    }
-
-    if (activeStep === 1 && !steps[1].complete) {
-      return (
-        <Button
-          onClick={handleSubscribe}
-          isLoading={isProcessing}
-          isDisabled={isProcessing}
-          color={'dark.purple.500'}
-          border={'1px solid var(--chakra-colors-dark-purple-500)'}
-          size={'md'}
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-          mb={4}
-        >
-          {isProcessing ? 'ENABLING...' : 'ENABLE GRAVE'}
-        </Button>
-      );
-    }
-
-    if (activeStep === 2 && !steps[2].complete) {
-      return (
-        <Button
-          onClick={handleSetVault}
-          isLoading={isProcessing}
-          isDisabled={isProcessing}
-          size={'md'}
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-          mb={4}
-          variant="solidWhite"
-        >
-          CONTINUE
-        </Button>
-      );
-    }
-
-    if (activeStep === 3 && !steps[3].complete) {
-      return (
-        <Button
-          onClick={() => {
-            const newSteps = [...steps];
-            newSteps[3].complete = true;
-            setSteps(newSteps);
-            setActiveStep(4);
-          }}
-          isLoading={isProcessing}
-          isDisabled={isProcessing}
-          size={'md'}
-          fontFamily="Bungee"
-          fontSize="16px"
-          mb={4}
-          variant="solidWhite"
-        >
-          CONTINUE
-        </Button>
-      );
-    }
-
-    if (activeStep === 4 && !steps[4].complete) {
-      // Validate curated list input before allowing to continue
-      const canContinue =
-        !useCuratedList ||
-        (useCuratedList && curatedListAddress && isAddress(curatedListAddress));
-
-      return (
-        <Button
-          onClick={() => {
-            // Validate before proceeding
-            if (
-              useCuratedList &&
-              (!curatedListAddress || !isAddress(curatedListAddress))
-            ) {
-              toast({
-                title: 'Validation Error',
-                description:
-                  'Please provide a valid curated list address or uncheck the option',
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-              });
-              return;
-            }
-
-            const newSteps = [...steps];
-            newSteps[4].complete = true;
-            setSteps(newSteps);
-            setActiveStep(5);
-          }}
-          isLoading={isProcessing}
-          isDisabled={isProcessing || (useCuratedList && !canContinue)}
-          color={'dark.purple.500'}
-          border={'1px solid var(--chakra-colors-dark-purple-500)'}
-          size={'md'}
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-          mb={4}
-        >
-          CONTINUE
-        </Button>
-      );
-    }
-
-    if (activeStep === 5 && !steps[5].complete) {
-      return (
-        <Button
-          onClick={handleActivateGrave}
-          isLoading={isProcessing}
-          isDisabled={isProcessing}
-          color={'dark.purple.500'}
-          border={'1px solid var(--chakra-colors-dark-purple-500)'}
-          size={'md'}
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-          mb={4}
-        >
-          {isProcessing ? 'ACTIVATING...' : 'ACTIVATE GRAVE'}
-        </Button>
-      );
-    }
-
-    return null;
-  };
 
   if (!isConnected || !address) {
     return (
@@ -1351,7 +756,7 @@ const GraveSubscription: React.FC = () => {
     );
   }
 
-  // Phase 2: Configure GRAVE (settings panel following UP Assistants pattern)
+  // Phase 2: Configure GRAVE (settings panel)
   return (
     <Flex width="100%" flexDirection="column" gap={6}>
       <Text
@@ -1360,10 +765,10 @@ const GraveSubscription: React.FC = () => {
         fontFamily="Bungee"
         color="dark.purple.400"
       >
-        {displayMainTitle()}
+        CONFIGURE YOUR GRAVE SPAMBOX
       </Text>
 
-      {/* Section A: Forwarder Assistant Configuration */}
+      {/* Section A: Vault Selection */}
       <Box
         p={6}
         bg="dark.purple.200"
@@ -1384,54 +789,64 @@ const GraveSubscription: React.FC = () => {
           </Box>
         </Flex>
 
-        <Flex
-          flexDirection="row"
-          gap={4}
-          maxWidth="550px"
-          align="center"
-          mb={3}
-        >
-          <Text fontWeight="bold" fontSize="sm" color="dark.purple.500" w="40%">
-            Select or create a spambox
-          </Text>
-          <Box w="60%">
-            {isLoadingVaults ? (
-              <Text fontSize="sm" color="dark.purple.500">
-                Loading vaults...
-              </Text>
-            ) : /*availableVaults.length > 0*/ false ? (
-              <Select
-                value={selectedVault}
-                onChange={e => setSelectedVault(e.target.value)}
-                fontFamily="mono"
-                size="sm"
-                color="dark.purple.500"
-                borderColor="dark.purple.500"
-                _focus={{ borderColor: 'dark.purple.400' }}
-                bg="white"
-              >
-                {availableVaults.map((vault, idx) => (
-                  <option key={vault} value={vault}>
-                    Vault {idx + 1}: {formatAddress(vault)}
-                  </option>
-                ))}
-              </Select>
-            ) : (
-              <Button
-                onClick={handleCreateVault}
-                isLoading={isCreatingVault}
-                isDisabled={isCreatingVault}
-                size="sm"
-                colorScheme="green"
-                fontFamily="Montserrat"
-                fontSize="14px"
-                fontWeight="600"
-                width="full"
-              >
-                {isCreatingVault ? 'Creating...' : 'Create GRAVE Spambox'}
-              </Button>
-            )}
-          </Box>
+        <Flex flexDirection="column" gap={3} maxWidth="550px" mb={3}>
+          <Flex flexDirection="row" gap={4} align="center">
+            <Text
+              fontWeight="bold"
+              fontSize="sm"
+              color="dark.purple.500"
+              w="40%"
+            >
+              Select or create a spambox
+            </Text>
+            <Box w="60%">
+              {isLoadingVaults ? (
+                <Text fontSize="sm" color="dark.purple.500">
+                  Loading vaults...
+                </Text>
+              ) : availableVaults.length > 0 ? (
+                <Select
+                  value={selectedVault}
+                  onChange={e => setSelectedVault(e.target.value)}
+                  fontFamily="mono"
+                  size="sm"
+                  color="dark.purple.500"
+                  borderColor="dark.purple.500"
+                  _focus={{ borderColor: 'dark.purple.400' }}
+                  bg="white"
+                >
+                  {availableVaults.map((vault, idx) => {
+                    const isLegacyVault = graveVault && vault === graveVault;
+                    const label = `Vault ${idx + 1}: ${formatAddress(vault)}${isLegacyVault ? ' (Legacy GRAVE Spambox)' : ''}`;
+                    return (
+                      <option key={vault} value={vault}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </Select>
+              ) : (
+                <Text fontSize="sm" color="red.500">
+                  No vaults found
+                </Text>
+              )}
+            </Box>
+          </Flex>
+
+          {/* Always show create vault button */}
+          <Flex justifyContent="flex-end">
+            <Button
+              onClick={handleCreateVault}
+              isLoading={isCreatingVault}
+              isDisabled={isCreatingVault}
+              size="sm"
+              fontFamily="Montserrat"
+              fontSize="14px"
+              fontWeight="600"
+            >
+              {isCreatingVault ? 'Creating...' : 'Create New Vault'}
+            </Button>
+          </Flex>
         </Flex>
       </Box>
 
@@ -1443,35 +858,110 @@ const GraveSubscription: React.FC = () => {
         border="2px solid"
         borderColor="dark.purple.400"
       >
-        <Flex align="center" justify="space-between" mb={4}>
-          <Box>
-            <Text
-              fontSize="md"
-              fontWeight="bold"
-              color="blue.800"
-              fontFamily="Montserrat"
-            >
-              Additional Screening
-            </Text>
-          </Box>
-          <Text fontSize="sm" color="dark.purple.500" fontWeight="semibold">
-            Always enabled for GRAVE
+        <Flex direction="column" align="center" justify="space-between" mb={4}>
+          <Text
+            fontSize="md"
+            fontWeight="bold"
+            color="dark.purple.500"
+            fontFamily="Montserrat"
+          >
+            GRAVE Spambox Filters
+          </Text>
+          <Text fontSize="sm" color="dark.purple.500">
+            By default all assets are treated as spam and sent to the GRAVE.
+            Below you can create exceptions.
           </Text>
         </Flex>
 
         <Flex flexDirection="column" gap={4}>
+          {/* Screener 2: Curated List Screener (Optional) */}
+          <Box
+            p={4}
+            bg={useCuratedList ? 'purple.50' : 'gray.100'}
+            borderRadius="md"
+            border="2px solid"
+            borderColor={useCuratedList ? 'dark.purple.400' : 'gray.600'}
+            transition="all 0.2s"
+          >
+            <Flex align="center" gap={3} mb={useCuratedList ? 3 : 0}>
+              <Switch
+                isChecked={useCuratedList}
+                onChange={e => setUseCuratedList(e.target.checked)}
+                size="lg"
+                colorScheme="purple"
+                sx={{
+                  'span.chakra-switch__track': {
+                    outline: '2px solid',
+                    outlineColor: 'gray.700',
+                    outlineOffset: '1px',
+                  },
+                  'span.chakra-switch__thumb': {
+                    bg: 'dark.purple.500',
+                  },
+                }}
+              />
+              <Text
+                fontSize="md"
+                fontWeight="bold"
+                color={useCuratedList ? 'dark.purple.500' : 'gray.700'}
+                flex="1"
+              >
+                Add a curated list of digital assets that are safe from the
+                GRAVE (will remain in your UP!)
+              </Text>
+            </Flex>
+            {useCuratedList && (
+              <Input
+                placeholder="0x... (list address)"
+                value={curatedListAddress}
+                onChange={e => setCuratedListAddress(e.target.value)}
+                fontFamily="mono"
+                size="sm"
+                color="dark.purple.600"
+                bg="white"
+                borderColor="dark.purple.300"
+                _hover={{ borderColor: 'dark.purple.400' }}
+                _focus={{
+                  borderColor: 'dark.purple.500',
+                  boxShadow: '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                }}
+              />
+            )}
+          </Box>
+
+          {/* AND Logic Indicator */}
+          <Box textAlign="center" py={2}>
+            <Box
+              display="inline-block"
+              px={3}
+              py={1}
+              bg="dark.purple.500"
+              color="white"
+              borderRadius="full"
+              fontSize="xs"
+              fontWeight="bold"
+            >
+              OR
+            </Box>
+          </Box>
+
           {/* Screener 1: Address List Screener */}
           <Box
             p={4}
-            bg="white"
+            bg="purple.50"
             borderRadius="md"
             border="2px solid"
-            borderColor="blue.200"
+            borderColor="dark.purple.400"
           >
-            <Text fontSize="md" fontWeight="bold" color="blue.800" mb={2}>
-              Whitelist Screener
+            <Text
+              fontSize="md"
+              fontWeight="bold"
+              color="dark.purple.500"
+              mb={2}
+            >
+              Manage an exceptions list manually
             </Text>
-            <Text fontSize="sm" color="gray.600" mb={3}>
+            <Text fontSize="sm" color="dark.purple.400" mb={3}>
               Assets from these addresses will NOT be sent to GRAVE
             </Text>
             <Textarea
@@ -1481,64 +971,16 @@ const GraveSubscription: React.FC = () => {
               fontFamily="mono"
               size="sm"
               rows={4}
-              color="dark.purple.500"
-              borderColor="blue.300"
-              _focus={{ borderColor: 'blue.400' }}
-              bg="gray.50"
+              color="dark.purple.600"
+              bg="white"
+              borderColor="dark.purple.300"
+              _hover={{ borderColor: 'dark.purple.400' }}
+              _focus={{
+                borderColor: 'dark.purple.500',
+                boxShadow: '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+              }}
+              _placeholder={{ color: 'gray.400' }}
             />
-          </Box>
-
-          {/* AND Logic Indicator */}
-          <Box textAlign="center" py={2}>
-            <Box
-              display="inline-block"
-              px={3}
-              py={1}
-              bg="blue.500"
-              color="white"
-              borderRadius="full"
-              fontSize="xs"
-              fontWeight="bold"
-            >
-              AND
-            </Box>
-          </Box>
-
-          {/* Screener 2: Curated List Screener (Optional) */}
-          <Box
-            p={4}
-            bg="white"
-            borderRadius="md"
-            border="2px solid"
-            borderColor={useCuratedList ? 'blue.200' : 'gray.200'}
-          >
-            <Flex align="center" mb={2}>
-              <input
-                type="checkbox"
-                checked={useCuratedList}
-                onChange={e => setUseCuratedList(e.target.checked)}
-                style={{ marginRight: '8px' }}
-              />
-              <Text fontSize="md" fontWeight="bold" color="blue.800">
-                Curated Safe List (Optional)
-              </Text>
-            </Flex>
-            <Text fontSize="sm" color="gray.600" mb={3}>
-              Assets NOT on this list will be sent to GRAVE
-            </Text>
-            {useCuratedList && (
-              <Input
-                placeholder="0x..."
-                value={curatedListAddress}
-                onChange={e => setCuratedListAddress(e.target.value)}
-                fontFamily="mono"
-                size="sm"
-                color="dark.purple.500"
-                borderColor="blue.300"
-                _focus={{ borderColor: 'blue.400' }}
-                bg="gray.50"
-              />
-            )}
           </Box>
         </Flex>
       </Box>
@@ -1550,36 +992,27 @@ const GraveSubscription: React.FC = () => {
           isLoading={isProcessing}
           isDisabled={isProcessing || !selectedVault}
           color="white"
-          bg="orange.500"
-          _hover={{ bg: 'orange.600' }}
-          _active={{ bg: 'orange.700' }}
           size="md"
           fontFamily="Bungee"
           fontSize="16px"
           fontWeight="400"
         >
-          {isProcessing
-            ? 'SAVING...'
-            : steps[5]?.complete
-              ? 'SAVE CHANGES'
-              : 'SAVE & ACTIVATE'}
+          {isProcessing ? 'SAVING...' : 'SAVE & ACTIVATE'}
         </Button>
-        {steps[5]?.complete && (
-          <Button
-            onClick={handleUnsubscribe}
-            isLoading={isProcessing}
-            isDisabled={isProcessing}
-            variant="outline"
-            color="dark.purple.500"
-            borderColor="dark.purple.500"
-            size="md"
-            fontFamily="Bungee"
-            fontSize="16px"
-            fontWeight="400"
-          >
-            DEACTIVATE
-          </Button>
-        )}
+        <Button
+          onClick={handleUnsubscribe}
+          isLoading={isProcessing}
+          isDisabled={isProcessing}
+          variant="outline"
+          color="dark.purple.500"
+          borderColor="dark.purple.500"
+          size="md"
+          fontFamily="Bungee"
+          fontSize="16px"
+          fontWeight="400"
+        >
+          DEACTIVATE
+        </Button>
       </Flex>
     </Flex>
   );

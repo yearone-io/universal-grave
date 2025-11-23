@@ -9,6 +9,7 @@ export interface Network {
   previousGraveForwarders: string[];
   lsp1UrdVault: string;
   baseUrl: string;
+  vaultImplementation?: string; // Pre-deployed LSP9VaultInit implementation for proxy pattern
 }
 
 const NETWORKS = {
@@ -23,6 +24,7 @@ const NETWORKS = {
     previousGraveForwarders: ['0x433908ce6457b302a6452257Bc40e466d95c78E9'],
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
     baseUrl: 'https://universalgrave.com',
+    vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation
   },
   testnet: {
     chainId: 4201,
@@ -39,6 +41,7 @@ const NETWORKS = {
     ],
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
     baseUrl: 'https://testnet--universal-grave.netlify.app',
+    vaultImplementation: '0x392e18585b89bd795204c634cce5878f1cf40a58', // Shared LSP9VaultInit implementation
   },
 } as {
   [key: string]: Network;

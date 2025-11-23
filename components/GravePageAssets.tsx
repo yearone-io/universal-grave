@@ -7,6 +7,7 @@ import { getUpAddressUrds } from '@/utils/urdUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { BrowserProvider } from 'ethers';
+import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
 
 export default function GravePageAssets({
   graveOwner,
@@ -24,6 +25,27 @@ export default function GravePageAssets({
       if (!graveVault && networkConfig && window.lukso) {
         try {
           const provider = new BrowserProvider(window.lukso);
+
+          // First, try to get vault from UAP forwarder assistant configuration
+          const forwarderConfig = await getForwarderAssistantConfig(
+            provider,
+            graveOwner,
+            {
+              forwarderAssistantAddress:
+                networkConfig.forwarderAssistantAddress,
+              addressListScreenerAddress:
+                networkConfig.addressListScreenerAddress,
+              curatedListScreenerAddress:
+                networkConfig.curatedListScreenerAddress,
+            }
+          );
+
+          if (forwarderConfig.vaultAddress) {
+            setGraveVault(forwarderConfig.vaultAddress);
+            return;
+          }
+
+          // Fallback to legacy GRAVE forwarder for backwards compatibility
           const vault = await getGraveVaultFor(
             provider,
             graveOwner,
@@ -33,6 +55,7 @@ export default function GravePageAssets({
             setGraveVault(vault);
             return;
           }
+
           // Attempt to retrieve grave vault for users with an old Urd version
           const urdData = await getUpAddressUrds(provider, graveOwner);
           if (urdData.oldUrdVersion) {

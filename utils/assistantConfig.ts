@@ -4,14 +4,17 @@ import {
   Contract,
   AbiCoder,
   isAddress,
+  ethers,
 } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import ERC725 from '@erc725/erc725.js';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 import uapSchema from '@/schemas/UAP.json';
 
+// Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
+// This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
 const LSP7_TRANSACTION_TYPE =
-  '0x429ac7a06903dbc9c13dfcb3c9d11df8194581fa047c96d7a4171fc7402958ea';
+  '0x20804611b3e2ea21c480dc465142210acf4a2485947541770ec1fb87dee4a55c';
 const LSP8_TRANSACTION_TYPE =
   '0x0b084a55ebf70fd3c06fd755269dac2212c4d3f0f4d09079780bfa50c1b2984d';
 
@@ -24,6 +27,30 @@ export interface ForwarderAssistantConfig {
   executionOrderLSP7: number | null;
   executionOrderLSP8: number | null;
 }
+
+/**
+ * Custom decoding function matching the Solidity contract's decodeExecDataValue logic
+ * This matches the UP Assistants implementation for proper compatibility
+ */
+export const decodeExecDataValue = (execDataValue: string): [string, string] => {
+  // Remove 0x prefix if present
+  const hexData = execDataValue.startsWith('0x') ? execDataValue.slice(2) : execDataValue;
+
+  // Must have at least 20 bytes (40 hex chars) for the address
+  if (hexData.length < 40) {
+    throw new Error('Invalid encoded data: too short');
+  }
+
+  // First 20 bytes (40 hex chars) = address
+  const addressHex = hexData.slice(0, 40);
+  const address = ethers.getAddress('0x' + addressHex);
+
+  // Remaining bytes = config data
+  const configDataHex = hexData.slice(40);
+  const configBytes = '0x' + configDataHex;
+
+  return [address, configBytes];
+};
 
 /**
  * Fetches the current Forwarder Assistant configuration from the Universal Profile
@@ -97,39 +124,55 @@ export async function getForwarderAssistantConfig(
                 [txType, executionOrder.toString()]
               );
 
+              console.log('[GRAVE READ] Reading vault address for:', {
+                txType,
+                executionOrder,
+                assistantConfigKey,
+              });
+
               const assistantData =
                 await upContract.getData(assistantConfigKey);
+
+              console.log('[GRAVE READ] Raw assistantData:', assistantData);
+
               if (assistantData && assistantData !== '0x') {
                 try {
-                  // Decode using decodeExecDataValue pattern from uap-frontend
-                  // Format: 0x + 20 bytes (assistant address) + N bytes (config data = vault address)
-                  const hexData = assistantData.startsWith('0x')
-                    ? assistantData.slice(2)
-                    : assistantData;
+                  // Decode using decodeExecDataValue - same as UP Assistants
+                  const [configAddress, configBytes] = decodeExecDataValue(assistantData);
 
-                  if (hexData.length >= 80) {
-                    // 40 chars for assistant + 40 chars for vault = 80
-                    // First 20 bytes (40 hex chars) = assistant address (skip it)
-                    // Remaining bytes = vault address (the config data for Forwarder Assistant)
-                    const configDataHex = hexData.slice(40);
+                  console.log('[GRAVE READ] Decoded data:', {
+                    configAddress,
+                    configBytes,
+                    configBytesLength: configBytes.length,
+                  });
 
-                    // Extract vault address from config data
-                    // Handle both raw 20-byte addresses and ABI-encoded 32-byte addresses
-                    const vaultAddrHex =
-                      configDataHex.length === 40
-                        ? configDataHex
-                        : configDataHex.slice(-40);
-                    const vaultAddr = '0x' + vaultAddrHex;
+                  // Verify configBytes has data before attempting to decode
+                  if (configBytes && configBytes !== '0x' && configBytes.length >= 66) {
+                    // Decode the vault address from the config bytes
+                    // The config bytes contain an ABI-encoded address
+                    const abiCoder = new AbiCoder();
+                    const [vaultAddr] = abiCoder.decode(['address'], configBytes);
+
+                    console.log('[GRAVE READ] Decoded vault address:', vaultAddr);
 
                     if (
+                      vaultAddr &&
                       vaultAddr !== '0x0000000000000000000000000000000000000000'
                     ) {
                       config.vaultAddress = vaultAddr;
+                      console.log('[GRAVE READ] ✅ Successfully set vault address:', vaultAddr);
+                    } else {
+                      console.warn('[GRAVE READ] ⚠️ Vault address is zero address');
                     }
+                  } else {
+                    console.warn('[GRAVE READ] ⚠️ configBytes is empty or too short:', configBytes);
                   }
                 } catch (error) {
-                  console.error('Error decoding assistant config:', error);
+                  console.error('[GRAVE READ] ❌ Error decoding assistant config:', error);
+                  console.error('[GRAVE READ] Failed on assistantData:', assistantData);
                 }
+              } else {
+                console.warn('[GRAVE READ] ⚠️ No assistant data found at key:', assistantConfigKey);
               }
             }
 

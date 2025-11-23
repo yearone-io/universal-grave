@@ -29,12 +29,13 @@ export async function subscribeToUAP(
 
     // Set up URD delegates following UP Assistants pattern
     const URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
+    // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
     const LSP7URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      '0x429ac7a06903dbc9c13dfcb3c9d11df8194581fa047c96d7a4171fc7402958ea'.slice(
+      '0x20804611b3e2ea21c480dc465142210acf4a2485947541770ec1fb87dee4a55c'.slice(
         2,
         42
-      ); // LSP7 type ID
+      ); // LSP7 RecipientNotification type ID
     const LSP8URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       '0x0b084a55ebf70fd3c06fd755269dac2212c4d3f0f4d09079780bfa50c1b2984d'.slice(

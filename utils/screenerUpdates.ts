@@ -2,8 +2,10 @@ import { BrowserProvider, Contract, AbiCoder } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { getChecksumAddress } from './tokenUtils';
 
+// Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
+// This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
 const LSP7_TRANSACTION_TYPE =
-  '0x429ac7a06903dbc9c13dfcb3c9d11df8194581fa047c96d7a4171fc7402958ea';
+  '0x20804611b3e2ea21c480dc465142210acf4a2485947541770ec1fb87dee4a55c';
 const LSP8_TRANSACTION_TYPE =
   '0x0b084a55ebf70fd3c06fd755269dac2212c4d3f0f4d09079780bfa50c1b2984d';
 

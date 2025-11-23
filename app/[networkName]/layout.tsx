@@ -1,5 +1,8 @@
+'use client';
+
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import UpgradeBanner from '@/components/UpgradeBanner';
 import { getNetworkByName } from '@/constants/supportedNetworks';
 import { notFound } from 'next/navigation';
 
@@ -19,6 +22,7 @@ export default function NetworkLayout({
   return (
     <>
       <Header networkName={params.networkName} />
+      <UpgradeBanner />
       <div style={{ flexGrow: 0.9 }}>{children}</div>
       <Footer networkName={params.networkName} />
     </>
