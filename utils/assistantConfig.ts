@@ -427,7 +427,7 @@ function buildForwarderScreenerConfig(
         // Curated List Screener config: contract address and flag
         screenerConfig.screenerConfigs[instanceId] = {
           curatedListAddress: curatedListAddress,
-          membershipTriggersFailure: true, // Assets IN the curated list should trigger screening failure
+          membershipTriggersFailure: true, // Assets IN the curated list should trigger screening failure (go to GRAVE)
         };
       }
     });

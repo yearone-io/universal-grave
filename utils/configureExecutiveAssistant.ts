@@ -184,10 +184,14 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       }
       // Curated List Screener
       else if (config.curatedListAddress !== undefined) {
-        // Curated List config: (address curatedList, bool membershipTriggersFailure)
+        // Curated List config: (address curatedList, bool returnValueWhenCurated)
+        // Note: contract parameter is returnValueWhenCurated, but we use membershipTriggersFailure in config
+        // These have opposite semantics, so we invert: returnValueWhenCurated = !membershipTriggersFailure
+        const membershipTriggersFailure = config.membershipTriggersFailure ?? true;
+        const returnValueWhenCurated = !membershipTriggersFailure;
         screenerConfigBytes = abiCoder.encode(
           ['address', 'bool'],
-          [config.curatedListAddress, config.membershipTriggersFailure || true]
+          [config.curatedListAddress, returnValueWhenCurated]
         );
       }
 

@@ -180,8 +180,19 @@ const GraveSubscription: React.FC = () => {
               setUseCuratedList(true);
             }
             // Set selected vault from config if available
+            // Match case-insensitively with availableVaults to ensure correct display
             if (existingConfig.vaultAddress) {
-              setSelectedVault(existingConfig.vaultAddress);
+              const matchingVault = availableVaults.find(
+                v => v.toLowerCase() === existingConfig.vaultAddress!.toLowerCase()
+              );
+              if (matchingVault) {
+                setSelectedVault(matchingVault);
+              } else if (availableVaults.length > 0) {
+                // Vault not found in available vaults, but we have vaults
+                // This shouldn't happen, but fallback to first vault
+                console.warn('[GRAVE] Config vault not found in available vaults:', existingConfig.vaultAddress);
+                setSelectedVault(availableVaults[0]);
+              }
             }
           }
         } catch (error) {
@@ -758,7 +769,7 @@ const GraveSubscription: React.FC = () => {
 
   // Phase 2: Configure GRAVE (settings panel)
   return (
-    <Flex width="100%" flexDirection="column" gap={6}>
+    <Flex width="100%" flexDirection="column" gap={6} textAlign={"left"}>
       <Text
         fontSize="20px"
         fontWeight="bold"
@@ -797,7 +808,7 @@ const GraveSubscription: React.FC = () => {
               color="dark.purple.500"
               w="40%"
             >
-              Select or create a spambox
+              Select or create a vault to be your spambox
             </Text>
             <Box w="60%">
               {isLoadingVaults ? (
@@ -858,18 +869,18 @@ const GraveSubscription: React.FC = () => {
         border="2px solid"
         borderColor="dark.purple.400"
       >
-        <Flex direction="column" align="center" justify="space-between" mb={4}>
+        <Flex width="100%" flexDirection="column" alignItems={"flex-start"} gap={3} pb={4}>
           <Text
-            fontSize="md"
+            fontSize="20px"
             fontWeight="bold"
-            color="dark.purple.500"
-            fontFamily="Montserrat"
+            fontFamily="Bungee"
+            color="dark.purple.400"
           >
-            GRAVE Spambox Filters
+            Spambox Filters
           </Text>
           <Text fontSize="sm" color="dark.purple.500">
-            By default all assets are treated as spam and sent to the GRAVE.
-            Below you can create exceptions.
+          By default all assets are treated as spam and sent to the GRAVE.
+          Below you can create exceptions.
           </Text>
         </Flex>
 
@@ -906,8 +917,7 @@ const GraveSubscription: React.FC = () => {
                 color={useCuratedList ? 'dark.purple.500' : 'gray.700'}
                 flex="1"
               >
-                Add a curated list of digital assets that are safe from the
-                GRAVE (will remain in your UP!)
+                Add a curated list of digital assets that are NOT spam (will stay in your UP! and not get sent to GRAVE Spambox)
               </Text>
             </Flex>
             {useCuratedList && (
@@ -959,10 +969,10 @@ const GraveSubscription: React.FC = () => {
               color="dark.purple.500"
               mb={2}
             >
-              Manage an exceptions list manually
+              Mark safe (NOT spam) assets manually 
             </Text>
             <Text fontSize="sm" color="dark.purple.400" mb={3}>
-              Assets from these addresses will NOT be sent to GRAVE
+              Assets with these addresses will NOT be sent to the GRAVE
             </Text>
             <Textarea
               placeholder="0x123...&#10;0x456...&#10;(one per line)"
