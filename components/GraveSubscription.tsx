@@ -11,9 +11,11 @@ import {
   useToast,
   Link as ChakraLink,
   Select,
-  Switch,
+  IconButton,
+  VStack,
+  HStack,
 } from '@chakra-ui/react';
-import { FaCheckCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
 import { BrowserProvider, isAddress } from 'ethers';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
@@ -47,7 +49,7 @@ const GraveSubscription: React.FC = () => {
   const vaultToUse = uapVaultAddress || graveVault;
 
   // Configuration state
-  const [whitelistAddresses, setWhitelistAddresses] = useState<string>('');
+  const [whitelistAddresses, setWhitelistAddresses] = useState<string[]>([]);
   const [curatedListAddress, setCuratedListAddress] = useState<string>('');
   const [useCuratedList, setUseCuratedList] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -171,13 +173,11 @@ const GraveSubscription: React.FC = () => {
           // Populate form fields with existing configuration
           if (existingConfig.isConfigured) {
             if (existingConfig.whitelistAddresses.length > 0) {
-              setWhitelistAddresses(
-                existingConfig.whitelistAddresses.join('\n')
-              );
+              setWhitelistAddresses(existingConfig.whitelistAddresses);
             }
             if (existingConfig.curatedListAddress) {
               setCuratedListAddress(existingConfig.curatedListAddress);
-              setUseCuratedList(true);
+              // useCuratedList is now auto-determined from address validity
             }
             // Set selected vault from config if available
             // Match case-insensitively with availableVaults to ensure correct display
@@ -246,30 +246,35 @@ const GraveSubscription: React.FC = () => {
     }
   }, [hasUAPSubscription, isLoadingGraveData, address, permissionsGranted]);
 
-  // Parse whitelist addresses
-  const parseAddressList = (text: string): string[] => {
-    if (!text.trim()) return [];
-    return text
-      .split(/[,\n]/)
-      .map(addr => addr.trim())
-      .filter(addr => addr.length > 0 && isAddress(addr));
+  // Helper functions for managing whitelist addresses
+  const addWhitelistAddress = () => {
+    setWhitelistAddresses([...whitelistAddresses, '']);
+  };
+
+  const updateWhitelistAddress = (index: number, value: string) => {
+    const newAddresses = [...whitelistAddresses];
+    newAddresses[index] = value;
+    setWhitelistAddresses(newAddresses);
+  };
+
+  const removeWhitelistAddress = (index: number) => {
+    const newAddresses = whitelistAddresses.filter((_, i) => i !== index);
+    setWhitelistAddresses(newAddresses);
   };
 
   // Validate inputs
   const validateConfiguration = (): string | null => {
-    const invalidWhitelist = whitelistAddresses
-      .split(/[,\n]/)
-      .map(addr => addr.trim())
-      .filter(addr => addr.length > 0 && !isAddress(addr));
+    // Validate whitelist addresses
+    const invalidWhitelist = whitelistAddresses.filter(
+      addr => addr.trim() !== '' && !isAddress(addr.trim())
+    );
 
     if (invalidWhitelist.length > 0) {
       return `Invalid addresses in whitelist: ${invalidWhitelist.join(', ')}`;
     }
 
-    if (useCuratedList) {
-      if (!curatedListAddress.trim()) {
-        return 'Please provide a curated list contract address or uncheck the option';
-      }
+    // Validate curated list address if provided
+    if (curatedListAddress.trim() !== '') {
       if (!isAddress(curatedListAddress)) {
         return 'Invalid curated list contract address';
       }
@@ -479,8 +484,13 @@ const GraveSubscription: React.FC = () => {
         await registerVaultWithUP(provider, address, finalVaultAddress);
       }
 
-      // Parse whitelist addresses
-      const whitelistArray = parseAddressList(whitelistAddresses);
+      // Filter out empty addresses and trim whitespace
+      const whitelistArray = whitelistAddresses
+        .map(addr => addr.trim())
+        .filter(addr => addr !== '' && isAddress(addr));
+
+      // Determine if curated list should be used based on whether there's a valid address
+      const shouldUseCuratedList = curatedListAddress.trim() !== '' && isAddress(curatedListAddress);
 
       // Import and use the new save function following UP Assistants pattern
       const { saveForwarderAssistantConfig } = await import(
@@ -495,7 +505,7 @@ const GraveSubscription: React.FC = () => {
         address,
         finalVaultAddress,
         whitelistArray,
-        useCuratedList,
+        shouldUseCuratedList,
         curatedListAddress,
         {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
@@ -577,7 +587,7 @@ const GraveSubscription: React.FC = () => {
       await refreshGraveData();
 
       // Reset configuration
-      setWhitelistAddresses('');
+      setWhitelistAddresses([]);
       setCuratedListAddress('');
       setUseCuratedList(false);
     } catch (err: any) {
@@ -795,7 +805,7 @@ const GraveSubscription: React.FC = () => {
               color="dark.purple.500"
               fontFamily="Bungee"
             >
-              GRAVE Spambox Address
+              Select a Spambox
             </Text>
           </Box>
         </Flex>
@@ -888,55 +898,34 @@ const GraveSubscription: React.FC = () => {
           {/* Screener 2: Curated List Screener (Optional) */}
           <Box
             p={4}
-            bg={useCuratedList ? 'purple.50' : 'gray.100'}
+            bg="purple.50"
             borderRadius="md"
             border="2px solid"
-            borderColor={useCuratedList ? 'dark.purple.400' : 'gray.600'}
-            transition="all 0.2s"
+            borderColor="dark.purple.400"
           >
-            <Flex align="center" gap={3} mb={useCuratedList ? 3 : 0}>
-              <Switch
-                isChecked={useCuratedList}
-                onChange={e => setUseCuratedList(e.target.checked)}
-                size="lg"
-                colorScheme="purple"
-                sx={{
-                  'span.chakra-switch__track': {
-                    outline: '2px solid',
-                    outlineColor: 'gray.700',
-                    outlineOffset: '1px',
-                  },
-                  'span.chakra-switch__thumb': {
-                    bg: 'dark.purple.500',
-                  },
-                }}
-              />
-              <Text
-                fontSize="md"
-                fontWeight="bold"
-                color={useCuratedList ? 'dark.purple.500' : 'gray.700'}
-                flex="1"
-              >
-                Add a curated list of digital assets that are NOT spam (will stay in your UP! and not get sent to GRAVE Spambox)
-              </Text>
-            </Flex>
-            {useCuratedList && (
-              <Input
-                placeholder="0x... (list address)"
-                value={curatedListAddress}
-                onChange={e => setCuratedListAddress(e.target.value)}
-                fontFamily="mono"
-                size="sm"
-                color="dark.purple.600"
-                bg="white"
-                borderColor="dark.purple.300"
-                _hover={{ borderColor: 'dark.purple.400' }}
-                _focus={{
-                  borderColor: 'dark.purple.500',
-                  boxShadow: '0 0 0 1px var(--chakra-colors-dark-purple-500)',
-                }}
-              />
-            )}
+            <Text
+              fontSize="md"
+              fontWeight="bold"
+              color="dark.purple.500"
+              mb={2}
+            >
+              Add a curated list of digital assets that are safe (NOT spam). These assets will stay in your UP! and not get sent to the GRAVE Spambox.
+            </Text>
+            <Input
+              placeholder="0x... (curated list contract address - optional)"
+              value={curatedListAddress}
+              onChange={e => setCuratedListAddress(e.target.value)}
+              fontFamily="mono"
+              size="sm"
+              color="dark.purple.600"
+              bg="white"
+              borderColor="dark.purple.300"
+              _hover={{ borderColor: 'dark.purple.400' }}
+              _focus={{
+                borderColor: 'dark.purple.500',
+                boxShadow: '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+              }}
+            />
           </Box>
 
           {/* AND Logic Indicator */}
@@ -969,28 +958,54 @@ const GraveSubscription: React.FC = () => {
               color="dark.purple.500"
               mb={2}
             >
-              Mark safe (NOT spam) assets manually 
+              Mark safe (NOT spam) assets manually
             </Text>
             <Text fontSize="sm" color="dark.purple.400" mb={3}>
-              Assets with these addresses will NOT be sent to the GRAVE
+              Assets with these addresses will NOT be sent to the GRAVE Spambox
             </Text>
-            <Textarea
-              placeholder="0x123...&#10;0x456...&#10;(one per line)"
-              value={whitelistAddresses}
-              onChange={e => setWhitelistAddresses(e.target.value)}
-              fontFamily="mono"
-              size="sm"
-              rows={4}
-              color="dark.purple.600"
-              bg="white"
-              borderColor="dark.purple.300"
-              _hover={{ borderColor: 'dark.purple.400' }}
-              _focus={{
-                borderColor: 'dark.purple.500',
-                boxShadow: '0 0 0 1px var(--chakra-colors-dark-purple-500)',
-              }}
-              _placeholder={{ color: 'gray.400' }}
-            />
+
+            <VStack spacing={2} align="stretch">
+              {whitelistAddresses.map((address, index) => (
+                <HStack key={index}>
+                  <Input
+                    placeholder="0x... (address)"
+                    value={address}
+                    onChange={(e) => updateWhitelistAddress(index, e.target.value)}
+                    fontFamily="mono"
+                    size="sm"
+                    color="dark.purple.600"
+                    bg="white"
+                    borderColor={address.trim() !== '' && !isAddress(address.trim()) ? 'red.300' : 'dark.purple.300'}
+                    _hover={{ borderColor: address.trim() !== '' && !isAddress(address.trim()) ? 'red.400' : 'dark.purple.400' }}
+                    _focus={{
+                      borderColor: address.trim() !== '' && !isAddress(address.trim()) ? 'red.500' : 'dark.purple.500',
+                      boxShadow: address.trim() !== '' && !isAddress(address.trim())
+                        ? '0 0 0 1px var(--chakra-colors-red-500)'
+                        : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                    }}
+                  />
+                  <IconButton
+                    aria-label="Remove address"
+                    icon={<FaTrash />}
+                    size="sm"
+                    colorScheme="red"
+                    onClick={() => removeWhitelistAddress(index)}
+                    variant="ghost"
+                  />
+                </HStack>
+              ))}
+
+              <Button
+                leftIcon={<FaPlus />}
+                onClick={addWhitelistAddress}
+                size="sm"
+                variant="outline"
+                colorScheme="purple"
+                width="full"
+              >
+                {whitelistAddresses.length === 0 ? 'Add Address' : 'Add Another Address'}
+              </Button>
+            </VStack>
           </Box>
         </Flex>
       </Box>
