@@ -11,8 +11,10 @@ import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
 
 export default function GravePageAssets({
   graveOwner,
+  vaultAddressOverride,
 }: {
   graveOwner: string;
+  vaultAddressOverride?: string | null;
 }) {
   const { chainId } = useProfile();
   const [graveVault, setGraveVault] = useState<string | null>(null);
@@ -20,8 +22,18 @@ export default function GravePageAssets({
 
   const networkConfig = chainId ? supportedNetworks[chainId.toString()] : null;
 
+  // Use override if provided
+  useEffect(() => {
+    if (vaultAddressOverride) {
+      setGraveVault(vaultAddressOverride);
+    }
+  }, [vaultAddressOverride]);
+
   useEffect(() => {
     const fetchGraveVault = async () => {
+      // Skip fetching if vault override is provided
+      if (vaultAddressOverride) return;
+
       if (!graveVault && networkConfig && window.lukso) {
         try {
           const provider = new BrowserProvider(window.lukso);
@@ -78,7 +90,7 @@ export default function GravePageAssets({
     };
 
     fetchGraveVault();
-  }, [graveOwner, graveVault, networkConfig]);
+  }, [graveOwner, graveVault, networkConfig, vaultAddressOverride]);
 
   if (error) {
     return <Text>{error}</Text>;
