@@ -5,6 +5,7 @@ import { FaCog } from 'react-icons/fa';
 import GravePageAssets from '@/components/GravePageAssets';
 import ShareButton from '@/components/ShareButton';
 import { useProfile } from '@/contexts/ProfileProvider';
+import { useGrave } from '@/contexts/GraveContext';
 import { formatAddress } from '@/utils/tokenUtils';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
  */
 export default function GraveContents({ graveOwner }: { graveOwner: string }) {
   const { profileDetailsData, chainId } = useProfile();
+  const { graveVault } = useGrave();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -67,9 +69,16 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
 
         // Get all registered vaults
         const vaults = await getRegisteredVaults(provider, graveOwner);
-        const uniqueVaults = vaults.filter((vault, index, self) =>
+        let uniqueVaults = vaults.filter((vault, index, self) =>
           index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
         );
+
+        // Add legacy GRAVE vault to the list if it exists and isn't already included
+        if (isOwnGraveyard && graveVault && !uniqueVaults.some(v => v.toLowerCase() === graveVault.toLowerCase())) {
+          console.log('[GraveContents] Adding legacy vault to list:', graveVault);
+          uniqueVaults = [...uniqueVaults, graveVault];
+        }
+
         setAvailableVaults(uniqueVaults);
       } catch (error) {
         console.error('Error fetching vaults:', error);
@@ -77,7 +86,7 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
     };
 
     fetchVaults();
-  }, [isOwnGraveyard, graveOwner, networkConfig]);
+  }, [isOwnGraveyard, graveOwner, networkConfig, graveVault]);
 
   // Handle vault selection from URL or default
   useEffect(() => {
@@ -180,12 +189,17 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
               <option key="default" value="default">
                 Active Spambox {defaultVault ? `(${formatAddress(defaultVault)})` : ''}
               </option>
-              {availableVaults.map((vault, idx) => (
-                <option key={vault} value={vault}>
-                  Vault {idx + 1}: {formatAddress(vault)}
-                  {vault.toLowerCase() === defaultVault?.toLowerCase() ? ' (Active)' : ''}
-                </option>
-              ))}
+              {availableVaults.map((vault, idx) => {
+                const isLegacyVault = graveVault && vault.toLowerCase() === graveVault.toLowerCase();
+                const isActive = vault.toLowerCase() === defaultVault?.toLowerCase();
+                return (
+                  <option key={vault} value={vault}>
+                    Vault {idx + 1}: {formatAddress(vault)}
+                    {isActive ? ' (Active)' : ''}
+                    {isLegacyVault ? ' (Legacy Vault)' : ''}
+                  </option>
+                );
+              })}
               <option value="custom">
                 {showCustomInput && customVaultInput ? `Custom: ${formatAddress(customVaultInput)}` : 'View Custom Vault Address...'}
               </option>

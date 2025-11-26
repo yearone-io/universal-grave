@@ -78,9 +78,15 @@ const GraveSubscription: React.FC = () => {
         const vaults = await getRegisteredVaults(provider, address);
 
         // Deduplicate vaults (case-insensitive) to avoid React key warnings
-        const uniqueVaults = vaults.filter((vault, index, self) =>
+        let uniqueVaults = vaults.filter((vault, index, self) =>
           index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
         );
+
+        // Add legacy GRAVE vault to the list if it exists and isn't already included
+        if (graveVault && !uniqueVaults.some(v => v.toLowerCase() === graveVault.toLowerCase())) {
+          console.log('[GRAVE UI] Adding legacy vault to list:', graveVault);
+          uniqueVaults = [...uniqueVaults, graveVault];
+        }
 
         setAvailableVaults(uniqueVaults);
 
@@ -144,7 +150,7 @@ const GraveSubscription: React.FC = () => {
     };
 
     fetchVaults();
-  }, [address, currentNetwork]);
+  }, [address, currentNetwork, graveVault]);
 
   // Fetch existing configuration and determine current step
   useEffect(() => {
@@ -837,8 +843,8 @@ const GraveSubscription: React.FC = () => {
                   bg="white"
                 >
                   {availableVaults.map((vault, idx) => {
-                    const isLegacyVault = graveVault && vault === graveVault;
-                    const label = `Vault ${idx + 1}: ${formatAddress(vault)}${isLegacyVault ? ' (Legacy GRAVE Spambox)' : ''}`;
+                    const isLegacyVault = graveVault && vault.toLowerCase() === graveVault.toLowerCase();
+                    const label = `Vault ${idx + 1}: ${formatAddress(vault)}${isLegacyVault ? ' (Legacy Vault)' : ''}`;
                     return (
                       <option key={vault} value={vault}>
                         {label}
