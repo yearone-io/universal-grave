@@ -6,6 +6,7 @@ import {
   Image,
   Text,
   useToast,
+  Box,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { Contract, BrowserProvider } from 'ethers';
@@ -19,6 +20,7 @@ import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { useGrave } from '@/contexts/GraveContext';
 import { updateScreenersOnRevive } from '@/utils/screenerUpdates';
+import { AssetIcon } from '@/components/AssetIcon';
 
 interface LSP8SimplePanelProps {
   readonly tokenData: TokenData;
@@ -41,6 +43,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   const networkConfig = chainId ? supportedNetworks[chainId.toString()] : null;
 
   const [inProcessingText, setInProcessingText] = useState<string>();
+  const panelBgColor = 'dark.purple.200';
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
 
   const createButtonBg = 'dark.white';
@@ -49,7 +52,8 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
 
   const fontColor = 'dark.purple.500';
 
-  const tokenAddressDisplay = formatAddress(tokenData.tokenId!);
+  const tokenIdDisplay = formatAddress(tokenData.tokenId || '');
+  const tokenAddressDisplay = formatAddress(tokenData.address || '');
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
@@ -153,66 +157,110 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
 
   return (
     <Flex
-      w={['s']}
-      border={'1px solid ' + containerBorderColor}
-      flexDirection={'column'}
-      borderBottomRadius={'md'}
+      bg={panelBgColor}
+      borderRadius="lg"
+      px={4}
+      py={4}
+      align="flex-start"
+      justify="space-between"
+      boxShadow="md"
+      minWidth={'lg'}
+      mb={2}
     >
-      {tokenData?.image && (
-        <Flex justifyContent={'center'}>
-          <Image
-            src={tokenData?.image}
-            alt={tokenData?.name}
-            border={'1px solid ' + containerBorderColor}
-            minW={'250px'}
-            maxW={'300px'}
-          />
-        </Flex>
-      )}
-      <Flex
-        flexDirection={'column'}
-        alignItems={'flex-start'}
-        gap={1}
-        padding={3}
-      >
-        <Flex align="center">
-          <Text fontSize="sm" fontWeight="bold" color={fontColor}>
-            {`Id: ${tokenAddressDisplay}`}
-          </Text>
-          {networkConfig && (
-            <IconButton
-              aria-label="View on universal page"
-              icon={<FaExternalLinkAlt color={fontColor} />}
-              color={fontColor}
-              size="sm"
-              px={0}
-              maxHeight={'14px'}
-              variant="ghost"
-              onClick={() =>
-                window.open(
-                  `${networkConfig.marketplaceCollectionsURL}/${tokenData?.address}/${tokenData.tokenId!}`,
-                  '_blank'
-                )
-              }
+      <AssetIcon
+        name={tokenData?.name || 'Unknown Asset'}
+        lspType="LSP8"
+        LSP4Metadata={tokenData?.metadata?.LSP4Metadata}
+      />
+      <Flex w={'100%'} flexDirection={'column'} padding={2} gap={2}>
+        {tokenData?.image && (
+          <Flex justifyContent={'center'}>
+            <Image
+              src={tokenData.image}
+              alt={tokenData?.name || 'NFT'}
+              border={'1px solid ' + containerBorderColor}
+              minW={'250px'}
+              maxW={'300px'}
             />
-          )}
+          </Flex>
+        )}
+        <Flex flexDirection={'row'} justifyContent={'space-between'}>
+          <Text color={fontColor} fontFamily={'Bungee'}>
+            {tokenData?.name || 'Unnamed NFT'}
+          </Text>
+        </Flex>
+        <Flex
+          flexDirection={'row'}
+          justifyContent={'space-between'}
+          alignItems={'center'}
+        >
+          <Flex align="center">
+            <Text fontSize="sm" pr={2} color={fontColor}>
+              Address:
+            </Text>
+            <Text fontSize="sm" fontFamily="mono" color={fontColor}>
+              {tokenAddressDisplay}
+            </Text>
+            {networkConfig && (
+              <IconButton
+                aria-label="View collection on explorer"
+                icon={<FaExternalLinkAlt />}
+                color={fontColor}
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  window.open(
+                    `${networkConfig.explorer}/address/${tokenData.address}`,
+                    '_blank'
+                  )
+                }
+              />
+            )}
+          </Flex>
+        </Flex>
+        <Flex flexDirection={'row'} justifyContent={'space-between'} alignItems={'center'}>
+          <Flex align="center">
+            <Text fontSize="sm" pr={2} color={fontColor}>
+              Token ID:
+            </Text>
+            <Text fontSize="sm" fontFamily="mono" color={fontColor}>
+              {tokenIdDisplay}
+            </Text>
+            {networkConfig && tokenData.tokenId && (
+              <IconButton
+                aria-label="View on marketplace"
+                icon={<FaExternalLinkAlt />}
+                color={fontColor}
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  window.open(
+                    `${networkConfig.marketplaceCollectionsURL}/${tokenData.address}/${tokenData.tokenId}`,
+                    '_blank'
+                  )
+                }
+              />
+            )}
+          </Flex>
         </Flex>
         {vaultOwner === connectedUPAddress && (
-          <Button
-            px={3}
-            color={createButtonColor}
-            bg={createButtonBg}
-            _hover={{ bg: createButtonBg }}
-            border={createButtonBorder}
-            size={'xs'}
-            loadingText={inProcessingText}
-            isLoading={inProcessingText !== undefined || isRevivingAll}
-            onClick={() =>
-              transferTokenToUP(tokenData.address, tokenData.tokenId!)
-            }
-          >
-            Revive
-          </Button>
+          <Flex justifyContent={'flex-start'} mt={2}>
+            <Button
+              px={3}
+              color={createButtonColor}
+              bg={createButtonBg}
+              _hover={{ bg: createButtonBg }}
+              border={createButtonBorder}
+              size={'sm'}
+              loadingText={inProcessingText}
+              isLoading={inProcessingText !== undefined || isRevivingAll}
+              onClick={() =>
+                transferTokenToUP(tokenData.address, tokenData.tokenId!)
+              }
+            >
+              Revive
+            </Button>
+          </Flex>
         )}
       </Flex>
     </Flex>
