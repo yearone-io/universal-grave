@@ -15,7 +15,7 @@ import {
   VStack,
   HStack,
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaCheckCircle, FaPlus, FaTrash, FaInfoCircle } from 'react-icons/fa';
 import { BrowserProvider, isAddress } from 'ethers';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
@@ -200,6 +200,15 @@ const GraveSubscription: React.FC = () => {
                 setSelectedVault(availableVaults[0]);
               }
             }
+          } else if (setupType === 'legacy' && graveVault && availableVaults.length > 0) {
+            // For legacy users with no existing config, auto-select the legacy vault
+            const matchingLegacyVault = availableVaults.find(
+              v => v.toLowerCase() === graveVault.toLowerCase()
+            );
+            if (matchingLegacyVault) {
+              console.log('[GRAVE] Auto-selecting legacy vault for upgrade:', matchingLegacyVault);
+              setSelectedVault(matchingLegacyVault);
+            }
           }
         } catch (error) {
           console.error('Error fetching existing configuration:', error);
@@ -208,7 +217,7 @@ const GraveSubscription: React.FC = () => {
     };
 
     fetchExistingConfig();
-  }, [isLoadingGraveData, address, currentNetwork, hasUAPSubscription]);
+  }, [isLoadingGraveData, address, currentNetwork, hasUAPSubscription, availableVaults, setupType, graveVault]);
 
   // Check if permissions are already granted
   useEffect(() => {
@@ -795,6 +804,24 @@ const GraveSubscription: React.FC = () => {
         CONFIGURE YOUR GRAVE SPAMBOX
       </Text>
 
+      {/* Upgrade Banner for Legacy Users */}
+      {setupType === 'legacy' && (
+        <Box
+          p={4}
+          bg="purple.50"
+          borderRadius="md"
+          border="2px solid"
+          borderColor="dark.purple.400"
+        >
+          <Flex align="center" gap={3}>
+            <FaInfoCircle color="var(--chakra-colors-dark-purple-500)" size={24} />
+            <Text fontSize="md" color="dark.purple.500" fontWeight="bold">
+              You're upgrading from Legacy GRAVE to the new Universal Assistant Protocol system. Configure your settings below to complete the upgrade.
+            </Text>
+          </Flex>
+        </Box>
+      )}
+
       {/* Section A: Vault Selection */}
       <Box
         p={6}
@@ -1028,7 +1055,11 @@ const GraveSubscription: React.FC = () => {
           fontSize="16px"
           fontWeight="400"
         >
-          {isProcessing ? 'SAVING...' : 'SAVE & ACTIVATE'}
+          {isProcessing
+            ? 'SAVING...'
+            : setupType === 'legacy'
+              ? 'UPGRADE & ACTIVATE'
+              : 'SAVE & ACTIVATE'}
         </Button>
         <Button
           onClick={handleUnsubscribe}
