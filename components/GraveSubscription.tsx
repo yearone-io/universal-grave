@@ -15,7 +15,7 @@ import {
   VStack,
   HStack,
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaPlus, FaTrash, FaInfoCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
 import { BrowserProvider, isAddress } from 'ethers';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
@@ -361,6 +361,7 @@ const GraveSubscription: React.FC = () => {
     try {
       const provider = new BrowserProvider(window.lukso);
 
+      // Step 1: Subscribe to UAP
       await subscribeToUAP(
         provider,
         address,
@@ -368,13 +369,69 @@ const GraveSubscription: React.FC = () => {
         currentNetwork.lsp1UrdVault
       );
 
-      toast({
-        title: 'Success',
-        description: 'Spam protection protocol engaged!',
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
-      });
+      // Step 2: Only configure Forwarder Assistant if a vault already exists
+      const vaultForConfig = selectedVault || vaultToUse || graveVault;
+
+      if (vaultForConfig) {
+        toast({
+          title: 'Protocol Installed',
+          description: 'Configuring spam protection...',
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+        });
+
+        // Ensure vault is registered
+        const isRegistered = await isVaultRegistered(
+          provider,
+          address,
+          vaultForConfig
+        );
+        if (!isRegistered) {
+          await registerVaultWithUP(provider, address, vaultForConfig);
+        }
+
+        // Configure with default settings (empty whitelist, no curated list)
+        const { saveForwarderAssistantConfig } = await import(
+          '@/utils/assistantConfig'
+        );
+        const { supportedNetworks: allNetworks } = await import(
+          '@/constants/supportedNetworks'
+        );
+
+        await saveForwarderAssistantConfig(
+          provider,
+          address,
+          vaultForConfig,
+          [], // Empty whitelist by default
+          false, // No curated list by default
+          '', // Empty curated list address
+          {
+            forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+            addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
+            curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+          },
+          allNetworks,
+          chainId
+        );
+
+        toast({
+          title: 'Success',
+          description: 'Spam protection is now active!',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      } else {
+        // No vault exists yet, just show success for protocol installation
+        toast({
+          title: 'Success',
+          description: 'Protocol installed! Please configure your spambox to activate protection.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
 
       await refreshGraveData();
       setCurrentPhase(2); // Move to configuration phase
@@ -392,7 +449,7 @@ const GraveSubscription: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [address, currentNetwork, toast, refreshGraveData]);
+  }, [address, currentNetwork, chainId, selectedVault, vaultToUse, graveVault, toast, refreshGraveData]);
 
   // Create new vault with metadata
   const handleCreateVault = useCallback(async () => {
@@ -716,7 +773,7 @@ const GraveSubscription: React.FC = () => {
           color="dark.purple.400"
           mb={4}
         >
-          SET UP YOUR GRAVE SPAMBOX
+          {setupType === 'legacy' ? 'UPGRADE YOUR GRAVE SPAMBOX' : 'SET UP YOUR GRAVE SPAMBOX'}
         </Text>
 
         <Text fontSize="16px" color="dark.purple.500" mb={4}>
@@ -785,7 +842,9 @@ const GraveSubscription: React.FC = () => {
             fontWeight="400"
             width="full"
           >
-            {isProcessing ? 'INSTALLING...' : 'INSTALL PROTOCOL'}
+            {isProcessing
+              ? setupType === 'legacy' ? 'UPGRADING...' : 'INSTALLING...'
+              : setupType === 'legacy' ? 'UPGRADE PROTOCOL' : 'INSTALL PROTOCOL'}
           </Button>
         </Box>
       </Box>
@@ -803,24 +862,6 @@ const GraveSubscription: React.FC = () => {
       >
         CONFIGURE YOUR GRAVE SPAMBOX
       </Text>
-
-      {/* Upgrade Banner for Legacy Users */}
-      {setupType === 'legacy' && (
-        <Box
-          p={4}
-          bg="purple.50"
-          borderRadius="md"
-          border="2px solid"
-          borderColor="dark.purple.400"
-        >
-          <Flex align="center" gap={3}>
-            <FaInfoCircle color="var(--chakra-colors-dark-purple-500)" size={24} />
-            <Text fontSize="md" color="dark.purple.500" fontWeight="bold">
-              You're upgrading from Legacy GRAVE to the new Universal Assistant Protocol system. Configure your settings below to complete the upgrade.
-            </Text>
-          </Flex>
-        </Box>
-      )}
 
       {/* Section A: Vault Selection */}
       <Box

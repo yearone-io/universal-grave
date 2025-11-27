@@ -14,6 +14,15 @@ export default {
       red: {
         success: '#D0226A',
       },
+      teal: {
+        100: '#E6FEFB',
+        200: '#CCFDF7',
+        300: '#B3FCF3',
+        400: '#9DFBEE',
+        500: '#8afbea',
+        600: '#6FE9D8',
+        700: '#54D7C6',
+      },
       white: '#FFFFFF',
     },
   },

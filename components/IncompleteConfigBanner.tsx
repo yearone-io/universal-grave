@@ -14,11 +14,11 @@ import { useGrave } from '@/contexts/GraveContext';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 
 /**
- * UpgradeBanner - Displays a banner prompting users with legacy GRAVE setup to upgrade to UAP
- * Only shows when user has legacy GRAVE but hasn't subscribed to UAP
+ * IncompleteConfigBanner - Displays a banner prompting users who have UAP but haven't configured their spambox
+ * Only shows when user has UAP subscription but no Forwarder Assistant configuration
  */
-export default function UpgradeBanner() {
-  const { setupType } = useGrave();
+export default function IncompleteConfigBanner() {
+  const { setupType, hasUAPSubscription } = useGrave();
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -28,26 +28,26 @@ export default function UpgradeBanner() {
 
   // Check if banner was dismissed this session
   useEffect(() => {
-    const dismissed = sessionStorage.getItem('hideUpgradeBanner');
+    const dismissed = sessionStorage.getItem('hideIncompleteConfigBanner');
     if (dismissed === 'true') {
       setIsDismissed(true);
     }
   }, []);
 
-  // Only show banner for legacy-only users
-  if (setupType !== 'legacy' || isDismissed) {
+  // Only show banner for users with UAP but no configuration (setupType === 'none')
+  if (setupType !== 'none' || !hasUAPSubscription || isDismissed) {
     return null;
   }
 
   // Check if we're on the settings page
   const isOnSettingsPage = pathname?.includes('/grave/settings');
 
-  const handleUpgrade = () => {
+  const handleConfigure = () => {
     router.push(`/${networkName}/grave/settings`);
   };
 
   const handleDismiss = () => {
-    sessionStorage.setItem('hideUpgradeBanner', 'true');
+    sessionStorage.setItem('hideIncompleteConfigBanner', 'true');
     setIsDismissed(true);
   };
 
@@ -75,12 +75,11 @@ export default function UpgradeBanner() {
           gap={3}
         >
           <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
-            You're using the legacy GRAVE system. Upgrade to the new improved
-            protocol for better performance and features!
+            Your account is not protected from spam! Complete your spambox configuration to activate protection.
           </Text>
           {!isOnSettingsPage && (
             <Button
-              onClick={handleUpgrade}
+              onClick={handleConfigure}
               size="sm"
               bg="dark.purple.500"
               color="dark.teal.500"
@@ -89,7 +88,7 @@ export default function UpgradeBanner() {
               fontSize="14px"
               flexShrink={0}
             >
-              UPGRADE NOW
+              CONFIGURE NOW
             </Button>
           )}
         </Flex>

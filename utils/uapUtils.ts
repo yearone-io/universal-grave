@@ -224,7 +224,11 @@ export async function detectGraveSetup(
       setupType = 'both';
     } else if (hasUAPSubscription && uapVaultAddress) {
       setupType = 'uap';
+    } else if (hasUAPSubscription && !uapVaultAddress) {
+      // Has UAP subscription but no Forwarder config - needs configuration
+      setupType = 'none';
     } else if (hasLegacyGrave) {
+      // Only has legacy GRAVE, no UAP subscription
       setupType = 'legacy';
     }
 

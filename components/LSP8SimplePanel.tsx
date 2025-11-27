@@ -7,6 +7,14 @@ import {
   Text,
   useToast,
   Box,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { Contract, BrowserProvider } from 'ethers';
@@ -21,6 +29,7 @@ import { supportedNetworks } from '@/constants/supportedNetworks';
 import { useGrave } from '@/contexts/GraveContext';
 import { updateScreenersOnRevive } from '@/utils/screenerUpdates';
 import { AssetIcon } from '@/components/AssetIcon';
+import { useRouter, useParams } from 'next/navigation';
 
 interface LSP8SimplePanelProps {
   readonly tokenData: TokenData;
@@ -41,8 +50,12 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   const { hasUAPSubscription, setupType } = useGrave();
   const connectedUPAddress = profileDetailsData?.upWallet || null;
   const networkConfig = chainId ? supportedNetworks[chainId.toString()] : null;
+  const router = useRouter();
+  const params = useParams();
+  const networkName = params.networkName as string;
 
   const [inProcessingText, setInProcessingText] = useState<string>();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const panelBgColor = 'dark.purple.200';
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
 
@@ -55,6 +68,20 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   const tokenIdDisplay = formatAddress(tokenData.tokenId || '');
   const tokenAddressDisplay = formatAddress(tokenData.address || '');
   const toast = useToast();
+
+  const handleReviveClick = () => {
+    // Check if user needs to upgrade or configure first
+    if (setupType === 'legacy' || setupType === 'none') {
+      onOpen(); // Show upgrade/config prompt modal
+      return;
+    }
+    // Otherwise proceed with revive
+    transferTokenToUP(tokenData.address, tokenData.tokenId!);
+  };
+
+  const handleUpgradeClick = () => {
+    router.push(`/${networkName}/grave/settings`);
+  };
 
   const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
     if (inProcessingText !== undefined || !window.lukso || !networkConfig) {
@@ -254,15 +281,48 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
               size={'sm'}
               loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined || isRevivingAll}
-              onClick={() =>
-                transferTokenToUP(tokenData.address, tokenData.tokenId!)
-              }
+              onClick={handleReviveClick}
             >
               Revive
             </Button>
           </Flex>
         )}
       </Flex>
+
+      {/* Upgrade/Config Required Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="dark.purple.200" borderColor="dark.teal.500" border="2px solid">
+          <ModalHeader color="dark.purple.500" fontFamily="Bungee">
+            {setupType === 'legacy' ? 'Upgrade Required' : 'Configuration Required'}
+          </ModalHeader>
+          <ModalCloseButton color="dark.purple.500" />
+          <ModalBody>
+            <Text color="dark.purple.500">
+              {setupType === 'legacy'
+                ? 'You need to upgrade to the new Universal Assistant Protocol before you can revive assets. Upgrade now to access all features!'
+                : 'You need to complete your spambox configuration before you can revive assets. Configure now to activate spam protection!'}
+            </Text>
+          </ModalBody>
+          <ModalFooter gap={2}>
+            <Button
+              colorScheme="purple"
+              onClick={handleUpgradeClick}
+              fontFamily="Bungee"
+            >
+              {setupType === 'legacy' ? 'UPGRADE NOW' : 'CONFIGURE NOW'}
+            </Button>
+            <Button
+              variant="outline"
+              borderColor="dark.purple.500"
+              color="dark.purple.500"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Flex>
   );
 };

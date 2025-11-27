@@ -3,6 +3,7 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import UpgradeBanner from '@/components/UpgradeBanner';
+import IncompleteConfigBanner from '@/components/IncompleteConfigBanner';
 import { getNetworkByName } from '@/constants/supportedNetworks';
 import { notFound } from 'next/navigation';
 
@@ -23,6 +24,7 @@ export default function NetworkLayout({
     <>
       <Header networkName={params.networkName} />
       <UpgradeBanner />
+      <IncompleteConfigBanner />
       <div style={{ flexGrow: 0.9 }}>{children}</div>
       <Footer networkName={params.networkName} />
     </>
