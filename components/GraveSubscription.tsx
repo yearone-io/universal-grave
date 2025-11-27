@@ -7,7 +7,6 @@ import {
   Flex,
   Text,
   Input,
-  Textarea,
   useToast,
   Link as ChakraLink,
   Select,
@@ -921,9 +920,11 @@ const GraveSubscription: React.FC = () => {
                   })}
                 </Select>
               ) : (
-                <Text fontSize="sm" color="red.500">
-                  No vaults found
-                </Text>
+                <Flex flexDirection={"row"}>
+                  <Text fontSize="sm" color="dark.purple.500">
+                   ⚠️ No vaults found
+                  </Text>
+                </Flex>
               )}
             </Box>
           </Flex>

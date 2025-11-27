@@ -82,8 +82,8 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
       const signer = await provider.getSigner();
       const upAddress = await signer.getAddress();
 
-      // Handle legacy GRAVE allowlist system
-      if (setupType === 'legacy' || setupType === 'both') {
+      // Handle legacy GRAVE allowlist system (only for pure legacy mode)
+      if (setupType === 'legacy') {
         const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
           networkConfig.universalGraveForwarder,
           signer
@@ -191,8 +191,8 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
       const signer = await provider.getSigner();
       const signerAddress = await signer.getAddress();
 
-      // Handle legacy GRAVE allowlist system
-      if (setupType === 'legacy' || setupType === 'both') {
+      // Handle legacy GRAVE allowlist system (only for pure legacy mode)
+      if (setupType === 'legacy') {
         const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
           networkConfig.universalGraveForwarder,
           signer

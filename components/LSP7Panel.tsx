@@ -112,8 +112,8 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       const signer = await provider.getSigner();
       const upAddress = await signer.getAddress();
 
-      // Handle legacy GRAVE allowlist system
-      if (setupType === 'legacy' || setupType === 'both') {
+      // Handle legacy GRAVE allowlist system (only for pure legacy mode)
+      if (setupType === 'legacy') {
         const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
           networkConfig.universalGraveForwarder,
           signer

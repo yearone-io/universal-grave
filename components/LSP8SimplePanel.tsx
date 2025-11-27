@@ -88,14 +88,14 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
       return;
     }
 
-    setInProcessingText('Allowing Revive');
+    setInProcessingText('Unblocking');
     try {
       const provider = new BrowserProvider(window.lukso);
       const signer = await provider.getSigner();
       const upAddress = await signer.getAddress();
 
-      // Handle legacy GRAVE allowlist system
-      if (setupType === 'legacy' || setupType === 'both') {
+      // Handle legacy GRAVE allowlist system (only for pure legacy mode)
+      if (setupType === 'legacy') {
         const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
           networkConfig.universalGraveForwarder,
           signer
@@ -146,7 +146,8 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
 
       // For legacy GRAVE, remove from allowlist after reviving
       // This ensures the token will be sent to GRAVE if received again
-      if (setupType === 'legacy' || setupType === 'both') {
+      // For UAP/both modes: whitelist is permanent, no cleanup needed
+      if (setupType === 'legacy') {
         setInProcessingText('Blocking Collection');
         const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
           networkConfig.universalGraveForwarder,
