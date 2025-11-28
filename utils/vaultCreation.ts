@@ -1,6 +1,6 @@
-import { BrowserProvider, Contract, ZeroAddress } from 'ethers';
+import { BrowserProvider, Contract, ZeroAddress, JsonRpcProvider } from 'ethers';
 import { ERC725YDataKeys, INTERFACE_IDS } from '@lukso/lsp-smart-contracts';
-import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
+import { universalProfileAbi, lsp9VaultAbi } from '@lukso/lsp-smart-contracts/abi';
 
 /**
  * Register an existing vault with a Universal Profile
@@ -224,5 +224,74 @@ export async function deployVault(
   await registerVaultWithUP(provider, upAddress, vaultAddress);
   console.log('Vault registered with UP successfully!');
 
+  // Step 4: Set LSP1 Universal Receiver Delegate on vault
+  console.log('Setting LSP1 Universal Receiver Delegate on vault...');
+  await setVaultURD(provider, upAddress, vaultAddress, networkConfig);
+  console.log('Vault URD set successfully!');
+
   return vaultAddress;
+}
+
+/**
+ * Set the LSP1UniversalReceiverDelegate on a vault
+ * This is required for the vault to properly receive and register LSP7/LSP8 assets
+ */
+export async function setVaultURD(
+  provider: BrowserProvider,
+  upAddress: string,
+  vaultAddress: string,
+  networkConfig: { lsp1UrdVault?: string }
+): Promise<void> {
+  const signer = await provider.getSigner();
+  const upContract = new Contract(upAddress, universalProfileAbi, signer);
+  const vaultContract = new Contract(vaultAddress, lsp9VaultAbi, signer);
+
+  if (!networkConfig.lsp1UrdVault) {
+    throw new Error('LSP1 URD Vault address not found in network config');
+  }
+
+  const urdAddress = networkConfig.lsp1UrdVault;
+
+  // Prepare the setData call
+  const setDataCalldata = vaultContract.interface.encodeFunctionData('setData', [
+    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
+    urdAddress,
+  ]);
+
+  // Execute via UP
+  const tx = await upContract.execute(
+    0, // OPERATION_CALL
+    vaultAddress,
+    0, // value
+    setDataCalldata
+  );
+
+  await tx.wait();
+  console.log('✅ LSP1 URD set on vault:', urdAddress);
+}
+
+/**
+ * Check if a vault has the LSP1UniversalReceiverDelegate set correctly
+ */
+export async function hasVaultURDSet(
+  provider: BrowserProvider | JsonRpcProvider,
+  vaultAddress: string,
+  expectedURD: string
+): Promise<boolean> {
+  try {
+    const vaultContract = new Contract(vaultAddress, lsp9VaultAbi, provider);
+    const currentURD = await vaultContract.getData(
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate
+    );
+
+    // Check if URD is set and matches expected address
+    return (
+      currentURD &&
+      currentURD !== '0x' &&
+      currentURD.toLowerCase() === expectedURD.toLowerCase()
+    );
+  } catch (error) {
+    console.error('Error checking vault URD:', error);
+    return false;
+  }
 }

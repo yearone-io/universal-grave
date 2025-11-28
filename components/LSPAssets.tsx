@@ -139,12 +139,14 @@ export default function LSPAssets({
       const receivedAssetsResults = await erc725js.fetchData(
         'LSP5ReceivedAssets[]'
       );
+      console.log('[GRAVE DEBUG] LSP5ReceivedAssets[] found:', receivedAssetsResults.value);
       const lsp7Results: TokenData[] = [];
       const lsp8Results: TokenData[][] = [];
       const unrecognisedLsp7Results: TokenData[] = [];
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
       for (const assetAddress of receivedAssetsResults.value as string[]) {
+        console.log('[GRAVE DEBUG] Processing asset:', assetAddress);
         // every 4 assets, wait for 1 second
         if (
           (receivedAssetsResults!.value! as string[]).indexOf(assetAddress) %

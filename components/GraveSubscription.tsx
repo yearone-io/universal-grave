@@ -29,6 +29,7 @@ import {
 } from '@/utils/vaultCreation';
 import { updateBECPermissions } from '@/utils/urdUtils';
 import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
+import VaultURDChecker from './VaultURDChecker';
 
 const GraveSubscription: React.FC = () => {
   const toast = useToast({ position: 'bottom-left' });
@@ -58,6 +59,9 @@ const GraveSubscription: React.FC = () => {
   const [selectedVault, setSelectedVault] = useState<string>('');
   const [isLoadingVaults, setIsLoadingVaults] = useState(false);
   const [isCreatingVault, setIsCreatingVault] = useState(false);
+
+  // Vault URD status tracking
+  const [vaultHasURD, setVaultHasURD] = useState<boolean>(true); // Default to true to not block initially
 
   // Phase tracking
   // Phase 0: Give permissions
@@ -489,7 +493,13 @@ const GraveSubscription: React.FC = () => {
 
       // Refresh the vault list
       const vaults = await getRegisteredVaults(provider, address);
-      setAvailableVaults(vaults);
+
+      // Deduplicate vaults (case-insensitive)
+      const uniqueVaults = vaults.filter((vault, index, self) =>
+        index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
+      );
+
+      setAvailableVaults(uniqueVaults);
       setSelectedVault(vaultAddress);
     } catch (err: any) {
       console.error('Error creating vault:', err);
@@ -946,6 +956,13 @@ const GraveSubscription: React.FC = () => {
         </Flex>
       </Box>
 
+      {/* Vault URD Checker - Critical validation */}
+      <VaultURDChecker
+        vaultAddress={selectedVault || null}
+        networkConfig={currentNetwork}
+        onURDStatusChange={setVaultHasURD}
+      />
+
       {/* Section B: Transaction Screening */}
       <Box
         p={6}
@@ -953,6 +970,8 @@ const GraveSubscription: React.FC = () => {
         borderRadius="lg"
         border="2px solid"
         borderColor="dark.purple.400"
+        opacity={vaultHasURD ? 1 : 0.5}
+        pointerEvents={vaultHasURD ? 'auto' : 'none'}
       >
         <Flex width="100%" flexDirection="column" alignItems={"flex-start"} gap={3} pb={4}>
           <Text
@@ -1090,7 +1109,7 @@ const GraveSubscription: React.FC = () => {
         <Button
           onClick={handleActivateGrave}
           isLoading={isProcessing}
-          isDisabled={isProcessing || !selectedVault}
+          isDisabled={isProcessing || !selectedVault || !vaultHasURD}
           color="white"
           size="md"
           fontFamily="Bungee"
