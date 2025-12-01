@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract } from 'ethers';
-import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
+import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
@@ -32,13 +32,13 @@ export async function subscribeToUAP(
     // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
     const LSP7URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      '0x20804611b3e2ea21c480dc465142210acf4a2485947541770ec1fb87dee4a55c'.slice(
+      LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(
         2,
         42
       ); // LSP7 RecipientNotification type ID
     const LSP8URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      '0x0b084a55ebf70fd3c06fd755269dac2212c4d3f0f4d09079780bfa50c1b2984d'.slice(
+      LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(
         2,
         42
       ); // LSP8 type ID

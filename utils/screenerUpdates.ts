@@ -1,5 +1,6 @@
 import { BrowserProvider, Contract, AbiCoder } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
+import { LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
 import ERC725 from '@erc725/erc725.js';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
@@ -7,10 +8,8 @@ import uapSchema from '@/schemas/UAP.json';
 
 // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
 // This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
-const LSP7_TRANSACTION_TYPE =
-  '0x20804611b3e2ea21c480dc465142210acf4a2485947541770ec1fb87dee4a55c';
-const LSP8_TRANSACTION_TYPE =
-  '0x0b084a55ebf70fd3c06fd755269dac2212c4d3f0f4d09079780bfa50c1b2984d';
+const LSP7_TRANSACTION_TYPE = LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification;
+const LSP8_TRANSACTION_TYPE = LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification;
 
 /**
  * Updates the Address List Screener to remove an asset address from the whitelist.
