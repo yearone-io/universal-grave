@@ -19,6 +19,7 @@ import { BrowserProvider, isAddress } from 'ethers';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import { ZERO_ADDRESS } from '@/constants/addresses';
 import { formatAddress } from '@/utils/tokenUtils';
 import { subscribeToUAP, unsubscribeFromUAP } from '@/utils/uapSubscription';
 import {
@@ -296,6 +297,9 @@ const GraveSubscription: React.FC = () => {
       if (!isAddress(curatedListAddress)) {
         return 'Invalid curated list contract address';
       }
+      if (curatedListAddress === ZERO_ADDRESS) {
+        return 'Cannot use zero address as curated list contract';
+      }
     }
 
     return null;
@@ -571,7 +575,10 @@ const GraveSubscription: React.FC = () => {
         .filter(addr => addr !== '' && isAddress(addr));
 
       // Determine if curated list should be used based on whether there's a valid address
-      const shouldUseCuratedList = curatedListAddress.trim() !== '' && isAddress(curatedListAddress);
+      const shouldUseCuratedList =
+        curatedListAddress.trim() !== '' &&
+        isAddress(curatedListAddress) &&
+        curatedListAddress !== ZERO_ADDRESS;
 
       // Import and use the new save function following UP Assistants pattern
       const { saveForwarderAssistantConfig } = await import(
@@ -1013,13 +1020,42 @@ const GraveSubscription: React.FC = () => {
               size="sm"
               color="dark.purple.600"
               bg="white"
-              borderColor="dark.purple.300"
-              _hover={{ borderColor: 'dark.purple.400' }}
+              borderColor={
+                curatedListAddress.trim() !== '' &&
+                (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
+                  ? 'red.300'
+                  : 'dark.purple.300'
+              }
+              _hover={{
+                borderColor: curatedListAddress.trim() !== '' &&
+                            (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
+                  ? 'red.400'
+                  : 'dark.purple.400'
+              }}
               _focus={{
-                borderColor: 'dark.purple.500',
-                boxShadow: '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                borderColor: curatedListAddress.trim() !== '' &&
+                            (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
+                  ? 'red.500'
+                  : 'dark.purple.500',
+                boxShadow: curatedListAddress.trim() !== '' &&
+                          (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
+                  ? '0 0 0 1px var(--chakra-colors-red-500)'
+                  : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
               }}
             />
+            {curatedListAddress.trim() !== '' &&
+             curatedListAddress === ZERO_ADDRESS && (
+              <Text fontSize="xs" color="red.500" mt={1}>
+                Zero address is not valid for curated list contract
+              </Text>
+            )}
+            {curatedListAddress.trim() !== '' &&
+             curatedListAddress !== ZERO_ADDRESS &&
+             !isAddress(curatedListAddress) && (
+              <Text fontSize="xs" color="red.500" mt={1}>
+                Invalid curated list contract address
+              </Text>
+            )}
           </Box>
 
           {/* AND Logic Indicator */}
@@ -1109,7 +1145,7 @@ const GraveSubscription: React.FC = () => {
         <Button
           onClick={handleActivateGrave}
           isLoading={isProcessing}
-          isDisabled={isProcessing || !selectedVault || !vaultHasURD}
+          isDisabled={isProcessing || !selectedVault || !vaultHasURD || validateConfiguration() !== null}
           color="white"
           size="md"
           fontFamily="Bungee"
