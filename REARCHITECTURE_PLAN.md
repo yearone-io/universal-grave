@@ -187,14 +187,12 @@ const screenerConfig = {
     `${addressListScreenerAddress}_1`, // Address List Screener
   ],
   screenerConfigs: {
-    // Curated List: membership = FAIL = send to grave
     [`${curatedListScreenerAddress}_0`]: {
       curatedListAddress: userProvidedAddress,
       returnValueWhenCurated: false, // HARDCODED
     },
-    // Address List: in list = PASS = send to grave (exceptions)
     [`${addressListScreenerAddress}_1`]: {
-      returnValueWhenInList: true, // HARDCODED
+      returnValueWhenInList: false, // HARDCODED
       addresses: userExceptionList,
     },
   },

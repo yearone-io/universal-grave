@@ -1155,8 +1155,8 @@ const GraveSubscription: React.FC = () => {
           {isProcessing
             ? 'SAVING...'
             : setupType === 'legacy'
-              ? 'UPGRADE & ACTIVATE'
-              : 'SAVE & ACTIVATE'}
+              ? 'UPGRADE & ACTIVATE SPAMBOX'
+              : 'SAVE & ACTIVATE SPAMBOX'}
         </Button>
         <Button
           onClick={handleUnsubscribe}

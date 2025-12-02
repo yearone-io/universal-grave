@@ -177,18 +177,14 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       // Encode screener-specific config data
       let screenerConfigBytes = '0x';
 
-      // Address List Screener
+      // Check which screener type we're configuring
       if (config.addresses !== undefined) {
-        // Address List Screener has no inline config (addresses stored in separate list)
-        screenerConfigBytes = '0x';
-      }
-      // Curated List Screener
-      else if (config.curatedListAddress !== undefined) {
-        // Curated List config: (address curatedList, bool returnValueWhenCurated)
-        // Note: contract parameter is returnValueWhenCurated, but we use membershipTriggersFailure in config
-        // These have opposite semantics, so we invert: returnValueWhenCurated = !membershipTriggersFailure
-        const membershipTriggersFailure = config.membershipTriggersFailure ?? true;
-        const returnValueWhenCurated = !membershipTriggersFailure;
+        // Address List Screener: config contains returnValueWhenInList boolean
+        const returnValueWhenInList = config.returnValueWhenInList ?? false;
+        screenerConfigBytes = abiCoder.encode(['bool'], [returnValueWhenInList]);
+      } else if (config.curatedListAddress !== undefined) {
+        // Curated List Screener: config contains (address, bool)
+        const returnValueWhenCurated = config.returnValueWhenCurated ?? false;
         screenerConfigBytes = abiCoder.encode(
           ['address', 'bool'],
           [config.curatedListAddress, returnValueWhenCurated]
@@ -205,8 +201,10 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       keys.push(screenerConfigKey);
       values.push(screenerConfigValue);
 
-      // Set address list for Address List Screener
-      if (config.addresses !== undefined && config.addresses.length >= 0) {
+      // Only create address list metadata if addresses actually exist
+      // This matches UP Assistants behavior: don't create list keys for empty lists
+      if (config.addresses && config.addresses.length > 0) {
+        // Set address list for Address List Screener
         // Create unique list name using pattern from uap-frontend
         const listName = `ScreenerList_${typeId.slice(2, 10)}_${screenerOrder}`;
 
@@ -220,7 +218,7 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
         values.push(encodedListName);
 
         // Set address list using LSP5 pattern
-        const addresses = config.addresses || [];
+        const addresses = config.addresses;
 
         // Set list length
         const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);

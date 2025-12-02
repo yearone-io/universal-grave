@@ -154,8 +154,7 @@ export default function VaultURDChecker({
                 Vault Configuration Required
               </Text>
               <Text fontSize="sm">
-                This vault cannot receive assets until the LSP1 Universal
-                Receiver Delegate is configured. Click the button to fix this.
+                This spambox vault cannot receive and track assets properly until its asset tracking is activated. Click the activate button to fix this.
               </Text>
             </Box>
             <Button
@@ -170,7 +169,7 @@ export default function VaultURDChecker({
               isLoading={isSettingURD}
               loadingText="CONFIGURING..."
             >
-              CONFIGURE VAULT
+              ACTIVATE VAULT
             </Button>
           </Flex>
         </Alert>

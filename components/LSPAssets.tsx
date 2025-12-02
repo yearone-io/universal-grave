@@ -140,16 +140,20 @@ export default function LSPAssets({
         'LSP5ReceivedAssets[]'
       );
       console.log('[GRAVE DEBUG] LSP5ReceivedAssets[] found:', receivedAssetsResults.value);
+
+      // Handle empty vault gracefully - default to empty array if no assets
+      const assets = (receivedAssetsResults.value as string[]) || [];
+
       const lsp7Results: TokenData[] = [];
       const lsp8Results: TokenData[][] = [];
       const unrecognisedLsp7Results: TokenData[] = [];
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
-      for (const assetAddress of receivedAssetsResults.value as string[]) {
+      for (const assetAddress of assets) {
         console.log('[GRAVE DEBUG] Processing asset:', assetAddress);
         // every 4 assets, wait for 1 second
         if (
-          (receivedAssetsResults!.value! as string[]).indexOf(assetAddress) %
+          assets.indexOf(assetAddress) %
             4 ===
           0
         ) {

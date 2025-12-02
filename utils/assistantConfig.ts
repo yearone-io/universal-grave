@@ -302,16 +302,16 @@ export async function getForwarderAssistantConfig(
                                 ['address', 'bool'],
                                 configBytes
                               );
-                              const curatedListAddr = decoded[0] as string;
-                              const membershipTriggersFailure =
+                              const curatedListAddress = decoded[0] as string;
+                              const returnValueWhenCurated =
                                 decoded[1] as boolean;
 
                               if (
-                                curatedListAddr &&
-                                curatedListAddr !==
+                                curatedListAddress &&
+                                curatedListAddress !==
                                   '0x0000000000000000000000000000000000000000'
                               ) {
-                                config.curatedListAddress = curatedListAddr;
+                                config.curatedListAddress = curatedListAddress;
                                 config.useCuratedList = true;
                               }
                             } catch (decodeError) {
@@ -326,12 +326,12 @@ export async function getForwarderAssistantConfig(
 
                               if (configBytesClean.length === 40) {
                                 // Raw 20-byte address (40 hex chars) - legacy format
-                                const curatedListAddr = '0x' + configBytesClean;
+                                const curatedListAddress = '0x' + configBytesClean;
                                 if (
-                                  curatedListAddr !==
+                                  curatedListAddress !==
                                   '0x0000000000000000000000000000000000000000'
                                 ) {
-                                  config.curatedListAddress = curatedListAddr;
+                                  config.curatedListAddress = curatedListAddress;
                                   config.useCuratedList = true;
                                 }
                               } else {
@@ -397,6 +397,7 @@ function buildForwarderScreenerConfig(
   const screeners: string[] = [];
 
   // Always include Address List Screener (even if whitelist is empty)
+  // Empty whitelist is a valid configuration state
   screeners.push(networkConfig.addressListScreenerAddress);
 
   if (useCuratedList && curatedListAddress && isAddress(curatedListAddress)) {
@@ -415,9 +416,10 @@ function buildForwarderScreenerConfig(
         screenerAddr.toLowerCase() ===
         networkConfig.addressListScreenerAddress.toLowerCase()
       ) {
-        // Address List Screener config: just the addresses array
+        // Address List Screener config: addresses array + returnValueWhenInList boolean
         screenerConfig.screenerConfigs[instanceId] = {
           addresses: whitelistAddresses,
+          returnValueWhenInList: false, // Addresses in whitelist should FAIL screening (go to UP)
         };
       } else if (
         screenerAddr.toLowerCase() ===
@@ -426,7 +428,7 @@ function buildForwarderScreenerConfig(
         // Curated List Screener config: contract address and flag
         screenerConfig.screenerConfigs[instanceId] = {
           curatedListAddress: curatedListAddress,
-          membershipTriggersFailure: true, // Assets IN the curated list should trigger screening failure (go to GRAVE)
+          returnValueWhenCurated: false, // Assets IN the curated list should trigger screening failure (go to UP)
         };
       }
     });
