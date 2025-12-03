@@ -3,7 +3,7 @@ import {
   BrowserProvider,
   Network as EthersNetwork,
 } from 'ethers';
-import { getNetworkConfig, Network } from '@/constants/networks';
+import { getNetworkConfig, Network } from '@/constants/supportedNetworks';
 
 export const getProvider = (networkConfig: Network) => {
   const providerNetworkParams = new EthersNetwork(

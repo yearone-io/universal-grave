@@ -8,7 +8,7 @@ import {
   zeroPadValue,
   toBeHex,
 } from 'ethers';
-import { Network, getNetworkConfig } from '@/constants/networks';
+import { Network, getNetworkConfig } from '@/constants/supportedNetworks';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';

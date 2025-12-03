@@ -13,6 +13,7 @@ interface ChainInfo {
   curatedListScreenerAddress: string; // Curated List Screener address
   addressListScreenerAddress: string; // Address List Screener address
   lsp1UrdVault: string; // Vault URD address
+  lsp1UrdUp: string; // UP URD address (used when deactivating spambox)
   vaultImplementation?: string; // Pre-deployed LSP9VaultInit implementation for proxy pattern
   hasUPSupport: boolean;
   icon: string;
@@ -43,6 +44,7 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     curatedListScreenerAddress: '0x9ae3cdfe679935428094eea1668d30cdad8ede8c',
     addressListScreenerAddress: '0x7fe2bf2ec24f94fd43f10d6911123a18450e3c5e',
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
+    lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation
     hasUPSupport: true,
     icon: '/lyx_icon_mainnet.svg',
@@ -65,6 +67,7 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     curatedListScreenerAddress: '0x647360684dd6ad295d1c62bebc43c11a843a4248',
     addressListScreenerAddress: '0x31c7ab87662132f5901f190032d49e0abe9fabec',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
+    lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x392e18585b89bd795204c634cce5878f1cf40a58', // Shared LSP9VaultInit implementation
     hasUPSupport: true,
     icon: '/lyx_icon_testnet.svg',
@@ -99,3 +102,55 @@ export const getNetworkByName = (
 export const getNetworkById = (chainId: number): ChainInfo | undefined => {
   return supportedNetworks[chainId.toString()];
 };
+
+/**
+ * Get network configuration by network name (mainnet, testnet)
+ * This provides compatibility with the old networks.ts pattern
+ */
+export const getNetworkConfig = (name: string): ChainInfo => {
+  switch (name) {
+    case 'mainnet':
+      return supportedNetworks['42'];
+    case 'testnet':
+      return supportedNetworks['4201'];
+    default:
+      throw new Error(`Unknown network ${name}`);
+  }
+};
+
+/**
+ * Legacy Network type for backward compatibility
+ * Mapped from ChainInfo to match old networks.ts interface
+ */
+export interface Network {
+  chainId: number;
+  name: string;
+  symbol: string;
+  rpcUrl: string;
+  explorerURL: string;
+  marketplaceCollectionsURL: string;
+  universalGraveForwarder: string;
+  previousGraveForwarders: string[];
+  lsp1UrdVault: string;
+  lsp1UrdUp: string;
+  baseUrl: string;
+  vaultImplementation?: string;
+}
+
+/**
+ * Helper to convert ChainInfo to legacy Network type
+ */
+const toNetwork = (info: ChainInfo): Network => ({
+  chainId: info.chainId,
+  name: info.name,
+  symbol: info.token,
+  rpcUrl: info.rpcUrl,
+  explorerURL: info.explorer,
+  marketplaceCollectionsURL: info.marketplaceCollectionsURL,
+  universalGraveForwarder: info.universalGraveForwarder,
+  previousGraveForwarders: info.previousGraveForwarders,
+  lsp1UrdVault: info.lsp1UrdVault,
+  lsp1UrdUp: info.lsp1UrdUp,
+  baseUrl: info.url,
+  vaultImplementation: info.vaultImplementation,
+});

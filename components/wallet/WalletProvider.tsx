@@ -4,7 +4,7 @@ import { DEFAULT_PROVIDER, WalletContext } from './WalletContext';
 import Web3 from 'web3';
 import { useToast } from '@chakra-ui/react';
 import { buildSIWEMessage, getGraveVaultFor } from '@/utils/universalProfile';
-import { getNetworkConfig } from '@/constants/networks';
+import { getNetworkConfig } from '@/constants/supportedNetworks';
 import { getProvider } from '@/utils/provider';
 import { JsonRpcProvider, BrowserProvider } from 'ethers';
 

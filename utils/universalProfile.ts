@@ -1,6 +1,6 @@
 import { ZeroAddress } from 'ethers';
 import { SiweMessage } from 'siwe';
-import { getNetworkConfig } from '@/constants/networks';
+import { getNetworkConfig } from '@/constants/supportedNetworks';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 
 export const getGraveVaultFor = async (

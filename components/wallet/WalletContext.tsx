@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { getNetworkConfig, Network } from '@/constants/networks';
+import { getNetworkConfig, Network } from '@/constants/supportedNetworks';
 import { JsonRpcProvider, BrowserProvider } from 'ethers';
 
 interface WalletContextType {

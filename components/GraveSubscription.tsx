@@ -661,7 +661,7 @@ const GraveSubscription: React.FC = () => {
         provider,
         address,
         currentNetwork.protocolAddress,
-        currentNetwork.lsp1UrdVault
+        currentNetwork.lsp1UrdUp
       );
 
       toast({

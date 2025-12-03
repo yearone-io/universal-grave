@@ -8,7 +8,7 @@ import {
 import { luksoTypechain } from '@lukso/lsp-utils';
 import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
-import { type Network } from '@/constants/networks';
+import { type Network } from '@/constants/supportedNetworks';
 
 /**
  * EIP-1167 Minimal Proxy bytecode
