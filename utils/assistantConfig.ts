@@ -25,6 +25,7 @@ export interface ForwarderAssistantConfig {
   isConfigured: boolean;
   executionOrderLSP7: number | null;
   executionOrderLSP8: number | null;
+  listName: string | null; // Address list name used by screeners (default: 'GraveSafeAssets')
 }
 
 /**
@@ -79,6 +80,7 @@ export async function getForwarderAssistantConfig(
     isConfigured: false,
     executionOrderLSP7: null,
     executionOrderLSP8: null,
+    listName: null,
   };
 
   try {
@@ -228,6 +230,11 @@ export async function getForwarderAssistantConfig(
                               'string',
                               listNameData
                             ) as string;
+
+                            // Capture the list name (only set once from first transaction type)
+                            if (!config.listName) {
+                              config.listName = listName;
+                            }
 
                             // Fetch the address list using LSP5 pattern
                             try {
@@ -487,6 +494,33 @@ export async function saveForwarderAssistantConfig(
   // Build assistant config data (just the vault address for Forwarder Assistant)
   const assistantConfigData = abiCoder.encode(['address'], [vaultAddress]);
 
+  // OPTIMIZATION: Read current configuration to compare what changed
+  console.log('[Optimization] Reading current config to detect changes...');
+  const currentConfig = await getForwarderAssistantConfig(
+    provider,
+    upAddress,
+    networkConfig
+  );
+
+  // Determine what changed
+  const changes = {
+    vaultChanged: hasVaultChanged(currentConfig.vaultAddress, vaultAddress),
+    addressListChanged: compareAddressLists(
+      currentConfig.whitelistAddresses,
+      whitelistAddresses
+    ),
+    curatedListChanged: hasCuratedListChanged(
+      currentConfig.curatedListAddress,
+      curatedListAddress
+    ),
+    screenerSelectionChanged: haveScreenersChanged(
+      currentConfig.useCuratedList,
+      useCuratedList
+    ),
+  };
+
+  console.log('[Optimization] Detected changes:', changes);
+
   // Build screener configuration
   const screenerConfig = buildForwarderScreenerConfig(
     whitelistAddresses,
@@ -503,6 +537,8 @@ export async function saveForwarderAssistantConfig(
   const allValues: string[] = [];
 
   // Configure for both LSP7 and LSP8 transaction types
+  // Write shared list data only on first iteration to avoid redundant writes
+  let isFirstIteration = true;
   for (const typeId of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
     const configResult = await configureExecutiveAssistantWithUnifiedSystem(
       erc725UAP,
@@ -512,7 +548,14 @@ export async function saveForwarderAssistantConfig(
       assistantConfigData,
       screenerConfig,
       chainId,
-      supportedNetworks
+      supportedNetworks,
+      {
+        skipSharedListWrite: !isFirstIteration, // Skip on LSP8 (second iteration)
+        skipExecutiveConfig: !changes.vaultChanged, // Skip if vault unchanged
+        skipScreenerArray: !changes.screenerSelectionChanged, // Skip if screener selection unchanged
+        skipScreenerConfigs: !changes.curatedListChanged && !changes.addressListChanged, // Skip if neither changed
+        skipAddressListData: !changes.addressListChanged, // Skip if address list unchanged
+      }
     );
 
     if (!configResult) {
@@ -523,7 +566,31 @@ export async function saveForwarderAssistantConfig(
 
     allKeys.push(...configResult.keys);
     allValues.push(...configResult.values);
+    isFirstIteration = false;
   }
+
+  // Calculate savings
+  const wouldHaveWritten = (() => {
+    // Rough estimate of keys without optimization:
+    // - 2x UAPTypeConfig (2)
+    // - 2x UAPExecutiveConfig (2)
+    // - 2x UAPExecutiveScreeners + logic (4)
+    // - 2x UAPScreenerConfig for address list (2)
+    // - 2x UAPScreenerConfig for curated list if enabled (2)
+    // - 2x UAPAddressListName (2)
+    // - 1x GraveSafeAssets[] length + items + maps (~3x addresses)
+    const baseKeys = 14 + (useCuratedList ? 2 : 0);
+    const listKeys = whitelistAddresses.length * 3; // item + map + length
+    return baseKeys + listKeys;
+  })();
+
+  const percentSaved = Math.round(
+    ((wouldHaveWritten - allKeys.length) / wouldHaveWritten) * 100
+  );
+
+  console.log(
+    `[Optimization] Writing ${allKeys.length} keys (would have been ~${wouldHaveWritten} without optimization, ${percentSaved}% saved)`
+  );
 
   // Execute the batch transaction
   if (allKeys.length > 0) {
@@ -532,4 +599,241 @@ export async function saveForwarderAssistantConfig(
   } else {
     throw new Error('No configuration data generated');
   }
+}
+
+/**
+ * Compares two address lists for equality (case-insensitive)
+ * Returns true if lists differ, false if identical
+ */
+export function compareAddressLists(
+  current: string[],
+  proposed: string[]
+): boolean {
+  if (current.length !== proposed.length) {
+    return true; // Different lengths = different
+  }
+
+  // Normalize to lowercase for comparison
+  const currentNormalized = current.map(addr => addr.toLowerCase()).sort();
+  const proposedNormalized = proposed.map(addr => addr.toLowerCase()).sort();
+
+  // Compare each address
+  for (let i = 0; i < currentNormalized.length; i++) {
+    if (currentNormalized[i] !== proposedNormalized[i]) {
+      return true; // Found a difference
+    }
+  }
+
+  return false; // Lists are identical
+}
+
+/**
+ * Compares vault addresses (case-insensitive)
+ * Returns true if different, false if same
+ */
+export function hasVaultChanged(
+  currentVault: string | null,
+  proposedVault: string
+): boolean {
+  if (!currentVault) return true; // No current vault means it's new
+  return currentVault.toLowerCase() !== proposedVault.toLowerCase();
+}
+
+/**
+ * Compares curated list addresses (case-insensitive)
+ * Returns true if different, false if same
+ */
+export function hasCuratedListChanged(
+  currentCuratedList: string | null,
+  proposedCuratedList: string | null
+): boolean {
+  // Both null/empty = no change
+  if (!currentCuratedList && !proposedCuratedList) return false;
+
+  // One is null/empty, other isn't = changed
+  if (!currentCuratedList || !proposedCuratedList) return true;
+
+  // Both exist, compare case-insensitive
+  return currentCuratedList.toLowerCase() !== proposedCuratedList.toLowerCase();
+}
+
+/**
+ * Compares screener selection (whether screeners were added/removed)
+ * Returns true if different, false if same
+ */
+export function haveScreenersChanged(
+  currentUseCuratedList: boolean,
+  proposedUseCuratedList: boolean
+): boolean {
+  // For GRAVE, Address List Screener is always present
+  // Only change is whether Curated List Screener is enabled/disabled
+  return currentUseCuratedList !== proposedUseCuratedList;
+}
+
+/**
+ * Fetches all whitelist addresses from both LSP7 and LSP8 screener lists
+ * This is used for migration to ensure no addresses are lost
+ * Returns merged and deduplicated addresses from both transaction types
+ */
+export async function getAllWhitelistAddresses(
+  provider: BrowserProvider | JsonRpcProvider,
+  upAddress: string,
+  networkConfig: {
+    forwarderAssistantAddress: string;
+    addressListScreenerAddress: string;
+  }
+): Promise<{
+  addresses: string[];
+  listNameLSP7: string | null;
+  listNameLSP8: string | null;
+  lsp7Addresses: string[];
+  lsp8Addresses: string[];
+}> {
+  const upContract = new Contract(upAddress, universalProfileAbi, provider);
+  const erc725UAP = new ERC725(
+    uapSchema as ERC725JSONSchema[],
+    upAddress,
+    provider
+  );
+
+  const result = {
+    addresses: [] as string[],
+    listNameLSP7: null as string | null,
+    listNameLSP8: null as string | null,
+    lsp7Addresses: [] as string[],
+    lsp8Addresses: [] as string[],
+  };
+
+  // Read addresses from both LSP7 and LSP8 separately
+  for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
+    try {
+      // Find the Forwarder Assistant's execution order
+      const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
+        txType,
+      ]);
+      const typeConfigData = await upContract.getData(typeConfigKey);
+
+      if (!typeConfigData || typeConfigData === '0x') {
+        continue;
+      }
+
+      const executives = erc725UAP.decodeValueType(
+        'address[]',
+        typeConfigData
+      ) as string[];
+
+      const executionOrder = executives.findIndex(
+        addr =>
+          addr.toLowerCase() ===
+          networkConfig.forwarderAssistantAddress.toLowerCase()
+      );
+
+      if (executionOrder === -1) {
+        continue;
+      }
+
+      // Find the Address List Screener
+      const screenersKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveScreeners:<bytes32>:<uint256>',
+        [txType, executionOrder.toString()]
+      );
+      const screenersData = await upContract.getData(screenersKey);
+
+      if (!screenersData || screenersData === '0x') {
+        continue;
+      }
+
+      const screeners = erc725UAP.decodeValueType(
+        'address[]',
+        screenersData
+      ) as string[];
+
+      const screenerIndex = screeners.findIndex(
+        addr =>
+          addr.toLowerCase() ===
+          networkConfig.addressListScreenerAddress.toLowerCase()
+      );
+
+      if (screenerIndex === -1) {
+        continue;
+      }
+
+      const screenerOrder = executionOrder * 1000 + screenerIndex;
+
+      // Get the list name
+      const listNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [txType, screenerOrder.toString()]
+      );
+      const listNameData = await upContract.getData(listNameKey);
+
+      if (!listNameData || listNameData === '0x') {
+        continue;
+      }
+
+      const listName = erc725UAP.decodeValueType(
+        'string',
+        listNameData
+      ) as string;
+
+      // Store list name
+      if (txType === LSP7_TRANSACTION_TYPE) {
+        result.listNameLSP7 = listName;
+      } else {
+        result.listNameLSP8 = listName;
+      }
+
+      // Fetch addresses from this list
+      const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
+      const listLengthRaw = await upContract.getData(listLengthKey);
+
+      if (!listLengthRaw || listLengthRaw === '0x') {
+        continue;
+      }
+
+      const listLength = Number(
+        erc725UAP.decodeValueType('uint256', listLengthRaw)
+      );
+
+      if (listLength > 0) {
+        const itemKeys: string[] = [];
+        for (let j = 0; j < listLength; j++) {
+          const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
+          const keyPrefix = baseArrayKey.slice(0, 34);
+          const indexBytes16 = j.toString(16).padStart(32, '0');
+          const itemKey = keyPrefix + indexBytes16;
+          itemKeys.push(itemKey);
+        }
+
+        const itemValues = await upContract.getDataBatch(itemKeys);
+        const addresses = itemValues
+          .filter((value: any) => value && value !== '0x')
+          .map((value: any) =>
+            erc725UAP.decodeValueType('address', value) as string
+          );
+
+        if (txType === LSP7_TRANSACTION_TYPE) {
+          result.lsp7Addresses = addresses;
+        } else {
+          result.lsp8Addresses = addresses;
+        }
+      }
+    } catch (error) {
+      console.error(`Error reading addresses for ${txType}:`, error);
+    }
+  }
+
+  // Merge and deduplicate addresses (case-insensitive)
+  const addressMap = new Map<string, string>();
+
+  for (const addr of [...result.lsp7Addresses, ...result.lsp8Addresses]) {
+    const normalized = addr.toLowerCase();
+    if (!addressMap.has(normalized)) {
+      addressMap.set(normalized, addr); // Keep original checksum
+    }
+  }
+
+  result.addresses = Array.from(addressMap.values());
+
+  return result;
 }

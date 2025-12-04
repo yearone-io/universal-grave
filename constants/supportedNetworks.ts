@@ -104,21 +104,6 @@ export const getNetworkById = (chainId: number): ChainInfo | undefined => {
 };
 
 /**
- * Get network configuration by network name (mainnet, testnet)
- * This provides compatibility with the old networks.ts pattern
- */
-export const getNetworkConfig = (name: string): ChainInfo => {
-  switch (name) {
-    case 'mainnet':
-      return supportedNetworks['42'];
-    case 'testnet':
-      return supportedNetworks['4201'];
-    default:
-      throw new Error(`Unknown network ${name}`);
-  }
-};
-
-/**
  * Legacy Network type for backward compatibility
  * Mapped from ChainInfo to match old networks.ts interface
  */
@@ -154,3 +139,22 @@ const toNetwork = (info: ChainInfo): Network => ({
   baseUrl: info.url,
   vaultImplementation: info.vaultImplementation,
 });
+
+/**
+ * Get network configuration by network name (mainnet, testnet)
+ * This provides compatibility with the old networks.ts pattern
+ */
+export const getNetworkConfig = (name: string): Network => {
+  let chainInfo: ChainInfo;
+  switch (name) {
+    case 'mainnet':
+      chainInfo = supportedNetworks['42'];
+      break;
+    case 'testnet':
+      chainInfo = supportedNetworks['4201'];
+      break;
+    default:
+      throw new Error(`Unknown network ${name}`);
+  }
+  return toNetwork(chainInfo);
+};

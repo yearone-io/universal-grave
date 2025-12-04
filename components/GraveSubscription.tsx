@@ -54,6 +54,7 @@ const GraveSubscription: React.FC = () => {
   const [curatedListAddress, setCuratedListAddress] = useState<string>('');
   const [useCuratedList, setUseCuratedList] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [listName, setListName] = useState<string | null>(null);
 
   // Vault selection state
   const [availableVaults, setAvailableVaults] = useState<string[]>([]);
@@ -188,6 +189,10 @@ const GraveSubscription: React.FC = () => {
             if (existingConfig.curatedListAddress) {
               setCuratedListAddress(existingConfig.curatedListAddress);
               // useCuratedList is now auto-determined from address validity
+            }
+            // Capture list name for notification
+            if (existingConfig.listName) {
+              setListName(existingConfig.listName);
             }
             // Set selected vault from config if available
             // Match case-insensitively with availableVaults to ensure correct display
@@ -352,7 +357,7 @@ const GraveSubscription: React.FC = () => {
 
   // Step 2: Subscribe to UAP
   const handleSubscribe = useCallback(async () => {
-    if (!address || !currentNetwork || !window.lukso) {
+    if (!address || !currentNetwork || !window.lukso || !chainId) {
       toast({
         title: 'Error',
         description: 'Wallet not connected',
@@ -693,6 +698,130 @@ const GraveSubscription: React.FC = () => {
       setIsProcessing(false);
     }
   }, [address, currentNetwork, toast, refreshGraveData]);
+
+  // Migrate to default list name
+  const handleMigrateToDefaultListName = useCallback(async () => {
+    if (!address || !currentNetwork || !window.lukso || !chainId) {
+      toast({
+        title: 'Error',
+        description: 'Wallet not connected',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!selectedVault) {
+      toast({
+        title: 'Error',
+        description: 'No vault selected',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const provider = new BrowserProvider(window.lukso);
+
+      // Read addresses directly from both LSP7 and LSP8 lists on-chain
+      const { getAllWhitelistAddresses, saveForwarderAssistantConfig } =
+        await import('@/utils/assistantConfig');
+      const { supportedNetworks: allNetworks } = await import(
+        '@/constants/supportedNetworks'
+      );
+
+      console.log('[Migration] Reading addresses from blockchain...');
+      const listData = await getAllWhitelistAddresses(provider, address, {
+        forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+        addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
+      });
+
+      console.log('[Migration] List data:', {
+        lsp7: listData.listNameLSP7,
+        lsp8: listData.listNameLSP8,
+        lsp7Addresses: listData.lsp7Addresses.length,
+        lsp8Addresses: listData.lsp8Addresses.length,
+        totalMerged: listData.addresses.length,
+      });
+
+      // Check if LSP7 and LSP8 had different addresses
+      const listsDiffer =
+        listData.lsp7Addresses.length !== listData.lsp8Addresses.length ||
+        !listData.lsp7Addresses.every(addr =>
+          listData.lsp8Addresses.some(a => a.toLowerCase() === addr.toLowerCase())
+        );
+
+      if (listsDiffer) {
+        console.warn('[Migration] LSP7 and LSP8 lists differ, merging...');
+      }
+
+      const shouldUseCuratedList =
+        curatedListAddress.trim() !== '' &&
+        isAddress(curatedListAddress) &&
+        curatedListAddress !== ZERO_ADDRESS;
+
+      await saveForwarderAssistantConfig(
+        provider,
+        address,
+        selectedVault,
+        listData.addresses, // Use merged addresses from blockchain
+        shouldUseCuratedList,
+        curatedListAddress,
+        {
+          forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+          addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
+          curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+        },
+        allNetworks,
+        chainId
+      );
+
+      const migrationMessage = listsDiffer
+        ? `Migrated and merged ${listData.addresses.length} addresses (${listData.lsp7Addresses.length} from LSP7, ${listData.lsp8Addresses.length} from LSP8)`
+        : `Migrated ${listData.addresses.length} address${listData.addresses.length === 1 ? '' : 'es'}`;
+
+      toast({
+        title: 'Migration Complete',
+        description: `${migrationMessage} to GraveSafeAssets`,
+        status: 'success',
+        duration: 7000,
+        isClosable: true,
+      });
+
+      // Refresh to show updated list name and addresses
+      await refreshGraveData();
+      setListName('GraveSafeAssets');
+
+      // Update component state with merged addresses
+      setWhitelistAddresses(listData.addresses);
+    } catch (err: any) {
+      console.error('Error migrating list name:', err);
+      if (!err.message?.includes('user rejected')) {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to migrate list name',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    address,
+    currentNetwork,
+    chainId,
+    selectedVault,
+    curatedListAddress,
+    toast,
+    refreshGraveData,
+  ]);
 
   if (!isConnected || !address) {
     return (
@@ -1093,6 +1222,46 @@ const GraveSubscription: React.FC = () => {
             <Text fontSize="sm" color="dark.purple.400" mb={3}>
               Assets with these addresses will NOT be sent to the GRAVE Spambox
             </Text>
+
+            {/* List Name Warning - Show if using non-default list name */}
+            {listName && listName !== 'GraveSafeAssets' && (
+              <Box
+                p={3}
+                mb={3}
+                bg="orange.50"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="orange.300"
+              >
+                <Flex align="start" justify="space-between" gap={3}>
+                  <Box flex="1">
+                    <Text fontSize="sm" color="orange.800" fontWeight="bold" mb={1}>
+                      ⚠️ Non-Standard List Name
+                    </Text>
+                    <Text fontSize="xs" color="orange.700" mb={1}>
+                      Using: <Text as="span" fontFamily="mono" fontWeight="bold">{listName}</Text>
+                    </Text>
+                    <Text fontSize="xs" color="orange.700" mb={2}>
+                      Recommended: <Text as="span" fontFamily="mono" fontWeight="bold">GraveSafeAssets</Text>
+                    </Text>
+                    <Text fontSize="xs" color="orange.600">
+                      Migrating to the recommended name saves storage and gas costs.
+                    </Text>
+                  </Box>
+                  <Button
+                    size="sm"
+                    colorScheme="orange"
+                    onClick={handleMigrateToDefaultListName}
+                    isLoading={isProcessing}
+                    isDisabled={isProcessing}
+                    fontWeight="600"
+                    fontSize="xs"
+                  >
+                    Migrate
+                  </Button>
+                </Flex>
+              </Box>
+            )}
 
             <VStack spacing={2} align="stretch">
               {whitelistAddresses.map((address, index) => (

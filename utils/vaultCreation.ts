@@ -167,7 +167,7 @@ export async function getRegisteredVaults(
 export async function deployVault(
   provider: BrowserProvider,
   upAddress: string,
-  networkConfig: { chainId: number; name: string; vaultImplementation?: string }
+  networkConfig: { chainId: number; name: string; vaultImplementation?: string; lsp1UrdVault?: string }
 ): Promise<string> {
   console.log('Deploying LSP9 Vault using proxy pattern for UP:', upAddress);
 

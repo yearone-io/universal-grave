@@ -65,7 +65,14 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
     useANDLogic: boolean;
   },
   networkId: number,
-  supportedNetworks: any
+  supportedNetworks: any,
+  options?: {
+    skipSharedListWrite?: boolean; // Skip writing shared list data (for LSP8 when LSP7 already wrote it)
+    skipExecutiveConfig?: boolean; // Skip writing executive config if vault hasn't changed
+    skipScreenerArray?: boolean; // Skip writing screener addresses array if selection hasn't changed
+    skipScreenerConfigs?: boolean; // Skip writing screener config data if configs haven't changed
+    skipAddressListData?: boolean; // Skip writing address list items if list hasn't changed (still write list name)
+  }
 ): Promise<{ keys: string[]; values: string[] }> {
   const keys: string[] = [];
   const values: string[] = [];
@@ -95,6 +102,7 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
     addr => addr.toLowerCase() === assistantAddress.toLowerCase()
   );
 
+  let executivesChanged = false;
   if (existingIndex >= 0) {
     // Assistant already exists, use its current position
     executionOrder = existingIndex;
@@ -102,30 +110,39 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
     // New assistant, add at the end
     executionOrder = currentExecutives.length;
     currentExecutives.push(assistantAddress);
+    executivesChanged = true;
   }
 
-  // Always update type config to ensure consistency
-  // This ensures the UAPTypeConfig is written atomically with the executive config
-  const encodedAssistants = erc725UAP.encodeValueType(
-    'address[]',
-    currentExecutives
-  );
-  keys.push(typeConfigKey);
-  values.push(encodedAssistants);
+  // Only update type config if executives array changed
+  if (executivesChanged) {
+    const encodedAssistants = erc725UAP.encodeValueType(
+      'address[]',
+      currentExecutives
+    );
+    keys.push(typeConfigKey);
+    values.push(encodedAssistants);
+    console.log(`[Optimization] Type config changed, writing UAPTypeConfig`);
+  } else {
+    console.log(`[Optimization] Type config unchanged, skipping UAPTypeConfig write`);
+  }
 
   // STEP 2: Set Executive Config (assistant address + config data)
-  const executiveConfigKey = erc725UAP.encodeKeyName(
-    'UAPExecutiveConfig:<bytes32>:<uint256>',
-    [typeId, executionOrder.toString()]
-  );
+  if (!options?.skipExecutiveConfig) {
+    const executiveConfigKey = erc725UAP.encodeKeyName(
+      'UAPExecutiveConfig:<bytes32>:<uint256>',
+      [typeId, executionOrder.toString()]
+    );
 
-  const execData = encodeTupleKeyValue('(Address,Bytes)', '(address,bytes)', [
-    assistantAddress,
-    assistantConfigData,
-  ]);
+    const execData = encodeTupleKeyValue('(Address,Bytes)', '(address,bytes)', [
+      assistantAddress,
+      assistantConfigData,
+    ]);
 
-  keys.push(executiveConfigKey);
-  values.push(execData);
+    keys.push(executiveConfigKey);
+    values.push(execData);
+  } else {
+    console.log(`[Optimization] Skipping executive config write for ${typeId} (unchanged)`);
+  }
 
   // STEP 3: Configure screeners if enabled
   if (
@@ -140,26 +157,30 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       }
     );
 
-    // Set screener addresses array
-    const screenersKey = erc725UAP.encodeKeyName(
-      'UAPExecutiveScreeners:<bytes32>:<uint256>',
-      [typeId, executionOrder.toString()]
-    );
-    const encodedScreeners = erc725UAP.encodeValueType(
-      'address[]',
-      screenerAddresses
-    );
-    keys.push(screenersKey);
-    values.push(encodedScreeners);
+    // Set screener addresses array (skip if selection hasn't changed)
+    if (!options?.skipScreenerArray) {
+      const screenersKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveScreeners:<bytes32>:<uint256>',
+        [typeId, executionOrder.toString()]
+      );
+      const encodedScreeners = erc725UAP.encodeValueType(
+        'address[]',
+        screenerAddresses
+      );
+      keys.push(screenersKey);
+      values.push(encodedScreeners);
 
-    // Set AND/OR logic
-    const logicKey = erc725UAP.encodeKeyName(
-      'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
-      [typeId, executionOrder.toString()]
-    );
-    const encodedLogic = screenerConfig.useANDLogic ? '0x01' : '0x00';
-    keys.push(logicKey);
-    values.push(encodedLogic);
+      // Set AND/OR logic
+      const logicKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+        [typeId, executionOrder.toString()]
+      );
+      const encodedLogic = screenerConfig.useANDLogic ? '0x01' : '0x00';
+      keys.push(logicKey);
+      values.push(encodedLogic);
+    } else {
+      console.log(`[Optimization] Skipping screener array write for ${typeId} (unchanged)`);
+    }
 
     // Configure each screener
     for (let i = 0; i < screenerConfig.selectedScreeners.length; i++) {
@@ -168,47 +189,64 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       const config = screenerConfig.screenerConfigs[instanceId] || {};
       const screenerOrder = executionOrder * 1000 + i;
 
-      // Set screener config using manual byte packing
-      const screenerConfigKey = erc725UAP.encodeKeyName(
-        'UAPScreenerConfig:<bytes32>:<uint256>',
-        [typeId, screenerOrder.toString()]
-      );
+      // Determine if this is the Address List Screener or Curated List Screener
+      const isAddressListScreener = config.addresses !== undefined;
+      const isCuratedListScreener = config.curatedListAddress !== undefined;
 
-      // Encode screener-specific config data
-      let screenerConfigBytes = '0x';
+      // Skip screener config write if configs haven't changed
+      // BUT we need to differentiate: skip Address List config separately from Curated List config
+      const shouldSkipThisConfig =
+        options?.skipScreenerConfigs &&
+        ((isAddressListScreener && options?.skipAddressListData) ||
+          (isCuratedListScreener && !isAddressListScreener));
 
-      // Check which screener type we're configuring
-      if (config.addresses !== undefined) {
-        // Address List Screener: config contains returnValueWhenInList boolean
-        const returnValueWhenInList = config.returnValueWhenInList ?? false;
-        screenerConfigBytes = abiCoder.encode(['bool'], [returnValueWhenInList]);
-      } else if (config.curatedListAddress !== undefined) {
-        // Curated List Screener: config contains (address, bool)
-        const returnValueWhenCurated = config.returnValueWhenCurated ?? false;
-        screenerConfigBytes = abiCoder.encode(
-          ['address', 'bool'],
-          [config.curatedListAddress, returnValueWhenCurated]
+      if (!shouldSkipThisConfig) {
+        // Set screener config using manual byte packing
+        const screenerConfigKey = erc725UAP.encodeKeyName(
+          'UAPScreenerConfig:<bytes32>:<uint256>',
+          [typeId, screenerOrder.toString()]
+        );
+
+        // Encode screener-specific config data
+        let screenerConfigBytes = '0x';
+
+        // Check which screener type we're configuring
+        if (isAddressListScreener) {
+          // Address List Screener: config contains returnValueWhenInList boolean
+          const returnValueWhenInList = config.returnValueWhenInList ?? false;
+          screenerConfigBytes = abiCoder.encode(['bool'], [returnValueWhenInList]);
+        } else if (isCuratedListScreener) {
+          // Curated List Screener: config contains (address, bool)
+          const returnValueWhenCurated = config.returnValueWhenCurated ?? false;
+          screenerConfigBytes = abiCoder.encode(
+            ['address', 'bool'],
+            [config.curatedListAddress, returnValueWhenCurated]
+          );
+        }
+
+        // Manual byte packing: executive address + screener address + config data
+        const executiveBytes = assistantAddress.toLowerCase().replace('0x', '');
+        const screenerBytes = screenerAddress.toLowerCase().replace('0x', '');
+        const configBytes = screenerConfigBytes.replace('0x', '');
+        const screenerConfigValue =
+          '0x' + executiveBytes + screenerBytes + configBytes;
+
+        keys.push(screenerConfigKey);
+        values.push(screenerConfigValue);
+      } else {
+        console.log(
+          `[Optimization] Skipping screener config write for ${typeId} screener ${i} (unchanged)`
         );
       }
 
-      // Manual byte packing: executive address + screener address + config data
-      const executiveBytes = assistantAddress.toLowerCase().replace('0x', '');
-      const screenerBytes = screenerAddress.toLowerCase().replace('0x', '');
-      const configBytes = screenerConfigBytes.replace('0x', '');
-      const screenerConfigValue =
-        '0x' + executiveBytes + screenerBytes + configBytes;
-
-      keys.push(screenerConfigKey);
-      values.push(screenerConfigValue);
-
-      // Only create address list metadata if addresses actually exist
-      // This matches UP Assistants behavior: don't create list keys for empty lists
-      if (config.addresses && config.addresses.length > 0) {
+      // Handle address list (including empty lists that need to clear existing data)
+      if (config.addresses !== undefined) {
         // Set address list for Address List Screener
-        // Create unique list name using pattern from uap-frontend
-        const listName = `ScreenerList_${typeId.slice(2, 10)}_${screenerOrder}`;
+        // Use shared list name 'GraveSafeAssets' for both LSP7 and LSP8
+        // This saves ~50% storage by having both transaction types reference the same underlying list
+        const listName = 'GraveSafeAssets';
 
-        // Set list name
+        // Set list name (always write - this is per-transaction-type metadata)
         const listNameKey = erc725UAP.encodeKeyName(
           'UAPAddressListName:<bytes32>:<uint256>',
           [typeId, screenerOrder.toString()]
@@ -217,39 +255,57 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
         keys.push(listNameKey);
         values.push(encodedListName);
 
-        // Set address list using LSP5 pattern
-        const addresses = config.addresses;
+        // Only write shared list data once (skip on subsequent transaction types)
+        // Also skip if address list data hasn't changed
+        if (!options?.skipSharedListWrite && !options?.skipAddressListData) {
+          // Set address list using LSP5 pattern
+          const addresses = config.addresses;
 
-        // Set list length
-        const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
-        const listLength = erc725UAP.encodeValueType(
-          'uint256',
-          BigInt(addresses.length)
-        );
-        keys.push(listLengthKey);
-        values.push(listLength);
+          // Set list length (IMPORTANT: even if 0, we need to write it to clear the list)
+          const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
+          const listLength = erc725UAP.encodeValueType(
+            'uint256',
+            BigInt(addresses.length)
+          );
+          keys.push(listLengthKey);
+          values.push(listLength);
 
-        // Set each address and its mapping
-        for (let j = 0; j < addresses.length; j++) {
-          const address = addresses[j];
+          // Set each address and its mapping (only if list is not empty)
+          for (let j = 0; j < addresses.length; j++) {
+            const address = addresses[j];
 
-          // Set array item using LSP5 key pattern
-          const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
-          const keyPrefix = baseArrayKey.slice(0, 34); // 0x + 32 chars
-          const indexBytes16 = j.toString(16).padStart(32, '0');
-          const itemKey = keyPrefix + indexBytes16;
-          const encodedAddress = erc725UAP.encodeValueType('address', address);
-          keys.push(itemKey);
-          values.push(encodedAddress);
+            // Set array item using LSP5 key pattern
+            const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
+            const keyPrefix = baseArrayKey.slice(0, 34); // 0x + 32 chars
+            const indexBytes16 = j.toString(16).padStart(32, '0');
+            const itemKey = keyPrefix + indexBytes16;
+            const encodedAddress = erc725UAP.encodeValueType('address', address);
+            keys.push(itemKey);
+            values.push(encodedAddress);
 
-          // Set mapping for fast lookup
-          const mapKey = erc725UAP.encodeKeyName(`${listName}Map:<address>`, [
-            address,
-          ]);
-          const positionHex = j.toString(16).padStart(64, '0');
-          const mapValue = '0x00000000' + positionHex; // Generic item type + position
-          keys.push(mapKey);
-          values.push(mapValue);
+            // Set mapping for fast lookup
+            const mapKey = erc725UAP.encodeKeyName(`${listName}Map:<address>`, [
+              address,
+            ]);
+            const positionHex = j.toString(16).padStart(64, '0');
+            const mapValue = '0x00000000' + positionHex; // Generic item type + position
+            keys.push(mapKey);
+            values.push(mapValue);
+          }
+
+          if (addresses.length === 0) {
+            console.log(
+              `[Optimization] Writing empty list to clear existing addresses for ${typeId}`
+            );
+          }
+        } else if (options?.skipSharedListWrite) {
+          console.log(
+            `[Optimization] Skipping shared list write for ${typeId} (already written)`
+          );
+        } else if (options?.skipAddressListData) {
+          console.log(
+            `[Optimization] Skipping address list write for ${typeId} (unchanged)`
+          );
         }
       }
     }

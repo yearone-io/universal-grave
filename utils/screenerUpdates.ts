@@ -14,6 +14,9 @@ const LSP8_TRANSACTION_TYPE = LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification;
 /**
  * Updates the Address List Screener to remove an asset address from the whitelist.
  * This is called when reviving an asset - the asset is removed from the trusted sender list.
+ *
+ * REWRITTEN to use LSP5-style arrays (matching addAssetToAddressListScreener pattern)
+ * Uses swap-and-pop strategy: move last item to removed position, then decrement length
  */
 export async function removeAssetFromAddressListScreener(
   provider: BrowserProvider,
@@ -26,51 +29,193 @@ export async function removeAssetFromAddressListScreener(
 ): Promise<void> {
   const signer = await provider.getSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
-  const abiCoder = new AbiCoder();
+  const erc725UAP = new ERC725(
+    uapSchema as ERC725JSONSchema[],
+    upAddress,
+    provider
+  );
   const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
 
-  // Get current whitelist from both LSP7 and LSP8 screener configs
   const keys: string[] = [];
   const values: string[] = [];
 
-  for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
-    const screenerKey = `0x${Buffer.from(
-      `UAP:Screener:${addressListScreenerAddress}:${txType}`
-    ).toString('hex')}`;
+  // OPTIMIZATION: Since both LSP7 and LSP8 share the same list name ('GraveSafeAssets'),
+  // we only need to update the list once, not twice
 
-    // Read current configuration
-    let currentWhitelist: string[] = [];
-    try {
-      const currentData = await upContract.getData(screenerKey);
-      if (currentData && currentData !== '0x') {
-        [currentWhitelist] = abiCoder.decode(['address[]'], currentData);
-      }
-    } catch (error) {
-      console.error(
-        'Error reading current address list screener config:',
-        error
-      );
-      currentWhitelist = [];
+  let sharedListName: string | null = null;
+
+  // Find the shared list name (should be 'GraveSafeAssets' for both LSP7 and LSP8)
+  for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
+    // Find the Forwarder Assistant's execution order
+    const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
+      txType,
+    ]);
+    const typeConfigData = await upContract.getData(typeConfigKey);
+
+    if (!typeConfigData || typeConfigData === '0x') {
+      continue;
     }
 
-    // Remove the asset address from the whitelist (case-insensitive)
-    const updatedWhitelist = currentWhitelist.filter(
-      (addr: string) => getChecksumAddress(addr) !== checksumAssetAddress
+    const executives = erc725UAP.decodeValueType(
+      'address[]',
+      typeConfigData
+    ) as string[];
+
+    const executionOrder = executives.findIndex(
+      addr =>
+        addr.toLowerCase() === networkConfig.forwarderAssistantAddress.toLowerCase()
     );
 
-    // Only update if something changed
-    if (updatedWhitelist.length !== currentWhitelist.length) {
-      const updatedConfig = abiCoder.encode(['address[]'], [updatedWhitelist]);
-      keys.push(screenerKey);
-      values.push(updatedConfig);
+    if (executionOrder === -1) {
+      continue;
+    }
+
+    // Find the Address List Screener
+    const screenersKey = erc725UAP.encodeKeyName(
+      'UAPExecutiveScreeners:<bytes32>:<uint256>',
+      [txType, executionOrder.toString()]
+    );
+    const screenersData = await upContract.getData(screenersKey);
+
+    if (!screenersData || screenersData === '0x') {
+      continue;
+    }
+
+    const screeners = erc725UAP.decodeValueType(
+      'address[]',
+      screenersData
+    ) as string[];
+
+    const screenerIndex = screeners.findIndex(
+      addr => addr.toLowerCase() === addressListScreenerAddress.toLowerCase()
+    );
+
+    if (screenerIndex === -1) {
+      continue;
+    }
+
+    const screenerOrder = executionOrder * 1000 + screenerIndex;
+
+    // Get the list name
+    const listNameKey = erc725UAP.encodeKeyName(
+      'UAPAddressListName:<bytes32>:<uint256>',
+      [txType, screenerOrder.toString()]
+    );
+    const listNameData = await upContract.getData(listNameKey);
+
+    if (!listNameData || listNameData === '0x') {
+      continue;
+    }
+
+    const listName = erc725UAP.decodeValueType('string', listNameData) as string;
+
+    // Capture the shared list name
+    if (!sharedListName) {
+      sharedListName = listName;
+      console.log(`[Optimization] Found shared list name for removal: ${sharedListName}`);
     }
   }
 
-  // Execute batch update if there are changes
-  if (keys.length > 0) {
-    const tx = await upContract.setDataBatch(keys, values);
-    await tx.wait();
+  if (!sharedListName) {
+    console.warn('No list name found for Address List Screener, nothing to remove');
+    return;
   }
+
+  // Read current list length
+  const listLengthKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
+  const listLengthRaw = await upContract.getData(listLengthKey);
+
+  if (!listLengthRaw || listLengthRaw === '0x') {
+    console.warn('List is empty, nothing to remove');
+    return;
+  }
+
+  const currentLength = Number(
+    erc725UAP.decodeValueType('uint256', listLengthRaw)
+  );
+
+  if (currentLength === 0) {
+    console.warn('List is empty, nothing to remove');
+    return;
+  }
+
+  // Find the index of the address to remove using the map
+  const mapKey = erc725UAP.encodeKeyName(`${sharedListName}Map:<address>`, [
+    checksumAssetAddress,
+  ]);
+  const mapData = await upContract.getData(mapKey);
+
+  if (!mapData || mapData === '0x') {
+    console.log(
+      `[Optimization] Asset ${checksumAssetAddress} not in list, skipping removal`
+    );
+    return; // Address not in list, nothing to remove
+  }
+
+  // Decode the position from the map value
+  // Format: 0x00000000<position as 32-byte hex>
+  const positionHex = mapData.slice(10); // Skip '0x00000000'
+  const removedIndex = parseInt(positionHex, 16);
+
+  console.log(`[Optimization] Removing asset at index ${removedIndex} from ${sharedListName}`);
+
+  // Swap-and-pop strategy: move last item to removed position, then decrement length
+  const lastIndex = currentLength - 1;
+
+  if (removedIndex === lastIndex) {
+    // Removing last item, just decrement length
+    const newLength = currentLength - 1;
+    const newLengthEncoded = erc725UAP.encodeValueType(
+      'uint256',
+      BigInt(newLength)
+    );
+    keys.push(listLengthKey);
+    values.push(newLengthEncoded);
+
+    console.log(`[Optimization] Removed last item, writing 1 key (length only)`);
+  } else {
+    // Swap last item into removed position
+    const baseArrayKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
+    const keyPrefix = baseArrayKey.slice(0, 34);
+
+    // Read last item
+    const lastItemIndexBytes = lastIndex.toString(16).padStart(32, '0');
+    const lastItemKey = keyPrefix + lastItemIndexBytes;
+    const lastItemData = await upContract.getData(lastItemKey);
+    const lastItemAddress = erc725UAP.decodeValueType('address', lastItemData) as string;
+
+    // Write last item to removed position
+    const removedIndexBytes = removedIndex.toString(16).padStart(32, '0');
+    const removedItemKey = keyPrefix + removedIndexBytes;
+    keys.push(removedItemKey);
+    values.push(lastItemData); // Copy last item data
+
+    // Update map for the swapped item
+    const swappedMapKey = erc725UAP.encodeKeyName(`${sharedListName}Map:<address>`, [
+      lastItemAddress,
+    ]);
+    const newPositionHex = removedIndex.toString(16).padStart(64, '0');
+    const newMapValue = '0x00000000' + newPositionHex;
+    keys.push(swappedMapKey);
+    values.push(newMapValue);
+
+    // Decrement length
+    const newLength = currentLength - 1;
+    const newLengthEncoded = erc725UAP.encodeValueType(
+      'uint256',
+      BigInt(newLength)
+    );
+    keys.push(listLengthKey);
+    values.push(newLengthEncoded);
+
+    console.log(
+      `[Optimization] Swapped last item to removed position, writing 3 keys (item + map + length)`
+    );
+  }
+
+  // Execute batch update
+  const tx = await upContract.setDataBatch(keys, values);
+  await tx.wait();
 }
 
 /**
@@ -258,7 +403,13 @@ export async function addAssetToAddressListScreener(
   const keys: string[] = [];
   const values: string[] = [];
 
-  // Add to whitelist for both LSP7 and LSP8 transaction types
+  // OPTIMIZATION: Since both LSP7 and LSP8 now share the same list name ('GraveSafeAssets'),
+  // we only need to read/write the list once, not twice
+  // We still need to verify the list name is set for both transaction types
+
+  let sharedListName: string | null = null;
+
+  // Find the shared list name (should be 'GraveSafeAssets' for both LSP7 and LSP8)
   for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
     // STEP 1: Find the Forwarder Assistant's execution order for this transaction type
     const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
@@ -328,84 +479,103 @@ export async function addAssetToAddressListScreener(
 
     const listName = erc725UAP.decodeValueType('string', listNameData) as string;
 
-    // STEP 4: Read current address list
-    const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
-    const listLengthRaw = await upContract.getData(listLengthKey);
-
-    let currentLength = 0;
-    let currentAddresses: string[] = [];
-
-    if (listLengthRaw && listLengthRaw !== '0x') {
-      currentLength = Number(
-        erc725UAP.decodeValueType('uint256', listLengthRaw)
+    // Capture the shared list name (should be same for both LSP7 and LSP8)
+    if (!sharedListName) {
+      sharedListName = listName;
+      console.log(`[Optimization] Found shared list name: ${sharedListName}`);
+    } else if (listName !== sharedListName) {
+      console.warn(
+        `[Warning] List names differ! LSP7/LSP8 using different lists: ${sharedListName} vs ${listName}`
       );
+      // This shouldn't happen with new configs, but handle legacy case
+      // by using the first name found
+    }
+  }
 
-      if (currentLength > 0) {
-        const itemKeys: string[] = [];
-        for (let j = 0; j < currentLength; j++) {
-          const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
-          const keyPrefix = baseArrayKey.slice(0, 34);
-          const indexBytes16 = j.toString(16).padStart(32, '0');
-          const itemKey = keyPrefix + indexBytes16;
-          itemKeys.push(itemKey);
-        }
+  if (!sharedListName) {
+    throw new Error('No list name found for Address List Screener');
+  }
 
-        const itemValues = await upContract.getDataBatch(itemKeys);
-        currentAddresses = itemValues
-          .filter((value: any) => value && value !== '0x')
-          .map((value: any) =>
-            erc725UAP.decodeValueType('address', value) as string
-          );
+  // STEP 4: Read current address list ONCE (since it's shared)
+  const listLengthKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
+  const listLengthRaw = await upContract.getData(listLengthKey);
+
+  let currentLength = 0;
+  let currentAddresses: string[] = [];
+
+  if (listLengthRaw && listLengthRaw !== '0x') {
+    currentLength = Number(
+      erc725UAP.decodeValueType('uint256', listLengthRaw)
+    );
+
+    if (currentLength > 0) {
+      const itemKeys: string[] = [];
+      for (let j = 0; j < currentLength; j++) {
+        const baseArrayKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
+        const keyPrefix = baseArrayKey.slice(0, 34);
+        const indexBytes16 = j.toString(16).padStart(32, '0');
+        const itemKey = keyPrefix + indexBytes16;
+        itemKeys.push(itemKey);
       }
+
+      const itemValues = await upContract.getDataBatch(itemKeys);
+      currentAddresses = itemValues
+        .filter((value: any) => value && value !== '0x')
+        .map((value: any) =>
+          erc725UAP.decodeValueType('address', value) as string
+        );
     }
-
-    // STEP 5: Check if asset already in list (case-insensitive)
-    const assetAlreadyInList = currentAddresses.some(
-      (addr: string) =>
-        getChecksumAddress(addr) === checksumAssetAddress
-    );
-
-    if (assetAlreadyInList) {
-      console.log(`Asset ${checksumAssetAddress} already in whitelist for ${txType}`);
-      continue;
-    }
-
-    // STEP 6: Add the new address to the list
-    const newIndex = currentLength;
-    const newLength = currentLength + 1;
-
-    // Update list length
-    const newLengthEncoded = erc725UAP.encodeValueType(
-      'uint256',
-      BigInt(newLength)
-    );
-    keys.push(listLengthKey);
-    values.push(newLengthEncoded);
-
-    // Add new array item
-    const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
-    const keyPrefix = baseArrayKey.slice(0, 34);
-    const indexBytes16 = newIndex.toString(16).padStart(32, '0');
-    const itemKey = keyPrefix + indexBytes16;
-    const encodedAddress = erc725UAP.encodeValueType('address', checksumAssetAddress);
-    keys.push(itemKey);
-    values.push(encodedAddress);
-
-    // Add mapping for fast lookup
-    const mapKey = erc725UAP.encodeKeyName(`${listName}Map:<address>`, [
-      checksumAssetAddress,
-    ]);
-    const positionHex = newIndex.toString(16).padStart(64, '0');
-    const mapValue = '0x00000000' + positionHex; // Generic item type + position
-    keys.push(mapKey);
-    values.push(mapValue);
   }
 
-  // Execute batch update if there are changes
-  if (keys.length > 0) {
-    const tx = await upContract.setDataBatch(keys, values);
-    await tx.wait();
+  // STEP 5: Check if asset already in list (case-insensitive)
+  const assetAlreadyInList = currentAddresses.some(
+    (addr: string) => getChecksumAddress(addr) === checksumAssetAddress
+  );
+
+  if (assetAlreadyInList) {
+    console.log(
+      `[Optimization] Asset ${checksumAssetAddress} already in whitelist, skipping write`
+    );
+    return; // No-op, asset already exists
   }
+
+  // STEP 6: Add the new address to the shared list (ONCE, not per transaction type)
+  const newIndex = currentLength;
+  const newLength = currentLength + 1;
+
+  // Update list length
+  const newLengthEncoded = erc725UAP.encodeValueType(
+    'uint256',
+    BigInt(newLength)
+  );
+  keys.push(listLengthKey);
+  values.push(newLengthEncoded);
+
+  // Add new array item
+  const baseArrayKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
+  const keyPrefix = baseArrayKey.slice(0, 34);
+  const indexBytes16 = newIndex.toString(16).padStart(32, '0');
+  const itemKey = keyPrefix + indexBytes16;
+  const encodedAddress = erc725UAP.encodeValueType('address', checksumAssetAddress);
+  keys.push(itemKey);
+  values.push(encodedAddress);
+
+  // Add mapping for fast lookup
+  const mapKey = erc725UAP.encodeKeyName(`${sharedListName}Map:<address>`, [
+    checksumAssetAddress,
+  ]);
+  const positionHex = newIndex.toString(16).padStart(64, '0');
+  const mapValue = '0x00000000' + positionHex; // Generic item type + position
+  keys.push(mapKey);
+  values.push(mapValue);
+
+  console.log(
+    `[Optimization] Adding asset to shared list. Writing 3 keys instead of 6`
+  );
+
+  // Execute batch update
+  const tx = await upContract.setDataBatch(keys, values);
+  await tx.wait();
 }
 
 /**
