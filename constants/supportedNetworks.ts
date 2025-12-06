@@ -41,8 +41,8 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     token: 'LYX',
     protocolAddress: '0x289286ce00da26e723a0069d715882fab2d18ed4',
     forwarderAssistantAddress: '0xc503d7f50c4d2c0649fa86e43c247eb4e2e62fec',
-    curatedListScreenerAddress: '0x9ae3cdfe679935428094eea1668d30cdad8ede8c',
-    addressListScreenerAddress: '0x7fe2bf2ec24f94fd43f10d6911123a18450e3c5e',
+    curatedListScreenerAddress: '0x476fef9277f55f306f75cd89300ad9c7e5e36bcb',
+    addressListScreenerAddress: '0x25b51e55f493565be327b1a17e958839121435a7',
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation
@@ -64,8 +64,8 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     token: 'LYXt',
     protocolAddress: '0xf6fa5d9b08a9e5a7bea5c816757e6b0dd548b920',
     forwarderAssistantAddress: '0x1296ace80af3230c961c79a9bee6a07b4a45f53f',
-    curatedListScreenerAddress: '0x647360684dd6ad295d1c62bebc43c11a843a4248',
-    addressListScreenerAddress: '0x31c7ab87662132f5901f190032d49e0abe9fabec',
+    curatedListScreenerAddress: '0x442cd0098e23a541e3604296e0252de28c1c4fc6',
+    addressListScreenerAddress: '0xb5b746a75a464c83f7c1cc838ee3387486883026',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x392e18585b89bd795204c634cce5878f1cf40a58', // Shared LSP9VaultInit implementation
