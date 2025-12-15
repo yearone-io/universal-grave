@@ -12,10 +12,14 @@ import {
 } from '@chakra-ui/react';
 import { useGrave } from '@/contexts/GraveContext';
 import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useProfile } from '@/contexts/ProfileProvider';
+import { supportedNetworks } from '@/constants/supportedNetworks';
 
 /**
  * IncompleteConfigBanner - Displays a banner prompting users who have UAP but haven't configured their spambox
- * Only shows when user has UAP subscription but no Forwarder Assistant configuration
+ * Shows when:
+ * 1. User has UAP subscription but no Forwarder Assistant configuration (setupType === 'none'), OR
+ * 2. User has configuration but no filters configured (empty whitelist AND no curated list)
  */
 export default function IncompleteConfigBanner() {
   const { setupType, hasUAPSubscription } = useGrave();
@@ -23,8 +27,10 @@ export default function IncompleteConfigBanner() {
   const params = useParams();
   const pathname = usePathname();
   const networkName = params.networkName as string;
+  const { profileDetailsData, chainId } = useProfile();
 
   const [isDismissed, setIsDismissed] = useState(false);
+  const [isIncompleteConfig, setIsIncompleteConfig] = useState(false);
 
   // Check if banner was dismissed this session
   useEffect(() => {
@@ -34,8 +40,63 @@ export default function IncompleteConfigBanner() {
     }
   }, []);
 
-  // Only show banner for users with UAP but no configuration (setupType === 'none')
-  if (setupType !== 'none' || !hasUAPSubscription || isDismissed) {
+  // Check for incomplete configuration (empty whitelist AND no curated list)
+  useEffect(() => {
+    async function checkConfig() {
+      // Only check if user has UAP setup (not 'none' and not legacy-only)
+      if (setupType !== 'uap' && setupType !== 'both') {
+        setIsIncompleteConfig(false);
+        return;
+      }
+
+      if (!window.lukso || !profileDetailsData?.upWallet || !chainId) {
+        return;
+      }
+
+      const networkConfig = supportedNetworks[chainId.toString()];
+      if (!networkConfig) return;
+
+      try {
+        const { BrowserProvider } = await import('ethers');
+        const provider = new BrowserProvider(window.lukso);
+
+        const { getForwarderAssistantConfig } = await import(
+          '@/utils/assistantConfig'
+        );
+        const config = await getForwarderAssistantConfig(
+          provider,
+          profileDetailsData.upWallet,
+          {
+            forwarderAssistantAddress: networkConfig.forwarderAssistantAddress,
+            addressListScreenerAddress:
+              networkConfig.addressListScreenerAddress,
+            curatedListScreenerAddress:
+              networkConfig.curatedListScreenerAddress,
+          }
+        );
+
+        // Configuration is incomplete if:
+        // 1. Whitelist is empty (even if list name exists) AND
+        // 2. No curated list is configured
+        const incomplete =
+          config.whitelistAddresses.length === 0 && !config.useCuratedList;
+        setIsIncompleteConfig(incomplete);
+      } catch (error) {
+        console.error('Error checking config completeness:', error);
+        setIsIncompleteConfig(false);
+      }
+    }
+
+    checkConfig();
+  }, [setupType, profileDetailsData, chainId]);
+
+  // Show banner if:
+  // 1. No configuration at all (setupType === 'none' AND hasUAPSubscription), OR
+  // 2. Configuration exists but is incomplete (empty whitelist AND no curated list)
+  const shouldShow =
+    (setupType === 'none' && hasUAPSubscription) || isIncompleteConfig;
+
+  if (!shouldShow || isDismissed) {
     return null;
   }
 
@@ -75,7 +136,9 @@ export default function IncompleteConfigBanner() {
           gap={3}
         >
           <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
-            Your account is not protected from spam! Complete your spambox configuration to activate protection.
+            {setupType === 'none'
+              ? 'Your account is not protected from spam! Complete your spambox configuration to activate protection.'
+              : 'Warning: Spambox filters not configured! Although you now have an active spambox, you must configure its filters, otherwise all incoming assets will be treated as spam!'}
           </Text>
           {!isOnSettingsPage && (
             <Button

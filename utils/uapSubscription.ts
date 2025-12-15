@@ -1,13 +1,23 @@
-import { BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract, AbiCoder } from 'ethers';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
+import uapSchema from '@/schemas/UAP.json';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   UAP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
 } from '@/app/constants';
+
+// Hardcoded key from UAP.json schema - ERC725.js encodeKeyName may not work correctly
+const SUPPORTED_STANDARDS_UAP_KEY =
+  '0xeafec4d89fa9619884b6000003309e5fff483f30b60c116ca9764e6e9b370a0b';
+const SUPPORTED_STANDARDS_UAP_VALUE = '0x03309e5f';
+
+// Transaction type IDs for LSP7 and LSP8 recipient notifications
+const LSP7_TRANSACTION_TYPE = LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification;
+const LSP8_TRANSACTION_TYPE = LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification;
 
 /**
  * Subscribe a Universal Profile to the UAP protocol
@@ -32,16 +42,10 @@ export async function subscribeToUAP(
     // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
     const LSP7URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(
-        2,
-        42
-      ); // LSP7 RecipientNotification type ID
+      LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2, 42); // LSP7 RecipientNotification type ID
     const LSP8URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
-      LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(
-        2,
-        42
-      ); // LSP8 type ID
+      LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2, 42); // LSP8 type ID
 
     const delegateKeys = [URDdataKey, LSP7URDdataKey, LSP8URDdataKey];
     const delegateValues = [protocolAddress, '0x', '0x'];
@@ -51,6 +55,21 @@ export async function subscribeToUAP(
       LSP6Schema as ERC725JSONSchema[],
       upAddress,
       window.lukso
+    );
+
+    // Add SupportedStandards:UAP for protocol detection
+    const erc725UAP = new ERC725(
+      uapSchema as ERC725JSONSchema[],
+      upAddress,
+      window.lukso
+    );
+    const supportedStandardsKey = erc725UAP.encodeKeyName(
+      'SupportedStandards:UAP',
+      []
+    );
+    const supportedStandardsValue = erc725UAP.encodeValueType(
+      'bytes4',
+      '0x03309e5f'
     );
 
     // Get checksum address
@@ -86,8 +105,16 @@ export async function subscribeToUAP(
       },
     ]);
 
-    const allKeys = [...delegateKeys, ...permissionsData.keys];
-    const allValues = [...delegateValues, ...permissionsData.values];
+    const allKeys = [
+      ...delegateKeys,
+      supportedStandardsKey,
+      ...permissionsData.keys,
+    ];
+    const allValues = [
+      ...delegateValues,
+      supportedStandardsValue,
+      ...permissionsData.values,
+    ];
 
     const tx = await (upContract as any)
       .connect(signer)
@@ -219,5 +246,339 @@ export async function hasUAPManagementPermissions(
   } catch (error) {
     console.error('Error checking UAP management permissions:', error);
     return false;
+  }
+}
+
+/**
+ * Encode a tuple key-value pair following ERC725 format
+ * This matches the UP Assistants implementation for proper compatibility
+ */
+function encodeTupleKeyValue(
+  valueType: string,
+  decodedValues: any[],
+  erc725: ERC725
+): string {
+  const valueTypeParts = valueType
+    .substring(1, valueType.length - 1)
+    .split(',');
+
+  if (valueTypeParts.length !== decodedValues.length) {
+    throw new Error(
+      `Can not encode tuple key value: ${decodedValues}. Expected array of length: ${valueTypeParts.length}`
+    );
+  }
+
+  const returnValue = `0x${valueTypeParts
+    .map((valueTypePart, i) => {
+      const encodedKeyValue = erc725.encodeValueType(
+        valueTypePart,
+        decodedValues[i]
+      );
+      if (!encodedKeyValue) {
+        return '';
+      }
+      return encodedKeyValue.slice(2);
+    })
+    .join('')}`;
+
+  return returnValue;
+}
+
+/**
+ * Subscribe to UAP protocol AND configure GRAVE Forwarder Assistant in a single transaction.
+ * This is the unified function that combines UAP subscription + assistant config + screener config.
+ *
+ * @param provider - Browser provider with signer
+ * @param upAddress - Universal Profile address
+ * @param protocolAddress - UAP protocol contract address
+ * @param vaultAddress - Vault address for the forwarder assistant
+ * @param networkConfig - Network configuration with contract addresses
+ */
+export async function subscribeAndConfigureGrave(
+  provider: BrowserProvider,
+  upAddress: string,
+  protocolAddress: string,
+  vaultAddress: string,
+  networkConfig: {
+    forwarderAssistantAddress: string;
+    addressListScreenerAddress: string;
+  }
+): Promise<void> {
+  console.log("running: subscribeAndConfigureGrave")
+  try {
+    const signer = await provider.getSigner();
+    const upContract = new Contract(upAddress, universalProfileAbi, signer);
+    const abiCoder = new AbiCoder();
+
+    const erc725LSP6 = new ERC725(
+      LSP6Schema as ERC725JSONSchema[],
+      upAddress,
+      window.lukso
+    );
+    const erc725UAP = new ERC725(
+      uapSchema as ERC725JSONSchema[],
+      upAddress,
+      window.lukso
+    );
+
+    const keys: string[] = [];
+    const values: string[] = [];
+
+    // =============================================================
+    // SECTION 1: UAP Protocol Subscription Keys
+    // =============================================================
+
+    // 1. Set LSP1UniversalReceiverDelegate to UAP protocol
+    keys.push(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+    values.push(protocolAddress);
+
+    // 2-3. Clear type-specific URDs (LSP7 and LSP8)
+    const LSP7URDdataKey =
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+      LSP7_TRANSACTION_TYPE.slice(2, 42);
+    const LSP8URDdataKey =
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
+      LSP8_TRANSACTION_TYPE.slice(2, 42);
+
+    keys.push(LSP7URDdataKey);
+    values.push('0x');
+    keys.push(LSP8URDdataKey);
+    values.push('0x');
+
+    // 4. Set SupportedStandards:UAP using hardcoded key
+    keys.push(SUPPORTED_STANDARDS_UAP_KEY);
+    values.push(SUPPORTED_STANDARDS_UAP_VALUE);
+
+    // =============================================================
+    // SECTION 2: AddressPermissions (efficient - only write new entry)
+    // =============================================================
+
+    // Get current controllers list to check if protocol already exists
+    const currentPermissionsData = await erc725LSP6.getData('AddressPermissions[]');
+    const currentControllers = (currentPermissionsData.value as string[]) || [];
+
+    // Check if protocol already exists in the array
+    const protocolAlreadyExists = currentControllers.some(
+      (controller: string) =>
+        controller.toLowerCase() === protocolAddress.toLowerCase()
+    );
+
+    // Set UAP permissions (always update permissions even if already in array)
+    const uapPermissions = erc725LSP6.encodePermissions({
+      SUPER_CALL: true,
+      SUPER_TRANSFERVALUE: true,
+      ...DEFAULT_UP_URD_PERMISSIONS,
+    });
+
+    // Permissions key: AddressPermissions:Permissions:<address>
+    const permissionsKey =
+      ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] +
+      protocolAddress.slice(2).toLowerCase();
+    keys.push(permissionsKey);
+    values.push(uapPermissions);
+
+    // Only add to array if not already present
+    if (!protocolAlreadyExists) {
+      const currentLength = currentControllers.length;
+      const newLength = currentLength + 1;
+
+      // Length key: AddressPermissions[].length
+      const lengthKey = ERC725YDataKeys.LSP6['AddressPermissions[]'].length;
+      keys.push(lengthKey);
+      values.push(erc725LSP6.encodeValueType('uint128', newLength));
+
+      // New entry at index: AddressPermissions[index]
+      const indexKey =
+        ERC725YDataKeys.LSP6['AddressPermissions[]'].index +
+        currentLength.toString(16).padStart(32, '0');
+      keys.push(indexKey);
+      values.push(protocolAddress);
+
+      console.log(
+        `[UAP Subscribe] Adding protocol at index ${currentLength} (new length: ${newLength})`
+      );
+    } else {
+      console.log(
+        '[UAP Subscribe] Protocol already in AddressPermissions[], only updating permissions'
+      );
+    }
+
+    // =============================================================
+    // SECTION 3: UAP Type Config (merge with existing executives)
+    // =============================================================
+
+    // Build assistant config data (vault address encoded)
+    const assistantConfigData = abiCoder.encode(['address'], [vaultAddress]);
+
+    for (const typeId of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
+      // Read existing UAPTypeConfig for this type
+      const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
+        typeId,
+      ]);
+
+      let currentExecutives: string[] = [];
+      let executionOrder: number;
+      let executivesChanged = false;
+
+      try {
+        const currentValue = await upContract.getData(typeConfigKey);
+        if (currentValue && currentValue !== '0x') {
+          currentExecutives = erc725UAP.decodeValueType(
+            'address[]',
+            currentValue
+          ) as string[];
+        }
+      } catch (error) {
+        console.warn(
+          `Could not fetch current executives for ${typeId}:`,
+          error
+        );
+      }
+
+      // Check if forwarder assistant already exists in the array
+      const existingIndex = currentExecutives.findIndex(
+        addr =>
+          addr.toLowerCase() ===
+          networkConfig.forwarderAssistantAddress.toLowerCase()
+      );
+
+      if (existingIndex >= 0) {
+        // Assistant already exists, use its current position
+        executionOrder = existingIndex;
+        console.log(
+          `[UAP Subscribe] Forwarder assistant already at index ${executionOrder} for ${typeId}`
+        );
+      } else {
+        // New assistant, add at the end
+        executionOrder = currentExecutives.length;
+        currentExecutives.push(networkConfig.forwarderAssistantAddress);
+        executivesChanged = true;
+        console.log(
+          `[UAP Subscribe] Adding forwarder assistant at index ${executionOrder} for ${typeId}`
+        );
+      }
+
+      // 8-9. Update UAPTypeConfig if executives array changed
+      if (executivesChanged) {
+        const encodedAssistants = erc725UAP.encodeValueType(
+          'address[]',
+          currentExecutives
+        );
+        keys.push(typeConfigKey);
+        values.push(encodedAssistants);
+      }
+
+      // 10-11. Set UAPExecutiveConfig for the forwarder assistant
+      const executiveConfigKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveConfig:<bytes32>:<uint256>',
+        [typeId, executionOrder.toString()]
+      );
+
+      const execData = encodeTupleKeyValue(
+        '(address,bytes)',
+        [networkConfig.forwarderAssistantAddress, assistantConfigData],
+        erc725UAP
+      );
+
+      keys.push(executiveConfigKey);
+      values.push(execData);
+
+      // =============================================================
+      // SECTION 4: Screeners Configuration
+      // =============================================================
+
+      // 12-15. Set UAPExecutiveScreeners array
+      const screenersKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveScreeners:<bytes32>:<uint256>',
+        [typeId, executionOrder.toString()]
+      );
+      const encodedScreeners = erc725UAP.encodeValueType('address[]', [
+        networkConfig.addressListScreenerAddress,
+      ]);
+      keys.push(screenersKey);
+      values.push(encodedScreeners);
+
+      // Set AND logic for screeners
+      const logicKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+        [typeId, executionOrder.toString()]
+      );
+      keys.push(logicKey);
+      values.push('0x01'); // AND logic = true
+
+      // 16-19. Set UAPScreenerConfig for Address List Screener
+      const screenerOrder = executionOrder * 1000 + 0; // First screener
+
+      const screenerConfigKey = erc725UAP.encodeKeyName(
+        'UAPScreenerConfig:<bytes32>:<uint256>',
+        [typeId, screenerOrder.toString()]
+      );
+
+      // Config: returnValueWhenInList = false (addresses in list should FAIL screening = go to UP)
+      const screenerConfigBytes = abiCoder.encode(['bool'], [false]);
+
+      // Manual byte packing: executive address + screener address + config data
+      const executiveBytes = networkConfig.forwarderAssistantAddress
+        .toLowerCase()
+        .replace('0x', '');
+      const screenerBytes = networkConfig.addressListScreenerAddress
+        .toLowerCase()
+        .replace('0x', '');
+      const configBytes = screenerConfigBytes.replace('0x', '');
+      const screenerConfigValue =
+        '0x' + executiveBytes + screenerBytes + configBytes;
+
+      keys.push(screenerConfigKey);
+      values.push(screenerConfigValue);
+
+      // Set UAPAddressListName
+      const listNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [typeId, screenerOrder.toString()]
+      );
+      const encodedListName = erc725UAP.encodeValueType(
+        'string',
+        'GraveSafeAssets'
+      );
+      keys.push(listNameKey);
+      values.push(encodedListName);
+    }
+
+    // =============================================================
+    // SECTION 5: Initialize empty GraveSafeAssets[] list
+    // =============================================================
+
+    // Only write if list doesn't exist yet
+    const listLengthKey = erc725UAP.encodeKeyName('GraveSafeAssets[]');
+    const existingListLength = await upContract.getData(listLengthKey);
+
+    if (!existingListLength || existingListLength === '0x') {
+      // 20. Set GraveSafeAssets[] length to 0 (empty list)
+      const listLength = erc725UAP.encodeValueType('uint256', BigInt(0));
+      keys.push(listLengthKey);
+      values.push(listLength);
+      console.log('[UAP Subscribe] Initializing empty GraveSafeAssets[] list');
+    } else {
+      console.log(
+        '[UAP Subscribe] GraveSafeAssets[] already exists, preserving existing list'
+      );
+    }
+
+    // =============================================================
+    // Execute single setDataBatch transaction
+    // =============================================================
+
+    console.log(`[UAP Subscribe] Writing ${keys.length} keys in single tx`);
+    console.log('[UAP Subscribe] Keys:', keys);
+
+    const tx = await upContract.setDataBatch(keys, values);
+    await tx.wait();
+
+    console.log(
+      '[UAP Subscribe] Successfully subscribed to UAP and configured GRAVE'
+    );
+  } catch (error) {
+    console.error('Error in subscribeAndConfigureGrave:', error);
+    throw error;
   }
 }

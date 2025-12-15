@@ -13,15 +13,32 @@ import {
   IconButton,
   VStack,
   HStack,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
-import { BrowserProvider, isAddress } from 'ethers';
+import { FaCheckCircle, FaPlus, FaTrash, FaChevronDown } from 'react-icons/fa';
+import { BrowserProvider, isAddress, Contract } from 'ethers';
+import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { ZERO_ADDRESS } from '@/constants/addresses';
 import { formatAddress } from '@/utils/tokenUtils';
-import { subscribeToUAP, unsubscribeFromUAP } from '@/utils/uapSubscription';
+import {
+  subscribeToUAP,
+  unsubscribeFromUAP,
+  subscribeAndConfigureGrave,
+} from '@/utils/uapSubscription';
 import {
   isVaultRegistered,
   registerVaultWithUP,
@@ -29,7 +46,10 @@ import {
   deployVault,
 } from '@/utils/vaultCreation';
 import { updateBECPermissions } from '@/utils/urdUtils';
-import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
+import {
+  getForwarderAssistantConfig,
+  removeForwarderAssistant,
+} from '@/utils/assistantConfig';
 import VaultURDChecker from './VaultURDChecker';
 
 const GraveSubscription: React.FC = () => {
@@ -65,12 +85,23 @@ const GraveSubscription: React.FC = () => {
   // Vault URD status tracking
   const [vaultHasURD, setVaultHasURD] = useState<boolean>(true); // Default to true to not block initially
 
-  // Phase tracking
-  // Phase 0: Give permissions
-  // Phase 1: Subscribe to UAP
-  // Phase 2: Configure GRAVE
-  const [currentPhase, setCurrentPhase] = useState<number>(0);
+  // Step tracking (renamed from Phase for clarity)
+  // Step 0: Grant BEC permissions
+  // Step 1: Select/Create vault + validate URD
+  // Step 2: Subscribe to UAP with defaults
+  // Step 3: Configure filters
+  const [currentStep, setCurrentStep] = useState<number>(0);
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
+  const [vaultSelected, setVaultSelected] = useState<boolean>(false);
+  const [subscriptionComplete, setSubscriptionComplete] =
+    useState<boolean>(false);
+
+  // Modal state for UAP deactivation confirmation
+  const {
+    isOpen: isDeactivateUAPModalOpen,
+    onOpen: onOpenDeactivateUAPModal,
+    onClose: onCloseDeactivateUAPModal,
+  } = useDisclosure();
 
   // Fetch available vaults when component mounts or address changes
   useEffect(() => {
@@ -83,12 +114,17 @@ const GraveSubscription: React.FC = () => {
         const vaults = await getRegisteredVaults(provider, address);
 
         // Deduplicate vaults (case-insensitive) to avoid React key warnings
-        let uniqueVaults = vaults.filter((vault, index, self) =>
-          index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
+        let uniqueVaults = vaults.filter(
+          (vault, index, self) =>
+            index ===
+            self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
         );
 
         // Add legacy GRAVE vault to the list if it exists and isn't already included
-        if (graveVault && !uniqueVaults.some(v => v.toLowerCase() === graveVault.toLowerCase())) {
+        if (
+          graveVault &&
+          !uniqueVaults.some(v => v.toLowerCase() === graveVault.toLowerCase())
+        ) {
           console.log('[GRAVE UI] Adding legacy vault to list:', graveVault);
           uniqueVaults = [...uniqueVaults, graveVault];
         }
@@ -120,10 +156,14 @@ const GraveSubscription: React.FC = () => {
         });
 
         // Find the exact vault from uniqueVaults that matches the config (case-insensitive)
-        const matchingConfigVault = existingConfig.vaultAddress &&
-          uniqueVaults.find(v => v.toLowerCase() === existingConfig.vaultAddress!.toLowerCase());
+        const matchingConfigVault =
+          existingConfig.vaultAddress &&
+          uniqueVaults.find(
+            v => v.toLowerCase() === existingConfig.vaultAddress!.toLowerCase()
+          );
 
-        const matchingLegacyVault = graveVault &&
+        const matchingLegacyVault =
+          graveVault &&
           uniqueVaults.find(v => v.toLowerCase() === graveVault.toLowerCase());
 
         console.log('[GRAVE UI] Matched vaults:', {
@@ -132,15 +172,24 @@ const GraveSubscription: React.FC = () => {
         });
 
         if (matchingConfigVault) {
-          console.log('[GRAVE UI] ✅ Selecting vault from config:', matchingConfigVault);
+          console.log(
+            '[GRAVE UI] ✅ Selecting vault from config:',
+            matchingConfigVault
+          );
           setSelectedVault(matchingConfigVault);
         } else if (matchingLegacyVault) {
           // If legacy GRAVE vault exists and is in owned vaults, select it
-          console.log('[GRAVE UI] ✅ Selecting legacy GRAVE vault:', matchingLegacyVault);
+          console.log(
+            '[GRAVE UI] ✅ Selecting legacy GRAVE vault:',
+            matchingLegacyVault
+          );
           setSelectedVault(matchingLegacyVault);
         } else if (uniqueVaults.length > 0) {
           // Otherwise, select first available vault if any exist
-          console.log('[GRAVE UI] ⚠️ Fallback to first vault:', uniqueVaults[0]);
+          console.log(
+            '[GRAVE UI] ⚠️ Fallback to first vault:',
+            uniqueVaults[0]
+          );
           setSelectedVault(uniqueVaults[0]);
         } else {
           // No vaults available - user will need to create one
@@ -198,24 +247,35 @@ const GraveSubscription: React.FC = () => {
             // Match case-insensitively with availableVaults to ensure correct display
             if (existingConfig.vaultAddress) {
               const matchingVault = availableVaults.find(
-                v => v.toLowerCase() === existingConfig.vaultAddress!.toLowerCase()
+                v =>
+                  v.toLowerCase() === existingConfig.vaultAddress!.toLowerCase()
               );
               if (matchingVault) {
                 setSelectedVault(matchingVault);
               } else if (availableVaults.length > 0) {
                 // Vault not found in available vaults, but we have vaults
                 // This shouldn't happen, but fallback to first vault
-                console.warn('[GRAVE] Config vault not found in available vaults:', existingConfig.vaultAddress);
+                console.warn(
+                  '[GRAVE] Config vault not found in available vaults:',
+                  existingConfig.vaultAddress
+                );
                 setSelectedVault(availableVaults[0]);
               }
             }
-          } else if (setupType === 'legacy' && graveVault && availableVaults.length > 0) {
+          } else if (
+            setupType === 'legacy' &&
+            graveVault &&
+            availableVaults.length > 0
+          ) {
             // For legacy users with no existing config, auto-select the legacy vault
             const matchingLegacyVault = availableVaults.find(
               v => v.toLowerCase() === graveVault.toLowerCase()
             );
             if (matchingLegacyVault) {
-              console.log('[GRAVE] Auto-selecting legacy vault for upgrade:', matchingLegacyVault);
+              console.log(
+                '[GRAVE] Auto-selecting legacy vault for upgrade:',
+                matchingLegacyVault
+              );
               setSelectedVault(matchingLegacyVault);
             }
           }
@@ -226,7 +286,15 @@ const GraveSubscription: React.FC = () => {
     };
 
     fetchExistingConfig();
-  }, [isLoadingGraveData, address, currentNetwork, hasUAPSubscription, availableVaults, setupType, graveVault]);
+  }, [
+    isLoadingGraveData,
+    address,
+    currentNetwork,
+    hasUAPSubscription,
+    availableVaults,
+    setupType,
+    graveVault,
+  ]);
 
   // Check if permissions are already granted
   useEffect(() => {
@@ -251,24 +319,74 @@ const GraveSubscription: React.FC = () => {
     checkPermissions();
   }, [address, mainUPController]);
 
-  // Determine current phase based on setup state
+  // Determine current step based on setup state (backwards compatibility)
   useEffect(() => {
-    if (!isLoadingGraveData && address) {
-      // Determine which phase we're in
-      if (!hasUAPSubscription) {
-        // If permissions not granted, show phase 0, otherwise show phase 1
-        if (!permissionsGranted) {
-          setCurrentPhase(0);
-        } else {
-          setCurrentPhase(1);
-        }
-      } else {
-        // Subscription is done - show configuration phase
-        setPermissionsGranted(true);
-        setCurrentPhase(2);
+    const determineStartingStep = async () => {
+      if (isLoadingGraveData || !address || !currentNetwork) return;
+
+      // STEP 0: Check permissions
+      if (!permissionsGranted) {
+        setCurrentStep(0);
+        return;
       }
-    }
-  }, [hasUAPSubscription, isLoadingGraveData, address, permissionsGranted]);
+
+      // STEP 1: Check UAP subscription
+      if (!hasUAPSubscription) {
+        setCurrentStep(1); // Vault selection
+        return;
+      }
+
+      // STEP 2 or 3: Check if Forwarder config exists and is complete
+      try {
+        const provider = new BrowserProvider(window.lukso);
+        const config = await getForwarderAssistantConfig(provider, address, {
+          forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+          addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
+          curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+        });
+
+        // Check if configuration is complete
+        const isComplete =
+          config.isConfigured &&
+          config.vaultAddress &&
+          config.executionOrderLSP7 !== null &&
+          config.executionOrderLSP8 !== null;
+
+        if (!isComplete) {
+          // Has UAP but no/incomplete Forwarder config - go to Step 2
+          // But first need to ensure a vault is selected
+          if (config.vaultAddress) {
+            setSelectedVault(config.vaultAddress);
+            setVaultSelected(true);
+            setVaultHasURD(true); // Assume valid if config exists
+          }
+          setCurrentStep(2);
+          setSubscriptionComplete(false);
+        } else {
+          // Has complete config - go to Step 3 (filters)
+          if (config.vaultAddress) {
+            setSelectedVault(config.vaultAddress);
+            setVaultSelected(true);
+            setVaultHasURD(true);
+          }
+          setCurrentStep(3);
+          setSubscriptionComplete(true);
+        }
+      } catch (error) {
+        console.error('Error determining starting step:', error);
+        // Default to Step 2 if we have UAP but can't read config
+        setCurrentStep(2);
+      }
+    };
+
+    determineStartingStep();
+  }, [
+    hasUAPSubscription,
+    isLoadingGraveData,
+    address,
+    currentNetwork,
+    permissionsGranted,
+  ]);
 
   // Helper functions for managing whitelist addresses
   const addWhitelistAddress = () => {
@@ -310,7 +428,24 @@ const GraveSubscription: React.FC = () => {
     return null;
   };
 
-  // Step 1: Set permissions
+  // Handler for URD status changes from VaultURDChecker
+  const handleURDStatusChange = useCallback(
+    (hasURD: boolean) => {
+      setVaultHasURD(hasURD);
+      // Only consider vault selected if URD is valid
+      setVaultSelected(hasURD && selectedVault !== '');
+    },
+    [selectedVault]
+  );
+
+  // Handler for moving from Step 1 to Step 2
+  const handleNextStep = useCallback(() => {
+    if (vaultSelected && vaultHasURD) {
+      setCurrentStep(2);
+    }
+  }, [vaultSelected, vaultHasURD]);
+
+  // Step 0: Set permissions
   const handleSetPermissions = useCallback(async () => {
     if (!address || !mainUPController || !window.lukso) {
       toast({
@@ -338,7 +473,7 @@ const GraveSubscription: React.FC = () => {
       });
 
       setPermissionsGranted(true);
-      setCurrentPhase(1); // Move to subscription phase
+      setCurrentStep(1); // Move to vault selection step
     } catch (err: any) {
       console.error('Error setting permissions:', err);
       if (!err.message?.includes('user rejected')) {
@@ -355,12 +490,19 @@ const GraveSubscription: React.FC = () => {
     }
   }, [address, mainUPController, toast]);
 
-  // Step 2: Subscribe to UAP
-  const handleSubscribe = useCallback(async () => {
-    if (!address || !currentNetwork || !window.lukso || !chainId) {
+  // Step 2: Subscribe to UAP with Complete Defaults (NEW)
+  const handleSubscribeWithDefaults = useCallback(async () => {
+    if (
+      !address ||
+      !currentNetwork ||
+      !window.lukso ||
+      !chainId ||
+      !selectedVault
+    ) {
       toast({
         title: 'Error',
-        description: 'Wallet not connected',
+        description:
+          'Missing required data. Please ensure a vault is selected.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -373,86 +515,137 @@ const GraveSubscription: React.FC = () => {
     try {
       const provider = new BrowserProvider(window.lukso);
 
-      // Step 1: Subscribe to UAP
-      await subscribeToUAP(
+      // STEP 1: Check if UAP subscription already exists
+      const alreadySubscribed = hasUAPSubscription; // from context
+
+      // STEP 2: Ensure vault is registered first (if not already)
+      const isRegistered = await isVaultRegistered(
         provider,
         address,
-        currentNetwork.protocolAddress,
-        currentNetwork.lsp1UrdVault
+        selectedVault
       );
-
-      // Step 2: Only configure Forwarder Assistant if a vault already exists
-      const vaultForConfig = selectedVault || vaultToUse || graveVault;
-
-      if (vaultForConfig) {
+      if (!isRegistered) {
         toast({
-          title: 'Protocol Installed',
-          description: 'Configuring spam protection...',
+          title: 'Registering Vault',
+          description: 'Adding vault to your profile...',
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+        });
+        await registerVaultWithUP(provider, address, selectedVault);
+      }
+
+      // STEP 3: Ensure browser extension has necessary permissions (including ADDCONTROLLER)
+      // This must be done before subscribing to UAP
+      if (mainUPController) {
+        toast({
+          title: 'Checking Permissions',
+          description: 'Ensuring your wallet has the required permissions...',
+          status: 'info',
+          duration: 2000,
+          isClosable: true,
+        });
+        await updateBECPermissions(provider, address, mainUPController);
+      }
+
+      // STEP 4: If not subscribed, use unified function (single transaction)
+      if (!alreadySubscribed) {
+        toast({
+          title: 'Setting Up Protection',
+          description:
+            'Installing UAP protocol and configuring GRAVE Spambox...',
           status: 'info',
           duration: 3000,
           isClosable: true,
         });
 
-        // Ensure vault is registered
-        const isRegistered = await isVaultRegistered(
+        // Single transaction: UAP subscription + forwarder assistant + screener config
+        await subscribeAndConfigureGrave(
           provider,
           address,
-          vaultForConfig
-        );
-        if (!isRegistered) {
-          await registerVaultWithUP(provider, address, vaultForConfig);
-        }
-
-        // Configure with default settings (empty whitelist, no curated list)
-        const { saveForwarderAssistantConfig } = await import(
-          '@/utils/assistantConfig'
-        );
-        const { supportedNetworks: allNetworks } = await import(
-          '@/constants/supportedNetworks'
-        );
-
-        await saveForwarderAssistantConfig(
-          provider,
-          address,
-          vaultForConfig,
-          [], // Empty whitelist by default
-          false, // No curated list by default
-          '', // Empty curated list address
+          currentNetwork.protocolAddress,
+          selectedVault,
           {
             forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
-            addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
-            curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
-          },
-          allNetworks,
-          chainId
+            addressListScreenerAddress:
+              currentNetwork.addressListScreenerAddress,
+          }
+        );
+      } else {
+        // STEP 5: Already subscribed - check if config needs updating
+        const existingConfig = await getForwarderAssistantConfig(
+          provider,
+          address,
+          {
+            forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+            addressListScreenerAddress:
+              currentNetwork.addressListScreenerAddress,
+            curatedListScreenerAddress:
+              currentNetwork.curatedListScreenerAddress,
+          }
         );
 
-        toast({
-          title: 'Success',
-          description: 'Spam protection is now active!',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-      } else {
-        // No vault exists yet, just show success for protocol installation
-        toast({
-          title: 'Success',
-          description: 'Protocol installed! Please configure your spambox to activate protection.',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
+        const needsConfig =
+          !existingConfig.isConfigured ||
+          !existingConfig.vaultAddress ||
+          existingConfig.vaultAddress.toLowerCase() !==
+            selectedVault.toLowerCase();
+
+        if (needsConfig) {
+          toast({
+            title: 'Configuring Spambox',
+            description: 'Setting up default configuration...',
+            status: 'info',
+            duration: 3000,
+            isClosable: true,
+          });
+
+          const { saveForwarderAssistantConfig } = await import(
+            '@/utils/assistantConfig'
+          );
+          const { supportedNetworks: allNetworks } = await import(
+            '@/constants/supportedNetworks'
+          );
+
+          await saveForwarderAssistantConfig(
+            provider,
+            address,
+            selectedVault,
+            [], // Empty whitelist (length 0, no members)
+            false, // No curated list
+            '', // Empty curated list address
+            {
+              forwarderAssistantAddress:
+                currentNetwork.forwarderAssistantAddress,
+              addressListScreenerAddress:
+                currentNetwork.addressListScreenerAddress,
+              curatedListScreenerAddress:
+                currentNetwork.curatedListScreenerAddress,
+            },
+            allNetworks,
+            chainId
+          );
+        }
       }
 
+      toast({
+        title: 'Success!',
+        description:
+          'Spambox is active with default settings. Configure filters next.',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+
       await refreshGraveData();
-      setCurrentPhase(2); // Move to configuration phase
+      setSubscriptionComplete(true);
+      setCurrentStep(3); // Move to filter configuration step
     } catch (err: any) {
-      console.error('Error subscribing:', err);
+      console.error('Error in handleSubscribeWithDefaults:', err);
       if (!err.message?.includes('user rejected')) {
         toast({
           title: 'Error',
-          description: err.message || 'Failed to enable GRAVE',
+          description: err.message || 'Failed to complete setup',
           status: 'error',
           duration: 5000,
           isClosable: true,
@@ -461,7 +654,16 @@ const GraveSubscription: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [address, currentNetwork, chainId, selectedVault, vaultToUse, graveVault, toast, refreshGraveData]);
+  }, [
+    address,
+    currentNetwork,
+    chainId,
+    selectedVault,
+    hasUAPSubscription,
+    mainUPController,
+    toast,
+    refreshGraveData,
+  ]);
 
   // Create new vault with metadata
   const handleCreateVault = useCallback(async () => {
@@ -504,8 +706,9 @@ const GraveSubscription: React.FC = () => {
       const vaults = await getRegisteredVaults(provider, address);
 
       // Deduplicate vaults (case-insensitive)
-      const uniqueVaults = vaults.filter((vault, index, self) =>
-        index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
+      const uniqueVaults = vaults.filter(
+        (vault, index, self) =>
+          index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
       );
 
       setAvailableVaults(uniqueVaults);
@@ -644,8 +847,8 @@ const GraveSubscription: React.FC = () => {
     refreshGraveData,
   ]);
 
-  // Unsubscribe handler
-  const handleUnsubscribe = useCallback(async () => {
+  // Deactivate GRAVE Forwarder Only - removes only Forwarder configuration
+  const handleDeactivateGrave = useCallback(async () => {
     if (!address || !currentNetwork || !window.lukso) {
       toast({
         title: 'Error',
@@ -662,16 +865,15 @@ const GraveSubscription: React.FC = () => {
     try {
       const provider = new BrowserProvider(window.lukso);
 
-      await unsubscribeFromUAP(
-        provider,
-        address,
-        currentNetwork.protocolAddress,
-        currentNetwork.lsp1UrdUp
-      );
+      await removeForwarderAssistant(provider, address, {
+        forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+        addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
+        curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+      });
 
       toast({
         title: 'Success',
-        description: 'Your UP left the grave. 👻🪦',
+        description: 'GRAVE Spambox deactivated successfully. 👻',
         status: 'success',
         duration: 9000,
         isClosable: true,
@@ -684,11 +886,11 @@ const GraveSubscription: React.FC = () => {
       setCuratedListAddress('');
       setUseCuratedList(false);
     } catch (err: any) {
-      console.error('Error unsubscribing:', err);
+      console.error('Error deactivating GRAVE:', err);
       if (!err.message?.includes('user rejected')) {
         toast({
           title: 'Error',
-          description: err.message || 'Failed to unsubscribe',
+          description: err.message || 'Failed to deactivate GRAVE spambox',
           status: 'error',
           duration: 5000,
           isClosable: true,
@@ -698,6 +900,185 @@ const GraveSubscription: React.FC = () => {
       setIsProcessing(false);
     }
   }, [address, currentNetwork, toast, refreshGraveData]);
+
+  // Deactivate UAP Completely - removes all UAP configuration including all executive assistants
+  const handleDeactivateUAP = useCallback(async () => {
+    if (!address || !currentNetwork || !window.lukso || !chainId) {
+      toast({
+        title: 'Error',
+        description: 'Wallet not connected',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const provider = new BrowserProvider(window.lukso);
+      const signer = await provider.getSigner();
+      const upContract = new Contract(address, universalProfileAbi, signer);
+
+      const { ERC725 } = await import('@erc725/erc725.js');
+      const uapSchema = (await import('@/schemas/UAP.json')).default;
+      const erc725UAP = new ERC725(uapSchema as any, address, window.lukso);
+
+      const keys: string[] = [];
+      const values: string[] = [];
+
+      // Transaction types to clear
+      const LSP7_TRANSACTION_TYPE =
+        '0xa124442e1820e52d1e5a85c5ea8cb3cd0ea171df8e3a62be0f4f5a16fa7fee79';
+      const LSP8_TRANSACTION_TYPE =
+        '0xc7a120a42b6057a0cbed111fcdea5093c2b7f5db2f9e3a9ec3a8f09c4dad5e13';
+      const txTypes = [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE];
+
+      // 1. Clear SupportedStandards:UAP
+      keys.push(erc725UAP.encodeKeyName('SupportedStandards:UAP', []));
+      values.push('0x');
+
+      // 2. For each transaction type, clear all UAP keys
+      for (const txType of txTypes) {
+        // Get current executives to know how many to clear
+        const typeConfigKey = erc725UAP.encodeKeyName(
+          'UAPTypeConfig:<bytes32>',
+          [txType]
+        );
+
+        let currentExecutives: string[] = [];
+        try {
+          const currentValue = await upContract.getData(typeConfigKey);
+          if (currentValue && currentValue !== '0x') {
+            currentExecutives = erc725UAP.decodeValueType(
+              'address[]',
+              currentValue
+            ) as string[];
+          }
+        } catch (error) {
+          console.warn('Could not fetch current executives:', error);
+        }
+
+        // Clear UAPTypeConfig
+        keys.push(typeConfigKey);
+        values.push('0x');
+
+        // Clear all executive configs and screeners
+        for (let i = 0; i < currentExecutives.length; i++) {
+          // Clear UAPExecutiveConfig
+          keys.push(
+            erc725UAP.encodeKeyName('UAPExecutiveConfig:<bytes32>:<uint256>', [
+              txType,
+              i.toString(),
+            ])
+          );
+          values.push('0x');
+
+          // Clear UAPExecutiveScreeners
+          keys.push(
+            erc725UAP.encodeKeyName(
+              'UAPExecutiveScreeners:<bytes32>:<uint256>',
+              [txType, i.toString()]
+            )
+          );
+          values.push('0x');
+
+          // Clear UAPExecutiveScreenersANDLogic
+          keys.push(
+            erc725UAP.encodeKeyName(
+              'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+              [txType, i.toString()]
+            )
+          );
+          values.push('0x');
+
+          // For each screener, calculate screener order and clear configs
+          // Note: We'll clear up to 5 possible screeners per executive (reasonable max)
+          for (let j = 0; j < 5; j++) {
+            const screenerOrder = i * 1000 + j;
+
+            // Clear UAPScreenerConfig
+            keys.push(
+              erc725UAP.encodeKeyName('UAPScreenerConfig:<bytes32>:<uint256>', [
+                txType,
+                screenerOrder.toString(),
+              ])
+            );
+            values.push('0x');
+
+            // Clear UAPAddressListName
+            keys.push(
+              erc725UAP.encodeKeyName(
+                'UAPAddressListName:<bytes32>:<uint256>',
+                [txType, screenerOrder.toString()]
+              )
+            );
+            values.push('0x');
+          }
+        }
+      }
+
+      // 3. Clear UAPRevertOnFailure (singleton key)
+      keys.push(
+        '0x8631ee7d1d9475e6b2c38694122192970d91cafd1c64176ecc23849e17441672'
+      );
+      values.push('0x');
+
+      // 4. Unsubscribe from UAP protocol (remove URD and permissions)
+      await unsubscribeFromUAP(
+        provider,
+        address,
+        currentNetwork.protocolAddress,
+        currentNetwork.lsp1UrdUp
+      );
+
+      // 5. Execute batch transaction to clear all UAP data keys
+      if (keys.length > 0) {
+        const tx = await upContract.setDataBatch(keys, values);
+        await tx.wait();
+      }
+
+      toast({
+        title: 'UAP Deactivated',
+        description:
+          'Universal Assistant Protocol has been completely deactivated. All executive assistants removed.',
+        status: 'success',
+        duration: 9000,
+        isClosable: true,
+      });
+
+      onCloseDeactivateUAPModal();
+      await refreshGraveData();
+
+      // Reset all configuration
+      setWhitelistAddresses([]);
+      setCuratedListAddress('');
+      setUseCuratedList(false);
+      setSubscriptionComplete(false);
+      setCurrentStep(0); // Reset to initial step
+    } catch (err: any) {
+      console.error('Error deactivating UAP:', err);
+      if (!err.message?.includes('user rejected')) {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to deactivate UAP',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    address,
+    currentNetwork,
+    chainId,
+    toast,
+    refreshGraveData,
+    onCloseDeactivateUAPModal,
+  ]);
 
   // Migrate to default list name
   const handleMigrateToDefaultListName = useCallback(async () => {
@@ -753,7 +1134,9 @@ const GraveSubscription: React.FC = () => {
       const listsDiffer =
         listData.lsp7Addresses.length !== listData.lsp8Addresses.length ||
         !listData.lsp7Addresses.every(addr =>
-          listData.lsp8Addresses.some(a => a.toLowerCase() === addr.toLowerCase())
+          listData.lsp8Addresses.some(
+            a => a.toLowerCase() === addr.toLowerCase()
+          )
         );
 
       if (listsDiffer) {
@@ -833,8 +1216,8 @@ const GraveSubscription: React.FC = () => {
     );
   }
 
-  // Phase 0: Give Permissions View
-  if (currentPhase === 0 && !permissionsGranted) {
+  // Step 0: Give Permissions View
+  if (currentStep === 0 && !permissionsGranted) {
     return (
       <Box width="100%">
         <Text
@@ -885,9 +1268,6 @@ const GraveSubscription: React.FC = () => {
               </ChakraLink>
             )}
           </Text>
-          <Text fontSize="sm" color="dark.purple.500" mb={4}>
-            This can also be done manually through the UP Extension.
-          </Text>
 
           <Button
             onClick={handleSetPermissions}
@@ -907,8 +1287,8 @@ const GraveSubscription: React.FC = () => {
     );
   }
 
-  // Phase 1: Subscribe to UAP View
-  if (currentPhase === 1 && !hasUAPSubscription) {
+  // Step 1: Vault Selection View (NEW)
+  if (currentStep === 1 && !hasUAPSubscription) {
     return (
       <Box width="100%">
         <Text
@@ -918,14 +1298,16 @@ const GraveSubscription: React.FC = () => {
           color="dark.purple.400"
           mb={4}
         >
-          {setupType === 'legacy' ? 'UPGRADE YOUR GRAVE SPAMBOX' : 'SET UP YOUR GRAVE SPAMBOX'}
+          {setupType === 'legacy'
+            ? 'UPGRADE YOUR GRAVE SPAMBOX'
+            : 'SET UP YOUR GRAVE SPAMBOX'}
         </Text>
 
         <Text fontSize="16px" color="dark.purple.500" mb={4}>
-          In order to engage the GRAVE you must first subscribe to the Universal
-          Assistant Protocol through your 🆙
+          Select or create a vault to serve as your spambox
         </Text>
 
+        {/* Step 1: Permissions Set (Completed) */}
         <Box
           p={6}
           bg="dark.purple.200"
@@ -934,7 +1316,7 @@ const GraveSubscription: React.FC = () => {
           border="2px solid"
           borderColor="dark.purple.400"
         >
-          <Flex align="center" mb={3}>
+          <Flex align="center">
             <Text fontSize="24px" mr={2}>
               🪦
             </Text>
@@ -955,6 +1337,7 @@ const GraveSubscription: React.FC = () => {
           </Flex>
         </Box>
 
+        {/* Step 2: Vault Selection (Current) */}
         <Box
           p={6}
           bg="dark.purple.200"
@@ -968,115 +1351,51 @@ const GraveSubscription: React.FC = () => {
             fontWeight="bold"
             fontFamily="Bungee"
             color="dark.purple.500"
-            mb={3}
+            mb={4}
           >
-            2. Install the Universal Assistant Protocol on your 🆙
-          </Text>
-          <Text fontSize="sm" color="dark.purple.500" mb={4}>
-            Enable spam protection on your Universal Profile.
+            2. Select or Create a Spambox Vault
           </Text>
 
-          <Button
-            onClick={handleSubscribe}
-            isLoading={isProcessing}
-            isDisabled={isProcessing}
-            colorScheme="orange"
-            size="lg"
-            fontFamily="Bungee"
-            fontSize="16px"
-            fontWeight="400"
-            width="full"
-          >
-            {isProcessing
-              ? setupType === 'legacy' ? 'UPGRADING...' : 'INSTALLING...'
-              : setupType === 'legacy' ? 'UPGRADE PROTOCOL' : 'INSTALL PROTOCOL'}
-          </Button>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Phase 2: Configure GRAVE (settings panel)
-  return (
-    <Flex width="100%" flexDirection="column" gap={6} textAlign={"left"}>
-      <Text
-        fontSize="20px"
-        fontWeight="bold"
-        fontFamily="Bungee"
-        color="dark.purple.400"
-      >
-        CONFIGURE YOUR GRAVE SPAMBOX
-      </Text>
-
-      {/* Section A: Vault Selection */}
-      <Box
-        p={6}
-        bg="dark.purple.200"
-        borderRadius="lg"
-        border="2px solid"
-        borderColor="dark.purple.400"
-      >
-        <Flex align="start" justify="space-between" mb={4}>
-          <Box>
-            <Text
-              fontSize="lg"
-              fontWeight="bold"
-              color="dark.purple.500"
-              fontFamily="Bungee"
-            >
-              Select a Spambox
+          <Flex flexDirection="column" gap={3} mb={4}>
+            <Text fontSize="sm" color="dark.purple.500" fontWeight="bold">
+              Select a vault to be your spambox
             </Text>
-          </Box>
-        </Flex>
+            {isLoadingVaults ? (
+              <Text fontSize="sm" color="dark.purple.500">
+                Loading vaults...
+              </Text>
+            ) : availableVaults.length > 0 ? (
+              <Select
+                value={selectedVault}
+                onChange={e => {
+                  setSelectedVault(e.target.value);
+                  setVaultSelected(false); // Reset until URD is validated
+                }}
+                fontFamily="mono"
+                size="md"
+                color="dark.purple.500"
+                borderColor="dark.purple.500"
+                _focus={{ borderColor: 'dark.purple.400' }}
+                bg="white"
+              >
+                {availableVaults.map((vault, idx) => {
+                  const isLegacyVault =
+                    graveVault &&
+                    vault.toLowerCase() === graveVault.toLowerCase();
+                  const label = `Vault ${idx + 1}: ${formatAddress(vault)}${isLegacyVault ? ' (Legacy Vault)' : ''}`;
+                  return (
+                    <option key={vault} value={vault}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </Select>
+            ) : (
+              <Text fontSize="sm" color="dark.purple.500">
+                ⚠️ No vaults found. Please create one below.
+              </Text>
+            )}
 
-        <Flex flexDirection="column" gap={3} maxWidth="550px" mb={3}>
-          <Flex flexDirection="row" gap={4} align="center">
-            <Text
-              fontWeight="bold"
-              fontSize="sm"
-              color="dark.purple.500"
-              w="40%"
-            >
-              Select or create a vault to be your spambox
-            </Text>
-            <Box w="60%">
-              {isLoadingVaults ? (
-                <Text fontSize="sm" color="dark.purple.500">
-                  Loading vaults...
-                </Text>
-              ) : availableVaults.length > 0 ? (
-                <Select
-                  value={selectedVault}
-                  onChange={e => setSelectedVault(e.target.value)}
-                  fontFamily="mono"
-                  size="sm"
-                  color="dark.purple.500"
-                  borderColor="dark.purple.500"
-                  _focus={{ borderColor: 'dark.purple.400' }}
-                  bg="white"
-                >
-                  {availableVaults.map((vault, idx) => {
-                    const isLegacyVault = graveVault && vault.toLowerCase() === graveVault.toLowerCase();
-                    const label = `Vault ${idx + 1}: ${formatAddress(vault)}${isLegacyVault ? ' (Legacy Vault)' : ''}`;
-                    return (
-                      <option key={vault} value={vault}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </Select>
-              ) : (
-                <Flex flexDirection={"row"}>
-                  <Text fontSize="sm" color="dark.purple.500">
-                   ⚠️ No vaults found
-                  </Text>
-                </Flex>
-              )}
-            </Box>
-          </Flex>
-
-          {/* Always show create vault button */}
-          <Flex justifyContent="flex-end">
             <Button
               onClick={handleCreateVault}
               isLoading={isCreatingVault}
@@ -1089,15 +1408,219 @@ const GraveSubscription: React.FC = () => {
               {isCreatingVault ? 'Creating...' : 'Create New Vault'}
             </Button>
           </Flex>
-        </Flex>
-      </Box>
 
-      {/* Vault URD Checker - Critical validation */}
-      <VaultURDChecker
-        vaultAddress={selectedVault || null}
-        networkConfig={currentNetwork}
-        onURDStatusChange={setVaultHasURD}
-      />
+          {/* Vault URD Checker */}
+          {selectedVault && (
+            <Box mb={4}>
+              <VaultURDChecker
+                vaultAddress={selectedVault}
+                networkConfig={currentNetwork}
+                onURDStatusChange={handleURDStatusChange}
+              />
+            </Box>
+          )}
+
+          <Button
+            onClick={handleNextStep}
+            isDisabled={!vaultSelected || !vaultHasURD}
+            colorScheme="orange"
+            size="lg"
+            fontFamily="Bungee"
+            fontSize="16px"
+            fontWeight="400"
+            width="full"
+          >
+            NEXT
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Step 2: Subscribe with Defaults (NEW)
+  if (currentStep === 2 && !subscriptionComplete) {
+    return (
+      <Box width="100%">
+        <Text
+          fontSize="20px"
+          fontWeight="bold"
+          fontFamily="Bungee"
+          color="dark.purple.400"
+          mb={4}
+        >
+          {setupType === 'legacy'
+            ? 'UPGRADE YOUR GRAVE SPAMBOX'
+            : 'SET UP YOUR GRAVE SPAMBOX'}
+        </Text>
+
+        <Text fontSize="16px" color="dark.purple.500" mb={4}>
+          Install the Universal Assistant Protocol with default spam protection
+        </Text>
+
+        {/* Step 1: Permissions Set (Completed) */}
+        <Box
+          p={6}
+          bg="dark.purple.200"
+          borderRadius="lg"
+          mb={4}
+          border="2px solid"
+          borderColor="dark.purple.400"
+        >
+          <Flex align="center">
+            <Text fontSize="24px" mr={2}>
+              🪦
+            </Text>
+            <Text
+              fontSize="18px"
+              fontWeight="bold"
+              fontFamily="Bungee"
+              color="dark.purple.500"
+            >
+              1. Permissions Set
+            </Text>
+            <Box ml="auto">
+              <FaCheckCircle
+                color="var(--chakra-colors-dark-purple-500)"
+                size={20}
+              />
+            </Box>
+          </Flex>
+        </Box>
+
+        {/* Step 2: Vault Selected (Completed) */}
+        <Box
+          p={6}
+          bg="dark.purple.200"
+          borderRadius="lg"
+          mb={4}
+          border="2px solid"
+          borderColor="dark.purple.400"
+        >
+          <Flex align="center">
+            <Text fontSize="24px" mr={2}>
+              🗄️
+            </Text>
+            <Text
+              fontSize="18px"
+              fontWeight="bold"
+              fontFamily="Bungee"
+              color="dark.purple.500"
+            >
+              2. Vault Selected: {formatAddress(selectedVault)}
+            </Text>
+            <Box ml="auto">
+              <FaCheckCircle
+                color="var(--chakra-colors-dark-purple-500)"
+                size={20}
+              />
+            </Box>
+          </Flex>
+        </Box>
+
+        {/* Step 3: Install Protocol (Current) */}
+        <Box
+          p={6}
+          bg="dark.purple.200"
+          borderRadius="lg"
+          mb={4}
+          border="2px solid"
+          borderColor="dark.purple.400"
+        >
+          <Text
+            fontSize="18px"
+            fontWeight="bold"
+            fontFamily="Bungee"
+            color="dark.purple.500"
+            mb={4}
+          >
+            3. Install Universal Assistant Protocol & ACTIVATE SPAM PROTECTION
+          </Text>
+
+          <Text fontSize="sm" color="dark.purple.500" mb={3}>
+            This will:
+          </Text>
+          <Box as="ul" pl={6} mb={4}>
+            <Box as="li" fontSize="sm" color="dark.purple.500" mb={1}>
+              Enable spam protection for your Universal Profile
+            </Box>
+            <Box as="li" fontSize="sm" color="dark.purple.500" mb={1}>
+              Treat all incoming assets as spam and send them to your GRAVE
+              Spambox
+            </Box>
+            <Box as="li" fontSize="sm" color="dark.purple.500" mb={1}>
+              Give you the ability to subscribe to community curated lists of
+              non-spam assets that get sent to your Universal Profile rather
+              than getting treated as spam
+            </Box>
+            <Box as="li" fontSize="sm" color="dark.purple.500" mb={1}>
+              Provide you with the ability to manually add assets as exceptions
+              that won't get treated as spam
+            </Box>
+          </Box>
+
+          <Text fontSize="sm" color="dark.purple.500" mb={4} fontStyle="italic">
+            You can configure further configure your spam filters once this step
+            is complete
+          </Text>
+
+          <Button
+            onClick={handleSubscribeWithDefaults}
+            isLoading={isProcessing}
+            isDisabled={isProcessing}
+            colorScheme="orange"
+            size="lg"
+            fontFamily="Bungee"
+            fontSize="16px"
+            fontWeight="400"
+            width="full"
+          >
+            {isProcessing
+              ? setupType === 'legacy'
+                ? 'UPGRADING...'
+                : 'INSTALLING...'
+              : setupType === 'legacy'
+                ? 'UPGRADE PROTOCOL'
+                : 'INSTALL PROTOCOL'}
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Step 3: Configure Filters (final step - modified from old Phase 2)
+  return (
+    <Flex width="100%" flexDirection="column" gap={6} textAlign={'left'}>
+      <Text
+        fontSize="20px"
+        fontWeight="bold"
+        fontFamily="Bungee"
+        color="dark.purple.400"
+      >
+        CONFIGURE SPAMBOX FILTERS
+      </Text>
+
+      {/* Setup Complete Message */}
+      <Box
+        p={4}
+        bg="green.50"
+        borderRadius="lg"
+        border="2px solid"
+        borderColor="green.300"
+      >
+        <Flex align="center" mb={2}>
+          <FaCheckCircle color="var(--chakra-colors-green-500)" size={20} />
+          <Text fontSize="md" fontWeight="bold" color="green.700" ml={2}>
+            Setup Complete! Spambox is Active
+          </Text>
+        </Flex>
+        <Text fontSize="sm" color="green.600">
+          Your spambox is protecting your UP! All incoming assets will be sent
+          to your vault at{' '}
+          <Text as="span" fontFamily="mono" fontWeight="bold">
+            {formatAddress(selectedVault)}
+          </Text>
+        </Text>
+      </Box>
 
       {/* Section B: Transaction Screening */}
       <Box
@@ -1106,10 +1629,14 @@ const GraveSubscription: React.FC = () => {
         borderRadius="lg"
         border="2px solid"
         borderColor="dark.purple.400"
-        opacity={vaultHasURD ? 1 : 0.5}
-        pointerEvents={vaultHasURD ? 'auto' : 'none'}
       >
-        <Flex width="100%" flexDirection="column" alignItems={"flex-start"} gap={3} pb={4}>
+        <Flex
+          width="100%"
+          flexDirection="column"
+          alignItems={'flex-start'}
+          gap={3}
+          pb={4}
+        >
           <Text
             fontSize="20px"
             fontWeight="bold"
@@ -1119,8 +1646,8 @@ const GraveSubscription: React.FC = () => {
             Spambox Filters
           </Text>
           <Text fontSize="sm" color="dark.purple.500">
-          By default all assets are treated as spam and sent to the GRAVE.
-          Below you can create exceptions.
+            By default all assets are treated as spam and sent to the GRAVE.
+            Below you can create exceptions.
           </Text>
         </Flex>
 
@@ -1139,7 +1666,9 @@ const GraveSubscription: React.FC = () => {
               color="dark.purple.500"
               mb={2}
             >
-              Add a curated list of digital assets that are safe (NOT spam). These assets will stay in your UP! and not get sent to the GRAVE Spambox.
+              Add a curated list of digital assets that are safe (NOT spam).
+              These assets will stay in your UP! and not get sent to the GRAVE
+              Spambox.
             </Text>
             <Input
               placeholder="0x... (curated list contract address - optional)"
@@ -1151,40 +1680,47 @@ const GraveSubscription: React.FC = () => {
               bg="white"
               borderColor={
                 curatedListAddress.trim() !== '' &&
-                (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
+                (!isAddress(curatedListAddress) ||
+                  curatedListAddress === ZERO_ADDRESS)
                   ? 'red.300'
                   : 'dark.purple.300'
               }
               _hover={{
-                borderColor: curatedListAddress.trim() !== '' &&
-                            (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
-                  ? 'red.400'
-                  : 'dark.purple.400'
+                borderColor:
+                  curatedListAddress.trim() !== '' &&
+                  (!isAddress(curatedListAddress) ||
+                    curatedListAddress === ZERO_ADDRESS)
+                    ? 'red.400'
+                    : 'dark.purple.400',
               }}
               _focus={{
-                borderColor: curatedListAddress.trim() !== '' &&
-                            (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
-                  ? 'red.500'
-                  : 'dark.purple.500',
-                boxShadow: curatedListAddress.trim() !== '' &&
-                          (!isAddress(curatedListAddress) || curatedListAddress === ZERO_ADDRESS)
-                  ? '0 0 0 1px var(--chakra-colors-red-500)'
-                  : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                borderColor:
+                  curatedListAddress.trim() !== '' &&
+                  (!isAddress(curatedListAddress) ||
+                    curatedListAddress === ZERO_ADDRESS)
+                    ? 'red.500'
+                    : 'dark.purple.500',
+                boxShadow:
+                  curatedListAddress.trim() !== '' &&
+                  (!isAddress(curatedListAddress) ||
+                    curatedListAddress === ZERO_ADDRESS)
+                    ? '0 0 0 1px var(--chakra-colors-red-500)'
+                    : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
               }}
             />
             {curatedListAddress.trim() !== '' &&
-             curatedListAddress === ZERO_ADDRESS && (
-              <Text fontSize="xs" color="red.500" mt={1}>
-                Zero address is not valid for curated list contract
-              </Text>
-            )}
+              curatedListAddress === ZERO_ADDRESS && (
+                <Text fontSize="xs" color="red.500" mt={1}>
+                  Zero address is not valid for curated list contract
+                </Text>
+              )}
             {curatedListAddress.trim() !== '' &&
-             curatedListAddress !== ZERO_ADDRESS &&
-             !isAddress(curatedListAddress) && (
-              <Text fontSize="xs" color="red.500" mt={1}>
-                Invalid curated list contract address
-              </Text>
-            )}
+              curatedListAddress !== ZERO_ADDRESS &&
+              !isAddress(curatedListAddress) && (
+                <Text fontSize="xs" color="red.500" mt={1}>
+                  Invalid curated list contract address
+                </Text>
+              )}
           </Box>
 
           {/* AND Logic Indicator */}
@@ -1235,17 +1771,29 @@ const GraveSubscription: React.FC = () => {
               >
                 <Flex align="start" justify="space-between" gap={3}>
                   <Box flex="1">
-                    <Text fontSize="sm" color="orange.800" fontWeight="bold" mb={1}>
+                    <Text
+                      fontSize="sm"
+                      color="orange.800"
+                      fontWeight="bold"
+                      mb={1}
+                    >
                       ⚠️ Non-Standard List Name
                     </Text>
                     <Text fontSize="xs" color="orange.700" mb={1}>
-                      Using: <Text as="span" fontFamily="mono" fontWeight="bold">{listName}</Text>
+                      Using:{' '}
+                      <Text as="span" fontFamily="mono" fontWeight="bold">
+                        {listName}
+                      </Text>
                     </Text>
                     <Text fontSize="xs" color="orange.700" mb={2}>
-                      Recommended: <Text as="span" fontFamily="mono" fontWeight="bold">GraveSafeAssets</Text>
+                      Recommended:{' '}
+                      <Text as="span" fontFamily="mono" fontWeight="bold">
+                        GraveSafeAssets
+                      </Text>
                     </Text>
                     <Text fontSize="xs" color="orange.600">
-                      Migrating to the recommended name saves storage and gas costs.
+                      Migrating to the recommended name saves storage and gas
+                      costs.
                     </Text>
                   </Box>
                   <Button
@@ -1269,18 +1817,33 @@ const GraveSubscription: React.FC = () => {
                   <Input
                     placeholder="0x... (address)"
                     value={address}
-                    onChange={(e) => updateWhitelistAddress(index, e.target.value)}
+                    onChange={e =>
+                      updateWhitelistAddress(index, e.target.value)
+                    }
                     fontFamily="mono"
                     size="sm"
                     color="dark.purple.600"
                     bg="white"
-                    borderColor={address.trim() !== '' && !isAddress(address.trim()) ? 'red.300' : 'dark.purple.300'}
-                    _hover={{ borderColor: address.trim() !== '' && !isAddress(address.trim()) ? 'red.400' : 'dark.purple.400' }}
+                    borderColor={
+                      address.trim() !== '' && !isAddress(address.trim())
+                        ? 'red.300'
+                        : 'dark.purple.300'
+                    }
+                    _hover={{
+                      borderColor:
+                        address.trim() !== '' && !isAddress(address.trim())
+                          ? 'red.400'
+                          : 'dark.purple.400',
+                    }}
                     _focus={{
-                      borderColor: address.trim() !== '' && !isAddress(address.trim()) ? 'red.500' : 'dark.purple.500',
-                      boxShadow: address.trim() !== '' && !isAddress(address.trim())
-                        ? '0 0 0 1px var(--chakra-colors-red-500)'
-                        : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                      borderColor:
+                        address.trim() !== '' && !isAddress(address.trim())
+                          ? 'red.500'
+                          : 'dark.purple.500',
+                      boxShadow:
+                        address.trim() !== '' && !isAddress(address.trim())
+                          ? '0 0 0 1px var(--chakra-colors-red-500)'
+                          : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
                     }}
                   />
                   <IconButton
@@ -1302,7 +1865,9 @@ const GraveSubscription: React.FC = () => {
                 colorScheme="purple"
                 width="full"
               >
-                {whitelistAddresses.length === 0 ? 'Add Address' : 'Add Another Address'}
+                {whitelistAddresses.length === 0
+                  ? 'Add Address'
+                  : 'Add Another Address'}
               </Button>
             </VStack>
           </Box>
@@ -1314,34 +1879,113 @@ const GraveSubscription: React.FC = () => {
         <Button
           onClick={handleActivateGrave}
           isLoading={isProcessing}
-          isDisabled={isProcessing || !selectedVault || !vaultHasURD || validateConfiguration() !== null}
+          isDisabled={isProcessing || validateConfiguration() !== null}
           color="white"
           size="md"
           fontFamily="Bungee"
           fontSize="16px"
           fontWeight="400"
         >
-          {isProcessing
-            ? 'SAVING...'
-            : setupType === 'legacy'
-              ? 'UPGRADE & ACTIVATE SPAMBOX'
-              : 'SAVE & ACTIVATE SPAMBOX'}
+          {isProcessing ? 'SAVING...' : 'SAVE CHANGES'}
         </Button>
-        <Button
-          onClick={handleUnsubscribe}
-          isLoading={isProcessing}
-          isDisabled={isProcessing}
-          variant="outline"
-          color="dark.purple.500"
-          borderColor="dark.purple.500"
-          size="md"
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-        >
-          DEACTIVATE
-        </Button>
+
+        {/* Deactivate Dropdown Menu */}
+        <Menu>
+          <MenuButton
+            as={Button}
+            rightIcon={<FaChevronDown />}
+            isLoading={isProcessing}
+            isDisabled={isProcessing}
+            variant="outline"
+            color="dark.purple.500"
+            borderColor="dark.purple.500"
+            size="md"
+            fontFamily="Bungee"
+            fontSize="16px"
+            fontWeight="400"
+            _hover={{ bg: 'dark.purple.50' }}
+          >
+            DEACTIVATE
+          </MenuButton>
+          <MenuList>
+            <MenuItem
+              onClick={handleDeactivateGrave}
+              fontFamily="Montserrat"
+              fontWeight="600"
+            >
+              Deactivate GRAVE Spambox Only
+            </MenuItem>
+            <MenuItem
+              onClick={onOpenDeactivateUAPModal}
+              fontFamily="Montserrat"
+              fontWeight="600"
+              color="red.600"
+            >
+              Deactivate UAP Protocol (All Assistants)
+            </MenuItem>
+          </MenuList>
+        </Menu>
       </Flex>
+
+      {/* UAP Deactivation Confirmation Modal */}
+      <Modal
+        isOpen={isDeactivateUAPModalOpen}
+        onClose={onCloseDeactivateUAPModal}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader fontFamily="Bungee" color="red.600">
+            Deactivate UAP Protocol?
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack align="start" spacing={3}>
+              <Text fontWeight="bold" color="red.600">
+                ⚠️ Warning: This will deactivate ALL executive assistants!
+              </Text>
+              <Text fontSize="sm">
+                This action will completely remove the Universal Assistant
+                Protocol from your Universal Profile, including:
+              </Text>
+              <Box as="ul" pl={6} fontSize="sm">
+                <Box as="li">GRAVE Spambox (Forwarder Assistant)</Box>
+                <Box as="li">All other executive assistants (if any)</Box>
+                <Box as="li">All screener configurations</Box>
+                <Box as="li">All address lists and filters</Box>
+                <Box as="li">UAP metadata and settings</Box>
+              </Box>
+              <Text fontSize="sm" fontWeight="bold">
+                Your Universal Profile will no longer have any automated asset
+                handling.
+              </Text>
+              <Text fontSize="sm" color="gray.600">
+                If you only want to deactivate GRAVE, use the "Deactivate GRAVE
+                Spambox Only" option instead.
+              </Text>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={onCloseDeactivateUAPModal}
+              isDisabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={handleDeactivateUAP}
+              isLoading={isProcessing}
+              isDisabled={isProcessing}
+              fontFamily="Bungee"
+            >
+              {isProcessing ? 'DEACTIVATING...' : 'DEACTIVATE UAP'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Flex>
   );
 };

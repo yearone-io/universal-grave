@@ -1,6 +1,14 @@
-import { BrowserProvider, Contract, ZeroAddress, JsonRpcProvider } from 'ethers';
+import {
+  BrowserProvider,
+  Contract,
+  ZeroAddress,
+  JsonRpcProvider,
+} from 'ethers';
 import { ERC725YDataKeys, INTERFACE_IDS } from '@lukso/lsp-smart-contracts';
-import { universalProfileAbi, lsp9VaultAbi } from '@lukso/lsp-smart-contracts/abi';
+import {
+  universalProfileAbi,
+  lsp9VaultAbi,
+} from '@lukso/lsp-smart-contracts/abi';
 
 /**
  * Register an existing vault with a Universal Profile
@@ -122,7 +130,10 @@ export async function getRegisteredVaults(
     const vaultCount = parseInt(lengthData, 16);
     const vaults: string[] = [];
 
-    console.log('[VAULT FETCH] Total vault count from LSP10Vaults[].length:', vaultCount);
+    console.log(
+      '[VAULT FETCH] Total vault count from LSP10Vaults[].length:',
+      vaultCount
+    );
 
     // Fetch each vault address
     for (let i = 0; i < vaultCount; i++) {
@@ -167,16 +178,20 @@ export async function getRegisteredVaults(
 export async function deployVault(
   provider: BrowserProvider,
   upAddress: string,
-  networkConfig: { chainId: number; name: string; vaultImplementation?: string; lsp1UrdVault?: string }
+  networkConfig: {
+    chainId: number;
+    name: string;
+    vaultImplementation?: string;
+    lsp1UrdVault?: string;
+  }
 ): Promise<string> {
   console.log('Deploying LSP9 Vault using proxy pattern for UP:', upAddress);
 
   // Import proxy deployment utilities
   const {
-    getOrDeployImplementation,
+    getVaultImplementation,
     deployMinimalProxy,
     hasImplementation,
-    getProxySavings,
   } = await import('./proxyDeployment');
 
   const hasImpl = hasImplementation(networkConfig as any);
@@ -193,7 +208,7 @@ export async function deployVault(
   const {
     address: implementationAddress,
     wasDeployed: implementationDeployed,
-  } = await getOrDeployImplementation(provider, networkConfig as any);
+  } = await getVaultImplementation(networkConfig as any);
 
   if (implementationDeployed) {
     console.log(`⚠️ Implementation deployed at ${implementationAddress}`);
@@ -210,21 +225,7 @@ export async function deployVault(
   console.log('Vault proxy deployed at:', vaultAddress);
   console.log('Using implementation:', implementationAddress);
 
-  const savings = getProxySavings();
-  if (implementationDeployed) {
-    console.log('First deployment - Implementation deployed for this network');
-  } else {
-    console.log(
-      `✅ Saved ~${savings.savingsPerVault.toLocaleString()} gas (${savings.savingsPercent}%)!`
-    );
-  }
-
-  // Step 3: Register vault with UP
-  console.log('Registering vault with Universal Profile...');
-  await registerVaultWithUP(provider, upAddress, vaultAddress);
-  console.log('Vault registered with UP successfully!');
-
-  // Step 4: Set LSP1 Universal Receiver Delegate on vault
+  // Step 3: Set LSP1 Universal Receiver Delegate on vault
   console.log('Setting LSP1 Universal Receiver Delegate on vault...');
   await setVaultURD(provider, upAddress, vaultAddress, networkConfig);
   console.log('Vault URD set successfully!');
@@ -253,10 +254,10 @@ export async function setVaultURD(
   const urdAddress = networkConfig.lsp1UrdVault;
 
   // Prepare the setData call
-  const setDataCalldata = vaultContract.interface.encodeFunctionData('setData', [
-    ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate,
-    urdAddress,
-  ]);
+  const setDataCalldata = vaultContract.interface.encodeFunctionData(
+    'setData',
+    [ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, urdAddress]
+  );
 
   // Execute via UP
   const tx = await upContract.execute(

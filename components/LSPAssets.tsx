@@ -139,7 +139,10 @@ export default function LSPAssets({
       const receivedAssetsResults = await erc725js.fetchData(
         'LSP5ReceivedAssets[]'
       );
-      console.log('[GRAVE DEBUG] LSP5ReceivedAssets[] found:', receivedAssetsResults.value);
+      console.log(
+        '[GRAVE DEBUG] LSP5ReceivedAssets[] found:',
+        receivedAssetsResults.value
+      );
 
       // Handle empty vault gracefully - default to empty array if no assets
       const assets = (receivedAssetsResults.value as string[]) || [];
@@ -152,11 +155,7 @@ export default function LSPAssets({
       for (const assetAddress of assets) {
         console.log('[GRAVE DEBUG] Processing asset:', assetAddress);
         // every 4 assets, wait for 1 second
-        if (
-          assets.indexOf(assetAddress) %
-            4 ===
-          0
-        ) {
+        if (assets.indexOf(assetAddress) % 4 === 0) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         const asset = await getLSPAssetBasicInfo(

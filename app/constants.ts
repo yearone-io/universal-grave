@@ -58,13 +58,13 @@ export const DEFAULT_UP_CONTROLLER_PERMISSIONS = {
   ADDCONTROLLER: true,
 };
 
-export const GRAVE_CONTROLLER_PERMISSIONS = {
+export const UAP_CONTROLLER_PERMISSIONS = {
   ADDUNIVERSALRECEIVERDELEGATE: true,
   CHANGEUNIVERSALRECEIVERDELEGATE: true,
 };
 
-// Alias for UAP compatibility
-export const UAP_CONTROLLER_PERMISSIONS = GRAVE_CONTROLLER_PERMISSIONS;
+// Legacy alias for backwards compatibility
+export const GRAVE_CONTROLLER_PERMISSIONS = UAP_CONTROLLER_PERMISSIONS;
 
 /*
   UP! Extension Default UP URD Permissions

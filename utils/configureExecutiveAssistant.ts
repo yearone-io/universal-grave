@@ -13,7 +13,7 @@ import ERC725 from '@erc725/erc725.js';
  */
 function encodeTupleKeyValue(
   valueContent: string, // e.g. "(Address,Bytes)"
-  valueType: string,    // e.g. "(address,bytes)"
+  valueType: string, // e.g. "(address,bytes)"
   decodedValues: any[]
 ): string {
   const valueTypeParts = valueType
@@ -123,7 +123,9 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
     values.push(encodedAssistants);
     console.log(`[Optimization] Type config changed, writing UAPTypeConfig`);
   } else {
-    console.log(`[Optimization] Type config unchanged, skipping UAPTypeConfig write`);
+    console.log(
+      `[Optimization] Type config unchanged, skipping UAPTypeConfig write`
+    );
   }
 
   // STEP 2: Set Executive Config (assistant address + config data)
@@ -141,7 +143,9 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
     keys.push(executiveConfigKey);
     values.push(execData);
   } else {
-    console.log(`[Optimization] Skipping executive config write for ${typeId} (unchanged)`);
+    console.log(
+      `[Optimization] Skipping executive config write for ${typeId} (unchanged)`
+    );
   }
 
   // STEP 3: Configure screeners if enabled
@@ -179,7 +183,9 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       keys.push(logicKey);
       values.push(encodedLogic);
     } else {
-      console.log(`[Optimization] Skipping screener array write for ${typeId} (unchanged)`);
+      console.log(
+        `[Optimization] Skipping screener array write for ${typeId} (unchanged)`
+      );
     }
 
     // Configure each screener
@@ -214,7 +220,10 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
         if (isAddressListScreener) {
           // Address List Screener: config contains returnValueWhenInList boolean
           const returnValueWhenInList = config.returnValueWhenInList ?? false;
-          screenerConfigBytes = abiCoder.encode(['bool'], [returnValueWhenInList]);
+          screenerConfigBytes = abiCoder.encode(
+            ['bool'],
+            [returnValueWhenInList]
+          );
         } else if (isCuratedListScreener) {
           // Curated List Screener: config contains (address, bool)
           const returnValueWhenCurated = config.returnValueWhenCurated ?? false;
@@ -279,7 +288,10 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
             const keyPrefix = baseArrayKey.slice(0, 34); // 0x + 32 chars
             const indexBytes16 = j.toString(16).padStart(32, '0');
             const itemKey = keyPrefix + indexBytes16;
-            const encodedAddress = erc725UAP.encodeValueType('address', address);
+            const encodedAddress = erc725UAP.encodeValueType(
+              'address',
+              address
+            );
             keys.push(itemKey);
             values.push(encodedAddress);
 

@@ -125,22 +125,37 @@ async function getImplementationBytecode(
     const minimalProxy = await getMinimalProxyImplementationAddress(proxyCode);
     console.log('[GRAVE DEBUG] Minimal proxy implementation:', minimalProxy);
 
-    const beaconProxy = await getBeaconProxyImplementationAddress(provider, assetAddress);
+    const beaconProxy = await getBeaconProxyImplementationAddress(
+      provider,
+      assetAddress
+    );
     console.log('[GRAVE DEBUG] Beacon proxy implementation:', beaconProxy);
 
-    const transparentProxy = await getTransparentProxyImplementationAddress(provider, assetAddress);
-    console.log('[GRAVE DEBUG] Transparent proxy implementation:', transparentProxy);
+    const transparentProxy = await getTransparentProxyImplementationAddress(
+      provider,
+      assetAddress
+    );
+    console.log(
+      '[GRAVE DEBUG] Transparent proxy implementation:',
+      transparentProxy
+    );
 
     let implementationAddress: string | null =
       minimalProxy || beaconProxy || transparentProxy;
 
-    console.log('[GRAVE DEBUG] Final implementation address:', implementationAddress);
+    console.log(
+      '[GRAVE DEBUG] Final implementation address:',
+      implementationAddress
+    );
 
     return implementationAddress
       ? await provider.getCode(implementationAddress)
       : proxyCode;
   } catch (error) {
-    console.error('[GRAVE DEBUG] Error getting implementation bytecode:', error);
+    console.error(
+      '[GRAVE DEBUG] Error getting implementation bytecode:',
+      error
+    );
     return '';
   }
 }
@@ -157,7 +172,9 @@ export const detectLSP = async (
       getLuksoProvider()
     );
 
-    const supportsLSP7 = await lspAsset.supportsInterface(INTERFACE_IDS.LSP7DigitalAsset);
+    const supportsLSP7 = await lspAsset.supportsInterface(
+      INTERFACE_IDS.LSP7DigitalAsset
+    );
     console.log('[GRAVE DEBUG] supportsInterface LSP7:', supportsLSP7);
     if (supportsLSP7) {
       return GRAVE_ASSET_TYPES.LSP7DigitalAsset;
@@ -173,16 +190,25 @@ export const detectLSP = async (
 
     console.log('[GRAVE DEBUG] Checking bytecode for proxy patterns...');
     const bytecode = await getImplementationBytecode(provider, assetAddress);
-    console.log('[GRAVE DEBUG] Implementation bytecode length:', bytecode.length);
+    console.log(
+      '[GRAVE DEBUG] Implementation bytecode length:',
+      bytecode.length
+    );
 
     const hasLSP7Transfer = supportsFunction(bytecode, lsp7TransferSelector);
-    console.log('[GRAVE DEBUG] Bytecode has LSP7 transfer selector:', hasLSP7Transfer);
+    console.log(
+      '[GRAVE DEBUG] Bytecode has LSP7 transfer selector:',
+      hasLSP7Transfer
+    );
     if (hasLSP7Transfer) {
       return GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
     }
 
     const hasLSP8Transfer = supportsFunction(bytecode, lsp8TransferSelector);
-    console.log('[GRAVE DEBUG] Bytecode has LSP8 transfer selector:', hasLSP8Transfer);
+    console.log(
+      '[GRAVE DEBUG] Bytecode has LSP8 transfer selector:',
+      hasLSP8Transfer
+    );
     if (hasLSP8Transfer) {
       return GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset;
     }
@@ -198,7 +224,12 @@ export const getLSPAssetBasicInfo = async (
   assetAddress: string,
   ownerAddress: string
 ): Promise<TokenData> => {
-  console.log('[GRAVE DEBUG] getLSPAssetBasicInfo called for:', assetAddress, 'owner:', ownerAddress);
+  console.log(
+    '[GRAVE DEBUG] getLSPAssetBasicInfo called for:',
+    assetAddress,
+    'owner:',
+    ownerAddress
+  );
   const unrecognizedLsp = {
     address: assetAddress,
     name: 'unrecognised',
@@ -237,7 +268,11 @@ export const getLSPAssetBasicInfo = async (
     name = String(assetFetchedData[1].value);
     symbol = String(assetFetchedData[2].value);
     metadata = assetFetchedData[3].value;
-    console.log('[GRAVE DEBUG] Metadata fetched:', { LSP4TokenType, name, symbol });
+    console.log('[GRAVE DEBUG] Metadata fetched:', {
+      LSP4TokenType,
+      name,
+      symbol,
+    });
   } catch (error) {
     console.error('[GRAVE DEBUG] Error getting metadata:', error);
     return unrecognizedLsp;
@@ -269,7 +304,12 @@ export const getLSPAssetBasicInfo = async (
       console.log('[GRAVE DEBUG] Balance:', balance);
     }
   } catch (err) {
-    console.error('[GRAVE DEBUG] Error in balance fetch section:', assetAddress, lspInterface, err);
+    console.error(
+      '[GRAVE DEBUG] Error in balance fetch section:',
+      assetAddress,
+      lspInterface,
+      err
+    );
     return unrecognizedLsp;
   }
   console.log('[GRAVE DEBUG] Final token data:', {

@@ -17,7 +17,7 @@ import { getLuksoProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
-  GRAVE_CONTROLLER_PERMISSIONS,
+  UAP_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
 import { getChecksumAddress } from './tokenUtils';
 import { LSP1GraveForwarder__factory } from '@/contracts';
@@ -107,7 +107,7 @@ export const updateBECPermissions = async (
 
   const newPermissions = erc725.encodePermissions({
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-    ...GRAVE_CONTROLLER_PERMISSIONS,
+    ...UAP_CONTROLLER_PERMISSIONS,
   });
   const permissionsData = erc725.encodeData([
     {
@@ -235,7 +235,7 @@ export const doesControllerHaveMissingPermissions = async (
   );
   const missingPermissions = getMissingPermissions(currentPermissions, {
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-    ...GRAVE_CONTROLLER_PERMISSIONS,
+    ...UAP_CONTROLLER_PERMISSIONS,
   });
   return missingPermissions;
 };

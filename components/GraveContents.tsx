@@ -1,6 +1,15 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Box, Text, Flex, Icon, Select, Input, Button, HStack } from '@chakra-ui/react';
+import {
+  Box,
+  Text,
+  Flex,
+  Icon,
+  Select,
+  Input,
+  Button,
+  HStack,
+} from '@chakra-ui/react';
 import { FaCog } from 'react-icons/fa';
 import GravePageAssets from '@/components/GravePageAssets';
 import ShareButton from '@/components/ShareButton';
@@ -58,8 +67,10 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
           graveOwner,
           {
             forwarderAssistantAddress: networkConfig.forwarderAssistantAddress,
-            addressListScreenerAddress: networkConfig.addressListScreenerAddress,
-            curatedListScreenerAddress: networkConfig.curatedListScreenerAddress,
+            addressListScreenerAddress:
+              networkConfig.addressListScreenerAddress,
+            curatedListScreenerAddress:
+              networkConfig.curatedListScreenerAddress,
           }
         );
 
@@ -69,13 +80,22 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
 
         // Get all registered vaults
         const vaults = await getRegisteredVaults(provider, graveOwner);
-        let uniqueVaults = vaults.filter((vault, index, self) =>
-          index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
+        let uniqueVaults = vaults.filter(
+          (vault, index, self) =>
+            index ===
+            self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
         );
 
         // Add legacy GRAVE vault to the list if it exists and isn't already included
-        if (isOwnGraveyard && graveVault && !uniqueVaults.some(v => v.toLowerCase() === graveVault.toLowerCase())) {
-          console.log('[GraveContents] Adding legacy vault to list:', graveVault);
+        if (
+          isOwnGraveyard &&
+          graveVault &&
+          !uniqueVaults.some(v => v.toLowerCase() === graveVault.toLowerCase())
+        ) {
+          console.log(
+            '[GraveContents] Adding legacy vault to list:',
+            graveVault
+          );
           uniqueVaults = [...uniqueVaults, graveVault];
         }
 
@@ -93,7 +113,9 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
     if (vaultParam && isAddress(vaultParam)) {
       setSelectedVault(vaultParam);
       // Check if this vault is in the available vaults list
-      const isInList = availableVaults.some(v => v.toLowerCase() === vaultParam.toLowerCase());
+      const isInList = availableVaults.some(
+        v => v.toLowerCase() === vaultParam.toLowerCase()
+      );
       if (!isInList && isOwnGraveyard) {
         // It's a custom vault not in the list
         setShowCustomInput(true);
@@ -131,7 +153,9 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
     if (customVaultInput && isAddress(customVaultInput)) {
       setSelectedVault(customVaultInput);
       // Keep the input visible with the custom vault
-      router.push(`/${networkName}/grave/${graveOwner}?vault=${customVaultInput}`);
+      router.push(
+        `/${networkName}/grave/${graveOwner}?vault=${customVaultInput}`
+      );
     }
   };
 
@@ -173,11 +197,13 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
               value={
                 !selectedVault
                   ? 'default'
-                  : availableVaults.some(v => v.toLowerCase() === selectedVault.toLowerCase())
+                  : availableVaults.some(
+                        v => v.toLowerCase() === selectedVault.toLowerCase()
+                      )
                     ? selectedVault
                     : 'custom'
               }
-              onChange={(e) => handleVaultChange(e.target.value)}
+              onChange={e => handleVaultChange(e.target.value)}
               fontFamily="mono"
               size="sm"
               color="dark.purple.500"
@@ -187,11 +213,15 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
               maxW="300px"
             >
               <option key="default" value="default">
-                Active Spambox {defaultVault ? `(${formatAddress(defaultVault)})` : ''}
+                Active Spambox{' '}
+                {defaultVault ? `(${formatAddress(defaultVault)})` : ''}
               </option>
               {availableVaults.map((vault, idx) => {
-                const isLegacyVault = graveVault && vault.toLowerCase() === graveVault.toLowerCase();
-                const isActive = vault.toLowerCase() === defaultVault?.toLowerCase();
+                const isLegacyVault =
+                  graveVault &&
+                  vault.toLowerCase() === graveVault.toLowerCase();
+                const isActive =
+                  vault.toLowerCase() === defaultVault?.toLowerCase();
                 return (
                   <option key={vault} value={vault}>
                     Vault {idx + 1}: {formatAddress(vault)}
@@ -201,7 +231,9 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
                 );
               })}
               <option value="custom">
-                {showCustomInput && customVaultInput ? `Custom: ${formatAddress(customVaultInput)}` : 'View Custom Vault Address...'}
+                {showCustomInput && customVaultInput
+                  ? `Custom: ${formatAddress(customVaultInput)}`
+                  : 'View Custom Vault Address...'}
               </option>
             </Select>
 
@@ -210,7 +242,7 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
                 <Input
                   placeholder="0x... (vault address)"
                   value={customVaultInput}
-                  onChange={(e) => setCustomVaultInput(e.target.value)}
+                  onChange={e => setCustomVaultInput(e.target.value)}
                   size="sm"
                   maxW="300px"
                   bg="white"
@@ -228,11 +260,13 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
               </HStack>
             )}
           </Flex>
-          {selectedVault && selectedVault.toLowerCase() !== defaultVault?.toLowerCase() && (
-            <Text fontSize="xs" color="orange.700" mt={2} fontWeight="bold">
-              ⚠️ You are viewing a non-active vault. This vault is not receiving new spam.
-            </Text>
-          )}
+          {selectedVault &&
+            selectedVault.toLowerCase() !== defaultVault?.toLowerCase() && (
+              <Text fontSize="xs" color="orange.700" mt={2} fontWeight="bold">
+                ⚠️ You are viewing a non-active vault. This vault is not
+                receiving new spam.
+              </Text>
+            )}
         </Box>
       )}
 
@@ -251,7 +285,10 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
         </Box>
       )}
 
-      <GravePageAssets graveOwner={graveOwner} vaultAddressOverride={selectedVault} />
+      <GravePageAssets
+        graveOwner={graveOwner}
+        vaultAddressOverride={selectedVault}
+      />
     </Box>
   );
 }

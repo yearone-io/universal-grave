@@ -32,9 +32,13 @@ export interface ForwarderAssistantConfig {
  * Custom decoding function matching the Solidity contract's decodeExecDataValue logic
  * This matches the UP Assistants implementation for proper compatibility
  */
-export const decodeExecDataValue = (execDataValue: string): [string, string] => {
+export const decodeExecDataValue = (
+  execDataValue: string
+): [string, string] => {
   // Remove 0x prefix if present
-  const hexData = execDataValue.startsWith('0x') ? execDataValue.slice(2) : execDataValue;
+  const hexData = execDataValue.startsWith('0x')
+    ? execDataValue.slice(2)
+    : execDataValue;
 
   // Must have at least 20 bytes (40 hex chars) for the address
   if (hexData.length < 40) {
@@ -139,7 +143,8 @@ export async function getForwarderAssistantConfig(
               if (assistantData && assistantData !== '0x') {
                 try {
                   // Decode using decodeExecDataValue - same as UP Assistants
-                  const [configAddress, configBytes] = decodeExecDataValue(assistantData);
+                  const [configAddress, configBytes] =
+                    decodeExecDataValue(assistantData);
 
                   console.log('[GRAVE READ] Decoded data:', {
                     configAddress,
@@ -148,32 +153,59 @@ export async function getForwarderAssistantConfig(
                   });
 
                   // Verify configBytes has data before attempting to decode
-                  if (configBytes && configBytes !== '0x' && configBytes.length >= 66) {
+                  if (
+                    configBytes &&
+                    configBytes !== '0x' &&
+                    configBytes.length >= 66
+                  ) {
                     // Decode the vault address from the config bytes
                     // The config bytes contain an ABI-encoded address
                     const abiCoder = new AbiCoder();
-                    const [vaultAddr] = abiCoder.decode(['address'], configBytes);
+                    const [vaultAddr] = abiCoder.decode(
+                      ['address'],
+                      configBytes
+                    );
 
-                    console.log('[GRAVE READ] Decoded vault address:', vaultAddr);
+                    console.log(
+                      '[GRAVE READ] Decoded vault address:',
+                      vaultAddr
+                    );
 
                     if (
                       vaultAddr &&
                       vaultAddr !== '0x0000000000000000000000000000000000000000'
                     ) {
                       config.vaultAddress = vaultAddr;
-                      console.log('[GRAVE READ] ✅ Successfully set vault address:', vaultAddr);
+                      console.log(
+                        '[GRAVE READ] ✅ Successfully set vault address:',
+                        vaultAddr
+                      );
                     } else {
-                      console.warn('[GRAVE READ] ⚠️ Vault address is zero address');
+                      console.warn(
+                        '[GRAVE READ] ⚠️ Vault address is zero address'
+                      );
                     }
                   } else {
-                    console.warn('[GRAVE READ] ⚠️ configBytes is empty or too short:', configBytes);
+                    console.warn(
+                      '[GRAVE READ] ⚠️ configBytes is empty or too short:',
+                      configBytes
+                    );
                   }
                 } catch (error) {
-                  console.error('[GRAVE READ] ❌ Error decoding assistant config:', error);
-                  console.error('[GRAVE READ] Failed on assistantData:', assistantData);
+                  console.error(
+                    '[GRAVE READ] ❌ Error decoding assistant config:',
+                    error
+                  );
+                  console.error(
+                    '[GRAVE READ] Failed on assistantData:',
+                    assistantData
+                  );
                 }
               } else {
-                console.warn('[GRAVE READ] ⚠️ No assistant data found at key:', assistantConfigKey);
+                console.warn(
+                  '[GRAVE READ] ⚠️ No assistant data found at key:',
+                  assistantConfigKey
+                );
               }
             }
 
@@ -333,12 +365,14 @@ export async function getForwarderAssistantConfig(
 
                               if (configBytesClean.length === 40) {
                                 // Raw 20-byte address (40 hex chars) - legacy format
-                                const curatedListAddress = '0x' + configBytesClean;
+                                const curatedListAddress =
+                                  '0x' + configBytesClean;
                                 if (
                                   curatedListAddress !==
                                   '0x0000000000000000000000000000000000000000'
                                 ) {
-                                  config.curatedListAddress = curatedListAddress;
+                                  config.curatedListAddress =
+                                    curatedListAddress;
                                   config.useCuratedList = true;
                                 }
                               } else {
@@ -553,7 +587,8 @@ export async function saveForwarderAssistantConfig(
         skipSharedListWrite: !isFirstIteration, // Skip on LSP8 (second iteration)
         skipExecutiveConfig: !changes.vaultChanged, // Skip if vault unchanged
         skipScreenerArray: !changes.screenerSelectionChanged, // Skip if screener selection unchanged
-        skipScreenerConfigs: !changes.curatedListChanged && !changes.addressListChanged, // Skip if neither changed
+        skipScreenerConfigs:
+          !changes.curatedListChanged && !changes.addressListChanged, // Skip if neither changed
         skipAddressListData: !changes.addressListChanged, // Skip if address list unchanged
       }
     );
@@ -808,8 +843,9 @@ export async function getAllWhitelistAddresses(
         const itemValues = await upContract.getDataBatch(itemKeys);
         const addresses = itemValues
           .filter((value: any) => value && value !== '0x')
-          .map((value: any) =>
-            erc725UAP.decodeValueType('address', value) as string
+          .map(
+            (value: any) =>
+              erc725UAP.decodeValueType('address', value) as string
           );
 
         if (txType === LSP7_TRANSACTION_TYPE) {
@@ -836,4 +872,370 @@ export async function getAllWhitelistAddresses(
   result.addresses = Array.from(addressMap.values());
 
   return result;
+}
+
+/**
+ * Helper function to calculate screener order
+ * Following UP Assistants pattern: screenerOrder = executionOrder * 1000 + screenerIndex
+ */
+function calculateScreenerOrder(
+  executionOrder: number,
+  screenerIndex: number
+): number {
+  return executionOrder * 1000 + screenerIndex;
+}
+
+/**
+ * Removes the Forwarder Assistant configuration from both LSP7 and LSP8 transaction types
+ * This clears all UAP configuration keys and migrates subsequent assistants if necessary
+ * Following the UP Assistants pattern from uap-frontend/utils/configDataKeyValueStore.ts
+ */
+export async function removeForwarderAssistant(
+  provider: BrowserProvider,
+  upAddress: string,
+  networkConfig: {
+    forwarderAssistantAddress: string;
+    addressListScreenerAddress: string;
+    curatedListScreenerAddress: string;
+  }
+): Promise<void> {
+  const signer = await provider.getSigner();
+  const upContract = new Contract(upAddress, universalProfileAbi, signer);
+  const erc725UAP = new ERC725(
+    uapSchema as ERC725JSONSchema[],
+    upAddress,
+    provider
+  );
+
+  const allKeys: string[] = [];
+  const allValues: string[] = [];
+
+  const forwarderAddress =
+    networkConfig.forwarderAssistantAddress.toLowerCase();
+
+  // Process both LSP7 and LSP8 transaction types
+  for (const typeId of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
+    console.log(`[Grave Deactivate] Processing typeId: ${typeId}`);
+
+    // PHASE A: Determine Current Position
+    const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
+      typeId,
+    ]);
+
+    let currentAssistants: string[] = [];
+    try {
+      const typeConfigValue = await upContract.getData(typeConfigKey);
+      if (typeConfigValue && typeConfigValue !== '0x') {
+        currentAssistants = erc725UAP.decodeValueType(
+          'address[]',
+          typeConfigValue
+        ) as string[];
+      }
+    } catch (error) {
+      console.warn(`Could not fetch current assistants for ${typeId}:`, error);
+    }
+
+    // Find forwarder's index
+    const forwarderIndex = currentAssistants.findIndex(
+      addr => addr.toLowerCase() === forwarderAddress
+    );
+
+    if (forwarderIndex === -1) {
+      console.log(
+        `[Grave Deactivate] Forwarder not found in ${typeId}, skipping`
+      );
+      continue;
+    }
+
+    console.log(
+      `[Grave Deactivate] Found forwarder at index ${forwarderIndex} in ${typeId}`
+    );
+
+    // PHASE B: Clear Forwarder's Configuration
+    // Get the current config to know which screeners exist
+    const currentConfig = await getForwarderAssistantConfig(
+      provider,
+      upAddress,
+      networkConfig
+    );
+
+    const executionOrder = forwarderIndex;
+
+    // Clear executive config
+    const executiveKey = erc725UAP.encodeKeyName(
+      'UAPExecutiveConfig:<bytes32>:<uint256>',
+      [typeId, executionOrder.toString()]
+    );
+    allKeys.push(executiveKey);
+    allValues.push('0x');
+
+    // Clear screeners array and logic
+    const screenersKey = erc725UAP.encodeKeyName(
+      'UAPExecutiveScreeners:<bytes32>:<uint256>',
+      [typeId, executionOrder.toString()]
+    );
+    allKeys.push(screenersKey);
+    allValues.push('0x');
+
+    const logicKey = erc725UAP.encodeKeyName(
+      'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+      [typeId, executionOrder.toString()]
+    );
+    allKeys.push(logicKey);
+    allValues.push('0x');
+
+    // Clear individual screener configs
+    // Screener 0: Address List Screener (always present)
+    const addressListScreenerOrder = calculateScreenerOrder(executionOrder, 0);
+
+    const addressListConfigKey = erc725UAP.encodeKeyName(
+      'UAPScreenerConfig:<bytes32>:<uint256>',
+      [typeId, addressListScreenerOrder.toString()]
+    );
+    allKeys.push(addressListConfigKey);
+    allValues.push('0x');
+
+    const addressListNameKey = erc725UAP.encodeKeyName(
+      'UAPAddressListName:<bytes32>:<uint256>',
+      [typeId, addressListScreenerOrder.toString()]
+    );
+    allKeys.push(addressListNameKey);
+    allValues.push('0x');
+
+    // Screener 1: Curated List Screener (if enabled)
+    if (currentConfig.useCuratedList) {
+      const curatedListScreenerOrder = calculateScreenerOrder(
+        executionOrder,
+        1
+      );
+
+      const curatedListConfigKey = erc725UAP.encodeKeyName(
+        'UAPScreenerConfig:<bytes32>:<uint256>',
+        [typeId, curatedListScreenerOrder.toString()]
+      );
+      allKeys.push(curatedListConfigKey);
+      allValues.push('0x');
+
+      const curatedListNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [typeId, curatedListScreenerOrder.toString()]
+      );
+      allKeys.push(curatedListNameKey);
+      allValues.push('0x');
+    }
+
+    // Clear shared address list data (GraveSafeAssets)
+    // Only clear once for the first transaction type to avoid duplicate operations
+    if (typeId === LSP7_TRANSACTION_TYPE && currentConfig.listName) {
+      const listName = currentConfig.listName;
+
+      // Clear list length
+      const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
+      allKeys.push(listLengthKey);
+      allValues.push('0x');
+
+      // Clear each address item and mapping
+      for (let j = 0; j < currentConfig.whitelistAddresses.length; j++) {
+        const address = currentConfig.whitelistAddresses[j];
+
+        // Clear array item
+        const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
+        const keyPrefix = baseArrayKey.slice(0, 34);
+        const indexBytes16 = j.toString(16).padStart(32, '0');
+        const itemKey = keyPrefix + indexBytes16;
+        allKeys.push(itemKey);
+        allValues.push('0x');
+
+        // Clear mapping
+        const mapKey = erc725UAP.encodeKeyName(`${listName}Map:<address>`, [
+          address,
+        ]);
+        allKeys.push(mapKey);
+        allValues.push('0x');
+      }
+    }
+
+    // PHASE C: Migrate Subsequent Assistants
+    if (forwarderIndex < currentAssistants.length - 1) {
+      console.log(
+        `[Grave Deactivate] Migrating ${currentAssistants.length - forwarderIndex - 1} subsequent assistants`
+      );
+
+      for (let i = forwarderIndex + 1; i < currentAssistants.length; i++) {
+        const oldIndex = i;
+        const newIndex = i - 1;
+        const assistantToMigrate = currentAssistants[i];
+
+        console.log(
+          `[Grave Deactivate] Migrating assistant ${assistantToMigrate} from ${oldIndex} to ${newIndex}`
+        );
+
+        // Read old executive config
+        const oldExecutiveKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveConfig:<bytes32>:<uint256>',
+          [typeId, oldIndex.toString()]
+        );
+        let executiveValue = '0x';
+        try {
+          executiveValue = await upContract.getData(oldExecutiveKey);
+        } catch (error) {
+          console.warn(
+            `Could not read executive config for ${assistantToMigrate}:`,
+            error
+          );
+        }
+
+        // Write to new position
+        const newExecutiveKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveConfig:<bytes32>:<uint256>',
+          [typeId, newIndex.toString()]
+        );
+        allKeys.push(newExecutiveKey);
+        allValues.push(executiveValue);
+
+        // Clear old position
+        allKeys.push(oldExecutiveKey);
+        allValues.push('0x');
+
+        // Migrate screeners array
+        const oldScreenersKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveScreeners:<bytes32>:<uint256>',
+          [typeId, oldIndex.toString()]
+        );
+        let screenersValue = '0x';
+        try {
+          screenersValue = await upContract.getData(oldScreenersKey);
+        } catch (error) {
+          console.warn('Could not read screeners array:', error);
+        }
+
+        const newScreenersKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveScreeners:<bytes32>:<uint256>',
+          [typeId, newIndex.toString()]
+        );
+        allKeys.push(newScreenersKey);
+        allValues.push(screenersValue);
+        allKeys.push(oldScreenersKey);
+        allValues.push('0x');
+
+        // Migrate AND/OR logic
+        const oldLogicKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+          [typeId, oldIndex.toString()]
+        );
+        let logicValue = '0x';
+        try {
+          logicValue = await upContract.getData(oldLogicKey);
+        } catch (error) {
+          console.warn('Could not read logic flag:', error);
+        }
+
+        const newLogicKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+          [typeId, newIndex.toString()]
+        );
+        allKeys.push(newLogicKey);
+        allValues.push(logicValue);
+        allKeys.push(oldLogicKey);
+        allValues.push('0x');
+
+        // Migrate individual screener configs
+        // We need to read the screeners to know how many there are
+        let screenerAddresses: string[] = [];
+        if (screenersValue && screenersValue !== '0x') {
+          try {
+            screenerAddresses = erc725UAP.decodeValueType(
+              'address[]',
+              screenersValue
+            ) as string[];
+          } catch (error) {
+            console.warn('Could not decode screener addresses:', error);
+          }
+        }
+
+        for (let j = 0; j < screenerAddresses.length; j++) {
+          const oldScreenerOrder = calculateScreenerOrder(oldIndex, j);
+          const newScreenerOrder = calculateScreenerOrder(newIndex, j);
+
+          // Migrate screener config
+          const oldScreenerConfigKey = erc725UAP.encodeKeyName(
+            'UAPScreenerConfig:<bytes32>:<uint256>',
+            [typeId, oldScreenerOrder.toString()]
+          );
+          let screenerConfigValue = '0x';
+          try {
+            screenerConfigValue =
+              await upContract.getData(oldScreenerConfigKey);
+          } catch (error) {
+            console.warn(
+              `Could not read screener config at ${oldScreenerOrder}:`,
+              error
+            );
+          }
+
+          const newScreenerConfigKey = erc725UAP.encodeKeyName(
+            'UAPScreenerConfig:<bytes32>:<uint256>',
+            [typeId, newScreenerOrder.toString()]
+          );
+          allKeys.push(newScreenerConfigKey);
+          allValues.push(screenerConfigValue);
+          allKeys.push(oldScreenerConfigKey);
+          allValues.push('0x');
+
+          // Migrate address list name
+          const oldListNameKey = erc725UAP.encodeKeyName(
+            'UAPAddressListName:<bytes32>:<uint256>',
+            [typeId, oldScreenerOrder.toString()]
+          );
+          let listNameValue = '0x';
+          try {
+            listNameValue = await upContract.getData(oldListNameKey);
+          } catch (error) {
+            console.warn(
+              `Could not read list name at ${oldScreenerOrder}:`,
+              error
+            );
+          }
+
+          const newListNameKey = erc725UAP.encodeKeyName(
+            'UAPAddressListName:<bytes32>:<uint256>',
+            [typeId, newScreenerOrder.toString()]
+          );
+          allKeys.push(newListNameKey);
+          allValues.push(listNameValue);
+          allKeys.push(oldListNameKey);
+          allValues.push('0x');
+        }
+      }
+    }
+
+    // PHASE D: Update Type Config Array
+    const updatedAssistants = currentAssistants.filter(
+      addr => addr.toLowerCase() !== forwarderAddress
+    );
+
+    if (updatedAssistants.length === 0) {
+      // Last assistant removed, clear the type config
+      allKeys.push(typeConfigKey);
+      allValues.push('0x');
+    } else {
+      // Update the array with remaining assistants
+      const encodedAssistants = erc725UAP.encodeValueType(
+        'address[]',
+        updatedAssistants
+      );
+      allKeys.push(typeConfigKey);
+      allValues.push(encodedAssistants);
+    }
+  }
+
+  // PHASE E: Execute Transaction
+  console.log(
+    `[Grave Deactivate] Executing setDataBatch with ${allKeys.length} operations`
+  );
+
+  const tx = await upContract.setDataBatch(allKeys, allValues);
+  await tx.wait();
+
+  console.log('[Grave Deactivate] Successfully removed Forwarder Assistant');
 }

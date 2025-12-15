@@ -58,7 +58,11 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   const [inProcessingText, setInProcessingText] = useState<string>();
   const [isRevivingAll, setIsRevivingAll] = useState<boolean>(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isUpgradeModalOpen, onOpen: onUpgradeModalOpen, onClose: onUpgradeModalClose } = useDisclosure();
+  const {
+    isOpen: isUpgradeModalOpen,
+    onOpen: onUpgradeModalOpen,
+    onClose: onUpgradeModalClose,
+  } = useDisclosure();
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
   const panelBgColor = 'dark.purple.200';
   const createButtonBg = 'dark.white';
@@ -490,11 +494,21 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
       </Flex>
 
       {/* Upgrade/Config Required Modal */}
-      <Modal isOpen={isUpgradeModalOpen} onClose={onUpgradeModalClose} isCentered>
+      <Modal
+        isOpen={isUpgradeModalOpen}
+        onClose={onUpgradeModalClose}
+        isCentered
+      >
         <ModalOverlay />
-        <ModalContent bg="dark.purple.200" borderColor="dark.teal.500" border="2px solid">
+        <ModalContent
+          bg="dark.purple.200"
+          borderColor="dark.teal.500"
+          border="2px solid"
+        >
           <ModalHeader color="dark.purple.500" fontFamily="Bungee">
-            {setupType === 'legacy' ? 'Upgrade Required' : 'Configuration Required'}
+            {setupType === 'legacy'
+              ? 'Upgrade Required'
+              : 'Configuration Required'}
           </ModalHeader>
           <ModalCloseButton color="dark.purple.500" />
           <ModalBody>

@@ -270,9 +270,15 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       {/* Upgrade/Config Required Modal */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
-        <ModalContent bg="dark.purple.200" borderColor="dark.teal.500" border="2px solid">
+        <ModalContent
+          bg="dark.purple.200"
+          borderColor="dark.teal.500"
+          border="2px solid"
+        >
           <ModalHeader color="dark.purple.500" fontFamily="Bungee">
-            {setupType === 'legacy' ? 'Upgrade Required' : 'Configuration Required'}
+            {setupType === 'legacy'
+              ? 'Upgrade Required'
+              : 'Configuration Required'}
           </ModalHeader>
           <ModalCloseButton color="dark.purple.500" />
           <ModalBody>

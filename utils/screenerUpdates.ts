@@ -63,7 +63,8 @@ export async function removeAssetFromAddressListScreener(
 
     const executionOrder = executives.findIndex(
       addr =>
-        addr.toLowerCase() === networkConfig.forwarderAssistantAddress.toLowerCase()
+        addr.toLowerCase() ===
+        networkConfig.forwarderAssistantAddress.toLowerCase()
     );
 
     if (executionOrder === -1) {
@@ -107,17 +108,24 @@ export async function removeAssetFromAddressListScreener(
       continue;
     }
 
-    const listName = erc725UAP.decodeValueType('string', listNameData) as string;
+    const listName = erc725UAP.decodeValueType(
+      'string',
+      listNameData
+    ) as string;
 
     // Capture the shared list name
     if (!sharedListName) {
       sharedListName = listName;
-      console.log(`[Optimization] Found shared list name for removal: ${sharedListName}`);
+      console.log(
+        `[Optimization] Found shared list name for removal: ${sharedListName}`
+      );
     }
   }
 
   if (!sharedListName) {
-    console.warn('No list name found for Address List Screener, nothing to remove');
+    console.warn(
+      'No list name found for Address List Screener, nothing to remove'
+    );
     return;
   }
 
@@ -157,7 +165,9 @@ export async function removeAssetFromAddressListScreener(
   const positionHex = mapData.slice(10); // Skip '0x00000000'
   const removedIndex = parseInt(positionHex, 16);
 
-  console.log(`[Optimization] Removing asset at index ${removedIndex} from ${sharedListName}`);
+  console.log(
+    `[Optimization] Removing asset at index ${removedIndex} from ${sharedListName}`
+  );
 
   // Swap-and-pop strategy: move last item to removed position, then decrement length
   const lastIndex = currentLength - 1;
@@ -172,7 +182,9 @@ export async function removeAssetFromAddressListScreener(
     keys.push(listLengthKey);
     values.push(newLengthEncoded);
 
-    console.log(`[Optimization] Removed last item, writing 1 key (length only)`);
+    console.log(
+      `[Optimization] Removed last item, writing 1 key (length only)`
+    );
   } else {
     // Swap last item into removed position
     const baseArrayKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
@@ -182,7 +194,10 @@ export async function removeAssetFromAddressListScreener(
     const lastItemIndexBytes = lastIndex.toString(16).padStart(32, '0');
     const lastItemKey = keyPrefix + lastItemIndexBytes;
     const lastItemData = await upContract.getData(lastItemKey);
-    const lastItemAddress = erc725UAP.decodeValueType('address', lastItemData) as string;
+    const lastItemAddress = erc725UAP.decodeValueType(
+      'address',
+      lastItemData
+    ) as string;
 
     // Write last item to removed position
     const removedIndexBytes = removedIndex.toString(16).padStart(32, '0');
@@ -191,9 +206,10 @@ export async function removeAssetFromAddressListScreener(
     values.push(lastItemData); // Copy last item data
 
     // Update map for the swapped item
-    const swappedMapKey = erc725UAP.encodeKeyName(`${sharedListName}Map:<address>`, [
-      lastItemAddress,
-    ]);
+    const swappedMapKey = erc725UAP.encodeKeyName(
+      `${sharedListName}Map:<address>`,
+      [lastItemAddress]
+    );
     const newPositionHex = removedIndex.toString(16).padStart(64, '0');
     const newMapValue = '0x00000000' + newPositionHex;
     keys.push(swappedMapKey);
@@ -409,6 +425,13 @@ export async function addAssetToAddressListScreener(
 
   let sharedListName: string | null = null;
 
+  // Track screener info for each transaction type (for auto-creation if needed)
+  const screenerInfo: Array<{
+    txType: string;
+    executionOrder: number;
+    screenerOrder: number;
+  }> = [];
+
   // Find the shared list name (should be 'GraveSafeAssets' for both LSP7 and LSP8)
   for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
     // STEP 1: Find the Forwarder Assistant's execution order for this transaction type
@@ -428,8 +451,7 @@ export async function addAssetToAddressListScreener(
     ) as string[];
 
     const executionOrder = executives.findIndex(
-      addr =>
-        addr.toLowerCase() === forwarderAssistantAddress.toLowerCase()
+      addr => addr.toLowerCase() === forwarderAssistantAddress.toLowerCase()
     );
 
     if (executionOrder === -1) {
@@ -444,56 +466,193 @@ export async function addAssetToAddressListScreener(
     );
     const screenersData = await upContract.getData(screenersKey);
 
+    let screenerIndex = 0; // Default to first screener position
+    let needsScreenersCreation = false;
+    let needsLogicCreation = false;
+    let needsScreenerConfigCreation = false;
+    let needsListNameCreation = false;
+
     if (!screenersData || screenersData === '0x') {
-      console.warn(`No screeners found for Forwarder Assistant on ${txType}`);
-      continue;
-    }
+      console.log(
+        `[Auto-create] No screeners found for Forwarder Assistant on ${txType}, will create`
+      );
+      needsScreenersCreation = true;
+      needsLogicCreation = true;
+      needsScreenerConfigCreation = true;
+      needsListNameCreation = true;
+    } else {
+      const screeners = erc725UAP.decodeValueType(
+        'address[]',
+        screenersData
+      ) as string[];
 
-    const screeners = erc725UAP.decodeValueType(
-      'address[]',
-      screenersData
-    ) as string[];
+      const foundIndex = screeners.findIndex(
+        addr => addr.toLowerCase() === addressListScreenerAddress.toLowerCase()
+      );
 
-    const screenerIndex = screeners.findIndex(
-      addr => addr.toLowerCase() === addressListScreenerAddress.toLowerCase()
-    );
+      if (foundIndex === -1) {
+        console.warn(
+          `[Auto-create] Address List Screener not found in screeners array for ${txType}, will create`
+        );
+        // Screener exists but Address List Screener not in it - will add to existing array
+        screenerIndex = screeners.length; // Add at the end
+        needsScreenerConfigCreation = true;
+        needsListNameCreation = true;
 
-    if (screenerIndex === -1) {
-      console.warn(`Address List Screener not found for ${txType}`);
-      continue;
+        // Update screeners array to include Address List Screener
+        const updatedScreeners = [...screeners, addressListScreenerAddress];
+        const encodedScreeners = erc725UAP.encodeValueType(
+          'address[]',
+          updatedScreeners
+        );
+        keys.push(screenersKey);
+        values.push(encodedScreeners);
+      } else {
+        screenerIndex = foundIndex;
+      }
     }
 
     const screenerOrder = executionOrder * 1000 + screenerIndex;
 
-    // STEP 3: Get the list name for this screener
+    // Store screener info for all transaction types (even if missing config)
+    screenerInfo.push({
+      txType,
+      executionOrder,
+      screenerOrder,
+    });
+
+    // STEP 3: Auto-create missing screener configuration keys
+    if (needsScreenersCreation) {
+      // Create UAPExecutiveScreeners array
+      const encodedScreeners = erc725UAP.encodeValueType('address[]', [
+        addressListScreenerAddress,
+      ]);
+      keys.push(screenersKey);
+      values.push(encodedScreeners);
+      console.log(
+        `[Auto-create] Creating UAPExecutiveScreeners for ${txType}`
+      );
+    }
+
+    if (needsLogicCreation) {
+      // Create UAPExecutiveScreenersANDLogic
+      const logicKey = erc725UAP.encodeKeyName(
+        'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
+        [txType, executionOrder.toString()]
+      );
+      keys.push(logicKey);
+      values.push('0x01'); // AND logic
+      console.log(
+        `[Auto-create] Creating UAPExecutiveScreenersANDLogic for ${txType}`
+      );
+    }
+
+    if (needsScreenerConfigCreation) {
+      // Create UAPScreenerConfig
+      const screenerConfigKey = erc725UAP.encodeKeyName(
+        'UAPScreenerConfig:<bytes32>:<uint256>',
+        [txType, screenerOrder.toString()]
+      );
+
+      const abiCoder = new AbiCoder();
+      const returnValueWhenInList = false; // Addresses in list should FAIL screening (go to UP)
+      const configBytes = abiCoder.encode(['bool'], [returnValueWhenInList]);
+
+      // Manual byte packing: executive + screener + config
+      const executiveBytes = forwarderAssistantAddress.toLowerCase().slice(2);
+      const screenerBytes = addressListScreenerAddress.toLowerCase().slice(2);
+      const screenerConfigValue =
+        '0x' + executiveBytes + screenerBytes + configBytes.slice(2);
+
+      keys.push(screenerConfigKey);
+      values.push(screenerConfigValue);
+      console.log(
+        `[Auto-create] Creating UAPScreenerConfig for ${txType} at screenerOrder ${screenerOrder}`
+      );
+    }
+
+    if (needsListNameCreation) {
+      // Check if list name exists, create if missing
+      const listNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [txType, screenerOrder.toString()]
+      );
+      const listNameData = await upContract.getData(listNameKey);
+
+      if (!listNameData || listNameData === '0x') {
+        // Will be created below in the shared list name section
+        console.log(
+          `[Auto-create] List name missing for ${txType}, will create`
+        );
+      } else {
+        const listName = erc725UAP.decodeValueType(
+          'string',
+          listNameData
+        ) as string;
+
+        // Capture the shared list name (should be same for both LSP7 and LSP8)
+        if (!sharedListName) {
+          sharedListName = listName;
+          console.log(`[Optimization] Found shared list name: ${sharedListName}`);
+        } else if (listName !== sharedListName) {
+          console.warn(
+            `[Warning] List names differ! LSP7/LSP8 using different lists: ${sharedListName} vs ${listName}`
+          );
+        }
+      }
+    } else {
+      // List name should exist, read it
+      const listNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [txType, screenerOrder.toString()]
+      );
+      const listNameData = await upContract.getData(listNameKey);
+
+      if (listNameData && listNameData !== '0x') {
+        const listName = erc725UAP.decodeValueType(
+          'string',
+          listNameData
+        ) as string;
+
+        if (!sharedListName) {
+          sharedListName = listName;
+          console.log(`[Optimization] Found shared list name: ${sharedListName}`);
+        } else if (listName !== sharedListName) {
+          console.warn(
+            `[Warning] List names differ! LSP7/LSP8 using different lists: ${sharedListName} vs ${listName}`
+          );
+        }
+      }
+    }
+  }
+
+  // Auto-create address list name if not found
+  if (!sharedListName) {
+    console.log(
+      '[Auto-create] Address list name not found, creating with default: GraveSafeAssets'
+    );
+    sharedListName = 'GraveSafeAssets';
+  }
+
+  // Set the list name keys for all transaction types where it's missing
+  for (const info of screenerInfo) {
     const listNameKey = erc725UAP.encodeKeyName(
       'UAPAddressListName:<bytes32>:<uint256>',
-      [txType, screenerOrder.toString()]
+      [info.txType, info.screenerOrder.toString()]
     );
     const listNameData = await upContract.getData(listNameKey);
 
     if (!listNameData || listNameData === '0x') {
-      console.warn(`No list name found for Address List Screener on ${txType}`);
-      continue;
-    }
-
-    const listName = erc725UAP.decodeValueType('string', listNameData) as string;
-
-    // Capture the shared list name (should be same for both LSP7 and LSP8)
-    if (!sharedListName) {
-      sharedListName = listName;
-      console.log(`[Optimization] Found shared list name: ${sharedListName}`);
-    } else if (listName !== sharedListName) {
-      console.warn(
-        `[Warning] List names differ! LSP7/LSP8 using different lists: ${sharedListName} vs ${listName}`
+      const encodedListName = erc725UAP.encodeValueType(
+        'string',
+        sharedListName
       );
-      // This shouldn't happen with new configs, but handle legacy case
-      // by using the first name found
+      keys.push(listNameKey);
+      values.push(encodedListName);
+      console.log(
+        `[Auto-create] Creating UAPAddressListName for ${info.txType} with value: ${sharedListName}`
+      );
     }
-  }
-
-  if (!sharedListName) {
-    throw new Error('No list name found for Address List Screener');
   }
 
   // STEP 4: Read current address list ONCE (since it's shared)
@@ -504,9 +663,7 @@ export async function addAssetToAddressListScreener(
   let currentAddresses: string[] = [];
 
   if (listLengthRaw && listLengthRaw !== '0x') {
-    currentLength = Number(
-      erc725UAP.decodeValueType('uint256', listLengthRaw)
-    );
+    currentLength = Number(erc725UAP.decodeValueType('uint256', listLengthRaw));
 
     if (currentLength > 0) {
       const itemKeys: string[] = [];
@@ -521,8 +678,8 @@ export async function addAssetToAddressListScreener(
       const itemValues = await upContract.getDataBatch(itemKeys);
       currentAddresses = itemValues
         .filter((value: any) => value && value !== '0x')
-        .map((value: any) =>
-          erc725UAP.decodeValueType('address', value) as string
+        .map(
+          (value: any) => erc725UAP.decodeValueType('address', value) as string
         );
     }
   }
@@ -556,7 +713,10 @@ export async function addAssetToAddressListScreener(
   const keyPrefix = baseArrayKey.slice(0, 34);
   const indexBytes16 = newIndex.toString(16).padStart(32, '0');
   const itemKey = keyPrefix + indexBytes16;
-  const encodedAddress = erc725UAP.encodeValueType('address', checksumAssetAddress);
+  const encodedAddress = erc725UAP.encodeValueType(
+    'address',
+    checksumAssetAddress
+  );
   keys.push(itemKey);
   values.push(encodedAddress);
 

@@ -30,8 +30,7 @@ const MINIMAL_PROXY_SUFFIX = '5af43d82803e903d91602b57fd5bf3'; // No 0x prefix!
  * @param networkConfig Network configuration
  * @returns Implementation address and whether it was newly deployed
  */
-export async function getOrDeployImplementation(
-  provider: BrowserProvider,
+export async function getVaultImplementation(
   networkConfig: Network
 ): Promise<{ address: string; wasDeployed: boolean }> {
   // Check if there's a pre-deployed implementation in the network config
@@ -42,55 +41,9 @@ export async function getOrDeployImplementation(
       networkConfig.vaultImplementation
     );
     return { address: networkConfig.vaultImplementation, wasDeployed: false };
+  } else {
+    throw new Error('No vault implementation found on this network.')
   }
-
-  // No implementation found - deploy a new one
-  console.log(
-    'No implementation found. Deploying new LSP9VaultInit implementation...'
-  );
-  console.warn('⚠️  This will be the FIRST implementation on this network!');
-  console.warn('⚠️  Consider adding this to constants/networks.ts:');
-
-  const signer = await provider.getSigner();
-  const signerAddress = await signer.getAddress();
-
-  // Get the deployment bytecode for LSP9VaultInit (constructor takes no args)
-  const implementationBytecode = luksoTypechain.LSP9VaultInit__factory.bytecode;
-
-  console.log('Implementation bytecode length:', implementationBytecode.length);
-
-  // Predict the implementation address based on signer's nonce
-  const nonce = await provider.getTransactionCount(signerAddress);
-  const implementationAddress = getCreateAddress({
-    from: signerAddress,
-    nonce: nonce,
-  });
-
-  console.log('Deploying implementation from signer:', signerAddress);
-  console.log('Predicted implementation address:', implementationAddress);
-  console.log('Signer nonce:', nonce);
-
-  // Deploy the implementation directly from the signer (not via UP)
-  // This is okay because the implementation is stateless and can be deployed by anyone
-  const tx = await signer.sendTransaction({
-    data: implementationBytecode,
-  });
-
-  console.log('Implementation deployment tx:', tx.hash);
-  const receipt = await tx.wait();
-
-  if (!receipt || receipt.status !== 1) {
-    throw new Error('Implementation deployment failed');
-  }
-
-  console.log(
-    'Implementation deployed successfully at:',
-    implementationAddress
-  );
-  console.log('📋 Add to constants/networks.ts:');
-  console.log(`   vaultImplementation: '${implementationAddress}',`);
-
-  return { address: implementationAddress, wasDeployed: true };
 }
 
 /**

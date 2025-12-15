@@ -154,7 +154,9 @@ export default function VaultURDChecker({
                 Vault Configuration Required
               </Text>
               <Text fontSize="sm">
-                This spambox vault cannot receive and track assets properly until its asset tracking is activated. Click the activate button to fix this.
+                This spambox vault cannot receive and track assets properly
+                until its asset tracking is activated. Click the activate button
+                to fix this.
               </Text>
             </Box>
             <Button
