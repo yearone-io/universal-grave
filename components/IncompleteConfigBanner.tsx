@@ -22,7 +22,7 @@ import { supportedNetworks } from '@/constants/supportedNetworks';
  * 2. User has configuration but no filters configured (empty whitelist AND no curated list)
  */
 export default function IncompleteConfigBanner() {
-  const { setupType, hasUAPSubscription } = useGrave();
+  const { setupType, hasUAPSubscription, isLoadingGraveData } = useGrave();
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -31,6 +31,7 @@ export default function IncompleteConfigBanner() {
 
   const [isDismissed, setIsDismissed] = useState(false);
   const [isIncompleteConfig, setIsIncompleteConfig] = useState(false);
+  const [configCheckTrigger, setConfigCheckTrigger] = useState(0);
 
   // Check if banner was dismissed this session
   useEffect(() => {
@@ -39,6 +40,14 @@ export default function IncompleteConfigBanner() {
       setIsDismissed(true);
     }
   }, []);
+
+  // Trigger config recheck when grave data finishes loading
+  useEffect(() => {
+    if (!isLoadingGraveData) {
+      // Increment trigger to force recheck
+      setConfigCheckTrigger(prev => prev + 1);
+    }
+  }, [isLoadingGraveData]);
 
   // Check for incomplete configuration (empty whitelist AND no curated list)
   useEffect(() => {
@@ -88,7 +97,7 @@ export default function IncompleteConfigBanner() {
     }
 
     checkConfig();
-  }, [setupType, profileDetailsData, chainId]);
+  }, [setupType, profileDetailsData, chainId, configCheckTrigger]);
 
   // Show banner if:
   // 1. No configuration at all (setupType === 'none' AND hasUAPSubscription), OR

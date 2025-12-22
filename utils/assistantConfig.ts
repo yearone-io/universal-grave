@@ -536,7 +536,16 @@ export async function saveForwarderAssistantConfig(
     networkConfig
   );
 
-  // Determine what changed
+  // Check if a complete config already exists (required for optimization to work)
+  // If no config exists, we must write ALL keys - can't skip anything
+  const configExists =
+    currentConfig.isConfigured && currentConfig.listName !== null;
+
+  console.log(
+    `[Optimization] Config exists: ${configExists} (isConfigured=${currentConfig.isConfigured}, listName=${currentConfig.listName})`
+  );
+
+  // Determine what changed (only meaningful if config already exists)
   const changes = {
     vaultChanged: hasVaultChanged(currentConfig.vaultAddress, vaultAddress),
     addressListChanged: compareAddressLists(
@@ -585,11 +594,15 @@ export async function saveForwarderAssistantConfig(
       supportedNetworks,
       {
         skipSharedListWrite: !isFirstIteration, // Skip on LSP8 (second iteration)
-        skipExecutiveConfig: !changes.vaultChanged, // Skip if vault unchanged
-        skipScreenerArray: !changes.screenerSelectionChanged, // Skip if screener selection unchanged
+        // Only apply skip optimizations if config already exists
+        // If no config exists, we must write ALL keys
+        skipExecutiveConfig: configExists && !changes.vaultChanged,
+        skipScreenerArray: configExists && !changes.screenerSelectionChanged,
         skipScreenerConfigs:
-          !changes.curatedListChanged && !changes.addressListChanged, // Skip if neither changed
-        skipAddressListData: !changes.addressListChanged, // Skip if address list unchanged
+          configExists &&
+          !changes.screenerSelectionChanged &&
+          !changes.curatedListChanged,
+        skipAddressListData: configExists && !changes.addressListChanged,
       }
     );
 
@@ -1024,36 +1037,8 @@ export async function removeForwarderAssistant(
       allValues.push('0x');
     }
 
-    // Clear shared address list data (GraveSafeAssets)
-    // Only clear once for the first transaction type to avoid duplicate operations
-    if (typeId === LSP7_TRANSACTION_TYPE && currentConfig.listName) {
-      const listName = currentConfig.listName;
-
-      // Clear list length
-      const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
-      allKeys.push(listLengthKey);
-      allValues.push('0x');
-
-      // Clear each address item and mapping
-      for (let j = 0; j < currentConfig.whitelistAddresses.length; j++) {
-        const address = currentConfig.whitelistAddresses[j];
-
-        // Clear array item
-        const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
-        const keyPrefix = baseArrayKey.slice(0, 34);
-        const indexBytes16 = j.toString(16).padStart(32, '0');
-        const itemKey = keyPrefix + indexBytes16;
-        allKeys.push(itemKey);
-        allValues.push('0x');
-
-        // Clear mapping
-        const mapKey = erc725UAP.encodeKeyName(`${listName}Map:<address>`, [
-          address,
-        ]);
-        allKeys.push(mapKey);
-        allValues.push('0x');
-      }
-    }
+    // NOTE: We intentionally do NOT clear the shared address list data (GraveSafeAssets)
+    // This preserves the user's safe assets list so if they reactivate, their list will still be there
 
     // PHASE C: Migrate Subsequent Assistants
     if (forwarderIndex < currentAssistants.length - 1) {

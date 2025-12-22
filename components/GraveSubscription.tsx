@@ -25,10 +25,13 @@ import {
   ModalFooter,
   ModalCloseButton,
   useDisclosure,
+  Badge,
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaPlus, FaTrash, FaChevronDown } from 'react-icons/fa';
+import { FaCheckCircle, FaPlus, FaTrash, FaChevronDown, FaCopy } from 'react-icons/fa';
 import { BrowserProvider, isAddress, Contract } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
@@ -54,6 +57,8 @@ import VaultURDChecker from './VaultURDChecker';
 
 const GraveSubscription: React.FC = () => {
   const toast = useToast({ position: 'bottom-left' });
+  const params = useParams();
+  const networkName = params.networkName as string;
   const { profileDetailsData, isConnected, chainId } = useProfile();
   const {
     hasUAPSubscription,
@@ -75,6 +80,13 @@ const GraveSubscription: React.FC = () => {
   const [useCuratedList, setUseCuratedList] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [listName, setListName] = useState<string | null>(null);
+
+  // Original values for change detection (loaded from blockchain)
+  const [originalWhitelistAddresses, setOriginalWhitelistAddresses] = useState<
+    string[]
+  >([]);
+  const [originalCuratedListAddress, setOriginalCuratedListAddress] =
+    useState<string>('');
 
   // Vault selection state
   const [availableVaults, setAvailableVaults] = useState<string[]>([]);
@@ -234,10 +246,16 @@ const GraveSubscription: React.FC = () => {
           if (existingConfig.isConfigured) {
             if (existingConfig.whitelistAddresses.length > 0) {
               setWhitelistAddresses(existingConfig.whitelistAddresses);
+              setOriginalWhitelistAddresses(existingConfig.whitelistAddresses);
+            } else {
+              setOriginalWhitelistAddresses([]);
             }
             if (existingConfig.curatedListAddress) {
               setCuratedListAddress(existingConfig.curatedListAddress);
+              setOriginalCuratedListAddress(existingConfig.curatedListAddress);
               // useCuratedList is now auto-determined from address validity
+            } else {
+              setOriginalCuratedListAddress('');
             }
             // Capture list name for notification
             if (existingConfig.listName) {
@@ -345,21 +363,25 @@ const GraveSubscription: React.FC = () => {
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
         });
 
-        // Check if configuration is complete
+        // Check if configuration is complete (requires all UAP keys including screener config)
         const isComplete =
           config.isConfigured &&
           config.vaultAddress &&
           config.executionOrderLSP7 !== null &&
-          config.executionOrderLSP8 !== null;
+          config.executionOrderLSP8 !== null &&
+          config.listName !== null; // Screener config chain present
 
         if (!isComplete) {
-          // Has UAP but no/incomplete Forwarder config - go to Step 2
-          // But first need to ensure a vault is selected
-          if (config.vaultAddress) {
-            setSelectedVault(config.vaultAddress);
-            setVaultSelected(true);
-            setVaultHasURD(true); // Assume valid if config exists
+          // Has UAP but no/incomplete Forwarder config
+          // If no vault configured, go back to Step 1 for vault selection
+          if (!config.vaultAddress) {
+            setCurrentStep(1);
+            return;
           }
+          // Has vault but config incomplete - go to Step 2
+          setSelectedVault(config.vaultAddress);
+          setVaultSelected(true);
+          setVaultHasURD(true); // Assume valid if config exists
           setCurrentStep(2);
           setSubscriptionComplete(false);
         } else {
@@ -374,8 +396,8 @@ const GraveSubscription: React.FC = () => {
         }
       } catch (error) {
         console.error('Error determining starting step:', error);
-        // Default to Step 2 if we have UAP but can't read config
-        setCurrentStep(2);
+        // Default to Step 1 (vault selection) for safety when config can't be read
+        setCurrentStep(1);
       }
     };
 
@@ -426,6 +448,26 @@ const GraveSubscription: React.FC = () => {
     }
 
     return null;
+  };
+
+  // Helper functions to detect unsaved changes
+  const hasAddressListChanges = (): boolean => {
+    // Normalize both arrays: trim, filter empty, lowercase, sort
+    const normalize = (arr: string[]) =>
+      arr
+        .map(a => a.trim().toLowerCase())
+        .filter(a => a !== '' && isAddress(a))
+        .sort();
+    const current = normalize(whitelistAddresses);
+    const original = normalize(originalWhitelistAddresses);
+    if (current.length !== original.length) return true;
+    return current.some((addr, i) => addr !== original[i]);
+  };
+
+  const hasCuratedListChanges = (): boolean => {
+    const currentNormalized = curatedListAddress.trim().toLowerCase();
+    const originalNormalized = originalCuratedListAddress.trim().toLowerCase();
+    return currentNormalized !== originalNormalized;
   };
 
   // Handler for URD status changes from VaultURDChecker
@@ -588,6 +630,7 @@ const GraveSubscription: React.FC = () => {
         const needsConfig =
           !existingConfig.isConfigured ||
           !existingConfig.vaultAddress ||
+          !existingConfig.listName || // Screener config missing
           existingConfig.vaultAddress.toLowerCase() !==
             selectedVault.toLowerCase();
 
@@ -636,6 +679,10 @@ const GraveSubscription: React.FC = () => {
         duration: 5000,
         isClosable: true,
       });
+
+      // Update original values to reflect saved state (empty on initial setup)
+      setOriginalWhitelistAddresses([]);
+      setOriginalCuratedListAddress('');
 
       await refreshGraveData();
       setSubscriptionComplete(true);
@@ -818,6 +865,12 @@ const GraveSubscription: React.FC = () => {
         duration: 9000,
         isClosable: true,
       });
+
+      // Update original values to reflect saved state
+      setOriginalWhitelistAddresses(whitelistArray);
+      setOriginalCuratedListAddress(
+        shouldUseCuratedList ? curatedListAddress : ''
+      );
 
       await refreshGraveData();
     } catch (err: any) {
@@ -1182,6 +1235,8 @@ const GraveSubscription: React.FC = () => {
 
       // Update component state with merged addresses
       setWhitelistAddresses(listData.addresses);
+      // Update original values to reflect saved state
+      setOriginalWhitelistAddresses(listData.addresses);
     } catch (err: any) {
       console.error('Error migrating list name:', err);
       if (!err.message?.includes('user rejected')) {
@@ -1287,8 +1342,9 @@ const GraveSubscription: React.FC = () => {
     );
   }
 
-  // Step 1: Vault Selection View (NEW)
-  if (currentStep === 1 && !hasUAPSubscription) {
+  // Step 1: Vault Selection View
+  // Shows when user needs to select vault (regardless of UAP subscription status)
+  if (currentStep === 1) {
     return (
       <Box width="100%">
         <Text
@@ -1619,6 +1675,30 @@ const GraveSubscription: React.FC = () => {
           <Text as="span" fontFamily="mono" fontWeight="bold">
             {formatAddress(selectedVault)}
           </Text>
+          <IconButton
+            aria-label="Copy vault address"
+            icon={<FaCopy />}
+            size="xs"
+            ml={2}
+            variant="ghost"
+            color="green.600"
+            _hover={{ bg: 'green.100' }}
+            onClick={() => {
+              navigator.clipboard.writeText(selectedVault);
+              toast({
+                title: 'Copied!',
+                description: 'Vault address copied to clipboard',
+                status: 'success',
+                duration: 2000,
+                isClosable: true,
+              });
+            }}
+          />
+          <Link href={`/${networkName}/grave/${address}`} passHref>
+            <ChakraLink color="green.700" fontWeight="bold" fontSize="sm" textDecoration="underline" ml={2}>
+              View Spambox →
+            </ChakraLink>
+          </Link>
         </Text>
       </Box>
 
@@ -1660,12 +1740,43 @@ const GraveSubscription: React.FC = () => {
             border="2px solid"
             borderColor="dark.purple.400"
           >
-            <Text
-              fontSize="md"
-              fontWeight="bold"
-              color="dark.purple.500"
-              mb={2}
-            >
+            <Flex align="center" gap={2} mb={2}>
+              <Text
+                fontSize="md"
+                fontWeight="bold"
+                color="dark.purple.500"
+              >
+                Curated List
+              </Text>
+              {hasCuratedListChanges() && (
+                <Badge
+                  bg="orange.400"
+                  color="white"
+                  fontSize="xs"
+                  fontWeight="bold"
+                  px={2}
+                  py={0.5}
+                  borderRadius="md"
+                >
+                  UNSAVED CHANGES
+                </Badge>
+              )}
+              {!hasCuratedListChanges() &&
+                originalCuratedListAddress.trim() !== '' && (
+                  <Badge
+                    bg="green.500"
+                    color="white"
+                    fontSize="xs"
+                    fontWeight="bold"
+                    px={2}
+                    py={0.5}
+                    borderRadius="md"
+                  >
+                    ACTIVE
+                  </Badge>
+                )}
+            </Flex>
+            <Text fontSize="sm" color="dark.purple.400" mb={2}>
               Add a curated list of digital assets that are safe (NOT spam).
               These assets will stay in your UP! and not get sent to the GRAVE
               Spambox.
@@ -1747,14 +1858,42 @@ const GraveSubscription: React.FC = () => {
             border="2px solid"
             borderColor="dark.purple.400"
           >
-            <Text
-              fontSize="md"
-              fontWeight="bold"
-              color="dark.purple.500"
-              mb={2}
-            >
-              Mark safe (NOT spam) assets manually
-            </Text>
+            <Flex align="center" gap={2} mb={2}>
+              <Text
+                fontSize="md"
+                fontWeight="bold"
+                color="dark.purple.500"
+              >
+                Safe Assets List
+              </Text>
+              {hasAddressListChanges() && (
+                <Badge
+                  bg="orange.400"
+                  color="white"
+                  fontSize="xs"
+                  fontWeight="bold"
+                  px={2}
+                  py={0.5}
+                  borderRadius="md"
+                >
+                  UNSAVED CHANGES
+                </Badge>
+              )}
+              {!hasAddressListChanges() &&
+                originalWhitelistAddresses.length > 0 && (
+                  <Badge
+                    bg="green.500"
+                    color="white"
+                    fontSize="xs"
+                    fontWeight="bold"
+                    px={2}
+                    py={0.5}
+                    borderRadius="md"
+                  >
+                    ACTIVE
+                  </Badge>
+                )}
+            </Flex>
             <Text fontSize="sm" color="dark.purple.400" mb={3}>
               Assets with these addresses will NOT be sent to the GRAVE Spambox
             </Text>

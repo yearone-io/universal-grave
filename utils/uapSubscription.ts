@@ -167,6 +167,7 @@ export async function unsubscribeFromUAP(
     // Prepare keys and values
     const keys: string[] = [
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, // Restore default URD
+      SUPPORTED_STANDARDS_UAP_KEY, // Clear UAP supported standard
       ...erc725.encodeData([
         {
           keyName: 'AddressPermissions:Permissions:<address>',
@@ -182,6 +183,7 @@ export async function unsubscribeFromUAP(
 
     const values: string[] = [
       defaultURDAddress, // Restore default URD
+      '0x', // Clear SupportedStandards:UAP
       ...erc725.encodeData([
         {
           keyName: 'AddressPermissions:Permissions:<address>',
@@ -385,7 +387,7 @@ export async function subscribeAndConfigureGrave(
       // Length key: AddressPermissions[].length
       const lengthKey = ERC725YDataKeys.LSP6['AddressPermissions[]'].length;
       keys.push(lengthKey);
-      values.push(erc725LSP6.encodeValueType('uint128', newLength));
+      values.push(erc725LSP6.encodeValueType('uint128', BigInt(newLength)));
 
       // New entry at index: AddressPermissions[index]
       const indexKey =
@@ -557,10 +559,16 @@ export async function subscribeAndConfigureGrave(
       const listLength = erc725UAP.encodeValueType('uint256', BigInt(0));
       keys.push(listLengthKey);
       values.push(listLength);
-      console.log('[UAP Subscribe] Initializing empty GraveSafeAssets[] list');
-    } else {
       console.log(
-        '[UAP Subscribe] GraveSafeAssets[] already exists, preserving existing list'
+        '[UAP Subscribe] No existing GraveSafeAssets list found - initializing empty list'
+      );
+    } else {
+      // Parse existing list length to show count
+      const existingCount = Number(
+        erc725UAP.decodeValueType('uint256', existingListLength)
+      );
+      console.log(
+        `[UAP Subscribe] Found existing GraveSafeAssets list with ${existingCount} items - preserving and configuring screener to use it`
       );
     }
 
