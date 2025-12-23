@@ -938,6 +938,10 @@ const GraveSubscription: React.FC = () => {
       setWhitelistAddresses([]);
       setCuratedListAddress('');
       setUseCuratedList(false);
+
+      // Reset step/subscription state so Install triggers proper transaction
+      setSubscriptionComplete(false);
+      setVaultSelected(false);
     } catch (err: any) {
       console.error('Error deactivating GRAVE:', err);
       if (!err.message?.includes('user rejected')) {
@@ -2000,7 +2004,7 @@ const GraveSubscription: React.FC = () => {
                 leftIcon={<FaPlus />}
                 onClick={addWhitelistAddress}
                 size="sm"
-                variant="outline"
+                variant="transparentDark"
                 colorScheme="purple"
                 width="full"
               >
@@ -2046,11 +2050,22 @@ const GraveSubscription: React.FC = () => {
           >
             DEACTIVATE
           </MenuButton>
-          <MenuList>
+          <MenuList
+            bg="dark.purple.100"
+            borderColor="dark.purple.300"
+            borderWidth="2px"
+            borderRadius="lg"
+            boxShadow="lg"
+            py={2}
+          >
             <MenuItem
               onClick={handleDeactivateGrave}
               fontFamily="Montserrat"
               fontWeight="600"
+              color="dark.purple.500"
+              bg="transparent"
+              _hover={{ bg: 'dark.purple.200' }}
+              _focus={{ bg: 'dark.purple.200' }}
             >
               Deactivate GRAVE Spambox Only
             </MenuItem>
@@ -2059,6 +2074,9 @@ const GraveSubscription: React.FC = () => {
               fontFamily="Montserrat"
               fontWeight="600"
               color="red.600"
+              bg="transparent"
+              _hover={{ bg: 'red.50' }}
+              _focus={{ bg: 'red.50' }}
             >
               Deactivate UAP Protocol (All Assistants)
             </MenuItem>
@@ -2072,53 +2090,103 @@ const GraveSubscription: React.FC = () => {
         onClose={onCloseDeactivateUAPModal}
         isCentered
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader fontFamily="Bungee" color="red.600">
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent
+          bg="dark.purple.100"
+          borderWidth="2px"
+          borderColor="dark.purple.400"
+          borderRadius="xl"
+        >
+          <ModalHeader
+            fontFamily="Bungee"
+            color="dark.purple.500"
+            borderBottomWidth="1px"
+            borderColor="dark.purple.200"
+          >
             Deactivate UAP Protocol?
           </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack align="start" spacing={3}>
-              <Text fontWeight="bold" color="red.600">
-                ⚠️ Warning: This will deactivate ALL executive assistants!
-              </Text>
-              <Text fontSize="sm">
+          <ModalCloseButton color="dark.purple.400" />
+          <ModalBody py={5}>
+            <VStack align="start" spacing={4}>
+              <Box
+                bg="red.50"
+                p={3}
+                borderRadius="md"
+                borderWidth="1px"
+                borderColor="red.200"
+                width="100%"
+              >
+                <Text fontWeight="bold" color="red.600" fontSize="sm">
+                  Warning: This will deactivate ALL executive assistants!
+                </Text>
+              </Box>
+              <Text fontSize="sm" color="dark.purple.500">
                 This action will completely remove the Universal Assistant
                 Protocol from your Universal Profile, including:
               </Text>
-              <Box as="ul" pl={6} fontSize="sm">
-                <Box as="li">GRAVE Spambox (Forwarder Assistant)</Box>
-                <Box as="li">All other executive assistants (if any)</Box>
-                <Box as="li">All screener configurations</Box>
-                <Box as="li">All address lists and filters</Box>
-                <Box as="li">UAP metadata and settings</Box>
-              </Box>
-              <Text fontSize="sm" fontWeight="bold">
+              <VStack
+                as="ul"
+                pl={6}
+                fontSize="sm"
+                color="dark.purple.400"
+                spacing={1}
+                align="flex-start"
+                listStyleType="disc"
+              >
+                <Box as="li" display="list-item">
+                  GRAVE Spambox (Forwarder Assistant)
+                </Box>
+                <Box as="li" display="list-item">
+                  All other executive assistants (if any)
+                </Box>
+                <Box as="li" display="list-item">
+                  All screener configurations
+                </Box>
+                <Box as="li" display="list-item">
+                  All address lists and filters
+                </Box>
+                <Box as="li" display="list-item">
+                  UAP metadata and settings
+                </Box>
+              </VStack>
+              <Text fontSize="sm" fontWeight="600" color="dark.purple.500">
                 Your Universal Profile will no longer have any automated asset
                 handling.
               </Text>
-              <Text fontSize="sm" color="gray.600">
-                If you only want to deactivate GRAVE, use the "Deactivate GRAVE
-                Spambox Only" option instead.
-              </Text>
+              <Box
+                bg="dark.purple.200"
+                p={3}
+                borderRadius="md"
+                width="100%"
+              >
+                <Text fontSize="sm" color="dark.purple.400">
+                  If you only want to deactivate GRAVE, use the "Deactivate
+                  GRAVE Spambox Only" option instead.
+                </Text>
+              </Box>
             </VStack>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter borderTopWidth="1px" borderColor="dark.purple.200">
             <Button
-              variant="ghost"
+              variant="outline"
               mr={3}
               onClick={onCloseDeactivateUAPModal}
               isDisabled={isProcessing}
+              color="dark.purple.500"
+              borderColor="dark.purple.300"
+              _hover={{ bg: 'dark.purple.200' }}
+              fontFamily="Bungee"
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
-              colorScheme="red"
+              bg="red.500"
+              color="white"
               onClick={handleDeactivateUAP}
               isLoading={isProcessing}
               isDisabled={isProcessing}
               fontFamily="Bungee"
+              _hover={{ bg: 'red.600' }}
             >
               {isProcessing ? 'DEACTIVATING...' : 'DEACTIVATE UAP'}
             </Button>
