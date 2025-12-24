@@ -71,6 +71,10 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
               networkConfig.addressListScreenerAddress,
             curatedListScreenerAddress:
               networkConfig.curatedListScreenerAddress,
+            creatorListScreenerAddress:
+              networkConfig.creatorListScreenerAddress,
+            creatorCurationScreenerAddress:
+              networkConfig.creatorCurationScreenerAddress,
           }
         );
 

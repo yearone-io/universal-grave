@@ -49,6 +49,10 @@ export default function GravePageAssets({
                 networkConfig.addressListScreenerAddress,
               curatedListScreenerAddress:
                 networkConfig.curatedListScreenerAddress,
+              creatorListScreenerAddress:
+                networkConfig.creatorListScreenerAddress,
+              creatorCurationScreenerAddress:
+                networkConfig.creatorCurationScreenerAddress,
             }
           );
 

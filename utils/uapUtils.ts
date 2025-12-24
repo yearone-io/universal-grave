@@ -135,6 +135,8 @@ export async function detectGraveSetup(
     forwarderAssistantAddress?: string;
     addressListScreenerAddress?: string;
     curatedListScreenerAddress?: string;
+    creatorListScreenerAddress?: string;
+    creatorCurationScreenerAddress?: string;
   }
 ): Promise<{
   hasUAPSubscription: boolean;
@@ -166,6 +168,10 @@ export async function detectGraveSetup(
               networkConfig.addressListScreenerAddress || '',
             curatedListScreenerAddress:
               networkConfig.curatedListScreenerAddress || '',
+            creatorListScreenerAddress:
+              networkConfig.creatorListScreenerAddress || '',
+            creatorCurationScreenerAddress:
+              networkConfig.creatorCurationScreenerAddress || '',
           }
         );
         uapVaultAddress = assistantConfig.vaultAddress;

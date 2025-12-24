@@ -81,6 +81,10 @@ export default function IncompleteConfigBanner() {
               networkConfig.addressListScreenerAddress,
             curatedListScreenerAddress:
               networkConfig.curatedListScreenerAddress,
+            creatorListScreenerAddress:
+              networkConfig.creatorListScreenerAddress,
+            creatorCurationScreenerAddress:
+              networkConfig.creatorCurationScreenerAddress,
           }
         );
 

@@ -26,8 +26,17 @@ import {
   ModalCloseButton,
   useDisclosure,
   Badge,
+  Radio,
+  RadioGroup,
+  Stack,
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaPlus, FaTrash, FaChevronDown, FaCopy } from 'react-icons/fa';
+import {
+  FaCheckCircle,
+  FaPlus,
+  FaTrash,
+  FaChevronDown,
+  FaCopy,
+} from 'react-icons/fa';
 import { BrowserProvider, isAddress, Contract } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { useParams } from 'next/navigation';
@@ -74,12 +83,24 @@ const GraveSubscription: React.FC = () => {
   const currentNetwork = chainId ? supportedNetworks[chainId] : null;
   const vaultToUse = uapVaultAddress || graveVault;
 
-  // Configuration state
+  // Configuration state - Asset Filters
   const [whitelistAddresses, setWhitelistAddresses] = useState<string[]>([]);
   const [curatedListAddress, setCuratedListAddress] = useState<string>('');
   const [useCuratedList, setUseCuratedList] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [listName, setListName] = useState<string | null>(null);
+
+  // Configuration state - Creator Filters
+  const [creatorWhitelistAddresses, setCreatorWhitelistAddresses] = useState<
+    string[]
+  >([]);
+  const [creatorCuratedListAddress, setCreatorCuratedListAddress] =
+    useState<string>('');
+  const [requireAllCreatorsForList, setRequireAllCreatorsForList] =
+    useState<boolean>(false);
+  const [requireAllCreatorsForCuration, setRequireAllCreatorsForCuration] =
+    useState<boolean>(false);
+  const [creatorListName, setCreatorListName] = useState<string | null>(null);
 
   // Original values for change detection (loaded from blockchain)
   const [originalWhitelistAddresses, setOriginalWhitelistAddresses] = useState<
@@ -87,6 +108,22 @@ const GraveSubscription: React.FC = () => {
   >([]);
   const [originalCuratedListAddress, setOriginalCuratedListAddress] =
     useState<string>('');
+  const [
+    originalCreatorWhitelistAddresses,
+    setOriginalCreatorWhitelistAddresses,
+  ] = useState<string[]>([]);
+  const [
+    originalCreatorCuratedListAddress,
+    setOriginalCreatorCuratedListAddress,
+  ] = useState<string>('');
+  const [
+    originalRequireAllCreatorsForList,
+    setOriginalRequireAllCreatorsForList,
+  ] = useState<boolean>(false);
+  const [
+    originalRequireAllCreatorsForCuration,
+    setOriginalRequireAllCreatorsForCuration,
+  ] = useState<boolean>(false);
 
   // Vault selection state
   const [availableVaults, setAvailableVaults] = useState<string[]>([]);
@@ -153,6 +190,10 @@ const GraveSubscription: React.FC = () => {
               currentNetwork.addressListScreenerAddress,
             curatedListScreenerAddress:
               currentNetwork.curatedListScreenerAddress,
+            creatorListScreenerAddress:
+              currentNetwork.creatorListScreenerAddress,
+            creatorCurationScreenerAddress:
+              currentNetwork.creatorCurationScreenerAddress,
           }
         );
 
@@ -239,11 +280,16 @@ const GraveSubscription: React.FC = () => {
                 currentNetwork.addressListScreenerAddress,
               curatedListScreenerAddress:
                 currentNetwork.curatedListScreenerAddress,
+              creatorListScreenerAddress:
+                currentNetwork.creatorListScreenerAddress,
+              creatorCurationScreenerAddress:
+                currentNetwork.creatorCurationScreenerAddress,
             }
           );
 
           // Populate form fields with existing configuration
           if (existingConfig.isConfigured) {
+            // Asset filter configuration
             if (existingConfig.whitelistAddresses.length > 0) {
               setWhitelistAddresses(existingConfig.whitelistAddresses);
               setOriginalWhitelistAddresses(existingConfig.whitelistAddresses);
@@ -260,6 +306,43 @@ const GraveSubscription: React.FC = () => {
             // Capture list name for notification
             if (existingConfig.listName) {
               setListName(existingConfig.listName);
+            }
+
+            // Creator filter configuration
+            if (existingConfig.creatorWhitelistAddresses.length > 0) {
+              setCreatorWhitelistAddresses(
+                existingConfig.creatorWhitelistAddresses
+              );
+              setOriginalCreatorWhitelistAddresses(
+                existingConfig.creatorWhitelistAddresses
+              );
+            } else {
+              setOriginalCreatorWhitelistAddresses([]);
+            }
+            if (existingConfig.creatorCuratedListAddress) {
+              setCreatorCuratedListAddress(
+                existingConfig.creatorCuratedListAddress
+              );
+              setOriginalCreatorCuratedListAddress(
+                existingConfig.creatorCuratedListAddress
+              );
+            } else {
+              setOriginalCreatorCuratedListAddress('');
+            }
+            setRequireAllCreatorsForList(
+              existingConfig.requireAllCreatorsForList
+            );
+            setOriginalRequireAllCreatorsForList(
+              existingConfig.requireAllCreatorsForList
+            );
+            setRequireAllCreatorsForCuration(
+              existingConfig.requireAllCreatorsForCuration
+            );
+            setOriginalRequireAllCreatorsForCuration(
+              existingConfig.requireAllCreatorsForCuration
+            );
+            if (existingConfig.creatorListName) {
+              setCreatorListName(existingConfig.creatorListName);
             }
             // Set selected vault from config if available
             // Match case-insensitively with availableVaults to ensure correct display
@@ -361,6 +444,9 @@ const GraveSubscription: React.FC = () => {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+          creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+          creatorCurationScreenerAddress:
+            currentNetwork.creatorCurationScreenerAddress,
         });
 
         // Check if configuration is complete (requires all UAP keys including screener config)
@@ -410,7 +496,7 @@ const GraveSubscription: React.FC = () => {
     permissionsGranted,
   ]);
 
-  // Helper functions for managing whitelist addresses
+  // Helper functions for managing whitelist addresses (Asset Filters)
   const addWhitelistAddress = () => {
     setWhitelistAddresses([...whitelistAddresses, '']);
   };
@@ -426,6 +512,24 @@ const GraveSubscription: React.FC = () => {
     setWhitelistAddresses(newAddresses);
   };
 
+  // Helper functions for managing creator whitelist addresses (Creator Filters)
+  const addCreatorWhitelistAddress = () => {
+    setCreatorWhitelistAddresses([...creatorWhitelistAddresses, '']);
+  };
+
+  const updateCreatorWhitelistAddress = (index: number, value: string) => {
+    const newAddresses = [...creatorWhitelistAddresses];
+    newAddresses[index] = value;
+    setCreatorWhitelistAddresses(newAddresses);
+  };
+
+  const removeCreatorWhitelistAddress = (index: number) => {
+    const newAddresses = creatorWhitelistAddresses.filter(
+      (_, i) => i !== index
+    );
+    setCreatorWhitelistAddresses(newAddresses);
+  };
+
   // Validate inputs
   const validateConfiguration = (): string | null => {
     // Validate whitelist addresses
@@ -435,6 +539,15 @@ const GraveSubscription: React.FC = () => {
 
     if (invalidWhitelist.length > 0) {
       return `Invalid addresses in whitelist: ${invalidWhitelist.join(', ')}`;
+    }
+
+    // Validate creator whitelist addresses
+    const invalidCreatorWhitelist = creatorWhitelistAddresses.filter(
+      addr => addr.trim() !== '' && !isAddress(addr.trim())
+    );
+
+    if (invalidCreatorWhitelist.length > 0) {
+      return `Invalid addresses in creator whitelist: ${invalidCreatorWhitelist.join(', ')}`;
     }
 
     // Validate curated list address if provided
@@ -447,10 +560,20 @@ const GraveSubscription: React.FC = () => {
       }
     }
 
+    // Validate creator curated list address if provided
+    if (creatorCuratedListAddress.trim() !== '') {
+      if (!isAddress(creatorCuratedListAddress)) {
+        return 'Invalid creator curated list contract address';
+      }
+      if (creatorCuratedListAddress === ZERO_ADDRESS) {
+        return 'Cannot use zero address as creator curated list contract';
+      }
+    }
+
     return null;
   };
 
-  // Helper functions to detect unsaved changes
+  // Helper functions to detect unsaved changes - Asset Filters
   const hasAddressListChanges = (): boolean => {
     // Normalize both arrays: trim, filter empty, lowercase, sort
     const normalize = (arr: string[]) =>
@@ -468,6 +591,34 @@ const GraveSubscription: React.FC = () => {
     const currentNormalized = curatedListAddress.trim().toLowerCase();
     const originalNormalized = originalCuratedListAddress.trim().toLowerCase();
     return currentNormalized !== originalNormalized;
+  };
+
+  // Helper functions to detect unsaved changes - Creator Filters
+  const hasCreatorAddressListChanges = (): boolean => {
+    const normalize = (arr: string[]) =>
+      arr
+        .map(a => a.trim().toLowerCase())
+        .filter(a => a !== '' && isAddress(a))
+        .sort();
+    const current = normalize(creatorWhitelistAddresses);
+    const original = normalize(originalCreatorWhitelistAddresses);
+    if (current.length !== original.length) return true;
+    return current.some((addr, i) => addr !== original[i]);
+  };
+
+  const hasCreatorCuratedListChanges = (): boolean => {
+    const currentNormalized = creatorCuratedListAddress.trim().toLowerCase();
+    const originalNormalized = originalCreatorCuratedListAddress
+      .trim()
+      .toLowerCase();
+    return currentNormalized !== originalNormalized;
+  };
+
+  const hasRequireAllCreatorsChanges = (): boolean => {
+    return (
+      requireAllCreatorsForList !== originalRequireAllCreatorsForList ||
+      requireAllCreatorsForCuration !== originalRequireAllCreatorsForCuration
+    );
   };
 
   // Handler for URD status changes from VaultURDChecker
@@ -624,6 +775,10 @@ const GraveSubscription: React.FC = () => {
               currentNetwork.addressListScreenerAddress,
             curatedListScreenerAddress:
               currentNetwork.curatedListScreenerAddress,
+            creatorListScreenerAddress:
+              currentNetwork.creatorListScreenerAddress,
+            creatorCurationScreenerAddress:
+              currentNetwork.creatorCurationScreenerAddress,
           }
         );
 
@@ -657,6 +812,10 @@ const GraveSubscription: React.FC = () => {
             [], // Empty whitelist (length 0, no members)
             false, // No curated list
             '', // Empty curated list address
+            [], // Empty creator whitelist
+            null, // No creator curated list
+            false, // requireAllCreatorsForList
+            false, // requireAllCreatorsForCuration
             {
               forwarderAssistantAddress:
                 currentNetwork.forwarderAssistantAddress,
@@ -664,6 +823,10 @@ const GraveSubscription: React.FC = () => {
                 currentNetwork.addressListScreenerAddress,
               curatedListScreenerAddress:
                 currentNetwork.curatedListScreenerAddress,
+              creatorListScreenerAddress:
+                currentNetwork.creatorListScreenerAddress,
+              creatorCurationScreenerAddress:
+                currentNetwork.creatorCurationScreenerAddress,
             },
             allNetworks,
             chainId
@@ -824,7 +987,7 @@ const GraveSubscription: React.FC = () => {
         await registerVaultWithUP(provider, address, finalVaultAddress);
       }
 
-      // Filter out empty addresses and trim whitespace
+      // Filter out empty addresses and trim whitespace - Asset Filters
       const whitelistArray = whitelistAddresses
         .map(addr => addr.trim())
         .filter(addr => addr !== '' && isAddress(addr));
@@ -834,6 +997,11 @@ const GraveSubscription: React.FC = () => {
         curatedListAddress.trim() !== '' &&
         isAddress(curatedListAddress) &&
         curatedListAddress !== ZERO_ADDRESS;
+
+      // Filter out empty addresses and trim whitespace - Creator Filters
+      const creatorWhitelistArray = creatorWhitelistAddresses
+        .map(addr => addr.trim())
+        .filter(addr => addr !== '' && isAddress(addr));
 
       // Import and use the new save function following UP Assistants pattern
       const { saveForwarderAssistantConfig } = await import(
@@ -850,10 +1018,19 @@ const GraveSubscription: React.FC = () => {
         whitelistArray,
         shouldUseCuratedList,
         curatedListAddress,
+        creatorWhitelistArray,
+        creatorCuratedListAddress.trim() !== ''
+          ? creatorCuratedListAddress
+          : null,
+        requireAllCreatorsForList,
+        requireAllCreatorsForCuration,
         {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+          creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+          creatorCurationScreenerAddress:
+            currentNetwork.creatorCurationScreenerAddress,
         },
         allNetworks,
         chainId
@@ -866,11 +1043,18 @@ const GraveSubscription: React.FC = () => {
         isClosable: true,
       });
 
-      // Update original values to reflect saved state
+      // Update original values to reflect saved state - Asset Filters
       setOriginalWhitelistAddresses(whitelistArray);
       setOriginalCuratedListAddress(
         shouldUseCuratedList ? curatedListAddress : ''
       );
+      // Update original values to reflect saved state - Creator Filters
+      setOriginalCreatorWhitelistAddresses(creatorWhitelistArray);
+      setOriginalCreatorCuratedListAddress(
+        creatorCuratedListAddress.trim() !== '' ? creatorCuratedListAddress : ''
+      );
+      setOriginalRequireAllCreatorsForList(requireAllCreatorsForList);
+      setOriginalRequireAllCreatorsForCuration(requireAllCreatorsForCuration);
 
       await refreshGraveData();
     } catch (err: any) {
@@ -922,6 +1106,9 @@ const GraveSubscription: React.FC = () => {
         forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
         addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
         curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+        creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+        creatorCurationScreenerAddress:
+          currentNetwork.creatorCurationScreenerAddress,
       });
 
       toast({
@@ -1205,6 +1392,11 @@ const GraveSubscription: React.FC = () => {
         isAddress(curatedListAddress) &&
         curatedListAddress !== ZERO_ADDRESS;
 
+      // During migration, preserve current creator filter state
+      const creatorWhitelistArray = creatorWhitelistAddresses
+        .map(a => a.trim())
+        .filter(a => a !== '' && isAddress(a));
+
       await saveForwarderAssistantConfig(
         provider,
         address,
@@ -1212,10 +1404,19 @@ const GraveSubscription: React.FC = () => {
         listData.addresses, // Use merged addresses from blockchain
         shouldUseCuratedList,
         curatedListAddress,
+        creatorWhitelistArray,
+        creatorCuratedListAddress.trim() !== ''
+          ? creatorCuratedListAddress
+          : null,
+        requireAllCreatorsForList,
+        requireAllCreatorsForCuration,
         {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+          creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+          creatorCurationScreenerAddress:
+            currentNetwork.creatorCurationScreenerAddress,
         },
         allNetworks,
         chainId
@@ -1699,7 +1900,13 @@ const GraveSubscription: React.FC = () => {
             }}
           />
           <Link href={`/${networkName}/grave/${address}`} passHref>
-            <ChakraLink color="green.700" fontWeight="bold" fontSize="sm" textDecoration="underline" ml={2}>
+            <ChakraLink
+              color="green.700"
+              fontWeight="bold"
+              fontSize="sm"
+              textDecoration="underline"
+              ml={2}
+            >
               View Spambox →
             </ChakraLink>
           </Link>
@@ -1736,109 +1943,325 @@ const GraveSubscription: React.FC = () => {
         </Flex>
 
         <Flex flexDirection="column" gap={4}>
-          {/* Screener 2: Curated List Screener (Optional) */}
-          <Box
-            p={4}
-            bg="purple.50"
-            borderRadius="md"
-            border="2px solid"
-            borderColor="dark.purple.400"
-          >
-            <Flex align="center" gap={2} mb={2}>
-              <Text
-                fontSize="md"
-                fontWeight="bold"
-                color="dark.purple.500"
+          {/* Creator Filters Section */}
+          <Box>
+            <Text
+              fontSize="md"
+              fontWeight="bold"
+              fontFamily="Bungee"
+              color="dark.purple.400"
+              mb={2}
+            >
+              Creator Filters
+            </Text>
+            <Text fontSize="xs" color="dark.purple.500" mb={3}>
+              Filter assets based on who created them. If the asset&apos;s
+              creator(s) are trusted, the asset stays in your UP.
+            </Text>
+
+            <Flex flexDirection="column" gap={3}>
+              {/* Creator Curated List Screener */}
+              <Box
+                p={4}
+                bg="purple.50"
+                borderRadius="md"
+                border="2px solid"
+                borderColor="dark.purple.400"
               >
-                Curated List
-              </Text>
-              {hasCuratedListChanges() && (
-                <Badge
-                  bg="orange.400"
+                <Flex align="center" gap={2} mb={2}>
+                  <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
+                    Creator Curated List
+                  </Text>
+                  {hasCreatorCuratedListChanges() && (
+                    <Badge
+                      bg="orange.400"
+                      color="white"
+                      fontSize="xs"
+                      fontWeight="bold"
+                      px={2}
+                      py={0.5}
+                      borderRadius="md"
+                    >
+                      UNSAVED CHANGES
+                    </Badge>
+                  )}
+                  {!hasCreatorCuratedListChanges() &&
+                    originalCreatorCuratedListAddress.trim() !== '' && (
+                      <Badge
+                        bg="green.500"
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                      >
+                        ACTIVE
+                      </Badge>
+                    )}
+                </Flex>
+                <Text fontSize="sm" color="dark.purple.400" mb={3}>
+                  Assets whose creators are members of this curated list will
+                  stay in your UP.
+                </Text>
+
+                {/* RequireAllCreators Toggle for Creator Curation */}
+                <Box mb={3}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight="bold"
+                    color="dark.purple.500"
+                    mb={2}
+                  >
+                    Creator Matching Mode:
+                  </Text>
+                  <RadioGroup
+                    value={requireAllCreatorsForCuration ? 'all' : 'any'}
+                    onChange={v =>
+                      setRequireAllCreatorsForCuration(v === 'all')
+                    }
+                  >
+                    <Stack spacing={2}>
+                      <Radio value="any" colorScheme="purple" size="sm">
+                        <Text fontSize="sm" color="dark.purple.600">
+                          Any creator matches (OR logic)
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                          Asset passes if at least one creator is in the curated
+                          list
+                        </Text>
+                      </Radio>
+                      <Radio value="all" colorScheme="purple" size="sm">
+                        <Text fontSize="sm" color="dark.purple.600">
+                          All creators must match (AND logic)
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                          Asset passes only if every creator is in the curated
+                          list
+                        </Text>
+                      </Radio>
+                    </Stack>
+                  </RadioGroup>
+                </Box>
+
+                <Input
+                  placeholder="0x... (creator curated list contract address - optional)"
+                  value={creatorCuratedListAddress}
+                  onChange={e => setCreatorCuratedListAddress(e.target.value)}
+                  fontFamily="mono"
+                  size="sm"
+                  color="dark.purple.600"
+                  bg="white"
+                  borderColor={
+                    creatorCuratedListAddress.trim() !== '' &&
+                    (!isAddress(creatorCuratedListAddress) ||
+                      creatorCuratedListAddress === ZERO_ADDRESS)
+                      ? 'red.300'
+                      : 'dark.purple.300'
+                  }
+                  _hover={{
+                    borderColor:
+                      creatorCuratedListAddress.trim() !== '' &&
+                      (!isAddress(creatorCuratedListAddress) ||
+                        creatorCuratedListAddress === ZERO_ADDRESS)
+                        ? 'red.400'
+                        : 'dark.purple.400',
+                  }}
+                  _focus={{
+                    borderColor:
+                      creatorCuratedListAddress.trim() !== '' &&
+                      (!isAddress(creatorCuratedListAddress) ||
+                        creatorCuratedListAddress === ZERO_ADDRESS)
+                        ? 'red.500'
+                        : 'dark.purple.500',
+                    boxShadow:
+                      creatorCuratedListAddress.trim() !== '' &&
+                      (!isAddress(creatorCuratedListAddress) ||
+                        creatorCuratedListAddress === ZERO_ADDRESS)
+                        ? '0 0 0 1px var(--chakra-colors-red-500)'
+                        : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                  }}
+                />
+                {creatorCuratedListAddress.trim() !== '' &&
+                  creatorCuratedListAddress === ZERO_ADDRESS && (
+                    <Text fontSize="xs" color="red.500" mt={1}>
+                      Zero address is not valid for creator curated list
+                      contract
+                    </Text>
+                  )}
+                {creatorCuratedListAddress.trim() !== '' &&
+                  creatorCuratedListAddress !== ZERO_ADDRESS &&
+                  !isAddress(creatorCuratedListAddress) && (
+                    <Text fontSize="xs" color="red.500" mt={1}>
+                      Invalid creator curated list contract address
+                    </Text>
+                  )}
+              </Box>
+
+              {/* OR Logic Indicator */}
+              <Box textAlign="center" py={1}>
+                <Box
+                  display="inline-block"
+                  px={3}
+                  py={1}
+                  bg="dark.purple.500"
                   color="white"
+                  borderRadius="full"
                   fontSize="xs"
                   fontWeight="bold"
-                  px={2}
-                  py={0.5}
-                  borderRadius="md"
                 >
-                  UNSAVED CHANGES
-                </Badge>
-              )}
-              {!hasCuratedListChanges() &&
-                originalCuratedListAddress.trim() !== '' && (
-                  <Badge
-                    bg="green.500"
-                    color="white"
-                    fontSize="xs"
+                  OR
+                </Box>
+              </Box>
+
+              {/* Safe Creators List */}
+              <Box
+                p={4}
+                bg="purple.50"
+                borderRadius="md"
+                border="2px solid"
+                borderColor="dark.purple.400"
+              >
+                <Flex align="center" gap={2} mb={2}>
+                  <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
+                    Safe Creators List
+                  </Text>
+                  {(hasCreatorAddressListChanges() ||
+                    hasRequireAllCreatorsChanges()) && (
+                    <Badge
+                      bg="orange.400"
+                      color="white"
+                      fontSize="xs"
+                      fontWeight="bold"
+                      px={2}
+                      py={0.5}
+                      borderRadius="md"
+                    >
+                      UNSAVED CHANGES
+                    </Badge>
+                  )}
+                  {!(
+                    hasCreatorAddressListChanges() ||
+                    hasRequireAllCreatorsChanges()
+                  ) &&
+                    originalCreatorWhitelistAddresses.length > 0 && (
+                      <Badge
+                        bg="green.500"
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                      >
+                        ACTIVE
+                      </Badge>
+                    )}
+                </Flex>
+                <Text fontSize="sm" color="dark.purple.400" mb={3}>
+                  Assets from these creators will NOT be sent to the GRAVE
+                  Spambox
+                </Text>
+
+                {/* RequireAllCreators Toggle for Creator List */}
+                <Box mb={3}>
+                  <Text
+                    fontSize="sm"
                     fontWeight="bold"
-                    px={2}
-                    py={0.5}
-                    borderRadius="md"
+                    color="dark.purple.500"
+                    mb={2}
                   >
-                    ACTIVE
-                  </Badge>
-                )}
+                    Creator Matching Mode:
+                  </Text>
+                  <RadioGroup
+                    value={requireAllCreatorsForList ? 'all' : 'any'}
+                    onChange={v => setRequireAllCreatorsForList(v === 'all')}
+                  >
+                    <Stack spacing={2}>
+                      <Radio value="any" colorScheme="purple" size="sm">
+                        <Text fontSize="sm" color="dark.purple.600">
+                          Any creator matches (OR logic)
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                          Asset passes if at least one creator is in your list
+                        </Text>
+                      </Radio>
+                      <Radio value="all" colorScheme="purple" size="sm">
+                        <Text fontSize="sm" color="dark.purple.600">
+                          All creators must match (AND logic)
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                          Asset passes only if every creator is in your list
+                        </Text>
+                      </Radio>
+                    </Stack>
+                  </RadioGroup>
+                </Box>
+
+                <VStack spacing={2} align="stretch">
+                  {creatorWhitelistAddresses.map((addr, index) => (
+                    <HStack key={index}>
+                      <Input
+                        placeholder="0x... (creator address)"
+                        value={addr}
+                        onChange={e =>
+                          updateCreatorWhitelistAddress(index, e.target.value)
+                        }
+                        fontFamily="mono"
+                        size="sm"
+                        color="dark.purple.600"
+                        bg="white"
+                        borderColor={
+                          addr.trim() !== '' && !isAddress(addr.trim())
+                            ? 'red.300'
+                            : 'dark.purple.300'
+                        }
+                        _hover={{
+                          borderColor:
+                            addr.trim() !== '' && !isAddress(addr.trim())
+                              ? 'red.400'
+                              : 'dark.purple.400',
+                        }}
+                        _focus={{
+                          borderColor:
+                            addr.trim() !== '' && !isAddress(addr.trim())
+                              ? 'red.500'
+                              : 'dark.purple.500',
+                          boxShadow:
+                            addr.trim() !== '' && !isAddress(addr.trim())
+                              ? '0 0 0 1px var(--chakra-colors-red-500)'
+                              : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                        }}
+                      />
+                      <IconButton
+                        aria-label="Remove creator address"
+                        icon={<FaTrash />}
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() => removeCreatorWhitelistAddress(index)}
+                        variant="ghost"
+                      />
+                    </HStack>
+                  ))}
+
+                  <Button
+                    leftIcon={<FaPlus />}
+                    onClick={addCreatorWhitelistAddress}
+                    size="sm"
+                    variant="transparentDark"
+                    colorScheme="purple"
+                    width="full"
+                  >
+                    {creatorWhitelistAddresses.length === 0
+                      ? 'Add Creator Address'
+                      : 'Add Another Creator'}
+                  </Button>
+                </VStack>
+              </Box>
             </Flex>
-            <Text fontSize="sm" color="dark.purple.400" mb={2}>
-              Add a curated list of digital assets that are safe (NOT spam).
-              These assets will stay in your UP! and not get sent to the GRAVE
-              Spambox.
-            </Text>
-            <Input
-              placeholder="0x... (curated list contract address - optional)"
-              value={curatedListAddress}
-              onChange={e => setCuratedListAddress(e.target.value)}
-              fontFamily="mono"
-              size="sm"
-              color="dark.purple.600"
-              bg="white"
-              borderColor={
-                curatedListAddress.trim() !== '' &&
-                (!isAddress(curatedListAddress) ||
-                  curatedListAddress === ZERO_ADDRESS)
-                  ? 'red.300'
-                  : 'dark.purple.300'
-              }
-              _hover={{
-                borderColor:
-                  curatedListAddress.trim() !== '' &&
-                  (!isAddress(curatedListAddress) ||
-                    curatedListAddress === ZERO_ADDRESS)
-                    ? 'red.400'
-                    : 'dark.purple.400',
-              }}
-              _focus={{
-                borderColor:
-                  curatedListAddress.trim() !== '' &&
-                  (!isAddress(curatedListAddress) ||
-                    curatedListAddress === ZERO_ADDRESS)
-                    ? 'red.500'
-                    : 'dark.purple.500',
-                boxShadow:
-                  curatedListAddress.trim() !== '' &&
-                  (!isAddress(curatedListAddress) ||
-                    curatedListAddress === ZERO_ADDRESS)
-                    ? '0 0 0 1px var(--chakra-colors-red-500)'
-                    : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
-              }}
-            />
-            {curatedListAddress.trim() !== '' &&
-              curatedListAddress === ZERO_ADDRESS && (
-                <Text fontSize="xs" color="red.500" mt={1}>
-                  Zero address is not valid for curated list contract
-                </Text>
-              )}
-            {curatedListAddress.trim() !== '' &&
-              curatedListAddress !== ZERO_ADDRESS &&
-              !isAddress(curatedListAddress) && (
-                <Text fontSize="xs" color="red.500" mt={1}>
-                  Invalid curated list contract address
-                </Text>
-              )}
           </Box>
 
-          {/* AND Logic Indicator */}
+          {/* OR Logic Indicator between Creator Filters and Asset Filters */}
           <Box textAlign="center" py={2}>
             <Box
               display="inline-block"
@@ -1854,345 +2277,474 @@ const GraveSubscription: React.FC = () => {
             </Box>
           </Box>
 
-          {/* Screener 1: Address List Screener */}
-          <Box
-            p={4}
-            bg="purple.50"
-            borderRadius="md"
-            border="2px solid"
-            borderColor="dark.purple.400"
-          >
-            <Flex align="center" gap={2} mb={2}>
-              <Text
-                fontSize="md"
-                fontWeight="bold"
-                color="dark.purple.500"
-              >
-                Safe Assets List
-              </Text>
-              {hasAddressListChanges() && (
-                <Badge
-                  bg="orange.400"
-                  color="white"
-                  fontSize="xs"
-                  fontWeight="bold"
-                  px={2}
-                  py={0.5}
-                  borderRadius="md"
-                >
-                  UNSAVED CHANGES
-                </Badge>
-              )}
-              {!hasAddressListChanges() &&
-                originalWhitelistAddresses.length > 0 && (
-                  <Badge
-                    bg="green.500"
-                    color="white"
-                    fontSize="xs"
-                    fontWeight="bold"
-                    px={2}
-                    py={0.5}
-                    borderRadius="md"
-                  >
-                    ACTIVE
-                  </Badge>
-                )}
-            </Flex>
-            <Text fontSize="sm" color="dark.purple.400" mb={3}>
-              Assets with these addresses will NOT be sent to the GRAVE Spambox
+          {/* Asset Filters Section */}
+          <Box>
+            <Text
+              fontSize="md"
+              fontWeight="bold"
+              fontFamily="Bungee"
+              color="dark.purple.400"
+              mb={2}
+            >
+              Asset Filters
+            </Text>
+            <Text fontSize="xs" color="dark.purple.500" mb={3}>
+              Filter assets based on the asset address itself.
             </Text>
 
-            {/* List Name Warning - Show if using non-default list name */}
-            {listName && listName !== 'GraveSafeAssets' && (
+            <Flex flexDirection="column" gap={3}>
+              {/* Asset Curated List Screener (Optional) */}
               <Box
-                p={3}
-                mb={3}
-                bg="orange.50"
+                p={4}
+                bg="purple.50"
                 borderRadius="md"
-                border="1px solid"
-                borderColor="orange.300"
+                border="2px solid"
+                borderColor="dark.purple.400"
               >
-                <Flex align="start" justify="space-between" gap={3}>
-                  <Box flex="1">
-                    <Text
-                      fontSize="sm"
-                      color="orange.800"
+                <Flex align="center" gap={2} mb={2}>
+                  <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
+                    Curated List
+                  </Text>
+                  {hasCuratedListChanges() && (
+                    <Badge
+                      bg="orange.400"
+                      color="white"
+                      fontSize="xs"
                       fontWeight="bold"
-                      mb={1}
+                      px={2}
+                      py={0.5}
+                      borderRadius="md"
                     >
-                      ⚠️ Non-Standard List Name
+                      UNSAVED CHANGES
+                    </Badge>
+                  )}
+                  {!hasCuratedListChanges() &&
+                    originalCuratedListAddress.trim() !== '' && (
+                      <Badge
+                        bg="green.500"
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                      >
+                        ACTIVE
+                      </Badge>
+                    )}
+                </Flex>
+                <Text fontSize="sm" color="dark.purple.400" mb={2}>
+                  Add a curated list of digital assets that are safe (NOT spam).
+                  These assets will stay in your UP! and not get sent to the
+                  GRAVE Spambox.
+                </Text>
+                <Input
+                  placeholder="0x... (curated list contract address - optional)"
+                  value={curatedListAddress}
+                  onChange={e => setCuratedListAddress(e.target.value)}
+                  fontFamily="mono"
+                  size="sm"
+                  color="dark.purple.600"
+                  bg="white"
+                  borderColor={
+                    curatedListAddress.trim() !== '' &&
+                    (!isAddress(curatedListAddress) ||
+                      curatedListAddress === ZERO_ADDRESS)
+                      ? 'red.300'
+                      : 'dark.purple.300'
+                  }
+                  _hover={{
+                    borderColor:
+                      curatedListAddress.trim() !== '' &&
+                      (!isAddress(curatedListAddress) ||
+                        curatedListAddress === ZERO_ADDRESS)
+                        ? 'red.400'
+                        : 'dark.purple.400',
+                  }}
+                  _focus={{
+                    borderColor:
+                      curatedListAddress.trim() !== '' &&
+                      (!isAddress(curatedListAddress) ||
+                        curatedListAddress === ZERO_ADDRESS)
+                        ? 'red.500'
+                        : 'dark.purple.500',
+                    boxShadow:
+                      curatedListAddress.trim() !== '' &&
+                      (!isAddress(curatedListAddress) ||
+                        curatedListAddress === ZERO_ADDRESS)
+                        ? '0 0 0 1px var(--chakra-colors-red-500)'
+                        : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                  }}
+                />
+                {curatedListAddress.trim() !== '' &&
+                  curatedListAddress === ZERO_ADDRESS && (
+                    <Text fontSize="xs" color="red.500" mt={1}>
+                      Zero address is not valid for curated list contract
                     </Text>
-                    <Text fontSize="xs" color="orange.700" mb={1}>
-                      Using:{' '}
-                      <Text as="span" fontFamily="mono" fontWeight="bold">
-                        {listName}
-                      </Text>
+                  )}
+                {curatedListAddress.trim() !== '' &&
+                  curatedListAddress !== ZERO_ADDRESS &&
+                  !isAddress(curatedListAddress) && (
+                    <Text fontSize="xs" color="red.500" mt={1}>
+                      Invalid curated list contract address
                     </Text>
-                    <Text fontSize="xs" color="orange.700" mb={2}>
-                      Recommended:{' '}
-                      <Text as="span" fontFamily="mono" fontWeight="bold">
-                        GraveSafeAssets
-                      </Text>
-                    </Text>
-                    <Text fontSize="xs" color="orange.600">
-                      Migrating to the recommended name saves storage and gas
-                      costs.
+                  )}
+              </Box>
+
+              {/* OR Logic Indicator */}
+              <Box textAlign="center" py={1}>
+                <Box
+                  display="inline-block"
+                  px={3}
+                  py={1}
+                  bg="dark.purple.500"
+                  color="white"
+                  borderRadius="full"
+                  fontSize="xs"
+                  fontWeight="bold"
+                >
+                  OR
+                </Box>
+              </Box>
+
+              {/* Safe Assets List (Address List Screener) */}
+              <Box
+                p={4}
+                bg="purple.50"
+                borderRadius="md"
+                border="2px solid"
+                borderColor="dark.purple.400"
+              >
+                <Flex align="center" gap={2} mb={2}>
+                  <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
+                    Safe Assets List
+                  </Text>
+                  {hasAddressListChanges() && (
+                    <Badge
+                      bg="orange.400"
+                      color="white"
+                      fontSize="xs"
+                      fontWeight="bold"
+                      px={2}
+                      py={0.5}
+                      borderRadius="md"
+                    >
+                      UNSAVED CHANGES
+                    </Badge>
+                  )}
+                  {!hasAddressListChanges() &&
+                    originalWhitelistAddresses.length > 0 && (
+                      <Badge
+                        bg="green.500"
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                      >
+                        ACTIVE
+                      </Badge>
+                    )}
+                </Flex>
+                <Text fontSize="sm" color="dark.purple.400" mb={3}>
+                  Assets with these addresses will NOT be sent to the GRAVE
+                  Spambox
+                </Text>
+
+                {/* List Name Warning - Show if using non-default list name */}
+                {listName && listName !== 'GraveSafeAssets' && (
+                  <Box
+                    p={3}
+                    mb={3}
+                    bg="orange.50"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="orange.300"
+                  >
+                    <Flex align="start" justify="space-between" gap={3}>
+                      <Box flex="1">
+                        <Text
+                          fontSize="sm"
+                          color="orange.800"
+                          fontWeight="bold"
+                          mb={1}
+                        >
+                          ⚠️ Non-Standard List Name
+                        </Text>
+                        <Text fontSize="xs" color="orange.700" mb={1}>
+                          Using:{' '}
+                          <Text as="span" fontFamily="mono" fontWeight="bold">
+                            {listName}
+                          </Text>
+                        </Text>
+                        <Text fontSize="xs" color="orange.700" mb={2}>
+                          Recommended:{' '}
+                          <Text as="span" fontFamily="mono" fontWeight="bold">
+                            GraveSafeAssets
+                          </Text>
+                        </Text>
+                        <Text fontSize="xs" color="orange.600">
+                          Migrating to the recommended name saves storage and
+                          gas costs.
+                        </Text>
+                      </Box>
+                      <Button
+                        size="sm"
+                        colorScheme="orange"
+                        onClick={handleMigrateToDefaultListName}
+                        isLoading={isProcessing}
+                        isDisabled={isProcessing}
+                        fontWeight="600"
+                        fontSize="xs"
+                      >
+                        Migrate
+                      </Button>
+                    </Flex>
+                  </Box>
+                )}
+
+                <VStack spacing={2} align="stretch">
+                  {whitelistAddresses.map((address, index) => (
+                    <HStack key={index}>
+                      <Input
+                        placeholder="0x... (address)"
+                        value={address}
+                        onChange={e =>
+                          updateWhitelistAddress(index, e.target.value)
+                        }
+                        fontFamily="mono"
+                        size="sm"
+                        color="dark.purple.600"
+                        bg="white"
+                        borderColor={
+                          address.trim() !== '' && !isAddress(address.trim())
+                            ? 'red.300'
+                            : 'dark.purple.300'
+                        }
+                        _hover={{
+                          borderColor:
+                            address.trim() !== '' && !isAddress(address.trim())
+                              ? 'red.400'
+                              : 'dark.purple.400',
+                        }}
+                        _focus={{
+                          borderColor:
+                            address.trim() !== '' && !isAddress(address.trim())
+                              ? 'red.500'
+                              : 'dark.purple.500',
+                          boxShadow:
+                            address.trim() !== '' && !isAddress(address.trim())
+                              ? '0 0 0 1px var(--chakra-colors-red-500)'
+                              : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                        }}
+                      />
+                      <IconButton
+                        aria-label="Remove address"
+                        icon={<FaTrash />}
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() => removeWhitelistAddress(index)}
+                        variant="ghost"
+                      />
+                    </HStack>
+                  ))}
+
+                  <Button
+                    leftIcon={<FaPlus />}
+                    onClick={addWhitelistAddress}
+                    size="sm"
+                    variant="transparentDark"
+                    colorScheme="purple"
+                    width="full"
+                  >
+                    {whitelistAddresses.length === 0
+                      ? 'Add Address'
+                      : 'Add Another Address'}
+                  </Button>
+                </VStack>
+              </Box>
+            </Flex>
+          </Box>
+
+          {/* Section C: Save Actions */}
+          <Flex gap={2} justifyContent="flex-start">
+            <Button
+              onClick={handleActivateGrave}
+              isLoading={isProcessing}
+              isDisabled={isProcessing || validateConfiguration() !== null}
+              color="white"
+              size="md"
+              fontFamily="Bungee"
+              fontSize="16px"
+              fontWeight="400"
+            >
+              {isProcessing ? 'SAVING...' : 'SAVE CHANGES'}
+            </Button>
+
+            {/* Deactivate Dropdown Menu */}
+            <Menu>
+              <MenuButton
+                as={Button}
+                rightIcon={<FaChevronDown />}
+                isLoading={isProcessing}
+                isDisabled={isProcessing}
+                variant="outline"
+                color="dark.purple.500"
+                borderColor="dark.purple.500"
+                size="md"
+                fontFamily="Bungee"
+                fontSize="16px"
+                fontWeight="400"
+                _hover={{ bg: 'dark.purple.50' }}
+              >
+                DEACTIVATE
+              </MenuButton>
+              <MenuList
+                bg="dark.purple.100"
+                borderColor="dark.purple.300"
+                borderWidth="2px"
+                borderRadius="lg"
+                boxShadow="lg"
+                py={2}
+              >
+                <MenuItem
+                  onClick={handleDeactivateGrave}
+                  fontFamily="Montserrat"
+                  fontWeight="600"
+                  color="dark.purple.500"
+                  bg="transparent"
+                  _hover={{ bg: 'dark.purple.200' }}
+                  _focus={{ bg: 'dark.purple.200' }}
+                >
+                  Deactivate GRAVE Spambox Only
+                </MenuItem>
+                <MenuItem
+                  onClick={onOpenDeactivateUAPModal}
+                  fontFamily="Montserrat"
+                  fontWeight="600"
+                  color="red.600"
+                  bg="transparent"
+                  _hover={{ bg: 'red.50' }}
+                  _focus={{ bg: 'red.50' }}
+                >
+                  Deactivate UAP Protocol (All Assistants)
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Flex>
+
+          {/* UAP Deactivation Confirmation Modal */}
+          <Modal
+            isOpen={isDeactivateUAPModalOpen}
+            onClose={onCloseDeactivateUAPModal}
+            isCentered
+          >
+            <ModalOverlay bg="blackAlpha.600" />
+            <ModalContent
+              bg="dark.purple.100"
+              borderWidth="2px"
+              borderColor="dark.purple.400"
+              borderRadius="xl"
+            >
+              <ModalHeader
+                fontFamily="Bungee"
+                color="dark.purple.500"
+                borderBottomWidth="1px"
+                borderColor="dark.purple.200"
+              >
+                Deactivate UAP Protocol?
+              </ModalHeader>
+              <ModalCloseButton color="dark.purple.400" />
+              <ModalBody py={5}>
+                <VStack align="start" spacing={4}>
+                  <Box
+                    bg="red.50"
+                    p={3}
+                    borderRadius="md"
+                    borderWidth="1px"
+                    borderColor="red.200"
+                    width="100%"
+                  >
+                    <Text fontWeight="bold" color="red.600" fontSize="sm">
+                      Warning: This will deactivate ALL executive assistants!
                     </Text>
                   </Box>
-                  <Button
-                    size="sm"
-                    colorScheme="orange"
-                    onClick={handleMigrateToDefaultListName}
-                    isLoading={isProcessing}
-                    isDisabled={isProcessing}
-                    fontWeight="600"
-                    fontSize="xs"
+                  <Text fontSize="sm" color="dark.purple.500">
+                    This action will completely remove the Universal Assistant
+                    Protocol from your Universal Profile, including:
+                  </Text>
+                  <VStack
+                    as="ul"
+                    pl={6}
+                    fontSize="sm"
+                    color="dark.purple.400"
+                    spacing={1}
+                    align="flex-start"
+                    listStyleType="disc"
                   >
-                    Migrate
-                  </Button>
-                </Flex>
-              </Box>
-            )}
-
-            <VStack spacing={2} align="stretch">
-              {whitelistAddresses.map((address, index) => (
-                <HStack key={index}>
-                  <Input
-                    placeholder="0x... (address)"
-                    value={address}
-                    onChange={e =>
-                      updateWhitelistAddress(index, e.target.value)
-                    }
-                    fontFamily="mono"
-                    size="sm"
-                    color="dark.purple.600"
-                    bg="white"
-                    borderColor={
-                      address.trim() !== '' && !isAddress(address.trim())
-                        ? 'red.300'
-                        : 'dark.purple.300'
-                    }
-                    _hover={{
-                      borderColor:
-                        address.trim() !== '' && !isAddress(address.trim())
-                          ? 'red.400'
-                          : 'dark.purple.400',
-                    }}
-                    _focus={{
-                      borderColor:
-                        address.trim() !== '' && !isAddress(address.trim())
-                          ? 'red.500'
-                          : 'dark.purple.500',
-                      boxShadow:
-                        address.trim() !== '' && !isAddress(address.trim())
-                          ? '0 0 0 1px var(--chakra-colors-red-500)'
-                          : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
-                    }}
-                  />
-                  <IconButton
-                    aria-label="Remove address"
-                    icon={<FaTrash />}
-                    size="sm"
-                    colorScheme="red"
-                    onClick={() => removeWhitelistAddress(index)}
-                    variant="ghost"
-                  />
-                </HStack>
-              ))}
-
-              <Button
-                leftIcon={<FaPlus />}
-                onClick={addWhitelistAddress}
-                size="sm"
-                variant="transparentDark"
-                colorScheme="purple"
-                width="full"
-              >
-                {whitelistAddresses.length === 0
-                  ? 'Add Address'
-                  : 'Add Another Address'}
-              </Button>
-            </VStack>
-          </Box>
+                    <Box as="li" display="list-item">
+                      GRAVE Spambox (Forwarder Assistant)
+                    </Box>
+                    <Box as="li" display="list-item">
+                      All other executive assistants (if any)
+                    </Box>
+                    <Box as="li" display="list-item">
+                      All screener configurations
+                    </Box>
+                    <Box as="li" display="list-item">
+                      All address lists and filters
+                    </Box>
+                    <Box as="li" display="list-item">
+                      UAP metadata and settings
+                    </Box>
+                  </VStack>
+                  <Text fontSize="sm" fontWeight="600" color="dark.purple.500">
+                    Your Universal Profile will no longer have any automated
+                    asset handling.
+                  </Text>
+                  <Box
+                    bg="dark.purple.200"
+                    p={3}
+                    borderRadius="md"
+                    width="100%"
+                  >
+                    <Text fontSize="sm" color="dark.purple.400">
+                      If you only want to deactivate GRAVE, use the "Deactivate
+                      GRAVE Spambox Only" option instead.
+                    </Text>
+                  </Box>
+                </VStack>
+              </ModalBody>
+              <ModalFooter borderTopWidth="1px" borderColor="dark.purple.200">
+                <Button
+                  variant="outline"
+                  mr={3}
+                  onClick={onCloseDeactivateUAPModal}
+                  isDisabled={isProcessing}
+                  color="dark.purple.500"
+                  borderColor="dark.purple.300"
+                  _hover={{ bg: 'dark.purple.200' }}
+                  fontFamily="Bungee"
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  bg="red.500"
+                  color="white"
+                  onClick={handleDeactivateUAP}
+                  isLoading={isProcessing}
+                  isDisabled={isProcessing}
+                  fontFamily="Bungee"
+                  _hover={{ bg: 'red.600' }}
+                >
+                  {isProcessing ? 'DEACTIVATING...' : 'DEACTIVATE UAP'}
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
         </Flex>
       </Box>
-
-      {/* Section C: Save Actions */}
-      <Flex gap={2} justifyContent="flex-start">
-        <Button
-          onClick={handleActivateGrave}
-          isLoading={isProcessing}
-          isDisabled={isProcessing || validateConfiguration() !== null}
-          color="white"
-          size="md"
-          fontFamily="Bungee"
-          fontSize="16px"
-          fontWeight="400"
-        >
-          {isProcessing ? 'SAVING...' : 'SAVE CHANGES'}
-        </Button>
-
-        {/* Deactivate Dropdown Menu */}
-        <Menu>
-          <MenuButton
-            as={Button}
-            rightIcon={<FaChevronDown />}
-            isLoading={isProcessing}
-            isDisabled={isProcessing}
-            variant="outline"
-            color="dark.purple.500"
-            borderColor="dark.purple.500"
-            size="md"
-            fontFamily="Bungee"
-            fontSize="16px"
-            fontWeight="400"
-            _hover={{ bg: 'dark.purple.50' }}
-          >
-            DEACTIVATE
-          </MenuButton>
-          <MenuList
-            bg="dark.purple.100"
-            borderColor="dark.purple.300"
-            borderWidth="2px"
-            borderRadius="lg"
-            boxShadow="lg"
-            py={2}
-          >
-            <MenuItem
-              onClick={handleDeactivateGrave}
-              fontFamily="Montserrat"
-              fontWeight="600"
-              color="dark.purple.500"
-              bg="transparent"
-              _hover={{ bg: 'dark.purple.200' }}
-              _focus={{ bg: 'dark.purple.200' }}
-            >
-              Deactivate GRAVE Spambox Only
-            </MenuItem>
-            <MenuItem
-              onClick={onOpenDeactivateUAPModal}
-              fontFamily="Montserrat"
-              fontWeight="600"
-              color="red.600"
-              bg="transparent"
-              _hover={{ bg: 'red.50' }}
-              _focus={{ bg: 'red.50' }}
-            >
-              Deactivate UAP Protocol (All Assistants)
-            </MenuItem>
-          </MenuList>
-        </Menu>
-      </Flex>
-
-      {/* UAP Deactivation Confirmation Modal */}
-      <Modal
-        isOpen={isDeactivateUAPModalOpen}
-        onClose={onCloseDeactivateUAPModal}
-        isCentered
-      >
-        <ModalOverlay bg="blackAlpha.600" />
-        <ModalContent
-          bg="dark.purple.100"
-          borderWidth="2px"
-          borderColor="dark.purple.400"
-          borderRadius="xl"
-        >
-          <ModalHeader
-            fontFamily="Bungee"
-            color="dark.purple.500"
-            borderBottomWidth="1px"
-            borderColor="dark.purple.200"
-          >
-            Deactivate UAP Protocol?
-          </ModalHeader>
-          <ModalCloseButton color="dark.purple.400" />
-          <ModalBody py={5}>
-            <VStack align="start" spacing={4}>
-              <Box
-                bg="red.50"
-                p={3}
-                borderRadius="md"
-                borderWidth="1px"
-                borderColor="red.200"
-                width="100%"
-              >
-                <Text fontWeight="bold" color="red.600" fontSize="sm">
-                  Warning: This will deactivate ALL executive assistants!
-                </Text>
-              </Box>
-              <Text fontSize="sm" color="dark.purple.500">
-                This action will completely remove the Universal Assistant
-                Protocol from your Universal Profile, including:
-              </Text>
-              <VStack
-                as="ul"
-                pl={6}
-                fontSize="sm"
-                color="dark.purple.400"
-                spacing={1}
-                align="flex-start"
-                listStyleType="disc"
-              >
-                <Box as="li" display="list-item">
-                  GRAVE Spambox (Forwarder Assistant)
-                </Box>
-                <Box as="li" display="list-item">
-                  All other executive assistants (if any)
-                </Box>
-                <Box as="li" display="list-item">
-                  All screener configurations
-                </Box>
-                <Box as="li" display="list-item">
-                  All address lists and filters
-                </Box>
-                <Box as="li" display="list-item">
-                  UAP metadata and settings
-                </Box>
-              </VStack>
-              <Text fontSize="sm" fontWeight="600" color="dark.purple.500">
-                Your Universal Profile will no longer have any automated asset
-                handling.
-              </Text>
-              <Box
-                bg="dark.purple.200"
-                p={3}
-                borderRadius="md"
-                width="100%"
-              >
-                <Text fontSize="sm" color="dark.purple.400">
-                  If you only want to deactivate GRAVE, use the "Deactivate
-                  GRAVE Spambox Only" option instead.
-                </Text>
-              </Box>
-            </VStack>
-          </ModalBody>
-          <ModalFooter borderTopWidth="1px" borderColor="dark.purple.200">
-            <Button
-              variant="outline"
-              mr={3}
-              onClick={onCloseDeactivateUAPModal}
-              isDisabled={isProcessing}
-              color="dark.purple.500"
-              borderColor="dark.purple.300"
-              _hover={{ bg: 'dark.purple.200' }}
-              fontFamily="Bungee"
-            >
-              CANCEL
-            </Button>
-            <Button
-              bg="red.500"
-              color="white"
-              onClick={handleDeactivateUAP}
-              isLoading={isProcessing}
-              isDisabled={isProcessing}
-              fontFamily="Bungee"
-              _hover={{ bg: 'red.600' }}
-            >
-              {isProcessing ? 'DEACTIVATING...' : 'DEACTIVATE UAP'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Flex>
   );
 };

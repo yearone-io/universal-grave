@@ -26,6 +26,12 @@ export interface ForwarderAssistantConfig {
   executionOrderLSP7: number | null;
   executionOrderLSP8: number | null;
   listName: string | null; // Address list name used by screeners (default: 'GraveSafeAssets')
+  // Creator filter fields
+  creatorWhitelistAddresses: string[];
+  creatorCuratedListAddress: string | null;
+  requireAllCreatorsForList: boolean; // AND/OR toggle for creator list screener
+  requireAllCreatorsForCuration: boolean; // AND/OR toggle for creator curation screener
+  creatorListName: string | null; // Address list name for creator screeners (default: 'GraveSafeCreators')
 }
 
 /**
@@ -66,6 +72,8 @@ export async function getForwarderAssistantConfig(
     forwarderAssistantAddress: string;
     addressListScreenerAddress: string;
     curatedListScreenerAddress: string;
+    creatorListScreenerAddress: string;
+    creatorCurationScreenerAddress: string;
   }
 ): Promise<ForwarderAssistantConfig> {
   const upContract = new Contract(upAddress, universalProfileAbi, provider);
@@ -85,6 +93,12 @@ export async function getForwarderAssistantConfig(
     executionOrderLSP7: null,
     executionOrderLSP8: null,
     listName: null,
+    // Creator filter fields
+    creatorWhitelistAddresses: [],
+    creatorCuratedListAddress: null,
+    requireAllCreatorsForList: false,
+    requireAllCreatorsForCuration: false,
+    creatorListName: null,
   };
 
   try {
@@ -389,6 +403,145 @@ export async function getForwarderAssistantConfig(
                           );
                         }
                       }
+                    } else if (
+                      screenerAddr.toLowerCase() ===
+                      networkConfig.creatorListScreenerAddress.toLowerCase()
+                    ) {
+                      // Creator List Screener - config is ABI-encoded as (bool requireAllCreators, bool returnValueWhenInList)
+                      // Addresses are stored in a separate LSP5-style list
+                      if (config.creatorWhitelistAddresses.length === 0) {
+                        try {
+                          // Decode the config to get requireAllCreators
+                          if (configBytes && configBytes !== '0x') {
+                            try {
+                              const decoded = abiCoder.decode(
+                                ['bool', 'bool'],
+                                configBytes
+                              );
+                              config.requireAllCreatorsForList =
+                                decoded[0] as boolean;
+                            } catch (decodeError) {
+                              console.warn(
+                                'Failed to decode creator list screener config:',
+                                decodeError
+                              );
+                            }
+                          }
+
+                          // Fetch the creator address list
+                          const listNameKey = erc725UAP.encodeKeyName(
+                            'UAPAddressListName:<bytes32>:<uint256>',
+                            [txType, screenerOrder.toString()]
+                          );
+                          const listNameData =
+                            await upContract.getData(listNameKey);
+                          if (listNameData && listNameData !== '0x') {
+                            const listName = erc725UAP.decodeValueType(
+                              'string',
+                              listNameData
+                            ) as string;
+
+                            if (!config.creatorListName) {
+                              config.creatorListName = listName;
+                            }
+
+                            // Fetch the address list using LSP5 pattern
+                            try {
+                              const listLengthKey = erc725UAP.encodeKeyName(
+                                `${listName}[]`
+                              );
+                              const listLengthRaw =
+                                await upContract.getData(listLengthKey);
+
+                              if (listLengthRaw && listLengthRaw !== '0x') {
+                                const listLength = Number(
+                                  erc725UAP.decodeValueType(
+                                    'uint256',
+                                    listLengthRaw
+                                  )
+                                );
+
+                                if (listLength > 0) {
+                                  const itemKeys: string[] = [];
+                                  for (let j = 0; j < listLength; j++) {
+                                    const baseArrayKey =
+                                      erc725UAP.encodeKeyName(`${listName}[]`);
+                                    const keyPrefix = baseArrayKey.slice(0, 34);
+                                    const indexBytes16 = j
+                                      .toString(16)
+                                      .padStart(32, '0');
+                                    const itemKey = keyPrefix + indexBytes16;
+                                    itemKeys.push(itemKey);
+                                  }
+
+                                  const itemValues =
+                                    await upContract.getDataBatch(itemKeys);
+                                  config.creatorWhitelistAddresses = itemValues
+                                    .filter(
+                                      (value: any) => value && value !== '0x'
+                                    )
+                                    .map(
+                                      (value: any) =>
+                                        erc725UAP.decodeValueType(
+                                          'address',
+                                          value
+                                        ) as string
+                                    );
+                                }
+                              }
+                            } catch (listError) {
+                              console.warn(
+                                'Error fetching creator address list:',
+                                listError
+                              );
+                            }
+                          }
+                        } catch (error) {
+                          console.error(
+                            'Error decoding creator list screener config:',
+                            error
+                          );
+                        }
+                      }
+                    } else if (
+                      screenerAddr.toLowerCase() ===
+                      networkConfig.creatorCurationScreenerAddress.toLowerCase()
+                    ) {
+                      // Creator Curation Screener - config is ABI-encoded as (address curatedListAddress, bool requireAllCreators, bool returnValueWhenCurated)
+                      if (!config.creatorCuratedListAddress) {
+                        try {
+                          if (configBytes && configBytes !== '0x') {
+                            try {
+                              const decoded = abiCoder.decode(
+                                ['address', 'bool', 'bool'],
+                                configBytes
+                              );
+                              const curatedListAddress = decoded[0] as string;
+                              config.requireAllCreatorsForCuration =
+                                decoded[1] as boolean;
+
+                              if (
+                                curatedListAddress &&
+                                curatedListAddress !==
+                                  '0x0000000000000000000000000000000000000000'
+                              ) {
+                                config.creatorCuratedListAddress =
+                                  curatedListAddress;
+                              }
+                            } catch (decodeError) {
+                              console.warn(
+                                'Failed to decode creator curation screener config:',
+                                decodeError
+                              );
+                            }
+                          }
+                        } catch (error) {
+                          console.error(
+                            'Error decoding creator curation screener config:',
+                            error
+                          );
+                        }
+                      }
                     }
                   }
                 }
@@ -417,9 +570,15 @@ function buildForwarderScreenerConfig(
   whitelistAddresses: string[],
   useCuratedList: boolean,
   curatedListAddress: string | null,
+  creatorWhitelistAddresses: string[],
+  creatorCuratedListAddress: string | null,
+  requireAllCreatorsForList: boolean,
+  requireAllCreatorsForCuration: boolean,
   networkConfig: {
     addressListScreenerAddress: string;
     curatedListScreenerAddress: string;
+    creatorListScreenerAddress: string;
+    creatorCurationScreenerAddress: string;
   }
 ): {
   enableScreeners: boolean;
@@ -431,16 +590,30 @@ function buildForwarderScreenerConfig(
     enableScreeners: false,
     selectedScreeners: [] as string[],
     screenerConfigs: {} as { [screenerId: string]: any },
-    useANDLogic: true, // Always use AND logic for GRAVE
+    useANDLogic: false, // Use OR logic for GRAVE - asset passes if ANY screener passes
   };
 
-  // Build screeners list: Address List Screener first, then optionally Curated List Screener
+  // Build screeners list: Creator filters first, then Asset filters
+  // All screeners use OR logic (any one passing means asset goes to UP)
   const screeners: string[] = [];
 
-  // Always include Address List Screener (even if whitelist is empty)
-  // Empty whitelist is a valid configuration state
+  // 1. Creator List Screener (if creator addresses configured)
+  const validCreatorAddresses = creatorWhitelistAddresses.filter(
+    addr => addr.trim() !== '' && isAddress(addr)
+  );
+  if (validCreatorAddresses.length > 0) {
+    screeners.push(networkConfig.creatorListScreenerAddress);
+  }
+
+  // 2. Creator Curation Screener (if curated list configured)
+  if (creatorCuratedListAddress && isAddress(creatorCuratedListAddress)) {
+    screeners.push(networkConfig.creatorCurationScreenerAddress);
+  }
+
+  // 3. Address List Screener (always include for asset-based filtering)
   screeners.push(networkConfig.addressListScreenerAddress);
 
+  // 4. Curated List Screener (if asset curated list configured)
   if (useCuratedList && curatedListAddress && isAddress(curatedListAddress)) {
     screeners.push(networkConfig.curatedListScreenerAddress);
   }
@@ -454,6 +627,26 @@ function buildForwarderScreenerConfig(
       screenerConfig.selectedScreeners.push(instanceId);
 
       if (
+        screenerAddr.toLowerCase() ===
+        networkConfig.creatorListScreenerAddress.toLowerCase()
+      ) {
+        // Creator List Screener config: requireAllCreators + returnValueWhenInList
+        screenerConfig.screenerConfigs[instanceId] = {
+          addresses: validCreatorAddresses,
+          requireAllCreators: requireAllCreatorsForList,
+          returnValueWhenInList: false, // Creators in list = asset goes to UP (fails screening)
+        };
+      } else if (
+        screenerAddr.toLowerCase() ===
+        networkConfig.creatorCurationScreenerAddress.toLowerCase()
+      ) {
+        // Creator Curation Screener config: curatedListAddress + requireAllCreators + returnValueWhenCurated
+        screenerConfig.screenerConfigs[instanceId] = {
+          curatedListAddress: creatorCuratedListAddress,
+          requireAllCreators: requireAllCreatorsForCuration,
+          returnValueWhenCurated: false, // Curated creators = asset goes to UP (fails screening)
+        };
+      } else if (
         screenerAddr.toLowerCase() ===
         networkConfig.addressListScreenerAddress.toLowerCase()
       ) {
@@ -489,10 +682,16 @@ export async function saveForwarderAssistantConfig(
   whitelistAddresses: string[],
   useCuratedList: boolean,
   curatedListAddress: string | null,
+  creatorWhitelistAddresses: string[],
+  creatorCuratedListAddress: string | null,
+  requireAllCreatorsForList: boolean,
+  requireAllCreatorsForCuration: boolean,
   networkConfig: {
     forwarderAssistantAddress: string;
     addressListScreenerAddress: string;
     curatedListScreenerAddress: string;
+    creatorListScreenerAddress: string;
+    creatorCurationScreenerAddress: string;
   },
   supportedNetworks: any,
   chainId: number
@@ -518,11 +717,32 @@ export async function saveForwarderAssistantConfig(
     );
   }
 
+  // Validate creator whitelist addresses (filter out empty ones)
+  const validCreatorAddresses = creatorWhitelistAddresses.filter(
+    addr => addr.trim() !== ''
+  );
+  const invalidCreatorAddresses = validCreatorAddresses.filter(
+    addr => !isAddress(addr)
+  );
+  if (invalidCreatorAddresses.length > 0) {
+    throw new Error(
+      `Invalid addresses in creator whitelist: ${invalidCreatorAddresses.join(', ')}`
+    );
+  }
+
   if (
     useCuratedList &&
     (!curatedListAddress || !isAddress(curatedListAddress))
   ) {
     throw new Error('Invalid curated list address');
+  }
+
+  if (
+    creatorCuratedListAddress &&
+    creatorCuratedListAddress.trim() !== '' &&
+    !isAddress(creatorCuratedListAddress)
+  ) {
+    throw new Error('Invalid creator curated list address');
   }
 
   // Build assistant config data (just the vault address for Forwarder Assistant)
@@ -556,9 +776,25 @@ export async function saveForwarderAssistantConfig(
       currentConfig.curatedListAddress,
       curatedListAddress
     ),
+    creatorAddressListChanged: compareAddressLists(
+      currentConfig.creatorWhitelistAddresses,
+      validCreatorAddresses
+    ),
+    creatorCuratedListChanged: hasCuratedListChanged(
+      currentConfig.creatorCuratedListAddress,
+      creatorCuratedListAddress
+    ),
+    requireAllCreatorsChanged:
+      currentConfig.requireAllCreatorsForList !== requireAllCreatorsForList ||
+      currentConfig.requireAllCreatorsForCuration !==
+        requireAllCreatorsForCuration,
     screenerSelectionChanged: haveScreenersChanged(
       currentConfig.useCuratedList,
-      useCuratedList
+      useCuratedList,
+      currentConfig.creatorWhitelistAddresses.length > 0,
+      validCreatorAddresses.length > 0,
+      !!currentConfig.creatorCuratedListAddress,
+      !!creatorCuratedListAddress && creatorCuratedListAddress.trim() !== ''
     ),
   };
 
@@ -569,6 +805,10 @@ export async function saveForwarderAssistantConfig(
     whitelistAddresses,
     useCuratedList,
     curatedListAddress,
+    validCreatorAddresses,
+    creatorCuratedListAddress,
+    requireAllCreatorsForList,
+    requireAllCreatorsForCuration,
     networkConfig
   );
 
@@ -601,8 +841,13 @@ export async function saveForwarderAssistantConfig(
         skipScreenerConfigs:
           configExists &&
           !changes.screenerSelectionChanged &&
-          !changes.curatedListChanged,
-        skipAddressListData: configExists && !changes.addressListChanged,
+          !changes.curatedListChanged &&
+          !changes.creatorCuratedListChanged &&
+          !changes.requireAllCreatorsChanged,
+        skipAddressListData:
+          configExists &&
+          !changes.addressListChanged &&
+          !changes.creatorAddressListChanged,
       }
     );
 
@@ -711,11 +956,18 @@ export function hasCuratedListChanged(
  */
 export function haveScreenersChanged(
   currentUseCuratedList: boolean,
-  proposedUseCuratedList: boolean
+  proposedUseCuratedList: boolean,
+  currentHasCreatorList?: boolean,
+  proposedHasCreatorList?: boolean,
+  currentHasCreatorCuration?: boolean,
+  proposedHasCreatorCuration?: boolean
 ): boolean {
   // For GRAVE, Address List Screener is always present
-  // Only change is whether Curated List Screener is enabled/disabled
-  return currentUseCuratedList !== proposedUseCuratedList;
+  // Check if any screener selection has changed
+  if (currentUseCuratedList !== proposedUseCuratedList) return true;
+  if (currentHasCreatorList !== proposedHasCreatorList) return true;
+  if (currentHasCreatorCuration !== proposedHasCreatorCuration) return true;
+  return false;
 }
 
 /**
@@ -910,6 +1162,8 @@ export async function removeForwarderAssistant(
     forwarderAssistantAddress: string;
     addressListScreenerAddress: string;
     curatedListScreenerAddress: string;
+    creatorListScreenerAddress: string;
+    creatorCurationScreenerAddress: string;
   }
 ): Promise<void> {
   const signer = await provider.getSigner();
