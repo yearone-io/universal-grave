@@ -26,9 +26,7 @@ import {
   ModalCloseButton,
   useDisclosure,
   Badge,
-  Radio,
-  RadioGroup,
-  Stack,
+  Tooltip,
 } from '@chakra-ui/react';
 import {
   FaCheckCircle,
@@ -36,6 +34,7 @@ import {
   FaTrash,
   FaChevronDown,
   FaCopy,
+  FaQuestionCircle,
 } from 'react-icons/fa';
 import { BrowserProvider, isAddress, Contract } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
@@ -1972,19 +1971,21 @@ const GraveSubscription: React.FC = () => {
                   <Text fontSize="md" fontWeight="bold" color="dark.purple.500">
                     Creator Curated List
                   </Text>
-                  {hasCreatorCuratedListChanges() && (
-                    <Badge
-                      bg="orange.400"
-                      color="white"
-                      fontSize="xs"
-                      fontWeight="bold"
-                      px={2}
-                      py={0.5}
-                      borderRadius="md"
-                    >
-                      UNSAVED CHANGES
-                    </Badge>
-                  )}
+                  {hasCreatorCuratedListChanges() &&
+                    creatorCuratedListAddress.trim() !== '' &&
+                    isAddress(creatorCuratedListAddress) && (
+                      <Badge
+                        bg="orange.400"
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                      >
+                        UNSAVED CHANGES
+                      </Badge>
+                    )}
                   {!hasCreatorCuratedListChanges() &&
                     originalCreatorCuratedListAddress.trim() !== '' && (
                       <Badge
@@ -2006,43 +2007,66 @@ const GraveSubscription: React.FC = () => {
                 </Text>
 
                 {/* RequireAllCreators Toggle for Creator Curation */}
-                <Box mb={3}>
+                <HStack mb={3} spacing={2} align="center">
                   <Text
                     fontSize="sm"
-                    fontWeight="bold"
-                    color="dark.purple.500"
-                    mb={2}
-                  >
-                    Creator Matching Mode:
-                  </Text>
-                  <RadioGroup
-                    value={requireAllCreatorsForCuration ? 'all' : 'any'}
-                    onChange={v =>
-                      setRequireAllCreatorsForCuration(v === 'all')
+                    color={
+                      !creatorCuratedListAddress.trim() ||
+                      !isAddress(creatorCuratedListAddress)
+                        ? 'gray.400'
+                        : 'dark.purple.500'
                     }
                   >
-                    <Stack spacing={2}>
-                      <Radio value="any" colorScheme="purple" size="sm">
-                        <Text fontSize="sm" color="dark.purple.600">
-                          Any creator matches (OR logic)
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          Asset passes if at least one creator is in the curated
-                          list
-                        </Text>
-                      </Radio>
-                      <Radio value="all" colorScheme="purple" size="sm">
-                        <Text fontSize="sm" color="dark.purple.600">
-                          All creators must match (AND logic)
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          Asset passes only if every creator is in the curated
-                          list
-                        </Text>
-                      </Radio>
-                    </Stack>
-                  </RadioGroup>
-                </Box>
+                    Match:
+                  </Text>
+                  <HStack spacing={0} borderRadius="md" overflow="hidden">
+                    <Button
+                      size="xs"
+                      variant={
+                        !requireAllCreatorsForCuration ? 'solid' : 'outline'
+                      }
+                      colorScheme="purple"
+                      borderRightRadius={0}
+                      onClick={() => setRequireAllCreatorsForCuration(false)}
+                      isDisabled={
+                        !creatorCuratedListAddress.trim() ||
+                        !isAddress(creatorCuratedListAddress)
+                      }
+                    >
+                      Any creator
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={
+                        requireAllCreatorsForCuration ? 'solid' : 'outline'
+                      }
+                      colorScheme="purple"
+                      borderLeftRadius={0}
+                      onClick={() => setRequireAllCreatorsForCuration(true)}
+                      isDisabled={
+                        !creatorCuratedListAddress.trim() ||
+                        !isAddress(creatorCuratedListAddress)
+                      }
+                    >
+                      All creators
+                    </Button>
+                  </HStack>
+                  <Tooltip
+                    label={
+                      !creatorCuratedListAddress.trim() ||
+                      !isAddress(creatorCuratedListAddress)
+                        ? 'Add a curated list address to enable this option'
+                        : 'Choose whether ANY or ALL creators must be in the list'
+                    }
+                    fontSize="xs"
+                    placement="top"
+                    hasArrow
+                  >
+                    <Box as="span" color="gray.400" cursor="help">
+                      <FaQuestionCircle size={12} />
+                    </Box>
+                  </Tooltip>
+                </HStack>
 
                 <Input
                   placeholder="0x... (creator curated list contract address - optional)"
@@ -2127,19 +2151,22 @@ const GraveSubscription: React.FC = () => {
                     Safe Creators List
                   </Text>
                   {(hasCreatorAddressListChanges() ||
-                    hasRequireAllCreatorsChanges()) && (
-                    <Badge
-                      bg="orange.400"
-                      color="white"
-                      fontSize="xs"
-                      fontWeight="bold"
-                      px={2}
-                      py={0.5}
-                      borderRadius="md"
-                    >
-                      UNSAVED CHANGES
-                    </Badge>
-                  )}
+                    hasRequireAllCreatorsChanges()) &&
+                    creatorWhitelistAddresses.some(
+                      a => a.trim() !== '' && isAddress(a.trim())
+                    ) && (
+                      <Badge
+                        bg="orange.400"
+                        color="white"
+                        fontSize="xs"
+                        fontWeight="bold"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                      >
+                        UNSAVED CHANGES
+                      </Badge>
+                    )}
                   {!(
                     hasCreatorAddressListChanges() ||
                     hasRequireAllCreatorsChanges()
@@ -2164,39 +2191,66 @@ const GraveSubscription: React.FC = () => {
                 </Text>
 
                 {/* RequireAllCreators Toggle for Creator List */}
-                <Box mb={3}>
+                <HStack mb={3} spacing={2} align="center">
                   <Text
                     fontSize="sm"
-                    fontWeight="bold"
-                    color="dark.purple.500"
-                    mb={2}
+                    color={
+                      !creatorWhitelistAddresses.some(
+                        a => a.trim() !== '' && isAddress(a.trim())
+                      )
+                        ? 'gray.400'
+                        : 'dark.purple.500'
+                    }
                   >
-                    Creator Matching Mode:
+                    Match:
                   </Text>
-                  <RadioGroup
-                    value={requireAllCreatorsForList ? 'all' : 'any'}
-                    onChange={v => setRequireAllCreatorsForList(v === 'all')}
+                  <HStack spacing={0} borderRadius="md" overflow="hidden">
+                    <Button
+                      size="xs"
+                      variant={!requireAllCreatorsForList ? 'solid' : 'outline'}
+                      colorScheme="purple"
+                      borderRightRadius={0}
+                      onClick={() => setRequireAllCreatorsForList(false)}
+                      isDisabled={
+                        !creatorWhitelistAddresses.some(
+                          a => a.trim() !== '' && isAddress(a.trim())
+                        )
+                      }
+                    >
+                      Any creator
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={requireAllCreatorsForList ? 'solid' : 'outline'}
+                      colorScheme="purple"
+                      borderLeftRadius={0}
+                      onClick={() => setRequireAllCreatorsForList(true)}
+                      isDisabled={
+                        !creatorWhitelistAddresses.some(
+                          a => a.trim() !== '' && isAddress(a.trim())
+                        )
+                      }
+                    >
+                      All creators
+                    </Button>
+                  </HStack>
+                  <Tooltip
+                    label={
+                      !creatorWhitelistAddresses.some(
+                        a => a.trim() !== '' && isAddress(a.trim())
+                      )
+                        ? 'Add at least one creator address to enable this option'
+                        : 'Choose whether ANY or ALL creators must be in the list'
+                    }
+                    fontSize="xs"
+                    placement="top"
+                    hasArrow
                   >
-                    <Stack spacing={2}>
-                      <Radio value="any" colorScheme="purple" size="sm">
-                        <Text fontSize="sm" color="dark.purple.600">
-                          Any creator matches (OR logic)
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          Asset passes if at least one creator is in your list
-                        </Text>
-                      </Radio>
-                      <Radio value="all" colorScheme="purple" size="sm">
-                        <Text fontSize="sm" color="dark.purple.600">
-                          All creators must match (AND logic)
-                        </Text>
-                        <Text fontSize="xs" color="gray.500">
-                          Asset passes only if every creator is in your list
-                        </Text>
-                      </Radio>
-                    </Stack>
-                  </RadioGroup>
-                </Box>
+                    <Box as="span" color="gray.400" cursor="help">
+                      <FaQuestionCircle size={12} />
+                    </Box>
+                  </Tooltip>
+                </HStack>
 
                 <VStack spacing={2} align="stretch">
                   {creatorWhitelistAddresses.map((addr, index) => (
