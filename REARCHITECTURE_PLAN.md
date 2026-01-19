@@ -196,7 +196,7 @@ const screenerConfig = {
       addresses: userExceptionList,
     },
   },
-  useANDLogic: false, // OR logic (either passes → grave)
+  useANDLogic: true, // AND logic (all filters must allow → grave)
 };
 ```
 

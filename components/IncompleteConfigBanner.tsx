@@ -88,11 +88,16 @@ export default function IncompleteConfigBanner() {
           }
         );
 
-        // Configuration is incomplete if:
-        // 1. Whitelist is empty (even if list name exists) AND
-        // 2. No curated list is configured
+        // Configuration is incomplete if ALL filters are empty:
+        // 1. Asset whitelist is empty AND
+        // 2. Asset curated list is not configured AND
+        // 3. Creator whitelist is empty AND
+        // 4. Creator curated list is not configured
         const incomplete =
-          config.whitelistAddresses.length === 0 && !config.useCuratedList;
+          config.whitelistAddresses.length === 0 &&
+          !config.useCuratedList &&
+          config.creatorWhitelistAddresses.length === 0 &&
+          !config.creatorCuratedListAddress;
         setIsIncompleteConfig(incomplete);
       } catch (error) {
         console.error('Error checking config completeness:', error);

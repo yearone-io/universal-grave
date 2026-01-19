@@ -103,15 +103,6 @@ async function computeAddressListDiff(
     normalizedProposed
   );
 
-  // If proposed list is empty but there's an existing list, preserve it (don't clear)
-  // This allows users to reactivate without losing their saved list
-  if (normalizedProposed.length === 0 && currentLength > 0) {
-    console.log(
-      `[SmartDiff] Preserving existing list (${currentLength} entries) - proposed list is empty`
-    );
-    return { keys, values }; // Return empty - no changes
-  }
-
   // Build lookup maps for current and proposed
   const currentPositions = new Map<string, number>();
   currentAddresses.forEach((addr, i) => {
@@ -358,13 +349,21 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
       const config = screenerConfig.screenerConfigs[instanceId] || {};
       const screenerOrder = executionOrder * 1000 + i;
 
-      // Determine if this is the Address List Screener or Curated List Screener
-      const isAddressListScreener = config.addresses !== undefined;
-      const isCuratedListScreener = config.curatedListAddress !== undefined;
+      // Determine screener type based on config structure
+      const isCreatorListScreener =
+        config.addresses !== undefined && config.requireAllCreators !== undefined;
+      const isCreatorCurationScreener =
+        config.curatedListAddress !== undefined &&
+        config.requireAllCreators !== undefined;
+      const isAddressListScreener =
+        config.addresses !== undefined && config.requireAllCreators === undefined;
+      const isCuratedListScreener =
+        config.curatedListAddress !== undefined &&
+        config.requireAllCreators === undefined;
 
       // Skip screener config write if configs haven't changed
       // UAPScreenerConfig contains the screener's config (e.g., returnValueWhenInList boolean)
-      // This is separate from the address list DATA (GraveSafeAssets[] items)
+      // This is separate from the address list DATA (GraveSafeAssets[] or GraveSafeCreators[] items)
       if (!options?.skipScreenerConfigs) {
         // Set screener config using manual byte packing
         const screenerConfigKey = erc725UAP.encodeKeyName(
@@ -376,7 +375,23 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
         let screenerConfigBytes = '0x';
 
         // Check which screener type we're configuring
-        if (isAddressListScreener) {
+        if (isCreatorListScreener) {
+          // Creator List Screener: config contains requireAllCreators + returnValueWhenInList
+          const requireAllCreators = config.requireAllCreators ?? false;
+          const returnValueWhenInList = config.returnValueWhenInList ?? false;
+          screenerConfigBytes = abiCoder.encode(
+            ['bool', 'bool'],
+            [requireAllCreators, returnValueWhenInList]
+          );
+        } else if (isCreatorCurationScreener) {
+          // Creator Curation Screener: config contains (address, requireAllCreators, returnValueWhenCurated)
+          const requireAllCreators = config.requireAllCreators ?? false;
+          const returnValueWhenCurated = config.returnValueWhenCurated ?? false;
+          screenerConfigBytes = abiCoder.encode(
+            ['address', 'bool', 'bool'],
+            [config.curatedListAddress, requireAllCreators, returnValueWhenCurated]
+          );
+        } else if (isAddressListScreener) {
           // Address List Screener: config contains returnValueWhenInList boolean
           const returnValueWhenInList = config.returnValueWhenInList ?? false;
           screenerConfigBytes = abiCoder.encode(
@@ -405,10 +420,11 @@ export default async function configureExecutiveAssistantWithUnifiedSystem(
 
       // Handle address list (including empty lists that need to clear existing data)
       if (config.addresses !== undefined) {
-        // Set address list for Address List Screener
-        // Use shared list name 'GraveSafeAssets' for both LSP7 and LSP8
-        // This saves ~50% storage by having both transaction types reference the same underlying list
-        const listName = 'GraveSafeAssets';
+        // Determine list name based on screener type
+        // Creator List Screener uses 'GraveSafeCreators'
+        // Address List Screener uses 'GraveSafeAssets'
+        // Both lists are shared between LSP7 and LSP8 to save ~50% storage
+        const listName = isCreatorListScreener ? 'GraveSafeCreators' : 'GraveSafeAssets';
 
         // Set list name (only write if screener configs are being written, i.e., initial setup or config changed)
         if (!options?.skipScreenerConfigs) {

@@ -43,11 +43,11 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     token: 'LYX',
     protocolAddress: '0x74cdf5beb4a2323fd386b87a1522d9aa0f59aeb9',
     forwarderAssistantAddress: '0xc503d7f50c4d2c0649fa86e43c247eb4e2e62fec',
-    curatedListScreenerAddress: '0x476fef9277f55f306f75cd89300ad9c7e5e36bcb',
-    addressListScreenerAddress: '0x25b51e55f493565be327b1a17e958839121435a7',
+    curatedListScreenerAddress: '0x56d3ef8a7bf8b04b51ff7c9f4b5d7e4e375b2664',
+    addressListScreenerAddress: '0x2e1fc250e758651bd0ab0edc355d7986ab138edc',
     creatorCurationScreenerAddress:
-      '0xfee83ab2dfb646991f20c30822de5f24dd1d21c4',
-    creatorListScreenerAddress: '0x7587aaf2a61c9142024624601165e7083f454efd',
+      '0x844472b633c0911dd3fe4c335e8764e2510c180d',
+    creatorListScreenerAddress: '0x6031249b8f0427fa7ac4092706eb7a6d53141451',
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation
@@ -69,11 +69,11 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     token: 'LYXt',
     protocolAddress: '0x091ebe012c1e92b8e7cc8d5acffdea2fc6052efc',
     forwarderAssistantAddress: '0x1296ace80af3230c961c79a9bee6a07b4a45f53f',
-    curatedListScreenerAddress: '0x442cd0098e23a541e3604296e0252de28c1c4fc6',
-    addressListScreenerAddress: '0xb5b746a75a464c83f7c1cc838ee3387486883026',
+    curatedListScreenerAddress: '0x6dd041d25b637eed30ebb8aeb44bf59bfb2a3aff',
+    addressListScreenerAddress: '0x2ef7919a6e715700b8bccfe2106bef4887f28507',
     creatorCurationScreenerAddress:
-      '0xfbb73f15d9cd0a07d1cf75a0b71ed3d9dd8eb0c4',
-    creatorListScreenerAddress: '0x1771a1c260693c36d199476810ed336f6457ed7a',
+      '0xaeae6c5fdbcb2e3201ceaa32edfb213534429dae',
+    creatorListScreenerAddress: '0x8f6820e24d3cbd63e87fc0b791844d8b3106bb94',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x392e18585b89bd795204c634cce5878f1cf40a58', // Shared LSP9VaultInit implementation

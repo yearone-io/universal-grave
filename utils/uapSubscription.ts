@@ -304,6 +304,7 @@ export async function subscribeAndConfigureGrave(
   networkConfig: {
     forwarderAssistantAddress: string;
     addressListScreenerAddress: string;
+    creatorListScreenerAddress: string;
   }
 ): Promise<void> {
   console.log("running: subscribeAndConfigureGrave")
@@ -489,18 +490,20 @@ export async function subscribeAndConfigureGrave(
       // SECTION 4: Screeners Configuration
       // =============================================================
 
-      // 12-15. Set UAPExecutiveScreeners array
+      // 12-15. Set UAPExecutiveScreeners array (Creator List + Address List)
       const screenersKey = erc725UAP.encodeKeyName(
         'UAPExecutiveScreeners:<bytes32>:<uint256>',
         [typeId, executionOrder.toString()]
       );
-      const encodedScreeners = erc725UAP.encodeValueType('address[]', [
+      const screeners = [
+        networkConfig.creatorListScreenerAddress,
         networkConfig.addressListScreenerAddress,
-      ]);
+      ];
+      const encodedScreeners = erc725UAP.encodeValueType('address[]', screeners);
       keys.push(screenersKey);
       values.push(encodedScreeners);
 
-      // Set AND logic for screeners
+      // Set AND logic for screeners (asset only reaches GRAVE if ALL screeners pass)
       const logicKey = erc725UAP.encodeKeyName(
         'UAPExecutiveScreenersANDLogic:<bytes32>:<uint256>',
         [typeId, executionOrder.toString()]
@@ -508,42 +511,63 @@ export async function subscribeAndConfigureGrave(
       keys.push(logicKey);
       values.push('0x01'); // AND logic = true
 
-      // 16-19. Set UAPScreenerConfig for Address List Screener
-      const screenerOrder = executionOrder * 1000 + 0; // First screener
-
-      const screenerConfigKey = erc725UAP.encodeKeyName(
-        'UAPScreenerConfig:<bytes32>:<uint256>',
-        [typeId, screenerOrder.toString()]
-      );
-
-      // Config: returnValueWhenInList = false (addresses in list should FAIL screening = go to UP)
-      const screenerConfigBytes = abiCoder.encode(['bool'], [false]);
-
-      // Manual byte packing: executive address + screener address + config data
       const executiveBytes = networkConfig.forwarderAssistantAddress
         .toLowerCase()
         .replace('0x', '');
-      const screenerBytes = networkConfig.addressListScreenerAddress
-        .toLowerCase()
-        .replace('0x', '');
-      const configBytes = screenerConfigBytes.replace('0x', '');
-      const screenerConfigValue =
-        '0x' + executiveBytes + screenerBytes + configBytes;
 
-      keys.push(screenerConfigKey);
-      values.push(screenerConfigValue);
-
-      // Set UAPAddressListName
-      const listNameKey = erc725UAP.encodeKeyName(
-        'UAPAddressListName:<bytes32>:<uint256>',
-        [typeId, screenerOrder.toString()]
+      // Configure Creator List Screener (screener index 0)
+      const creatorScreenerOrder = executionOrder * 1000 + 0;
+      const creatorScreenerConfigKey = erc725UAP.encodeKeyName(
+        'UAPScreenerConfig:<bytes32>:<uint256>',
+        [typeId, creatorScreenerOrder.toString()]
       );
-      const encodedListName = erc725UAP.encodeValueType(
+      const creatorConfigBytes = abiCoder
+        .encode(['bool', 'bool'], [false, false])
+        .replace('0x', '');
+      const creatorScreenerBytes =
+        networkConfig.creatorListScreenerAddress.toLowerCase().replace('0x', '');
+      const creatorConfigValue =
+        '0x' + executiveBytes + creatorScreenerBytes + creatorConfigBytes;
+      keys.push(creatorScreenerConfigKey);
+      values.push(creatorConfigValue);
+
+      const creatorListNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [typeId, creatorScreenerOrder.toString()]
+      );
+      const encodedCreatorListName = erc725UAP.encodeValueType(
+        'string',
+        'GraveSafeCreators'
+      );
+      keys.push(creatorListNameKey);
+      values.push(encodedCreatorListName);
+
+      // Configure Address List Screener (screener index 1)
+      const addressScreenerOrder = executionOrder * 1000 + 1;
+      const addressScreenerConfigKey = erc725UAP.encodeKeyName(
+        'UAPScreenerConfig:<bytes32>:<uint256>',
+        [typeId, addressScreenerOrder.toString()]
+      );
+      const addressConfigBytes = abiCoder
+        .encode(['bool'], [false])
+        .replace('0x', '');
+      const addressScreenerBytes =
+        networkConfig.addressListScreenerAddress.toLowerCase().replace('0x', '');
+      const addressConfigValue =
+        '0x' + executiveBytes + addressScreenerBytes + addressConfigBytes;
+      keys.push(addressScreenerConfigKey);
+      values.push(addressConfigValue);
+
+      const addressListNameKey = erc725UAP.encodeKeyName(
+        'UAPAddressListName:<bytes32>:<uint256>',
+        [typeId, addressScreenerOrder.toString()]
+      );
+      const encodedAddressListName = erc725UAP.encodeValueType(
         'string',
         'GraveSafeAssets'
       );
-      keys.push(listNameKey);
-      values.push(encodedListName);
+      keys.push(addressListNameKey);
+      values.push(encodedAddressListName);
     }
 
     // =============================================================
@@ -569,6 +593,31 @@ export async function subscribeAndConfigureGrave(
       );
       console.log(
         `[UAP Subscribe] Found existing GraveSafeAssets list with ${existingCount} items - preserving and configuring screener to use it`
+      );
+    }
+
+    // =============================================================
+    // SECTION 6: Initialize empty GraveSafeCreators[] list
+    // =============================================================
+
+    const creatorListLengthKey = erc725UAP.encodeKeyName('GraveSafeCreators[]');
+    const existingCreatorListLength = await upContract.getData(
+      creatorListLengthKey
+    );
+
+    if (!existingCreatorListLength || existingCreatorListLength === '0x') {
+      const listLength = erc725UAP.encodeValueType('uint256', BigInt(0));
+      keys.push(creatorListLengthKey);
+      values.push(listLength);
+      console.log(
+        '[UAP Subscribe] No existing GraveSafeCreators list found - initializing empty list'
+      );
+    } else {
+      const existingCount = Number(
+        erc725UAP.decodeValueType('uint256', existingCreatorListLength)
+      );
+      console.log(
+        `[UAP Subscribe] Found existing GraveSafeCreators list with ${existingCount} items - preserving and configuring screener to use it`
       );
     }
 

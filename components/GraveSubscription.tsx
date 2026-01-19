@@ -761,6 +761,8 @@ const GraveSubscription: React.FC = () => {
             forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
             addressListScreenerAddress:
               currentNetwork.addressListScreenerAddress,
+            creatorListScreenerAddress:
+              currentNetwork.creatorListScreenerAddress,
           }
         );
       } else {

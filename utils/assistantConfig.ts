@@ -590,27 +590,25 @@ function buildForwarderScreenerConfig(
     enableScreeners: false,
     selectedScreeners: [] as string[],
     screenerConfigs: {} as { [screenerId: string]: any },
-    useANDLogic: false, // Use OR logic for GRAVE - asset passes if ANY screener passes
+    useANDLogic: true, // Use AND logic - asset only reaches GRAVE if ALL filters allow it
   };
 
   // Build screeners list: Creator filters first, then Asset filters
-  // All screeners use OR logic (any one passing means asset goes to UP)
+  // With AND logic, any screener failure keeps the asset with the UP
   const screeners: string[] = [];
 
-  // 1. Creator List Screener (if creator addresses configured)
+  // 1. Creator List Screener (always include, even with empty list)
   const validCreatorAddresses = creatorWhitelistAddresses.filter(
     addr => addr.trim() !== '' && isAddress(addr)
   );
-  if (validCreatorAddresses.length > 0) {
-    screeners.push(networkConfig.creatorListScreenerAddress);
-  }
+  screeners.push(networkConfig.creatorListScreenerAddress);
 
   // 2. Creator Curation Screener (if curated list configured)
   if (creatorCuratedListAddress && isAddress(creatorCuratedListAddress)) {
     screeners.push(networkConfig.creatorCurationScreenerAddress);
   }
 
-  // 3. Address List Screener (always include for asset-based filtering)
+  // 3. Address List Screener (always include, even with empty list)
   screeners.push(networkConfig.addressListScreenerAddress);
 
   // 4. Curated List Screener (if asset curated list configured)
