@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   useClipboard,
@@ -11,14 +11,20 @@ import {
 import { FaShare } from 'react-icons/fa';
 
 const ClientShareButton = ({ pageAccount }: { pageAccount: string | null }) => {
-  const currentUrl =
-    typeof window !== 'undefined' && pageAccount
-      ? `${window.location.host}/grave/${pageAccount}`
-      : '';
+  const [currentUrl, setCurrentUrl] = useState('');
+
+  useEffect(() => {
+    if (!pageAccount) {
+      setCurrentUrl('');
+      return;
+    }
+
+    setCurrentUrl(`${window.location.host}/grave/${pageAccount}`);
+  }, [pageAccount]);
   const { hasCopied, onCopy } = useClipboard(currentUrl);
   const toast = useToast();
 
-  if (!pageAccount) {
+  if (!pageAccount || !currentUrl) {
     return null;
   }
 

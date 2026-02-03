@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import NewUserBanner from '@/components/NewUserBanner';
@@ -13,9 +14,10 @@ export default function NetworkLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { networkName: string };
+  params: Promise<{ networkName: string }>;
 }) {
-  const network = getNetworkByName(params.networkName);
+  const { networkName } = use(params);
+  const network = getNetworkByName(networkName);
 
   if (!network) {
     notFound();
@@ -23,12 +25,12 @@ export default function NetworkLayout({
 
   return (
     <>
-      <Header networkName={params.networkName} />
+      <Header networkName={networkName} />
       <NewUserBanner />
       <UpgradeBanner />
       <IncompleteConfigBanner />
       <div style={{ flexGrow: 0.9 }}>{children}</div>
-      <Footer networkName={params.networkName} />
+      <Footer networkName={networkName} />
     </>
   );
 }

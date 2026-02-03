@@ -654,7 +654,7 @@ export default function GraveDiagnostics({
           : null,
       ].filter(Boolean) as string[];
 
-      const actualOrder = screenerAddresses.filter(addr =>
+      const actualOrder = screenerAddresses.filter((addr: string) =>
         canonicalOrder.includes(addr)
       );
       const orderMismatch =
@@ -664,9 +664,9 @@ export default function GraveDiagnostics({
       if (orderMismatch) {
         problems.push(
           `Screener order mismatch for txType ${txType}: expected ${canonicalOrder
-            .map(a => formatAddress(a))
+            .map((a: string) => formatAddress(a))
             .join(' → ')}, got ${actualOrder
-            .map(a => formatAddress(a))
+            .map((a: string) => formatAddress(a))
             .join(' → ')}`
         );
       }

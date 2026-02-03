@@ -8,10 +8,15 @@ export const metadata: Metadata = {
   description: 'List of assets in your graveyard',
 };
 
-export default function Grave({ params }: { params: { account: string } }) {
+export default async function Grave({
+  params,
+}: {
+  params: Promise<{ account: string }>;
+}) {
+  const { account } = await params;
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
-      <GraveContents graveOwner={params.account} />
+      <GraveContents graveOwner={account} />
     </Container>
   );
 }

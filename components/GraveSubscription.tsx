@@ -2030,17 +2030,17 @@ const GraveSubscription: React.FC = () => {
               });
             }}
           />
-          <Link href={`/${networkName}/grave/${address}`} passHref>
-            <ChakraLink
-              color="green.700"
-              fontWeight="bold"
-              fontSize="sm"
-              textDecoration="underline"
-              ml={2}
-            >
-              View Spambox →
-            </ChakraLink>
-          </Link>
+          <ChakraLink
+            as={Link}
+            href={`/${networkName}/grave/${address}`}
+            color="green.700"
+            fontWeight="bold"
+            fontSize="sm"
+            textDecoration="underline"
+            ml={2}
+          >
+            View Spambox →
+          </ChakraLink>
         </Text>
       </Box>
 

@@ -8,16 +8,17 @@ export const metadata: Metadata = {
   description: 'List and manage assets in your graveyard',
 };
 
-export default function Settings({
+export default async function Settings({
   params,
 }: {
-  params: { networkName: string };
+  params: Promise<{ networkName: string }>;
 }) {
-  const network = getNetworkByName(params.networkName);
+  const { networkName } = await params;
+  const network = getNetworkByName(networkName);
 
   if (!network) {
     notFound();
   }
 
-  return <GraveSettings networkName={params.networkName} />;
+  return <GraveSettings networkName={networkName} />;
 }

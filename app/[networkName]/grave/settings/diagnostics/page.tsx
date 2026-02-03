@@ -8,16 +8,17 @@ export const metadata: Metadata = {
   description: 'Debug on-chain UAP configuration for your profile',
 };
 
-export default function Diagnostics({
+export default async function Diagnostics({
   params,
 }: {
-  params: { networkName: string };
+  params: Promise<{ networkName: string }>;
 }) {
-  const network = getNetworkByName(params.networkName);
+  const { networkName } = await params;
+  const network = getNetworkByName(networkName);
 
   if (!network) {
     notFound();
   }
 
-  return <GraveDiagnostics networkName={params.networkName} />;
+  return <GraveDiagnostics networkName={networkName} />;
 }

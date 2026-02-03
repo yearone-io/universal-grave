@@ -762,7 +762,7 @@ export async function getForwarderAssistantDiagnostics(
             entry.typeConfigData
           ) as string[];
           entry.executionOrder = entry.executives.findIndex(
-            addr =>
+            (addr: string) =>
               addr.toLowerCase() ===
               networkConfig.forwarderAssistantAddress.toLowerCase()
           );

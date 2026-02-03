@@ -8,16 +8,17 @@ export const metadata: Metadata = {
   description: 'A cemetery for unwanted digital assets',
 };
 
-export default function NetworkLandingPage({
+export default async function NetworkLandingPage({
   params,
 }: {
-  params: { networkName: string };
+  params: Promise<{ networkName: string }>;
 }) {
-  const network = getNetworkByName(params.networkName);
+  const { networkName } = await params;
+  const network = getNetworkByName(networkName);
 
   if (!network) {
     notFound();
   }
 
-  return <Landing networkName={params.networkName} />;
+  return <Landing networkName={networkName} />;
 }
