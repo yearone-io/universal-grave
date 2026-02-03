@@ -84,7 +84,20 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
       >
         <Flex gap={3} justifyContent="center" alignItems="center">
           <Image src={logoPath} alt="Universal-Grave-logo" width={'40px'} />
-          <Box>© 2024 Universal GRAVE</Box>
+          <Stack spacing={1}>
+            <Box fontSize="xs" color="dark.white">
+              Powered by{' '}
+              <chakra.a
+                href="https://github.com/yearone-io/universal-assistant-protocol"
+                target="_blank"
+                rel="noreferrer"
+                textDecoration="underline"
+                _hover={{ color: 'dark.purple.100' }}
+              >
+                🆙 Assistants
+              </chakra.a>
+            </Box>
+          </Stack>
         </Flex>
         <Flex
           gap={6}

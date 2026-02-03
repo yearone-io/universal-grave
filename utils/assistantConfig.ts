@@ -26,12 +26,18 @@ export interface ForwarderAssistantConfig {
   executionOrderLSP7: number | null;
   executionOrderLSP8: number | null;
   listName: string | null; // Address list name used by screeners (default: 'GraveSafeAssets')
+  listLengthMissing: boolean; // True when list name exists but length key missing
+  addressScreenerConfigMissing: boolean; // True when address list screener config key missing
+  addressListNameMissing: boolean; // True when address list name key missing
   // Creator filter fields
   creatorWhitelistAddresses: string[];
   creatorCuratedListAddress: string | null;
   requireAllCreatorsForList: boolean; // AND/OR toggle for creator list screener
   requireAllCreatorsForCuration: boolean; // AND/OR toggle for creator curation screener
   creatorListName: string | null; // Address list name for creator screeners (default: 'GraveSafeCreators')
+  creatorListLengthMissing: boolean; // True when creator list name exists but length key missing
+  creatorScreenerConfigMissing: boolean; // True when creator list screener config key missing
+  creatorListNameMissing: boolean; // True when creator list name key missing
 }
 
 /**
@@ -61,6 +67,94 @@ export const decodeExecDataValue = (
 
   return [address, configBytes];
 };
+
+/**
+ * Encode executive config value as address + bytes (UP Assistants format)
+ */
+export const encodeExecDataValue = (
+  assistantAddress: string,
+  configBytes: string
+): string => {
+  const addressHex = assistantAddress.startsWith('0x')
+    ? assistantAddress.slice(2)
+    : assistantAddress;
+  const configHex = configBytes.startsWith('0x')
+    ? configBytes.slice(2)
+    : configBytes;
+  return `0x${addressHex}${configHex}`;
+};
+
+/**
+ * Updates only the Forwarder Assistant vault address (exec config) without touching screeners or lists.
+ */
+export async function updateForwarderVaultAddress(
+  provider: BrowserProvider,
+  upAddress: string,
+  vaultAddress: string,
+  networkConfig: {
+    forwarderAssistantAddress: string;
+  }
+): Promise<void> {
+  const signer = await provider.getSigner();
+  const upContract = new Contract(upAddress, universalProfileAbi, signer);
+  const erc725UAP = new ERC725(
+    uapSchema as ERC725JSONSchema[],
+    upAddress,
+    provider
+  );
+  const abiCoder = new AbiCoder();
+
+  if (!isAddress(vaultAddress)) {
+    throw new Error('Invalid vault address');
+  }
+
+  const assistantConfigData = abiCoder.encode(['address'], [vaultAddress]);
+  const execData = encodeExecDataValue(
+    networkConfig.forwarderAssistantAddress,
+    assistantConfigData
+  );
+
+  const keys: string[] = [];
+  const values: string[] = [];
+
+  for (const typeId of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
+    const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
+      typeId,
+    ]);
+    const typeConfigData = await upContract.getData(typeConfigKey);
+    if (!typeConfigData || typeConfigData === '0x') {
+      throw new Error('Forwarder assistant not configured for this profile');
+    }
+
+    const executives = erc725UAP.decodeValueType(
+      'address[]',
+      typeConfigData
+    ) as string[];
+
+    const executionOrder = executives.findIndex(
+      addr =>
+        addr.toLowerCase() ===
+        networkConfig.forwarderAssistantAddress.toLowerCase()
+    );
+
+    if (executionOrder === -1) {
+      throw new Error('Forwarder assistant not configured for this profile');
+    }
+
+    const executiveConfigKey = erc725UAP.encodeKeyName(
+      'UAPExecutiveConfig:<bytes32>:<uint256>',
+      [typeId, executionOrder.toString()]
+    );
+
+    keys.push(executiveConfigKey);
+    values.push(execData);
+  }
+
+  if (keys.length > 0) {
+    const tx = await upContract.setDataBatch(keys, values);
+    await tx.wait();
+  }
+}
 
 /**
  * Fetches the current Forwarder Assistant configuration from the Universal Profile
@@ -93,15 +187,30 @@ export async function getForwarderAssistantConfig(
     executionOrderLSP7: null,
     executionOrderLSP8: null,
     listName: null,
+    listLengthMissing: false,
+    addressScreenerConfigMissing: false,
+    addressListNameMissing: false,
     // Creator filter fields
     creatorWhitelistAddresses: [],
     creatorCuratedListAddress: null,
     requireAllCreatorsForList: false,
     requireAllCreatorsForCuration: false,
     creatorListName: null,
+    creatorListLengthMissing: false,
+    creatorScreenerConfigMissing: false,
+    creatorListNameMissing: false,
   };
 
   try {
+    let addressConfigFound = false;
+    let addressConfigMissing = false;
+    let addressListNameFound = false;
+    let addressListNameMissing = false;
+    let creatorConfigFound = false;
+    let creatorConfigMissing = false;
+    let creatorListNameFound = false;
+    let creatorListNameMissing = false;
+
     // Check both LSP7 and LSP8 configurations to get complete picture
     // We'll merge data from both, with LSP8 taking precedence if there's a conflict
     for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
@@ -249,18 +358,39 @@ export async function getForwarderAssistantConfig(
 
                   const screenerConfigData =
                     await upContract.getData(screenerConfigKey);
-                  if (
+                  const configIsValid =
                     screenerConfigData &&
                     screenerConfigData !== '0x' &&
-                    screenerConfigData.length >= 82
-                  ) {
-                    // Manual byte unpacking: first 20 bytes = executive, next 20 bytes = screener, rest = config
-                    const configBytes = '0x' + screenerConfigData.slice(82);
+                    screenerConfigData.length >= 82;
+                  const configBytes = configIsValid
+                    ? '0x' + screenerConfigData.slice(82)
+                    : null;
+                  const isAddressListScreener =
+                    screenerAddr.toLowerCase() ===
+                    networkConfig.addressListScreenerAddress.toLowerCase();
+                  const isCreatorListScreener =
+                    screenerAddr.toLowerCase() ===
+                    networkConfig.creatorListScreenerAddress.toLowerCase();
 
-                    if (
-                      screenerAddr.toLowerCase() ===
-                      networkConfig.addressListScreenerAddress.toLowerCase()
-                    ) {
+                  if (isAddressListScreener) {
+                    if (configIsValid) {
+                      addressConfigFound = true;
+                    } else {
+                      addressConfigMissing = true;
+                    }
+                  }
+
+                  if (isCreatorListScreener) {
+                    if (configIsValid) {
+                      creatorConfigFound = true;
+                    } else {
+                      creatorConfigMissing = true;
+                    }
+                  }
+
+                  if (configIsValid) {
+                    // Manual byte unpacking: first 20 bytes = executive, next 20 bytes = screener, rest = config
+                    if (isAddressListScreener) {
                       // Address List Screener - addresses are stored in a separate LSP5-style list
                       // Only fetch if we haven't already (from LSP7)
                       if (config.whitelistAddresses.length === 0) {
@@ -276,6 +406,7 @@ export async function getForwarderAssistantConfig(
                               'string',
                               listNameData
                             ) as string;
+                            addressListNameFound = true;
 
                             // Capture the list name (only set once from first transaction type)
                             if (!config.listName) {
@@ -325,6 +456,8 @@ export async function getForwarderAssistantConfig(
                                         ) as string
                                     );
                                 }
+                              } else {
+                                config.listLengthMissing = true;
                               }
                             } catch (listError) {
                               console.warn(
@@ -332,6 +465,8 @@ export async function getForwarderAssistantConfig(
                                 listError
                               );
                             }
+                          } else {
+                            addressListNameMissing = true;
                           }
                         } catch (error) {
                           console.error(
@@ -403,10 +538,7 @@ export async function getForwarderAssistantConfig(
                           );
                         }
                       }
-                    } else if (
-                      screenerAddr.toLowerCase() ===
-                      networkConfig.creatorListScreenerAddress.toLowerCase()
-                    ) {
+                    } else if (isCreatorListScreener) {
                       // Creator List Screener - config is ABI-encoded as (bool requireAllCreators, bool returnValueWhenInList)
                       // Addresses are stored in a separate LSP5-style list
                       if (config.creatorWhitelistAddresses.length === 0) {
@@ -440,6 +572,7 @@ export async function getForwarderAssistantConfig(
                               'string',
                               listNameData
                             ) as string;
+                            creatorListNameFound = true;
 
                             if (!config.creatorListName) {
                               config.creatorListName = listName;
@@ -488,6 +621,8 @@ export async function getForwarderAssistantConfig(
                                         ) as string
                                     );
                                 }
+                              } else {
+                                config.creatorListLengthMissing = true;
                               }
                             } catch (listError) {
                               console.warn(
@@ -495,6 +630,8 @@ export async function getForwarderAssistantConfig(
                                 listError
                               );
                             }
+                          } else {
+                            creatorListNameMissing = true;
                           }
                         } catch (error) {
                           console.error(
@@ -556,11 +693,183 @@ export async function getForwarderAssistantConfig(
       }
     }
 
+    config.addressScreenerConfigMissing =
+      !addressConfigFound && addressConfigMissing;
+    config.addressListNameMissing =
+      !addressListNameFound && addressListNameMissing;
+    config.creatorScreenerConfigMissing =
+      !creatorConfigFound && creatorConfigMissing;
+    config.creatorListNameMissing =
+      !creatorListNameFound && creatorListNameMissing;
+
     return config;
   } catch (error) {
     console.error('Error fetching forwarder assistant config:', error);
     return config;
   }
+}
+
+/**
+ * Diagnostics helper: reads raw UAP keys for the Forwarder Assistant
+ * to help debug screener config/list issues.
+ */
+export async function getForwarderAssistantDiagnostics(
+  provider: BrowserProvider | JsonRpcProvider,
+  upAddress: string,
+  networkConfig: {
+    forwarderAssistantAddress: string;
+    addressListScreenerAddress: string;
+    curatedListScreenerAddress: string;
+    creatorListScreenerAddress: string;
+    creatorCurationScreenerAddress: string;
+  }
+): Promise<any> {
+  const upContract = new Contract(upAddress, universalProfileAbi, provider);
+  const erc725UAP = new ERC725(
+    uapSchema as ERC725JSONSchema[],
+    upAddress,
+    provider
+  );
+
+  const txTypes = [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE];
+  const result: any = {
+    upAddress,
+    timestamp: new Date().toISOString(),
+    txTypes: [],
+  };
+
+  for (const txType of txTypes) {
+    const entry: any = {
+      txType,
+      typeConfigKey: erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
+        txType,
+      ]),
+      typeConfigData: null,
+      executives: null,
+      executionOrder: null,
+      screenersKey: null,
+      screenersData: null,
+      screeners: [],
+      screenersInfo: [],
+    };
+
+    try {
+      entry.typeConfigData = await upContract.getData(entry.typeConfigKey);
+      if (entry.typeConfigData && entry.typeConfigData !== '0x') {
+        try {
+          entry.executives = erc725UAP.decodeValueType(
+            'address[]',
+            entry.typeConfigData
+          ) as string[];
+          entry.executionOrder = entry.executives.findIndex(
+            addr =>
+              addr.toLowerCase() ===
+              networkConfig.forwarderAssistantAddress.toLowerCase()
+          );
+        } catch (decodeError) {
+          entry.executives = null;
+          entry.executivesDecodeError =
+            (decodeError as Error).message || String(decodeError);
+        }
+      }
+
+      if (entry.executionOrder !== null && entry.executionOrder >= 0) {
+        entry.screenersKey = erc725UAP.encodeKeyName(
+          'UAPExecutiveScreeners:<bytes32>:<uint256>',
+          [txType, entry.executionOrder.toString()]
+        );
+        entry.screenersData = await upContract.getData(entry.screenersKey);
+
+        if (entry.screenersData && entry.screenersData !== '0x') {
+          try {
+            entry.screeners = erc725UAP.decodeValueType(
+              'address[]',
+              entry.screenersData
+            ) as string[];
+          } catch (decodeError) {
+            entry.screenersDecodeError =
+              (decodeError as Error).message || String(decodeError);
+          }
+        }
+
+        for (let i = 0; i < entry.screeners.length; i++) {
+          const screenerAddress = entry.screeners[i];
+          const screenerOrder = entry.executionOrder * 1000 + i;
+          const screenerConfigKey = erc725UAP.encodeKeyName(
+            'UAPScreenerConfig:<bytes32>:<uint256>',
+            [txType, screenerOrder.toString()]
+          );
+          const listNameKey = erc725UAP.encodeKeyName(
+            'UAPAddressListName:<bytes32>:<uint256>',
+            [txType, screenerOrder.toString()]
+          );
+
+          const [screenerConfigData, listNameData] =
+            await upContract.getDataBatch([screenerConfigKey, listNameKey]);
+
+          const configValid =
+            screenerConfigData &&
+            screenerConfigData !== '0x' &&
+            screenerConfigData.length >= 82;
+          const configBytes = configValid
+            ? '0x' + screenerConfigData.slice(82)
+            : null;
+
+          let listName: string | null = null;
+          if (listNameData && listNameData !== '0x') {
+            try {
+              listName = erc725UAP.decodeValueType('string', listNameData);
+            } catch (decodeError) {
+              listName = null;
+            }
+          }
+
+          let listLengthKey: string | null = null;
+          let listLengthData: string | null = null;
+          let listLengthDecoded: string | null = null;
+          if (listName) {
+            listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
+            listLengthData = await upContract.getData(listLengthKey);
+            if (listLengthData && listLengthData !== '0x') {
+              try {
+                listLengthDecoded = BigInt(listLengthData).toString();
+              } catch (decodeError) {
+                try {
+                  listLengthDecoded = erc725UAP
+                    .decodeValueType('uint256', listLengthData)
+                    .toString();
+                } catch {
+                  listLengthDecoded = null;
+                }
+              }
+            }
+          }
+
+          entry.screenersInfo.push({
+            index: i,
+            screenerAddress,
+            screenerOrder,
+            screenerConfigKey,
+            screenerConfigData,
+            configValid,
+            configBytes,
+            listNameKey,
+            listNameData,
+            listName,
+            listLengthKey,
+            listLengthData,
+            listLengthDecoded,
+          });
+        }
+      }
+    } catch (error) {
+      entry.error = (error as Error).message || String(error);
+    }
+
+    result.txTypes.push(entry);
+  }
+
+  return result;
 }
 
 /**
@@ -692,7 +1001,10 @@ export async function saveForwarderAssistantConfig(
     creatorCurationScreenerAddress: string;
   },
   supportedNetworks: any,
-  chainId: number
+  chainId: number,
+  options?: {
+    forceListNameUpdate?: boolean;
+  }
 ): Promise<void> {
   const signer = await provider.getSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
@@ -763,7 +1075,16 @@ export async function saveForwarderAssistantConfig(
     `[Optimization] Config exists: ${configExists} (isConfigured=${currentConfig.isConfigured}, listName=${currentConfig.listName})`
   );
 
+  const forceListNameUpdate = options?.forceListNameUpdate === true;
+
   // Determine what changed (only meaningful if config already exists)
+  const currentHasCreatorList = currentConfig.creatorListName !== null;
+  const proposedHasCreatorList = true; // Creator list screener is always included
+  const currentHasCreatorCuration =
+    currentConfig.creatorCuratedListAddress !== null;
+  const proposedHasCreatorCuration =
+    !!creatorCuratedListAddress && creatorCuratedListAddress.trim() !== '';
+
   const changes = {
     vaultChanged: hasVaultChanged(currentConfig.vaultAddress, vaultAddress),
     addressListChanged: compareAddressLists(
@@ -789,11 +1110,12 @@ export async function saveForwarderAssistantConfig(
     screenerSelectionChanged: haveScreenersChanged(
       currentConfig.useCuratedList,
       useCuratedList,
-      currentConfig.creatorWhitelistAddresses.length > 0,
-      validCreatorAddresses.length > 0,
-      !!currentConfig.creatorCuratedListAddress,
-      !!creatorCuratedListAddress && creatorCuratedListAddress.trim() !== ''
+      currentHasCreatorList,
+      proposedHasCreatorList,
+      currentHasCreatorCuration,
+      proposedHasCreatorCuration
     ),
+    listNameMigrationRequested: forceListNameUpdate,
   };
 
   console.log('[Optimization] Detected changes:', changes);
@@ -835,17 +1157,22 @@ export async function saveForwarderAssistantConfig(
         // Only apply skip optimizations if config already exists
         // If no config exists, we must write ALL keys
         skipExecutiveConfig: configExists && !changes.vaultChanged,
-        skipScreenerArray: configExists && !changes.screenerSelectionChanged,
+        skipScreenerArray:
+          configExists &&
+          !changes.screenerSelectionChanged &&
+          !changes.listNameMigrationRequested,
         skipScreenerConfigs:
           configExists &&
           !changes.screenerSelectionChanged &&
           !changes.curatedListChanged &&
           !changes.creatorCuratedListChanged &&
-          !changes.requireAllCreatorsChanged,
+          !changes.requireAllCreatorsChanged &&
+          !changes.listNameMigrationRequested,
         skipAddressListData:
           configExists &&
           !changes.addressListChanged &&
-          !changes.creatorAddressListChanged,
+          !changes.creatorAddressListChanged &&
+          !changes.listNameMigrationRequested,
       }
     );
 

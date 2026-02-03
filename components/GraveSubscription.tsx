@@ -13,6 +13,11 @@ import {
   IconButton,
   VStack,
   HStack,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
   Menu,
   MenuButton,
   MenuList,
@@ -60,6 +65,7 @@ import { updateBECPermissions } from '@/utils/urdUtils';
 import {
   getForwarderAssistantConfig,
   removeForwarderAssistant,
+  updateForwarderVaultAddress,
 } from '@/utils/assistantConfig';
 import VaultURDChecker from './VaultURDChecker';
 
@@ -87,7 +93,14 @@ const GraveSubscription: React.FC = () => {
   const [curatedListAddress, setCuratedListAddress] = useState<string>('');
   const [useCuratedList, setUseCuratedList] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSwitchingVault, setIsSwitchingVault] = useState(false);
   const [listName, setListName] = useState<string | null>(null);
+  const [assetListLengthMissing, setAssetListLengthMissing] =
+    useState<boolean>(false);
+  const [assetListNameMissing, setAssetListNameMissing] =
+    useState<boolean>(false);
+  const [assetScreenerConfigMissing, setAssetScreenerConfigMissing] =
+    useState<boolean>(false);
 
   // Configuration state - Creator Filters
   const [creatorWhitelistAddresses, setCreatorWhitelistAddresses] = useState<
@@ -100,6 +113,13 @@ const GraveSubscription: React.FC = () => {
   const [requireAllCreatorsForCuration, setRequireAllCreatorsForCuration] =
     useState<boolean>(false);
   const [creatorListName, setCreatorListName] = useState<string | null>(null);
+  const [creatorListLengthMissing, setCreatorListLengthMissing] =
+    useState<boolean>(false);
+  const [creatorListNameMissing, setCreatorListNameMissing] =
+    useState<boolean>(false);
+  const [creatorScreenerConfigMissing, setCreatorScreenerConfigMissing] =
+    useState<boolean>(false);
+
 
   // Original values for change detection (loaded from blockchain)
   const [originalWhitelistAddresses, setOriginalWhitelistAddresses] = useState<
@@ -195,6 +215,16 @@ const GraveSubscription: React.FC = () => {
               currentNetwork.creatorCurationScreenerAddress,
           }
         );
+        setAssetListLengthMissing(!!existingConfig.listLengthMissing);
+        setAssetListNameMissing(!!existingConfig.addressListNameMissing);
+        setAssetScreenerConfigMissing(
+          !!existingConfig.addressScreenerConfigMissing
+        );
+        setCreatorListLengthMissing(!!existingConfig.creatorListLengthMissing);
+        setCreatorListNameMissing(!!existingConfig.creatorListNameMissing);
+        setCreatorScreenerConfigMissing(
+          !!existingConfig.creatorScreenerConfigMissing
+        );
 
         // Priority: If vault exists in config AND is part of owned vaults, select it
         // Use case-insensitive comparison because config returns checksummed addresses
@@ -284,6 +314,16 @@ const GraveSubscription: React.FC = () => {
               creatorCurationScreenerAddress:
                 currentNetwork.creatorCurationScreenerAddress,
             }
+          );
+          setAssetListLengthMissing(!!existingConfig.listLengthMissing);
+          setAssetListNameMissing(!!existingConfig.addressListNameMissing);
+          setAssetScreenerConfigMissing(
+            !!existingConfig.addressScreenerConfigMissing
+          );
+          setCreatorListLengthMissing(!!existingConfig.creatorListLengthMissing);
+          setCreatorListNameMissing(!!existingConfig.creatorListNameMissing);
+          setCreatorScreenerConfigMissing(
+            !!existingConfig.creatorScreenerConfigMissing
           );
 
           // Populate form fields with existing configuration
@@ -620,6 +660,7 @@ const GraveSubscription: React.FC = () => {
     );
   };
 
+
   // Handler for URD status changes from VaultURDChecker
   const handleURDStatusChange = useCallback(
     (hasURD: boolean) => {
@@ -940,6 +981,94 @@ const GraveSubscription: React.FC = () => {
       setIsCreatingVault(false);
     }
   }, [address, currentNetwork, toast]);
+
+  // Create a new vault and set it as the active GRAVE spambox (advanced flow)
+  const handleCreateAndSwitchVault = useCallback(async () => {
+    if (!address || !currentNetwork || !window.lukso || !chainId) {
+      toast({
+        title: 'Error',
+        description: 'Wallet not connected',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSwitchingVault(true);
+
+    try {
+      const provider = new BrowserProvider(window.lukso);
+
+      toast({
+        title: 'Deploying new GRAVE Spambox...',
+        description: 'Please confirm the transaction.',
+        status: 'info',
+        duration: 5000,
+        isClosable: true,
+      });
+
+      const vaultAddress = await deployVault(provider, address, currentNetwork);
+
+      // Ensure vault is registered
+      const isRegistered = await isVaultRegistered(
+        provider,
+        address,
+        vaultAddress
+      );
+      if (!isRegistered) {
+        await registerVaultWithUP(provider, address, vaultAddress);
+      }
+
+      // Refresh the vault list
+      const vaults = await getRegisteredVaults(provider, address);
+      const uniqueVaults = vaults.filter(
+        (vault, index, self) =>
+          index === self.findIndex(v => v.toLowerCase() === vault.toLowerCase())
+      );
+      setAvailableVaults(uniqueVaults);
+      setSelectedVault(vaultAddress);
+      setVaultSelected(true);
+      setVaultHasURD(true);
+
+      await updateForwarderVaultAddress(
+        provider,
+        address,
+        vaultAddress,
+        {
+          forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+        }
+      );
+
+      await refreshGraveData();
+
+      toast({
+        title: 'New spambox activated',
+        description: `GRAVE Spambox set to ${formatAddress(vaultAddress)}`,
+        status: 'success',
+        duration: 7000,
+        isClosable: true,
+      });
+    } catch (err: any) {
+      console.error('Error creating/switching vault:', err);
+      if (!err.message?.includes('user rejected')) {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to create new spambox',
+          status: 'error',
+          duration: 7000,
+          isClosable: true,
+        });
+      }
+    } finally {
+      setIsSwitchingVault(false);
+    }
+  }, [
+    address,
+    currentNetwork,
+    toast,
+    refreshGraveData,
+  ]);
 
   // Configure and activate GRAVE using the new unified assistant pattern
   const handleActivateGrave = useCallback(async () => {
@@ -1420,7 +1549,8 @@ const GraveSubscription: React.FC = () => {
             currentNetwork.creatorCurationScreenerAddress,
         },
         allNetworks,
-        chainId
+        chainId,
+        { forceListNameUpdate: true }
       );
 
       const migrationMessage = listsDiffer
@@ -1914,6 +2044,54 @@ const GraveSubscription: React.FC = () => {
         </Text>
       </Box>
 
+      <Accordion allowToggle>
+        <AccordionItem
+          border="2px solid"
+          borderColor="dark.purple.400"
+          borderRadius="lg"
+          bg="dark.purple.200"
+        >
+          <AccordionButton
+            _hover={{ bg: 'dark.purple.300' }}
+            borderRadius="lg"
+            px={4}
+            py={3}
+          >
+            <Box flex="1" textAlign="left">
+              <Text
+                fontSize="16px"
+                fontWeight="bold"
+                fontFamily="Bungee"
+                color="dark.purple.500"
+              >
+                Advanced: Create a fresh spambox
+              </Text>
+              <Text fontSize="sm" color="dark.purple.500">
+                Deploy a new vault and switch your GRAVE to it instantly.
+              </Text>
+            </Box>
+            <AccordionIcon color="dark.purple.500" />
+          </AccordionButton>
+          <AccordionPanel pt={0} pb={4}>
+            <Text fontSize="sm" color="dark.purple.500" mb={3}>
+              We’ll keep your current filters and set the new vault as your
+              active GRAVE spambox.
+            </Text>
+            <Button
+              onClick={handleCreateAndSwitchVault}
+              isLoading={isSwitchingVault}
+              isDisabled={isSwitchingVault || isProcessing}
+              size="sm"
+              fontFamily="Montserrat"
+              fontSize="14px"
+              fontWeight="600"
+            >
+              {isSwitchingVault ? 'Creating...' : 'Create New Spambox Vault'}
+            </Button>
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
       {/* Section B: Transaction Screening */}
       <Box
         p={6}
@@ -2191,6 +2369,37 @@ const GraveSubscription: React.FC = () => {
                   Assets from these creators will NOT be sent to the GRAVE
                   Spambox
                 </Text>
+                {(creatorListLengthMissing ||
+                  creatorListNameMissing ||
+                  creatorScreenerConfigMissing) && (
+                  <Box
+                    p={3}
+                    mb={3}
+                    bg="orange.50"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="orange.300"
+                  >
+                    <Text
+                      fontSize="sm"
+                      color="orange.800"
+                      fontWeight="bold"
+                      mb={1}
+                    >
+                      ⚠️ Creator List Configuration Issue
+                    </Text>
+                    <Text fontSize="xs" color="orange.700">
+                      {creatorScreenerConfigMissing &&
+                        'Missing creator screener config key. '}
+                      {creatorListNameMissing &&
+                        'Missing creator list name key. '}
+                      {creatorListLengthMissing &&
+                        'Missing GraveSafeCreators[] length key. '}
+                      This can cause transfers to revert when the creator list
+                      screener runs. Save settings to initialize missing keys.
+                    </Text>
+                  </Box>
+                )}
 
                 {/* RequireAllCreators Toggle for Creator List */}
                 <HStack mb={3} spacing={2} align="center">
@@ -2507,6 +2716,37 @@ const GraveSubscription: React.FC = () => {
                   Assets with these addresses will NOT be sent to the GRAVE
                   Spambox
                 </Text>
+                {(assetListLengthMissing ||
+                  assetListNameMissing ||
+                  assetScreenerConfigMissing) && (
+                  <Box
+                    p={3}
+                    mb={3}
+                    bg="orange.50"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="orange.300"
+                  >
+                    <Text
+                      fontSize="sm"
+                      color="orange.800"
+                      fontWeight="bold"
+                      mb={1}
+                    >
+                      ⚠️ Asset List Configuration Issue
+                    </Text>
+                    <Text fontSize="xs" color="orange.700">
+                      {assetScreenerConfigMissing &&
+                        'Missing asset screener config key. '}
+                      {assetListNameMissing &&
+                        'Missing asset list name key. '}
+                      {assetListLengthMissing &&
+                        'Missing GraveSafeAssets[] length key. '}
+                      This can cause transfers to revert when the asset list
+                      screener runs. Save settings to initialize missing keys.
+                    </Text>
+                  </Box>
+                )}
 
                 {/* List Name Warning - Show if using non-default list name */}
                 {listName && listName !== 'GraveSafeAssets' && (
@@ -2689,6 +2929,8 @@ const GraveSubscription: React.FC = () => {
               </MenuList>
             </Menu>
           </Flex>
+
+         
 
           {/* UAP Deactivation Confirmation Modal */}
           <Modal

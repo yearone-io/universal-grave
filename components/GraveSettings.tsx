@@ -168,17 +168,19 @@ export default function GraveSettings({ networkName }: GraveSettingsProps) {
                   <Text fontSize="20px" color={'white'} fontFamily="Bungee">
                     SETTINGS
                   </Text>
-                  <Link href={`/${networkName}/grave/${account}`}>
-                    <Button
-                      variant="solidWhite"
-                      size={'sm'}
-                      fontFamily="Bungee"
-                      fontSize="16px"
-                      fontWeight="400"
-                    >
-                      View your Graveyard
-                    </Button>
-                  </Link>
+                  <Flex gap={2} flexWrap="wrap">
+                    <Link href={`/${networkName}/grave/${account}`}>
+                      <Button
+                        variant="solidWhite"
+                        size={'sm'}
+                        fontFamily="Bungee"
+                        fontSize="16px"
+                        fontWeight="400"
+                      >
+                        View your Graveyard
+                      </Button>
+                    </Link>
+                  </Flex>
                 </Flex>
                 <Box display="flex" width={'100%'}>
                   <Tabs display="flex" flexDirection="row" width={'100%'}>

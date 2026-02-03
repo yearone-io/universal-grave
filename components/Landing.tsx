@@ -13,7 +13,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { BsActivity, BsArrow90DegRight } from 'react-icons/bs';
+import { BsActivity, BsArrow90DegRight, BsListCheck, BsShieldCheck } from 'react-icons/bs';
 import LSPExplainer from '@/components/LSPExplainer';
 import { ChangeEvent, useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileProvider';
@@ -92,9 +92,7 @@ export default function Landing({ networkName }: LandingProps) {
             fontFamily={'Montserrat'}
             fontWeight={800}
           >
-            {
-              "Stop receiving assets you don't want. Redirect them to the GRAVE."
-            }
+            {'Send the junk to the GRAVE. Keep the good stuff.'}
           </Text>
           <Text
             color={subheadingColor}
@@ -103,7 +101,7 @@ export default function Landing({ networkName }: LandingProps) {
             fontWeight={500}
             lineHeight={'160%'}
           >
-            {`GRAVE - the Global Reserve For Abandoned Virtual Entities. A cemetery for unwanted digital assets. But given that one man's trash is another man's treasure, all assets have a chance at revival.`}
+            {`GRAVE is your spam cemetery for digital assets. Anything you don't want gets redirected automatically, and you can bring back anything you like later. Simple, safe, and totally in your control.`}
           </Text>
           <Link href={`/${networkName}/grave/settings`} passHref>
             <Button
@@ -117,7 +115,7 @@ export default function Landing({ networkName }: LandingProps) {
               {graveButtonText}
             </Button>
           </Link>
-          <Text>Or view any Universal Profile's GRAVE</Text>
+          <Text>Or peek inside any profile's GRAVE</Text>
           <InputGroup size="md">
             <Input
               placeholder="Paste UP profile address"
@@ -150,7 +148,7 @@ export default function Landing({ networkName }: LandingProps) {
           fontFamily={'Montserrat'}
           fontWeight={800}
         >
-          {'How the GRAVE works'}
+          {'How GRAVE works'}
         </Text>
         <Flex
           flexDirection={{ base: 'column', md: 'row' }}
@@ -160,22 +158,27 @@ export default function Landing({ networkName }: LandingProps) {
           flexWrap={'wrap'}
         >
           <LSPExplainer
-            title={
-              'Automatically redirects all unwanted digital assets to the GRAVE'
-            }
+            title={'Auto‑redirect anything you don’t want'}
+            description={'Like a spam filter, but for assets.'}
             badgeText={
               <Icon as={BsArrow90DegRight} color={customColor} boxSize={7} />
             }
           />
           <LSPExplainer
-            title={'Allows you to recover assets you approve of to your 🆙'}
-            badgeText={<Icon as={BsActivity} color={customColor} boxSize={7} />}
+            title={'Make VIP lists for what stays'}
+            description={'Approve creators and assets with one click.'}
+            badgeText={<Icon as={BsListCheck} color={customColor} boxSize={7} />}
           />
           <LSPExplainer
-            title={'Supports the most advanced digital asset standards'}
-            description={'Fungible and non-fungible (NFT) tokens'}
+            title={'Bring back the good stuff anytime'}
+            description={'Rescue assets from your GRAVE on demand.'}
+            badgeText={<Icon as={BsShieldCheck} color={customColor} boxSize={7} />}
+          />
+          <LSPExplainer
+            title={'Works with modern LUKSO tokens'}
+            description={'LSP7 & LSP8 support out of the box.'}
             learnURL={'https://docs.lukso.tech/standards/tokens/introduction'}
-            badgeText={'LSPs'}
+            badgeText={<Icon as={BsActivity} color={customColor} boxSize={7} />}
           />
         </Flex>
       </Box>

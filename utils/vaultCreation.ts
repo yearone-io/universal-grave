@@ -1,6 +1,7 @@
 import {
   BrowserProvider,
   Contract,
+  Interface,
   ZeroAddress,
   JsonRpcProvider,
 } from 'ethers';
@@ -183,8 +184,59 @@ export async function deployVault(
     name: string;
     vaultImplementation?: string;
     lsp1UrdVault?: string;
+    graveVaultFactoryAddress?: string;
   }
 ): Promise<string> {
+  if (networkConfig.graveVaultFactoryAddress) {
+    console.log(
+      'Deploying GRAVE Spambox via factory:',
+      networkConfig.graveVaultFactoryAddress
+    );
+    const signer = await provider.getSigner();
+    const factoryAbi = [
+      'function createVault(address owner) external returns (address)',
+      'event VaultCreated(address indexed owner, address indexed vault, address implementation)',
+    ];
+    const factory = new Contract(
+      networkConfig.graveVaultFactoryAddress,
+      factoryAbi,
+      signer
+    );
+    const tx = await factory.createVault(upAddress);
+    const receipt = await tx.wait();
+    const iface = new Interface(factoryAbi);
+    let vaultAddress: string | null = null;
+    for (const log of receipt?.logs || []) {
+      if (
+        log.address.toLowerCase() !==
+        networkConfig.graveVaultFactoryAddress.toLowerCase()
+      ) {
+        continue;
+      }
+      try {
+        const parsed = iface.parseLog(log);
+        if (parsed?.name === 'VaultCreated') {
+          vaultAddress = parsed.args?.vault;
+          break;
+        }
+      } catch {
+        // Ignore non-matching logs
+      }
+    }
+    if (!vaultAddress) {
+      throw new Error('Failed to read vault address from factory event');
+    }
+
+    console.log('Vault deployed at (factory):', vaultAddress);
+
+    // Step: Set LSP1 Universal Receiver Delegate on vault
+    console.log('Setting LSP1 Universal Receiver Delegate on vault...');
+    await setVaultURD(provider, upAddress, vaultAddress, networkConfig);
+    console.log('Vault URD set successfully!');
+
+    return vaultAddress;
+  }
+
   console.log('Deploying LSP9 Vault using proxy pattern for UP:', upAddress);
 
   // Import proxy deployment utilities

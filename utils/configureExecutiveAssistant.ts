@@ -69,12 +69,15 @@ async function computeAddressListDiff(
   // Read current list from blockchain
   const listLengthKey = erc725UAP.encodeKeyName(`${listName}[]`);
   let currentLength = 0;
+  let lengthKeyMissing = false;
   const currentAddresses: string[] = [];
 
   try {
     const lengthValue = await upContract.getData(listLengthKey);
     if (lengthValue && lengthValue !== '0x') {
       currentLength = parseInt(lengthValue, 16);
+    } else {
+      lengthKeyMissing = true;
     }
 
     // Read all current entries
@@ -118,8 +121,11 @@ async function computeAddressListDiff(
   const baseArrayKey = erc725UAP.encodeKeyName(`${listName}[]`);
   const keyPrefix = baseArrayKey.slice(0, 34);
 
-  // 1. Length: only write if different
-  if (currentLength !== normalizedProposed.length) {
+  // 1. Length: write if different OR if missing (even when length is 0)
+  if (
+    currentLength !== normalizedProposed.length ||
+    (lengthKeyMissing && normalizedProposed.length === 0)
+  ) {
     keys.push(listLengthKey);
     values.push(
       erc725UAP.encodeValueType('uint256', BigInt(normalizedProposed.length))

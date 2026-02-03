@@ -17,6 +17,7 @@ interface ChainInfo {
   lsp1UrdVault: string; // Vault URD address
   lsp1UrdUp: string; // UP URD address (used when deactivating spambox)
   vaultImplementation?: string; // Pre-deployed LSP9VaultInit implementation for proxy pattern
+  graveVaultFactoryAddress?: string; // Optional factory for GRAVE spambox deployment counter
   hasUPSupport: boolean;
   icon: string;
   // Legacy GRAVE support
@@ -51,6 +52,7 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation
+    graveVaultFactoryAddress: '0x72205f508e7ad239ad2e4f8c7ec8e6d8da22f960',
     hasUPSupport: true,
     icon: '/lyx_icon_mainnet.svg',
     universalGraveForwarder: '0x42562196ee7aac3e8501db777b25ffc976ed8463',
@@ -69,14 +71,15 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     token: 'LYXt',
     protocolAddress: '0x091ebe012c1e92b8e7cc8d5acffdea2fc6052efc',
     forwarderAssistantAddress: '0x1296ace80af3230c961c79a9bee6a07b4a45f53f',
-    curatedListScreenerAddress: '0x6dd041d25b637eed30ebb8aeb44bf59bfb2a3aff',
-    addressListScreenerAddress: '0x2ef7919a6e715700b8bccfe2106bef4887f28507',
+    curatedListScreenerAddress: '0xcc3d9c2b38499cdfdaf5de6e5ad3ee3efdaea39e',
+    addressListScreenerAddress: '0xbcceeabf2f555631bd481813d783d7eeb7c1799c',
     creatorCurationScreenerAddress:
-      '0xaeae6c5fdbcb2e3201ceaa32edfb213534429dae',
-    creatorListScreenerAddress: '0x8f6820e24d3cbd63e87fc0b791844d8b3106bb94',
+      '0xd2ecf93c3588c8da4ada3f30d434bc0cd0e1f1c4',
+    creatorListScreenerAddress: '0xf922fab253f7e7c6e1d63323f42a870cd896b449',
     lsp1UrdVault: '0xBc7b3980614215c8090dF310661685Cc393B601A',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x392e18585b89bd795204c634cce5878f1cf40a58', // Shared LSP9VaultInit implementation
+    graveVaultFactoryAddress: '0x968c19ed81ccd7543cf35e563f8199f4f308926e',
     hasUPSupport: true,
     icon: '/lyx_icon_testnet.svg',
     universalGraveForwarder: '0x72e5b0aeaa8456fa43ba94db703f74052b4cdaac',
@@ -128,6 +131,7 @@ export interface Network {
   lsp1UrdUp: string;
   baseUrl: string;
   vaultImplementation?: string;
+  graveVaultFactoryAddress?: string;
 }
 
 /**
@@ -146,6 +150,7 @@ const toNetwork = (info: ChainInfo): Network => ({
   lsp1UrdUp: info.lsp1UrdUp,
   baseUrl: info.url,
   vaultImplementation: info.vaultImplementation,
+  graveVaultFactoryAddress: info.graveVaultFactoryAddress,
 });
 
 /**

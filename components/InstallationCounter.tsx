@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { LSP1GraveForwarder__factory } from '@/contracts';
+import { Contract } from 'ethers';
 import { Flex, HStack, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 
@@ -13,15 +13,19 @@ export default function InstallationCounter() {
   const [installations, setInstallations] = useState(0);
   const [displayNumber, setDisplayNumber] = useState(installations);
 
-  const graveContract = LSP1GraveForwarder__factory.connect(
-    networkConfig.universalGraveForwarder,
-    provider
-  );
-
   useEffect(() => {
     const fetchInstallations = async () => {
-      const installations = await graveContract.graveUserCounter();
-      setInstallations(Number(installations));
+      if (!networkConfig.graveVaultFactoryAddress) {
+        setInstallations(0);
+        return;
+      }
+      const factory = new Contract(
+        networkConfig.graveVaultFactoryAddress,
+        ['function vaultsCreated() view returns (uint256)'],
+        provider
+      );
+      const total = await factory.vaultsCreated();
+      setInstallations(Number(total));
     };
     fetchInstallations();
   }, []);
@@ -71,7 +75,7 @@ export default function InstallationCounter() {
           fontFamily={'Montserrat'}
           fontWeight={400}
         >
-          Profiles protected by the GRAVE:
+          GRAVE spamboxes:
         </Text>
         <Flex alignItems={'center'} justifyContent={'center'} gap={1}>
           <Text
