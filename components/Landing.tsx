@@ -139,7 +139,7 @@ export default function Landing({ networkName }: LandingProps) {
           <Image src={logoPath} alt="Universal-Grave-logo" minWidth={'300px'} />
         </Flex>
       </Flex>
-      <InstallationCounter />
+      <InstallationCounter networkName={networkName} />
       <Box mb={{ base: 5, sm: 8, lg: 16 }}>
         <Text
           pb={5}

@@ -1,37 +1,72 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { WalletContext } from '@/components/wallet/WalletContext';
-import { Contract } from 'ethers';
+import { Contract, JsonRpcProvider } from 'ethers';
 import { Flex, HStack, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { getNetworkByName } from '@/constants/supportedNetworks';
 
-export default function InstallationCounter() {
+interface InstallationCounterProps {
+  networkName?: string;
+}
+
+export default function InstallationCounter({
+  networkName,
+}: InstallationCounterProps) {
   const customColor = 'white';
 
   const walletContext = useContext(WalletContext);
-  const { networkConfig, provider } = walletContext;
+  const { networkConfig } = walletContext;
+
+  const networkByName = useMemo(
+    () => (networkName ? getNetworkByName(networkName) : undefined),
+    [networkName]
+  );
+
+  const factoryAddress =
+    networkByName?.graveVaultFactoryAddress ??
+    networkConfig.graveVaultFactoryAddress;
+  const rpcUrl = networkByName?.rpcUrl ?? networkConfig.rpcUrl;
+  const chainId = networkByName?.chainId ?? networkConfig.chainId;
+  const chainName = networkByName?.name ?? networkConfig.name;
+  const readProvider = useMemo(
+    () =>
+      new JsonRpcProvider(rpcUrl, {
+        name: chainName,
+        chainId,
+      }),
+    [rpcUrl, chainId, chainName]
+  );
 
   const [installations, setInstallations] = useState(0);
   const [displayNumber, setDisplayNumber] = useState(installations);
 
   useEffect(() => {
     const fetchInstallations = async () => {
-      if (!networkConfig.graveVaultFactoryAddress) {
+      if (!factoryAddress) {
         setInstallations(0);
         return;
       }
-      const factory = new Contract(
-        networkConfig.graveVaultFactoryAddress,
-        ['function vaultsCreated() view returns (uint256)'],
-        provider
-      );
-      const total = await factory.vaultsCreated();
-      setInstallations(Number(total));
+      try {
+        const factory = new Contract(
+          factoryAddress,
+          ['function vaultsCreated() view returns (uint256)'],
+          readProvider
+        );
+        const total = await factory.vaultsCreated();
+        setInstallations(Number(total));
+      } catch (error) {
+        console.error('Failed to fetch GRAVE spambox count', error);
+        setInstallations(0);
+      }
     };
     fetchInstallations();
-  }, []);
+  }, [factoryAddress, readProvider]);
 
   useEffect(() => {
-    if (installations === 0) return;
+    if (installations === 0) {
+      setDisplayNumber(0);
+      return;
+    }
     // Calculate the increment step dynamically based on the distance to the target number
     const updateNumber = () => {
       setDisplayNumber(prev => {
