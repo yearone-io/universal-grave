@@ -29,11 +29,24 @@ const SignInButton: React.FC = () => {
   return (
     <Button
       onClick={handleConnect}
-      border={'1px solid var(--chakra-colors-dark-purple-500)'}
+      variant="solidWhite"
+      border="2px solid"
+      borderColor="dark.purple.500"
+      bg="dark.white"
+      boxShadow="0 6px 16px rgba(0, 0, 0, 0.25)"
+      _hover={{
+        bg: 'dark.white',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 8px 18px rgba(0, 0, 0, 0.3)',
+      }}
+      _active={{
+        transform: 'translateY(0)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+      }}
       isLoading={isLoading}
     >
       <Flex alignItems="center" justifyContent="space-between">
-        <Image src="/images/LYX-logo.svg" alt="Sign In" />
+        <Image src="/images/LYX-logo.svg" alt="Sign In" boxSize="18px" />
         <Box
           ml="10px"
           fontSize="14px"

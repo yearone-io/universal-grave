@@ -85,6 +85,39 @@ export const encodeExecDataValue = (
   return `0x${addressHex}${configHex}`;
 };
 
+const isBadDataError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    error?.code === 'BAD_DATA' ||
+    message.includes('could not decode result data')
+  );
+};
+
+const createSafeGetters = (upContract: Contract) => {
+  const safeGetData = async (key: string) => {
+    try {
+      return await upContract.getData(key);
+    } catch (error: any) {
+      if (isBadDataError(error)) {
+        return '0x';
+      }
+      throw error;
+    }
+  };
+  const safeGetDataBatch = async (keys: string[]) => {
+    try {
+      return await upContract.getDataBatch(keys);
+    } catch (error: any) {
+      if (isBadDataError(error)) {
+        return keys.map(() => '0x');
+      }
+      throw error;
+    }
+  };
+
+  return { safeGetData, safeGetDataBatch };
+};
+
 /**
  * Updates only the Forwarder Assistant vault address (exec config) without touching screeners or lists.
  */
@@ -98,6 +131,7 @@ export async function updateForwarderVaultAddress(
 ): Promise<void> {
   const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
+  const { safeGetData } = createSafeGetters(upContract);
   const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
@@ -122,7 +156,7 @@ export async function updateForwarderVaultAddress(
     const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
       typeId,
     ]);
-    const typeConfigData = await upContract.getData(typeConfigKey);
+    const typeConfigData = await safeGetData(typeConfigKey);
     if (!typeConfigData || typeConfigData === '0x') {
       throw new Error('Forwarder assistant not configured for this profile');
     }
@@ -172,6 +206,7 @@ export async function getForwarderAssistantConfig(
   }
 ): Promise<ForwarderAssistantConfig> {
   const upContract = new Contract(upAddress, universalProfileAbi, provider);
+  const { safeGetData, safeGetDataBatch } = createSafeGetters(upContract);
   const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
@@ -218,7 +253,7 @@ export async function getForwarderAssistantConfig(
       const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
         txType,
       ]);
-      const typeConfigData = await upContract.getData(typeConfigKey);
+      const typeConfigData = await safeGetData(typeConfigKey);
 
       if (typeConfigData && typeConfigData !== '0x') {
         try {
@@ -259,8 +294,7 @@ export async function getForwarderAssistantConfig(
                 assistantConfigKey,
               });
 
-              const assistantData =
-                await upContract.getData(assistantConfigKey);
+              const assistantData = await safeGetData(assistantConfigKey);
 
               console.log('[GRAVE READ] Raw assistantData:', assistantData);
 
@@ -339,7 +373,7 @@ export async function getForwarderAssistantConfig(
               [txType, executionOrder.toString()]
             );
 
-            const screenersData = await upContract.getData(screenersKey);
+            const screenersData = await safeGetData(screenersKey);
             if (screenersData && screenersData !== '0x') {
               try {
                 const screeners = erc725UAP.decodeValueType(
@@ -358,7 +392,7 @@ export async function getForwarderAssistantConfig(
                   );
 
                   const screenerConfigData =
-                    await upContract.getData(screenerConfigKey);
+                    await safeGetData(screenerConfigKey);
                   const configIsValid =
                     screenerConfigData &&
                     screenerConfigData !== '0x' &&
@@ -400,8 +434,7 @@ export async function getForwarderAssistantConfig(
                             'UAPAddressListName:<bytes32>:<uint256>',
                             [txType, screenerOrder.toString()]
                           );
-                          const listNameData =
-                            await upContract.getData(listNameKey);
+                          const listNameData = await safeGetData(listNameKey);
                           if (listNameData && listNameData !== '0x') {
                             const listName = erc725UAP.decodeValueType(
                               'string',
@@ -420,7 +453,7 @@ export async function getForwarderAssistantConfig(
                                 `${listName}[]`
                               );
                               const listLengthRaw =
-                                await upContract.getData(listLengthKey);
+                                await safeGetData(listLengthKey);
 
                               if (listLengthRaw && listLengthRaw !== '0x') {
                                 const listLength = Number(
@@ -444,7 +477,7 @@ export async function getForwarderAssistantConfig(
                                   }
 
                                   const itemValues =
-                                    await upContract.getDataBatch(itemKeys);
+                                    await safeGetDataBatch(itemKeys);
                                   config.whitelistAddresses = itemValues
                                     .filter(
                                       (value: any) => value && value !== '0x'
@@ -566,8 +599,7 @@ export async function getForwarderAssistantConfig(
                             'UAPAddressListName:<bytes32>:<uint256>',
                             [txType, screenerOrder.toString()]
                           );
-                          const listNameData =
-                            await upContract.getData(listNameKey);
+                          const listNameData = await safeGetData(listNameKey);
                           if (listNameData && listNameData !== '0x') {
                             const listName = erc725UAP.decodeValueType(
                               'string',
@@ -585,7 +617,7 @@ export async function getForwarderAssistantConfig(
                                 `${listName}[]`
                               );
                               const listLengthRaw =
-                                await upContract.getData(listLengthKey);
+                                await safeGetData(listLengthKey);
 
                               if (listLengthRaw && listLengthRaw !== '0x') {
                                 const listLength = Number(
@@ -609,7 +641,7 @@ export async function getForwarderAssistantConfig(
                                   }
 
                                   const itemValues =
-                                    await upContract.getDataBatch(itemKeys);
+                                    await safeGetDataBatch(itemKeys);
                                   config.creatorWhitelistAddresses = itemValues
                                     .filter(
                                       (value: any) => value && value !== '0x'
@@ -876,7 +908,7 @@ export async function getForwarderAssistantDiagnostics(
 /**
  * Helper function to build screener configuration for Forwarder Assistant
  */
-function buildForwarderScreenerConfig(
+export function buildForwarderScreenerConfig(
   whitelistAddresses: string[],
   useCuratedList: boolean,
   curatedListAddress: string | null,

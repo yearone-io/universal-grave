@@ -79,6 +79,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [chainId, setChainId] = useState<number | null>(null);
   const providerRef = useRef<BrowserProvider | null>(null);
   const connectingRef = useRef(false);
+  const switchingNetworkRef = useRef(false);
+  const ignoreAccountsChangedRef = useRef(false);
 
   const expectedChainId = useMemo(() => {
     if (networkName) {
@@ -131,6 +133,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
     try {
       connectingRef.current = true;
+      ignoreAccountsChangedRef.current = true;
       setError(null);
       if (!window.lukso) {
         throw new Error(
@@ -186,6 +189,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(true);
       setProfileDetailsData(newProfileData);
       connectingRef.current = false;
+      ignoreAccountsChangedRef.current = false;
       return true;
     } catch (error: any) {
       console.error('ProfileProvider: Error', error);
@@ -195,6 +199,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setError(error.message);
       providerRef.current = null;
       connectingRef.current = false;
+      ignoreAccountsChangedRef.current = false;
       throw error;
     }
   };
@@ -320,12 +325,15 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const switchNetwork = async (newChainId: number) => {
     try {
+      switchingNetworkRef.current = true;
       await requestNetworkSwitch(newChainId);
       console.log('ProfileProvider: Switched network', { newChainId });
       await connectAndSign();
     } catch (error: any) {
       console.error('ProfileProvider: Switch network error', error);
       setError(error.message);
+    } finally {
+      switchingNetworkRef.current = false;
     }
   };
 
@@ -359,6 +367,40 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
           ) {
             setProfileDetailsData(parsedProfileDetails);
             setIsConnected(true);
+            const needsProfileRefresh =
+              !parsedProfileDetails.profile ||
+              !parsedProfileDetails.profile.name ||
+              !parsedProfileDetails.profile.profileImage ||
+              parsedProfileDetails.profile.profileImage.length === 0;
+            if (needsProfileRefresh) {
+              try {
+                const { profile, issuedAssets } = await fetchProfileData(
+                  parsedProfileDetails.upWallet,
+                  currentChainId,
+                  true
+                );
+                if (profile || (issuedAssets && issuedAssets.length > 0)) {
+                  const refreshedProfile: IProfileDetailsData = {
+                    ...parsedProfileDetails,
+                    profile: profile ?? parsedProfileDetails.profile,
+                    issuedAssets:
+                      issuedAssets && issuedAssets.length > 0
+                        ? issuedAssets
+                        : parsedProfileDetails.issuedAssets,
+                  };
+                  setProfileDetailsData(refreshedProfile);
+                  localStorage.setItem(
+                    'profileDetailsData',
+                    JSON.stringify(refreshedProfile)
+                  );
+                }
+              } catch (refreshError) {
+                console.warn(
+                  'ProfileProvider: Failed to refresh profile metadata',
+                  refreshError
+                );
+              }
+            }
             console.log('ProfileProvider: Restored session', {
               ...parsedProfileDetails,
               chainId: currentChainId,
@@ -380,6 +422,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     restoreSession();
 
     const handleAccountsChanged = (accounts: string[]) => {
+      if (ignoreAccountsChangedRef.current || connectingRef.current) {
+        return;
+      }
       console.log('ProfileProvider: Accounts changed', {
         accounts,
         currentUpWallet: profileDetailsData?.upWallet,
@@ -403,6 +448,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       console.log('ProfileProvider: Chain changed', { newChainId });
       if (expectedChainId && newChainId !== expectedChainId) {
         disconnect({ preserveChainId: true });
+        return;
+      }
+      if (switchingNetworkRef.current) {
         return;
       }
       if (isConnected) {

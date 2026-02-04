@@ -58,14 +58,30 @@ export const getUpAddressUrds = async (
     lsp8Urd: null,
     oldUrdVersion: null,
   };
+  const isBadDataError = (error: any) => {
+    const message = error?.message?.toLowerCase?.() || '';
+    return (
+      error?.code === 'BAD_DATA' ||
+      message.includes('could not decode result data')
+    );
+  };
   try {
     const UP = new Contract(upAddress as string, universalProfileAbi, provider);
-    const UPData = await UP.getDataBatch([
+    const keys = [
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP7Tokens_RecipientNotification.slice(2).slice(0, 40),
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
         LSP1_TYPE_IDS.LSP8Tokens_RecipientNotification.slice(2).slice(0, 40),
-    ]);
+    ];
+    let UPData: string[] = [];
+    try {
+      UPData = await UP.getDataBatch(keys);
+    } catch (error: any) {
+      if (isBadDataError(error)) {
+        return urdData;
+      }
+      throw error;
+    }
     if (UPData) {
       urdData.lsp7Urd = getChecksumAddress(UPData[0]);
       urdData.lsp8Urd = getChecksumAddress(UPData[1]);
@@ -76,7 +92,6 @@ export const getUpAddressUrds = async (
     }
   } catch (err) {
     console.error(err);
-    throw err;
   }
   return urdData;
 };

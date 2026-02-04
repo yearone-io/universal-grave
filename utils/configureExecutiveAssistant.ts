@@ -11,7 +11,7 @@ import ERC725 from '@erc725/erc725.js';
  * This is the EXACT implementation from @erc725/erc725.js used by UP Assistants
  * It simply concatenates the hex-encoded values (NOT ABI encoding)
  */
-function encodeTupleKeyValue(
+export function encodeTupleKeyValue(
   valueContent: string, // e.g. "(Address,Bytes)"
   valueType: string, // e.g. "(address,bytes)"
   decodedValues: any[]
@@ -52,7 +52,7 @@ function encodeTupleKeyValue(
  * Compute the minimal diff for updating an address list
  * Only returns keys/values that actually need to change
  */
-async function computeAddressListDiff(
+export async function computeAddressListDiff(
   erc725UAP: ERC725,
   upContract: any,
   listName: string,
