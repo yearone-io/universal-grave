@@ -13,13 +13,15 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { AbiCoder, BrowserProvider, Contract } from 'ethers';
+import { AbiCoder, Contract } from 'ethers';
 import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { getForwarderAssistantDiagnostics } from '@/utils/assistantConfig';
 import { formatAddress } from '@/utils/tokenUtils';
-import ERC725 from '@erc725/erc725.js';
+import { getErc725Read } from '@/utils/erc725Client';
+import type ERC725 from '@erc725/erc725.js';
+import { getWalletProvider } from '@/utils/walletClient';
 
 interface GraveDiagnosticsProps {
   networkName: string;
@@ -28,7 +30,8 @@ interface GraveDiagnosticsProps {
 export default function GraveDiagnostics({
   networkName,
 }: GraveDiagnosticsProps) {
-  const { profileDetailsData, isConnected, chainId } = useProfile();
+  const { profileDetailsData, isConnected, chainId, isNetworkMismatch } =
+    useProfile();
   const address = profileDetailsData?.upWallet;
   const currentNetwork = chainId ? supportedNetworks[chainId.toString()] : null;
 
@@ -45,7 +48,7 @@ export default function GraveDiagnostics({
   const [creatorVerification, setCreatorVerification] = useState<any>(null);
 
   const runDiagnostics = useCallback(async () => {
-    if (!address || !currentNetwork || !window.lukso) {
+    if (!address || !currentNetwork || !window.lukso || isNetworkMismatch) {
       setError('Wallet not connected');
       return;
     }
@@ -53,7 +56,7 @@ export default function GraveDiagnostics({
     setIsRunning(true);
     setError(null);
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
       const diagnostics = await getForwarderAssistantDiagnostics(
         provider,
         address,
@@ -74,16 +77,31 @@ export default function GraveDiagnostics({
     } finally {
       setIsRunning(false);
     }
-  }, [address, currentNetwork]);
+  }, [address, currentNetwork, isNetworkMismatch]);
 
   useEffect(() => {
-    if (isConnected && address && currentNetwork && !data && !isRunning) {
+    if (
+      isConnected &&
+      address &&
+      currentNetwork &&
+      !data &&
+      !isRunning &&
+      !isNetworkMismatch
+    ) {
       runDiagnostics();
     }
-  }, [isConnected, address, currentNetwork, data, isRunning, runDiagnostics]);
+  }, [
+    isConnected,
+    address,
+    currentNetwork,
+    data,
+    isRunning,
+    runDiagnostics,
+    isNetworkMismatch,
+  ]);
 
   const runAssetDiagnostics = useCallback(async () => {
-    if (!assetAddress || !currentNetwork || !window.lukso) {
+    if (!assetAddress || !currentNetwork || !window.lukso || isNetworkMismatch) {
       setAssetError('Enter a token contract address');
       return;
     }
@@ -94,8 +112,8 @@ export default function GraveDiagnostics({
     setAssetLengthDecodeWarning(null);
     setCreatorVerification(null);
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const erc725 = new ERC725([], assetAddress, provider);
+      const provider = getWalletProvider();
+      const erc725 = getErc725Read([], assetAddress, { provider });
       const contract = new Contract(
         assetAddress,
         [
@@ -205,7 +223,7 @@ export default function GraveDiagnostics({
           ],
           provider
         );
-        upErc725 = new ERC725([], address, provider);
+        upErc725 = getErc725Read([], address, { provider });
       }
 
       let creatorMapChecks: Array<{
@@ -466,7 +484,7 @@ export default function GraveDiagnostics({
     } finally {
       setAssetLoading(false);
     }
-  }, [assetAddress, currentNetwork, data, address]);
+  }, [assetAddress, currentNetwork, data, address, isNetworkMismatch]);
 
   const screenerMeta = useMemo(() => {
     if (!currentNetwork) return [];

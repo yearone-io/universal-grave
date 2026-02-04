@@ -24,6 +24,8 @@ interface ChainInfo {
   universalGraveForwarder: string; // Current GRAVE forwarder address
   marketplaceCollectionsURL: string; // URL for viewing collections
   previousGraveForwarders: string[];
+  universalEverythingBaseUrl?: string;
+  universalEverythingNetwork?: string;
 }
 
 export enum CHAINS {
@@ -58,6 +60,8 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     universalGraveForwarder: '0x42562196ee7aac3e8501db777b25ffc976ed8463',
     marketplaceCollectionsURL: 'https://universal.page/collections',
     previousGraveForwarders: ['0x433908ce6457b302a6452257Bc40e466d95c78E9'],
+    universalEverythingBaseUrl: 'https://universaleverything.io',
+    universalEverythingNetwork: undefined,
   },
   '4201': {
     name: 'LUKSO Testnet',
@@ -89,6 +93,8 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
       '0x1e2f66d2dC19bB13617D1d06CBb3E8d8aa4567e3',
       '0x9c27a05310dC8aF53B60124B244cc9d12f202cdF',
     ],
+    universalEverythingBaseUrl: 'https://universaleverything.io',
+    universalEverythingNetwork: 'testnet',
   },
 };
 

@@ -15,7 +15,6 @@ import {
   useSteps,
   useToast,
 } from '@chakra-ui/react';
-import { BrowserProvider } from 'ethers';
 import { formatAddress } from '@/utils/tokenUtils';
 import { FaCheckCircle } from 'react-icons/fa';
 import {
@@ -26,6 +25,7 @@ import { migrateVaultToNewForwarder } from '@/utils/vaultUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import { assertWalletNetwork, getWalletProvider } from '@/utils/walletClient';
 
 const initialLeavingSteps = [
   {
@@ -81,7 +81,8 @@ export const UpgradeURD = ({
       return;
     }
 
-    const provider = new BrowserProvider(window.lukso);
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
 
     setIsSubmitting(true);
     setLeavingStep(0);

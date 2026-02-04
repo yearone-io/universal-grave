@@ -10,14 +10,15 @@ import {
   Box,
   Spinner,
 } from '@chakra-ui/react';
-import { BrowserProvider } from 'ethers';
 import { hasVaultURDSet, setVaultURD } from '@/utils/vaultCreation';
 import { useProfile } from '@/contexts/ProfileProvider';
+import { assertWalletNetwork, getWalletProvider } from '@/utils/walletClient';
 
 interface VaultURDCheckerProps {
   vaultAddress: string | null;
   networkConfig: {
     lsp1UrdVault?: string;
+    chainId?: number;
   } | null;
   onURDStatusChange?: (hasURD: boolean) => void;
 }
@@ -31,7 +32,7 @@ export default function VaultURDChecker({
   networkConfig,
   onURDStatusChange,
 }: VaultURDCheckerProps) {
-  const { profileDetailsData } = useProfile();
+  const { profileDetailsData, isNetworkMismatch } = useProfile();
   const [isChecking, setIsChecking] = useState(false);
   const [hasURD, setHasURD] = useState<boolean | null>(null);
   const [isSettingURD, setIsSettingURD] = useState(false);
@@ -40,7 +41,12 @@ export default function VaultURDChecker({
   // Check URD status whenever vault or network changes
   useEffect(() => {
     const checkURD = async () => {
-      if (!vaultAddress || !networkConfig?.lsp1UrdVault || !window.lukso) {
+      if (
+        !vaultAddress ||
+        !networkConfig?.lsp1UrdVault ||
+        !window.lukso ||
+        isNetworkMismatch
+      ) {
         setHasURD(null);
         return;
       }
@@ -49,7 +55,7 @@ export default function VaultURDChecker({
       setError(null);
 
       try {
-        const provider = new BrowserProvider(window.lukso);
+        const provider = getWalletProvider();
         const urdSet = await hasVaultURDSet(
           provider,
           vaultAddress,
@@ -68,7 +74,7 @@ export default function VaultURDChecker({
     };
 
     checkURD();
-  }, [vaultAddress, networkConfig, onURDStatusChange]);
+  }, [vaultAddress, networkConfig, onURDStatusChange, isNetworkMismatch]);
 
   const handleSetURD = async () => {
     if (
@@ -84,7 +90,10 @@ export default function VaultURDChecker({
     setError(null);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      if (networkConfig?.chainId) {
+        await assertWalletNetwork(networkConfig.chainId);
+      }
       await setVaultURD(
         provider,
         profileDetailsData.upWallet,

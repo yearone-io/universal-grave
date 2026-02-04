@@ -1,37 +1,31 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Universal GRAVE Frontend
 
-## Getting Started
+This is the Next.js App Router frontend for the Universal GRAVE.
 
-First, copy `.env.local.example` as `.env.local` (git ignored) and fill in the values.
+**Requirements**
+- Node.js `>= 22.20.0`
+- LUKSO UP Browser Extension for wallet-connected flows
 
-````bash
+**Setup**
+1. `npm install`
+2. Copy `.env.local.example` to `.env.local` and set `NEXT_PUBLIC_DEFAULT_NETWORK=mainnet` or `testnet`.
+3. `npm run dev`
 
-Then, run the development server:
+**Key UI Areas**
+- Landing page with spambox CTA and profile graveyard lookup.
+- Graveyard view with a vault selector for your account.
+- Settings tabs: Subscription (setup wizard), Manage Allowlist, Send to GRAVE, Advanced Info.
+- Banners for new users, legacy upgrades, and incomplete configs.
+- Network switcher in the footer.
+Routes are network-aware and use `lukso` or `lukso-testnet` as the `networkName` segment.
 
-```bash
-npm run dev
-# or
-````
+**Tech Stack**
+- Next.js 16 App Router
+- Chakra UI with theme in `app/theme`
+- Ethers v6 and ERC725.js
+- Fonts: Bungee and Montserrat
 
-To generate types from abis in `abis` folder, run `npm run typechain`
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+**Useful Scripts**
+- `npm run typechain` generate types from `abis/` into `contracts/`.
+- `npm run test` / `npm run test:run` / `npm run test:ui` testing.
+- `npm run lint` / `npm run format` code quality.

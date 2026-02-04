@@ -18,7 +18,7 @@ import {
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
-import { Contract, BrowserProvider } from 'ethers';
+import { Contract } from 'ethers';
 import {
   lsp8IdentifiableDigitalAssetAbi,
   lsp9VaultAbi,
@@ -31,6 +31,11 @@ import { supportedNetworks } from '@/constants/supportedNetworks';
 import { useGrave } from '@/contexts/GraveContext';
 import { updateScreenersOnRevive } from '@/utils/screenerUpdates';
 import { useRouter, useParams } from 'next/navigation';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  getWalletSigner,
+} from '@/utils/walletClient';
 
 interface LSP8SimplePanelProps {
   readonly tokenData: TokenData[];
@@ -82,8 +87,9 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
 
     setInProcessingText('Unblocking collection');
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const signer = await provider.getSigner();
+      const provider = getWalletProvider();
+      await assertWalletNetwork(networkConfig.chainId);
+      const signer = await getWalletSigner();
       const upAddress = await signer.getAddress();
 
       // Handle legacy GRAVE allowlist system (only for pure legacy mode)
@@ -191,8 +197,9 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
     setInProcessingText('Unblocking');
     setIsRevivingAll(true);
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const signer = await provider.getSigner();
+      const provider = getWalletProvider();
+      await assertWalletNetwork(networkConfig.chainId);
+      const signer = await getWalletSigner();
       const signerAddress = await signer.getAddress();
 
       // Handle legacy GRAVE allowlist system (only for pure legacy mode)

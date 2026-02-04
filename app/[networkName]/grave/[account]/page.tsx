@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function Grave({
   params,
 }: {
-  params: Promise<{ account: string }>;
+  params: Promise<{ networkName: string; account: string }>;
 }) {
   const { account } = await params;
   return (

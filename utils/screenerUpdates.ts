@@ -2,9 +2,10 @@ import { BrowserProvider, Contract, AbiCoder } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { getChecksumAddress } from './tokenUtils';
-import ERC725 from '@erc725/erc725.js';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
+import { getErc725Read } from '@/utils/erc725Client';
 import uapSchema from '@/schemas/UAP.json';
+import { getWalletSigner } from '@/utils/walletClient';
 
 // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
 // This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
@@ -27,12 +28,12 @@ export async function removeAssetFromAddressListScreener(
     forwarderAssistantAddress: string;
   }
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
   const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
 
@@ -246,7 +247,7 @@ export async function addAssetToCuratedListException(
   curatedListScreenerAddress: string,
   curatedListAddress: string
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const abiCoder = new AbiCoder();
   const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
@@ -407,12 +408,12 @@ export async function addAssetToAddressListScreener(
   addressListScreenerAddress: string,
   forwarderAssistantAddress: string
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
   const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
 

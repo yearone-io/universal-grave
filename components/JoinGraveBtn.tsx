@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button, useDisclosure, useToast } from '@chakra-ui/react';
-import { BrowserProvider } from 'ethers';
 import { ExistingURDAlert } from '@/components/ExistingURDAlert';
 import {
   urdsMatchLatestForwarder,
@@ -13,6 +12,7 @@ import { createUpVault, setVaultURD } from '@/utils/vaultUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import { assertWalletNetwork, getWalletProvider } from '@/utils/walletClient';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -117,7 +117,8 @@ export default function JoinGraveBtn({
       return;
     }
 
-    const provider = new BrowserProvider(window.lukso);
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
 
     // 1. Give the UP Main Controller the necessary permissions
     console.log('step 0');
@@ -226,7 +227,8 @@ export default function JoinGraveBtn({
       return;
     }
 
-    const provider = new BrowserProvider(window.lukso);
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
 
     setLeavingStep(0);
 

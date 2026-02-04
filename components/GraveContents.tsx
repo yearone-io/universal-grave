@@ -18,10 +18,11 @@ import { useGrave } from '@/contexts/GraveContext';
 import { formatAddress } from '@/utils/tokenUtils';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { BrowserProvider, isAddress } from 'ethers';
+import { isAddress } from 'ethers';
 import { getRegisteredVaults } from '@/utils/vaultCreation';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
+import { getWalletProvider } from '@/utils/walletClient';
 
 /**
  *  GraveContents: Renders the main content for a user's "graveyard" page.
@@ -32,7 +33,7 @@ import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
  *  a share button, and the GravePageAssets component showing the graveyard's LSP7s & LSP8s
  */
 export default function GraveContents({ graveOwner }: { graveOwner: string }) {
-  const { profileDetailsData, chainId } = useProfile();
+  const { profileDetailsData, chainId, isNetworkMismatch } = useProfile();
   const { graveVault } = useGrave();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -56,10 +57,11 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
   // Fetch available vaults for the graveyard owner if viewing own graveyard
   useEffect(() => {
     const fetchVaults = async () => {
-      if (!isOwnGraveyard || !window.lukso || !networkConfig) return;
+      if (!isOwnGraveyard || !window.lukso || !networkConfig || isNetworkMismatch)
+        return;
 
       try {
-        const provider = new BrowserProvider(window.lukso);
+        const provider = getWalletProvider();
 
         // Get the default vault from forwarder assistant config
         const forwarderConfig = await getForwarderAssistantConfig(
@@ -110,7 +112,13 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
     };
 
     fetchVaults();
-  }, [isOwnGraveyard, graveOwner, networkConfig, graveVault]);
+  }, [
+    isOwnGraveyard,
+    graveOwner,
+    networkConfig,
+    graveVault,
+    isNetworkMismatch,
+  ]);
 
   // Handle vault selection from URL or default
   useEffect(() => {

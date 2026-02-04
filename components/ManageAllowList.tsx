@@ -9,11 +9,15 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
-import { BrowserProvider } from 'ethers';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { BiSolidCheckCircle } from 'react-icons/bi';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  getWalletSigner,
+} from '@/utils/walletClient';
 
 const messageState = {
   isCheckingStatus: 'Checking status...',
@@ -71,8 +75,9 @@ export default function ManageAllowList() {
     }
     setIsSubmitting(true);
     setIsCheckingStatus(true);
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const graveForwarder = LSP1GraveForwarder__factory.connect(
       networkConfig.universalGraveForwarder,
       signer
@@ -104,8 +109,9 @@ export default function ManageAllowList() {
     }
     setIsSubmitting(true);
     setIsAddingToAllowList(true);
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const graveForwarder = LSP1GraveForwarder__factory.connect(
       networkConfig.universalGraveForwarder,
       signer
@@ -143,8 +149,9 @@ export default function ManageAllowList() {
     }
     setIsSubmitting(true);
     setIsRemovingFromAllowList(true);
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const graveForwarder = LSP1GraveForwarder__factory.connect(
       networkConfig.universalGraveForwarder,
       signer

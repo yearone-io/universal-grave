@@ -14,6 +14,7 @@ import { useGrave } from '@/contexts/GraveContext';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import { getWalletProvider } from '@/utils/walletClient';
 
 /**
  * IncompleteConfigBanner - Displays a banner prompting users who have UAP but haven't configured their spambox
@@ -27,7 +28,7 @@ export default function IncompleteConfigBanner() {
   const params = useParams();
   const pathname = usePathname();
   const networkName = params.networkName as string;
-  const { profileDetailsData, chainId } = useProfile();
+  const { profileDetailsData, chainId, isNetworkMismatch } = useProfile();
 
   const [isDismissed, setIsDismissed] = useState(false);
   const [isIncompleteConfig, setIsIncompleteConfig] = useState(false);
@@ -58,7 +59,12 @@ export default function IncompleteConfigBanner() {
         return;
       }
 
-      if (!window.lukso || !profileDetailsData?.upWallet || !chainId) {
+      if (
+        !window.lukso ||
+        !profileDetailsData?.upWallet ||
+        !chainId ||
+        isNetworkMismatch
+      ) {
         return;
       }
 
@@ -66,8 +72,7 @@ export default function IncompleteConfigBanner() {
       if (!networkConfig) return;
 
       try {
-        const { BrowserProvider } = await import('ethers');
-        const provider = new BrowserProvider(window.lukso);
+        const provider = getWalletProvider();
 
         const { getForwarderAssistantConfig } = await import(
           '@/utils/assistantConfig'
@@ -106,7 +111,13 @@ export default function IncompleteConfigBanner() {
     }
 
     checkConfig();
-  }, [setupType, profileDetailsData, chainId, configCheckTrigger]);
+  }, [
+    setupType,
+    profileDetailsData,
+    chainId,
+    configCheckTrigger,
+    isNetworkMismatch,
+  ]);
 
   // Show banner if:
   // 1. No configuration at all (setupType === 'none' AND hasUAPSubscription), OR

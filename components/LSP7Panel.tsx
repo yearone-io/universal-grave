@@ -16,7 +16,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import { Contract, formatUnits, BrowserProvider } from 'ethers';
+import { Contract, formatUnits } from 'ethers';
 import {
   lsp9VaultAbi,
   lsp7DigitalAssetAbi,
@@ -34,6 +34,11 @@ import { supportedNetworks } from '@/constants/supportedNetworks';
 import { useGrave } from '@/contexts/GraveContext';
 import { updateScreenersOnRevive } from '@/utils/screenerUpdates';
 import { useRouter, useParams } from 'next/navigation';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  getWalletSigner,
+} from '@/utils/walletClient';
 
 interface LSP7PanelProps {
   readonly tokenData: TokenData;
@@ -108,8 +113,9 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
     }
     setInProcessingText('Unblocking');
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const signer = await provider.getSigner();
+      const provider = getWalletProvider();
+      await assertWalletNetwork(networkConfig.chainId);
+      const signer = await getWalletSigner();
       const upAddress = await signer.getAddress();
 
       // Handle legacy GRAVE allowlist system (only for pure legacy mode)

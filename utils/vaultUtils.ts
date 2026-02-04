@@ -7,6 +7,7 @@ import {
 import { lsp9VaultAbi } from '@lukso/lsp-smart-contracts/abi';
 import { ERC725YDataKeys } from '@lukso/lsp-smart-contracts';
 import { LSP1GraveForwarder__factory } from '@/contracts';
+import { getWalletSigner } from '@/utils/walletClient';
 
 // Note: LSP9Vault bytecode needs to be imported separately or provided
 // For now, we'll need to check if this functionality is still used
@@ -16,7 +17,7 @@ export const createUpVault = async (
   provider: JsonRpcProvider | BrowserProvider,
   account: string
 ) => {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   // create an factory for the LSP9Vault contract
   let vaultFactory = new ContractFactory(
     lsp9VaultAbi,
@@ -32,7 +33,7 @@ export const setVaultURD = async (
   vaultAddress: string,
   vaultURDAddress: string
 ) => {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const vault = new Contract(vaultAddress, lsp9VaultAbi, signer);
   try {
     //1. Check if it is neccessary to set the delegate in the vault
@@ -57,7 +58,7 @@ export const migrateVaultToNewForwarder = async (
   oldForwarderAddress: string,
   newForwarderAddress: string
 ) => {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const oldForwarder = LSP1GraveForwarder__factory.connect(
     oldForwarderAddress,
     provider

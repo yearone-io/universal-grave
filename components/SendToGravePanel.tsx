@@ -9,7 +9,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
-import { BrowserProvider, Contract, formatUnits } from 'ethers';
+import { Contract, formatUnits } from 'ethers';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
@@ -25,6 +25,11 @@ import {
   getEnoughDecimals,
   getLSPAssetBasicInfo,
 } from '@/utils/tokenUtils';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  getWalletSigner,
+} from '@/utils/walletClient';
 
 export default function SendToGravePanel() {
   const { chainId } = useProfile();
@@ -63,11 +68,12 @@ export default function SendToGravePanel() {
   };
 
   const getTokenData = async () => {
-    if (!window.lukso) return;
+    if (!window.lukso || !networkConfig) return;
     let assetData;
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const signer = await provider.getSigner();
+      const provider = getWalletProvider();
+      await assertWalletNetwork(networkConfig.chainId);
+      const signer = await getWalletSigner();
       const wallet = await signer.getAddress();
       assetData = await getLSPAssetBasicInfo(
         provider,
@@ -129,8 +135,9 @@ export default function SendToGravePanel() {
 
   const removeTokenFromAllowList = async () => {
     if (!window.lukso || !networkConfig) return;
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const LSP1GraveForwarderContract = LSP1GraveForwarder__factory.connect(
       networkConfig.universalGraveForwarder,
       signer
@@ -154,9 +161,10 @@ export default function SendToGravePanel() {
   };
 
   const transferLSP7ToGrave = async () => {
-    if (!window.lukso) return;
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    if (!window.lukso || !networkConfig) return;
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const tokenContract = new Contract(
       tokenData?.address as string,
       lsp7DigitalAssetAbi,
@@ -176,10 +184,11 @@ export default function SendToGravePanel() {
     walletNftIds: string[],
     maxGasLimit: bigint
   ) => {
-    if (!window.lukso) return 1;
+    if (!window.lukso || !networkConfig) return 1;
     let batchSize = walletNftIds.length;
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const tokenContract = new Contract(
       inputTokenAddress,
       lsp8IdentifiableDigitalAssetAbi,
@@ -233,9 +242,10 @@ export default function SendToGravePanel() {
     walletNftIds: string[],
     batchSize: number
   ) => {
-    if (!window.lukso) return;
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    if (!window.lukso || !networkConfig) return;
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const tokenContract = new Contract(
       inputTokenAddress,
       lsp8IdentifiableDigitalAssetAbi,
@@ -272,9 +282,10 @@ export default function SendToGravePanel() {
   };
 
   const transferLSP8ToGrave = async () => {
-    if (!window.lukso) return;
-    const provider = new BrowserProvider(window.lukso);
-    const signer = await provider.getSigner();
+    if (!window.lukso || !networkConfig) return;
+    const provider = getWalletProvider();
+    await assertWalletNetwork(networkConfig.chainId);
+    const signer = await getWalletSigner();
     const tokenContract = new Contract(
       inputTokenAddress,
       lsp8IdentifiableDigitalAssetAbi,

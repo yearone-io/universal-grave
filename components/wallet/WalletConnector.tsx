@@ -108,7 +108,7 @@ const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
             >
               Settings
             </MenuItem>
-            <MenuItem onClick={disconnect} icon={<VscDebugDisconnect />}>
+            <MenuItem onClick={() => disconnect()} icon={<VscDebugDisconnect />}>
               Disconnect
             </MenuItem>
           </MenuList>
