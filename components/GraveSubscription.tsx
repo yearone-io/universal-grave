@@ -75,6 +75,7 @@ import {
   updateForwarderVaultAddress,
 } from '@/utils/assistantConfig';
 import VaultURDChecker from './VaultURDChecker';
+import AddressMetadataPreview from '@/components/address-metadata/AddressMetadataPreview';
 
 const GraveSubscription: React.FC = () => {
   const toast = useToast({ position: 'bottom-left' });
@@ -2331,6 +2332,11 @@ const GraveSubscription: React.FC = () => {
                       Invalid creator curated list contract address
                     </Text>
                   )}
+                <AddressMetadataPreview
+                  address={creatorCuratedListAddress}
+                  chainId={chainId ?? undefined}
+                  isDisabled={isNetworkMismatch}
+                />
               </Box>
 
               {/* OR Logic Indicator */}
@@ -2494,50 +2500,57 @@ const GraveSubscription: React.FC = () => {
                   </Tooltip>
                 </HStack>
 
-                <VStack spacing={2} align="stretch">
+                <VStack spacing={3} align="stretch">
                   {creatorWhitelistAddresses.map((addr, index) => (
-                    <HStack key={index}>
-                      <Input
-                        placeholder="0x... (creator address)"
-                        value={addr}
-                        onChange={e =>
-                          updateCreatorWhitelistAddress(index, e.target.value)
-                        }
-                        fontFamily="mono"
-                        size="sm"
-                        color="dark.purple.600"
-                        bg="white"
-                        borderColor={
-                          addr.trim() !== '' && !isAddress(addr.trim())
-                            ? 'red.300'
-                            : 'dark.purple.300'
-                        }
-                        _hover={{
-                          borderColor:
+                    <Box key={index}>
+                      <HStack>
+                        <Input
+                          placeholder="0x... (creator address)"
+                          value={addr}
+                          onChange={e =>
+                            updateCreatorWhitelistAddress(index, e.target.value)
+                          }
+                          fontFamily="mono"
+                          size="sm"
+                          color="dark.purple.600"
+                          bg="white"
+                          borderColor={
                             addr.trim() !== '' && !isAddress(addr.trim())
-                              ? 'red.400'
-                              : 'dark.purple.400',
-                        }}
-                        _focus={{
-                          borderColor:
-                            addr.trim() !== '' && !isAddress(addr.trim())
-                              ? 'red.500'
-                              : 'dark.purple.500',
-                          boxShadow:
-                            addr.trim() !== '' && !isAddress(addr.trim())
-                              ? '0 0 0 1px var(--chakra-colors-red-500)'
-                              : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
-                        }}
+                              ? 'red.300'
+                              : 'dark.purple.300'
+                          }
+                          _hover={{
+                            borderColor:
+                              addr.trim() !== '' && !isAddress(addr.trim())
+                                ? 'red.400'
+                                : 'dark.purple.400',
+                          }}
+                          _focus={{
+                            borderColor:
+                              addr.trim() !== '' && !isAddress(addr.trim())
+                                ? 'red.500'
+                                : 'dark.purple.500',
+                            boxShadow:
+                              addr.trim() !== '' && !isAddress(addr.trim())
+                                ? '0 0 0 1px var(--chakra-colors-red-500)'
+                                : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                          }}
+                        />
+                        <IconButton
+                          aria-label="Remove creator address"
+                          icon={<FaTrash />}
+                          size="sm"
+                          colorScheme="red"
+                          onClick={() => removeCreatorWhitelistAddress(index)}
+                          variant="ghost"
+                        />
+                      </HStack>
+                      <AddressMetadataPreview
+                        address={addr}
+                        chainId={chainId ?? undefined}
+                        isDisabled={isNetworkMismatch}
                       />
-                      <IconButton
-                        aria-label="Remove creator address"
-                        icon={<FaTrash />}
-                        size="sm"
-                        colorScheme="red"
-                        onClick={() => removeCreatorWhitelistAddress(index)}
-                        variant="ghost"
-                      />
-                    </HStack>
+                    </Box>
                   ))}
 
                   <Button
@@ -2685,6 +2698,11 @@ const GraveSubscription: React.FC = () => {
                       Invalid curated list contract address
                     </Text>
                   )}
+                <AddressMetadataPreview
+                  address={curatedListAddress}
+                  chainId={chainId ?? undefined}
+                  isDisabled={isNetworkMismatch}
+                />
               </Box>
 
               {/* OR Logic Indicator */}
@@ -2831,50 +2849,60 @@ const GraveSubscription: React.FC = () => {
                   </Box>
                 )}
 
-                <VStack spacing={2} align="stretch">
+                <VStack spacing={3} align="stretch">
                   {whitelistAddresses.map((address, index) => (
-                    <HStack key={index}>
-                      <Input
-                        placeholder="0x... (address)"
-                        value={address}
-                        onChange={e =>
-                          updateWhitelistAddress(index, e.target.value)
-                        }
-                        fontFamily="mono"
-                        size="sm"
-                        color="dark.purple.600"
-                        bg="white"
-                        borderColor={
-                          address.trim() !== '' && !isAddress(address.trim())
-                            ? 'red.300'
-                            : 'dark.purple.300'
-                        }
-                        _hover={{
-                          borderColor:
+                    <Box key={index}>
+                      <HStack>
+                        <Input
+                          placeholder="0x... (address)"
+                          value={address}
+                          onChange={e =>
+                            updateWhitelistAddress(index, e.target.value)
+                          }
+                          fontFamily="mono"
+                          size="sm"
+                          color="dark.purple.600"
+                          bg="white"
+                          borderColor={
                             address.trim() !== '' && !isAddress(address.trim())
-                              ? 'red.400'
-                              : 'dark.purple.400',
-                        }}
-                        _focus={{
-                          borderColor:
-                            address.trim() !== '' && !isAddress(address.trim())
-                              ? 'red.500'
-                              : 'dark.purple.500',
-                          boxShadow:
-                            address.trim() !== '' && !isAddress(address.trim())
-                              ? '0 0 0 1px var(--chakra-colors-red-500)'
-                              : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
-                        }}
+                              ? 'red.300'
+                              : 'dark.purple.300'
+                          }
+                          _hover={{
+                            borderColor:
+                              address.trim() !== '' &&
+                              !isAddress(address.trim())
+                                ? 'red.400'
+                                : 'dark.purple.400',
+                          }}
+                          _focus={{
+                            borderColor:
+                              address.trim() !== '' &&
+                              !isAddress(address.trim())
+                                ? 'red.500'
+                                : 'dark.purple.500',
+                            boxShadow:
+                              address.trim() !== '' &&
+                              !isAddress(address.trim())
+                                ? '0 0 0 1px var(--chakra-colors-red-500)'
+                                : '0 0 0 1px var(--chakra-colors-dark-purple-500)',
+                          }}
+                        />
+                        <IconButton
+                          aria-label="Remove address"
+                          icon={<FaTrash />}
+                          size="sm"
+                          colorScheme="red"
+                          onClick={() => removeWhitelistAddress(index)}
+                          variant="ghost"
+                        />
+                      </HStack>
+                      <AddressMetadataPreview
+                        address={address}
+                        chainId={chainId ?? undefined}
+                        isDisabled={isNetworkMismatch}
                       />
-                      <IconButton
-                        aria-label="Remove address"
-                        icon={<FaTrash />}
-                        size="sm"
-                        colorScheme="red"
-                        onClick={() => removeWhitelistAddress(index)}
-                        variant="ghost"
-                      />
-                    </HStack>
+                    </Box>
                   ))}
 
                   <Button

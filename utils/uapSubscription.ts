@@ -1,7 +1,7 @@
 import { BrowserProvider, Contract, AbiCoder } from 'ethers';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
-import { ERC725JSONSchema } from '@erc725/erc725.js';
+import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
 import uapSchema from '@/schemas/UAP.json';
 import {

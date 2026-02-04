@@ -97,9 +97,9 @@ export const isZeroDataError = (error: any) => {
 export const getDataSafe = async (
   erc725: ERC725,
   keyOrSchema: any
-) => {
+): Promise<any> => {
   try {
-    return await erc725.getData(keyOrSchema);
+    return (await erc725.getData(keyOrSchema)) as any;
   } catch (error) {
     if (isZeroDataError(error)) {
       return null;
@@ -111,9 +111,9 @@ export const getDataSafe = async (
 export const fetchDataSafe = async (
   erc725: ERC725,
   keyOrSchema: any
-) => {
+): Promise<any> => {
   try {
-    return await erc725.fetchData(keyOrSchema);
+    return (await erc725.fetchData(keyOrSchema)) as any;
   } catch (error) {
     if (isZeroDataError(error)) {
       return null;
