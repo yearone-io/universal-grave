@@ -96,6 +96,16 @@ const GraveSubscription: React.FC = () => {
   const mainUPController = profileDetailsData?.mainUPController;
   const currentNetwork = chainId ? supportedNetworks[chainId] : null;
   const vaultToUse = uapVaultAddress || graveVault;
+  const isMainnet = chainId === 42;
+
+  const recommendedCuratedAssets = {
+    address: '0x480f8e055ec2c06db4c06a216dd091b68a03f6c7',
+    url: 'https://hashlists.xyz/curated-lists/42/0x480f8e055ec2c06db4c06a216dd091b68a03f6c7',
+  };
+  const recommendedCuratedCreators = {
+    address: '0xc019cf21a31ea8d0c7571b7e1fa3a30cc54a9be9',
+    url: 'https://hashlists.xyz/curated-lists/42/0xc019cf21a31ea8d0c7571b7e1fa3a30cc54a9be9',
+  };
 
   // Configuration state - Asset Filters
   const [whitelistAddresses, setWhitelistAddresses] = useState<string[]>([]);
@@ -2332,6 +2342,46 @@ const GraveSubscription: React.FC = () => {
                       Invalid creator curated list contract address
                     </Text>
                   )}
+                {isMainnet && !isNetworkMismatch && (
+                  <Box
+                    mt={3}
+                    p={3}
+                    bg="dark.purple.100"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="dark.purple.300"
+                  >
+                    <Text fontSize="xs" color="dark.purple.500" mb={2}>
+                      Recommended curated creators list:
+                      <Text as="span" fontFamily="mono" fontWeight="bold" ml={1}>
+                        {recommendedCuratedCreators.address}
+                      </Text>
+                    </Text>
+                    <HStack spacing={3}>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        colorScheme="purple"
+                        onClick={() =>
+                          setCreatorCuratedListAddress(
+                            recommendedCuratedCreators.address
+                          )
+                        }
+                      >
+                        Use recommended
+                      </Button>
+                      <ChakraLink
+                        href={recommendedCuratedCreators.url}
+                        isExternal
+                        fontSize="xs"
+                        color="dark.purple.500"
+                        textDecoration="underline"
+                      >
+                        View on Hashlists
+                      </ChakraLink>
+                    </HStack>
+                  </Box>
+                )}
                 <AddressMetadataPreview
                   address={creatorCuratedListAddress}
                   chainId={chainId ?? undefined}
@@ -2698,6 +2748,46 @@ const GraveSubscription: React.FC = () => {
                       Invalid curated list contract address
                     </Text>
                   )}
+                {isMainnet && !isNetworkMismatch && (
+                  <Box
+                    mt={3}
+                    p={3}
+                    bg="dark.purple.100"
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="dark.purple.300"
+                  >
+                    <Text fontSize="xs" color="dark.purple.500" mb={2}>
+                      Recommended curated assets list:
+                      <Text as="span" fontFamily="mono" fontWeight="bold" ml={1}>
+                        {recommendedCuratedAssets.address}
+                      </Text>
+                    </Text>
+                    <HStack spacing={3}>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        colorScheme="purple"
+                        onClick={() =>
+                          setCuratedListAddress(
+                            recommendedCuratedAssets.address
+                          )
+                        }
+                      >
+                        Use recommended
+                      </Button>
+                      <ChakraLink
+                        href={recommendedCuratedAssets.url}
+                        isExternal
+                        fontSize="xs"
+                        color="dark.purple.500"
+                        textDecoration="underline"
+                      >
+                        View on Hashlists
+                      </ChakraLink>
+                    </HStack>
+                  </Box>
+                )}
                 <AddressMetadataPreview
                   address={curatedListAddress}
                   chainId={chainId ?? undefined}

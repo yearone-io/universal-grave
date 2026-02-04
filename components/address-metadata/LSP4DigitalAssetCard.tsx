@@ -16,17 +16,22 @@ import {
 } from '@chakra-ui/react';
 import { ChevronDownIcon, ExternalLinkIcon, InfoIcon } from '@chakra-ui/icons';
 import { LSP4Metadata, resolveIpfsUrl } from '@/utils/addressMetadata';
+import { getUniversalEverythingUrl } from '@/utils/universalEverything';
 
 interface LSP4DigitalAssetCardProps {
   data: LSP4Metadata;
   tokenName?: string;
   ipfsGateway: string;
+  chainId?: number;
+  address: string;
 }
 
 const LSP4DigitalAssetCard: React.FC<LSP4DigitalAssetCardProps> = ({
   data,
   tokenName,
   ipfsGateway,
+  chainId,
+  address,
 }) => {
   const { name, description, links, images, icon } = data;
   const displayName = name || tokenName || 'Digital Asset';
@@ -37,6 +42,7 @@ const LSP4DigitalAssetCard: React.FC<LSP4DigitalAssetCardProps> = ({
   const iconImage = icon?.[0]?.url
     ? resolveIpfsUrl(icon[0].url, ipfsGateway)
     : '';
+  const externalUrl = getUniversalEverythingUrl(chainId, 'asset', address);
 
   return (
     <Box
@@ -111,32 +117,41 @@ const LSP4DigitalAssetCard: React.FC<LSP4DigitalAssetCardProps> = ({
             Digital Asset
           </Badge>
         </Flex>
-        {!!links?.length && (
-          <Menu>
-            <MenuButton
-              as={Button}
-              rightIcon={<ChevronDownIcon />}
-              size="xs"
-              variant="ghost"
-              aria-label="Asset Links"
-              alignSelf="flex-start"
-            >
-              <ExternalLinkIcon />
-            </MenuButton>
-            <MenuList>
-              {links.map((link, index) => (
-                <MenuItem key={index}>
-                  <a href={link.url} target="_blank" rel="noreferrer">
-                    <HStack>
-                      <Text>{link.title}</Text>
-                      <ExternalLinkIcon />
-                    </HStack>
-                  </a>
-                </MenuItem>
-              ))}
-            </MenuList>
-          </Menu>
-        )}
+        <HStack spacing={3} align="center">
+          {!!links?.length && (
+            <Menu>
+              <MenuButton
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                size="xs"
+                variant="ghost"
+                aria-label="Asset Links"
+              >
+                <ExternalLinkIcon />
+              </MenuButton>
+              <MenuList>
+                {links.map((link, index) => (
+                  <MenuItem key={index}>
+                    <a href={link.url} target="_blank" rel="noreferrer">
+                      <HStack>
+                        <Text>{link.title}</Text>
+                        <ExternalLinkIcon />
+                      </HStack>
+                    </a>
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+          )}
+          <a href={externalUrl} target="_blank" rel="noreferrer">
+            <HStack spacing={1}>
+              <Text fontSize="xs" color="dark.purple.500">
+                View on Universal Everything
+              </Text>
+              <ExternalLinkIcon fontSize="xs" />
+            </HStack>
+          </a>
+        </HStack>
       </Flex>
     </Box>
   );
