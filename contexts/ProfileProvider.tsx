@@ -13,7 +13,11 @@ import { BrowserProvider, verifyMessage } from 'ethers';
 import { getImageFromIPFS } from '@/utils/ipfs';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
-import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
+import { ERC725JSONSchema } from '@erc725/erc725.js';
+import { fetchDataSafe, getErc725Read } from '@/utils/erc725Client';
+import { getWalletProvider } from '@/utils/walletClient';
+import { useParams } from 'next/navigation';
+import { getNetworkByName, getNetworkConfig } from '@/constants/supportedNetworks';
 
 interface Profile {
   name: string;
@@ -55,14 +59,18 @@ interface ProfileContextType {
   error: string | null;
   isConnected: boolean;
   chainId: number | null;
+  expectedChainId: number | null;
+  isNetworkMismatch: boolean;
   connectAndSign: () => Promise<boolean>;
-  disconnect: () => void;
+  disconnect: (options?: { preserveChainId?: boolean }) => void;
   switchNetwork: (chainId: number) => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
+  const params = useParams();
+  const networkName = (params?.networkName as string | undefined) || null;
   const [issuedAssets, setIssuedAssets] = useState<string[]>([]);
   const [profileDetailsData, setProfileDetailsData] =
     useState<IProfileDetailsData | null>(null);
@@ -72,6 +80,49 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const providerRef = useRef<BrowserProvider | null>(null);
   const connectingRef = useRef(false);
 
+  const expectedChainId = useMemo(() => {
+    if (networkName) {
+      const networkInfo = getNetworkByName(networkName);
+      return networkInfo?.chainId ?? null;
+    }
+    // No network route param: stay neutral
+    return null;
+  }, [networkName]);
+
+  const isNetworkMismatch =
+    !!expectedChainId && !!chainId && expectedChainId !== chainId;
+
+  const requestNetworkSwitch = async (newChainId: number) => {
+    if (!window.lukso) throw new Error('No wallet provider detected');
+    const provider = providerRef.current || getWalletProvider();
+    providerRef.current = provider;
+    try {
+      await provider.send('wallet_switchEthereumChain', [
+        { chainId: `0x${newChainId.toString(16)}` },
+      ]);
+    } catch (error: any) {
+      if (error.code === 4902 && supportedNetworks[newChainId]) {
+        await provider.send('wallet_addEthereumChain', [
+          {
+            chainId: `0x${newChainId.toString(16)}`,
+            chainName: supportedNetworks[newChainId].displayName,
+            rpcUrls: [supportedNetworks[newChainId].rpcUrl],
+            nativeCurrency: {
+              name: supportedNetworks[newChainId].token,
+              symbol: supportedNetworks[newChainId].token,
+              decimals: 18,
+            },
+            blockExplorerUrls: [supportedNetworks[newChainId].explorer],
+          },
+        ]);
+      } else {
+        throw error;
+      }
+    }
+    const updatedChainId = Number(await provider.send('eth_chainId', []));
+    setChainId(updatedChainId);
+  };
+
   const connectAndSign = async (): Promise<boolean> => {
     if (connectingRef.current) {
       console.log('ProfileProvider: Already connecting, skipping');
@@ -80,6 +131,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
     try {
       connectingRef.current = true;
+      setError(null);
       if (!window.lukso) {
         throw new Error(
           'No wallet provider detected. Please install the UP Browser Extension.'
@@ -87,8 +139,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('ProfileProvider: Attempting connection');
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
       providerRef.current = provider;
+      if (expectedChainId) {
+        const currentChainId = Number(await provider.send('eth_chainId', []));
+        if (currentChainId !== expectedChainId) {
+          await requestNetworkSwitch(expectedChainId);
+        }
+      }
       const accounts = await provider.send('eth_requestAccounts', []);
       const upWallet = accounts[0];
       const currentChainId = Number(await provider.send('eth_chainId', []));
@@ -141,10 +199,12 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const disconnect = () => {
+  const disconnect = (options?: { preserveChainId?: boolean }) => {
     setProfileDetailsData(null);
     setIsConnected(false);
-    setChainId(null);
+    if (!options?.preserveChainId) {
+      setChainId(null);
+    }
     setIssuedAssets([]);
     setError(null);
     localStorage.removeItem('profileDetailsData');
@@ -180,11 +240,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       return { profile: null, issuedAssets: [] };
     }
 
-    const erc725js = new ERC725(
+    const erc725js = getErc725Read(
       lsp3ProfileSchema as ERC725JSONSchema[],
       walletToFetch,
-      currentNetwork.rpcUrl,
-      { ipfsGateway: currentNetwork.ipfsGateway }
+      {
+        chainId: chainIdNum,
+        erc725Options: { ipfsGateway: currentNetwork.ipfsGateway },
+      }
     );
 
     try {
@@ -193,13 +255,16 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         walletToFetch,
         currentChainId,
       });
-      const profileMetaData = await erc725js.fetchData('LSP3Profile');
-      const lsp12IssuedAssets = await erc725js.fetchData('LSP12IssuedAssets[]');
+      const profileMetaData = await fetchDataSafe(erc725js, 'LSP3Profile');
+      const lsp12IssuedAssets = await fetchDataSafe(
+        erc725js,
+        'LSP12IssuedAssets[]'
+      );
       let newProfile: Profile | null = null;
       let newIssuedAssets: string[] = [];
 
       if (
-        profileMetaData.value &&
+        profileMetaData?.value &&
         typeof profileMetaData.value === 'object' &&
         'LSP3Profile' in profileMetaData.value
       ) {
@@ -238,7 +303,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         console.log('ProfileProvider: No profile data found');
       }
 
-      if (lsp12IssuedAssets.value && Array.isArray(lsp12IssuedAssets.value)) {
+      if (
+        lsp12IssuedAssets?.value &&
+        Array.isArray(lsp12IssuedAssets.value)
+      ) {
         newIssuedAssets = lsp12IssuedAssets.value as string[];
       }
 
@@ -252,40 +320,12 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const switchNetwork = async (newChainId: number) => {
     try {
-      if (!window.lukso) throw new Error('No wallet provider detected');
-      const provider = providerRef.current || new BrowserProvider(window.lukso);
-      providerRef.current = provider;
-      await provider.send('wallet_switchEthereumChain', [
-        { chainId: `0x${newChainId.toString(16)}` },
-      ]);
-      setChainId(newChainId);
+      await requestNetworkSwitch(newChainId);
       console.log('ProfileProvider: Switched network', { newChainId });
       await connectAndSign();
     } catch (error: any) {
       console.error('ProfileProvider: Switch network error', error);
-      if (
-        error.code === 4902 &&
-        providerRef.current &&
-        supportedNetworks[newChainId]
-      ) {
-        await providerRef.current.send('wallet_addEthereumChain', [
-          {
-            chainId: `0x${newChainId.toString(16)}`,
-            chainName: supportedNetworks[newChainId].displayName,
-            rpcUrls: [supportedNetworks[newChainId].rpcUrl],
-            nativeCurrency: {
-              name: supportedNetworks[newChainId].token,
-              symbol: supportedNetworks[newChainId].token,
-              decimals: 18,
-            },
-            blockExplorerUrls: [supportedNetworks[newChainId].explorer],
-          },
-        ]);
-        setChainId(newChainId);
-        await connectAndSign();
-      } else {
-        setError(error.message);
-      }
+      setError(error.message);
     }
   };
 
@@ -298,19 +338,27 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         const parsedProfileDetails: IProfileDetailsData =
           JSON.parse(storedProfileDetails);
         try {
-          const provider = new BrowserProvider(window.lukso);
+          const provider = getWalletProvider();
           providerRef.current = provider;
           const accounts = await provider.send('eth_accounts', []);
+          const currentChainId = Number(
+            await provider.send('eth_chainId', [])
+          );
+          setChainId(currentChainId);
+
+          if (expectedChainId && currentChainId !== expectedChainId) {
+            console.log(
+              'ProfileProvider: Session not restored due to network mismatch'
+            );
+            localStorage.removeItem('profileDetailsData');
+            return;
+          }
           if (
             accounts.length > 0 &&
             accounts.includes(parsedProfileDetails.upWallet)
           ) {
             setProfileDetailsData(parsedProfileDetails);
             setIsConnected(true);
-            const currentChainId = Number(
-              await provider.send('eth_chainId', [])
-            );
-            setChainId(currentChainId);
             console.log('ProfileProvider: Restored session', {
               ...parsedProfileDetails,
               chainId: currentChainId,
@@ -353,7 +401,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setChainId(newChainId);
       setIssuedAssets([]);
       console.log('ProfileProvider: Chain changed', { newChainId });
-      connectAndSign();
+      if (expectedChainId && newChainId !== expectedChainId) {
+        disconnect({ preserveChainId: true });
+        return;
+      }
+      if (isConnected) {
+        connectAndSign();
+      }
     };
 
     window.lukso.on('accountsChanged', handleAccountsChanged);
@@ -363,7 +417,33 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       window.lukso.removeListener('accountsChanged', handleAccountsChanged);
       window.lukso.removeListener('chainChanged', handleChainChanged);
     };
-  }, [isConnected, profileDetailsData?.upWallet]);
+  }, [isConnected, profileDetailsData?.upWallet, expectedChainId]);
+
+  useEffect(() => {
+    if (!window.lukso) return;
+    const provider = getWalletProvider();
+    provider
+      .send('eth_chainId', [])
+      .then((chainIdHex: string) => {
+        const currentChainId = Number(chainIdHex);
+        setChainId(currentChainId);
+      })
+      .catch(() => {
+        // ignore - wallet may be locked or not available yet
+      });
+  }, [expectedChainId]);
+
+  useEffect(() => {
+    if (!expectedChainId || !chainId) return;
+    if (expectedChainId !== chainId) {
+      if (isConnected) {
+        disconnect({ preserveChainId: true });
+      }
+      setError(
+        `Wrong network. Please switch to ${supportedNetworks[expectedChainId]?.displayName || expectedChainId}.`
+      );
+    }
+  }, [expectedChainId, chainId, isConnected]);
 
   const contextValue = useMemo(
     () => ({
@@ -374,11 +454,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       error,
       isConnected,
       chainId,
+      expectedChainId,
+      isNetworkMismatch,
       connectAndSign,
       disconnect,
       switchNetwork,
     }),
-    [issuedAssets, profileDetailsData, error, isConnected, chainId]
+    [issuedAssets, profileDetailsData, error, isConnected, chainId, expectedChainId, isNetworkMismatch]
   );
 
   return (

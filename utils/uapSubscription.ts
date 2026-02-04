@@ -1,7 +1,7 @@
 import { BrowserProvider, Contract, AbiCoder } from 'ethers';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
-import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
+import { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
 import uapSchema from '@/schemas/UAP.json';
 import {
@@ -9,6 +9,8 @@ import {
   UAP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
 } from '@/app/constants';
+import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
+import { getWalletSigner } from '@/utils/walletClient';
 
 // Hardcoded key from UAP.json schema - ERC725.js encodeKeyName may not work correctly
 const SUPPORTED_STANDARDS_UAP_KEY =
@@ -35,7 +37,7 @@ export async function subscribeToUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await provider.getSigner();
+    const signer = await getWalletSigner();
 
     // Set up URD delegates following UP Assistants pattern
     const URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
@@ -51,17 +53,17 @@ export async function subscribeToUAP(
     const delegateValues = [protocolAddress, '0x', '0x'];
 
     const upContract = new Contract(upAddress, universalProfileAbi, provider);
-    const upPermissions = new ERC725(
+    const upPermissions = getErc725Read(
       LSP6Schema as ERC725JSONSchema[],
       upAddress,
-      window.lukso
+      { provider }
     );
 
     // Add SupportedStandards:UAP for protocol detection
-    const erc725UAP = new ERC725(
+    const erc725UAP = getErc725Read(
       uapSchema as ERC725JSONSchema[],
       upAddress,
-      window.lukso
+      { provider }
     );
     const supportedStandardsKey = erc725UAP.encodeKeyName(
       'SupportedStandards:UAP',
@@ -75,10 +77,11 @@ export async function subscribeToUAP(
     // Get checksum address
     const checksumUapURD = protocolAddress;
 
-    const currentPermissionsData = await upPermissions.getData(
+    const currentPermissionsData = await getDataSafe(
+      upPermissions,
       'AddressPermissions[]'
     );
-    let currentControllers = (currentPermissionsData.value as string[]) || [];
+    let currentControllers = (currentPermissionsData?.value as string[]) || [];
 
     // Filter out UAP protocol if it exists, then add it
     let updatedControllers = currentControllers.filter((controller: string) => {
@@ -143,21 +146,20 @@ export async function unsubscribeFromUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await provider.getSigner();
+    const signer = await getWalletSigner();
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
 
     // Create ERC725 instance with window.lukso for reading and encoding data
     // ERC725.js expects the raw provider, not a BrowserProvider wrapper
-    const erc725 = new ERC725(
+    const erc725 = getErc725Read(
       LSP6Schema as ERC725JSONSchema[],
       upAddress,
-      window.lukso
+      { provider }
     );
 
     // Get current controllers
-    const controllersData = await erc725.getData('AddressPermissions[]');
-
-    const currentControllers = (controllersData.value as string[]) || [];
+    const controllersData = await getDataSafe(erc725, 'AddressPermissions[]');
+    const currentControllers = (controllersData?.value as string[]) || [];
 
     // Remove UAP from controllers list
     const newControllers = currentControllers.filter(
@@ -222,10 +224,10 @@ export async function hasUAPManagementPermissions(
 ): Promise<boolean> {
   try {
     // Create ERC725 instance with provider for reading data
-    const erc725 = new ERC725(
+    const erc725 = getErc725Read(
       LSP6Schema as ERC725JSONSchema[],
       upAddress,
-      provider
+      { provider }
     );
 
     const permissionsData = await erc725.getData({
@@ -309,19 +311,19 @@ export async function subscribeAndConfigureGrave(
 ): Promise<void> {
   console.log("running: subscribeAndConfigureGrave")
   try {
-    const signer = await provider.getSigner();
+    const signer = await getWalletSigner();
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
     const abiCoder = new AbiCoder();
 
-    const erc725LSP6 = new ERC725(
+    const erc725LSP6 = getErc725Read(
       LSP6Schema as ERC725JSONSchema[],
       upAddress,
-      window.lukso
+      { provider }
     );
-    const erc725UAP = new ERC725(
+    const erc725UAP = getErc725Read(
       uapSchema as ERC725JSONSchema[],
       upAddress,
-      window.lukso
+      { provider }
     );
 
     const keys: string[] = [];
@@ -357,8 +359,11 @@ export async function subscribeAndConfigureGrave(
     // =============================================================
 
     // Get current controllers list to check if protocol already exists
-    const currentPermissionsData = await erc725LSP6.getData('AddressPermissions[]');
-    const currentControllers = (currentPermissionsData.value as string[]) || [];
+    const currentPermissionsData = await getDataSafe(
+      erc725LSP6,
+      'AddressPermissions[]'
+    );
+    const currentControllers = (currentPermissionsData?.value as string[]) || [];
 
     // Check if protocol already exists in the array
     const protocolAlreadyExists = currentControllers.some(

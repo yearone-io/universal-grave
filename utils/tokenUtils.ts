@@ -16,7 +16,11 @@ import { erc20ABI } from '@/abis/erc20ABI';
 import lsp4Schema from '@erc725/erc725.js/schemas/LSP4DigitalAsset.json';
 import { lsp8IdentifiableDigitalAssetAbi } from '@lukso/lsp-smart-contracts/abi';
 import { constants } from '@/app/constants';
-import { getLuksoProvider } from '@/utils/provider';
+import {
+  fetchDataSafe,
+  getErc725Read,
+  supportsInterfaceSafe,
+} from '@/utils/erc725Client';
 
 export type TokenData = {
   readonly interface: GRAVE_ASSET_TYPES;
@@ -166,13 +170,14 @@ export const detectLSP = async (
   // fetch digital asset interface details
   console.log('[GRAVE DEBUG] detectLSP called for:', assetAddress);
   try {
-    const lspAsset = new ERC725(
+    const lspAsset = getErc725Read(
       lsp4Schema as ERC725JSONSchema[],
       assetAddress,
-      getLuksoProvider()
+      { provider }
     );
 
-    const supportsLSP7 = await lspAsset.supportsInterface(
+    const supportsLSP7 = await supportsInterfaceSafe(
+      lspAsset,
       INTERFACE_IDS.LSP7DigitalAsset
     );
     console.log('[GRAVE DEBUG] supportsInterface LSP7:', supportsLSP7);
@@ -180,7 +185,8 @@ export const detectLSP = async (
       return GRAVE_ASSET_TYPES.LSP7DigitalAsset;
     }
 
-    const supportsLSP8 = await lspAsset.supportsInterface(
+    const supportsLSP8 = await supportsInterfaceSafe(
+      lspAsset,
       INTERFACE_IDS.LSP8IdentifiableDigitalAsset
     );
     console.log('[GRAVE DEBUG] supportsInterface LSP8:', supportsLSP8);
@@ -248,22 +254,27 @@ export const getLSPAssetBasicInfo = async (
 
   // fetch metadata details
   try {
-    const lspAsset = new ERC725(
+    const lspAsset = getErc725Read(
       lsp4Schema as ERC725JSONSchema[],
       assetAddress,
-      getLuksoProvider(),
       {
-        ipfsGateway: constants.IPFS,
-        gas: 20_000_000,
+        provider,
+        erc725Options: {
+          ipfsGateway: constants.IPFS,
+          gas: 20_000_000,
+        },
       }
     );
     console.log('[GRAVE DEBUG] Fetching LSP4 metadata...');
-    const assetFetchedData = await lspAsset.fetchData([
+    const assetFetchedData = await fetchDataSafe(lspAsset, [
       'LSP4TokenType',
       'LSP4TokenName',
       'LSP4TokenSymbol',
       'LSP4Metadata',
     ]);
+    if (!assetFetchedData) {
+      return unrecognizedLsp;
+    }
     LSP4TokenType = Number(assetFetchedData[0].value);
     name = String(assetFetchedData[1].value);
     symbol = String(assetFetchedData[2].value);

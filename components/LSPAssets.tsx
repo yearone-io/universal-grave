@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
-import ERC725, { ERC725JSONSchema } from '@erc725/erc725.js';
+import { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import {
   getLSPAssetBasicInfo,
@@ -13,11 +13,12 @@ import {
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { constants } from '@/app/constants';
-import { getLuksoProvider } from '@/utils/provider';
+import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import LSP8Group from '@/components/LSP8Group';
-import { BrowserProvider } from 'ethers';
+import { getWalletProvider } from '@/utils/walletClient';
+import { useProfile } from '@/contexts/ProfileProvider';
 
 export default function LSPAssets({
   graveVault,
@@ -26,6 +27,7 @@ export default function LSPAssets({
   graveVault: string | null;
   graveOwner: string;
 }) {
+  const { isNetworkMismatch } = useProfile();
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenData[][]>([]);
@@ -120,32 +122,26 @@ export default function LSPAssets({
    * This function is called when the page loads and when an asset is revived
    */
   const fetchAssets = async () => {
-    if (!graveVault || !window.lukso) {
+    if (!graveVault || !window.lukso || isNetworkMismatch) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    const erc725js = new ERC725(
+    const erc725js = getErc725Read(
       LSP3ProfileSchema as ERC725JSONSchema[],
       graveVault,
-      getLuksoProvider(),
       {
-        ipfsGateway: constants.IPFS,
+        erc725Options: { ipfsGateway: constants.IPFS },
       }
     );
 
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const receivedAssetsResults = await erc725js.fetchData(
-        'LSP5ReceivedAssets[]'
-      );
-      console.log(
-        '[GRAVE DEBUG] LSP5ReceivedAssets[] found:',
-        receivedAssetsResults.value
-      );
-
-      // Handle empty vault gracefully - default to empty array if no assets
-      const assets = (receivedAssetsResults.value as string[]) || [];
+      const provider = getWalletProvider();
+      // fetchData can throw AbiDecodingZeroDataError when the key is unset (returns 0x)
+      let assets: string[] = [];
+      const res = await getDataSafe(erc725js, 'LSP5ReceivedAssets[]');
+      assets = (res?.value as string[]) || [];
+      console.log('[GRAVE DEBUG] LSP5ReceivedAssets[] found:', res?.value);
 
       const lsp7Results: TokenData[] = [];
       const lsp8Results: TokenData[][] = [];
@@ -153,6 +149,14 @@ export default function LSPAssets({
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
       for (const assetAddress of assets) {
+        // Skip empty/zero addresses that can appear in sparse arrays
+        if (
+          !assetAddress ||
+          assetAddress === '0x' ||
+          /^0x0+$/.test(assetAddress.toLowerCase())
+        ) {
+          continue;
+        }
         console.log('[GRAVE DEBUG] Processing asset:', assetAddress);
         // every 4 assets, wait for 1 second
         if (assets.indexOf(assetAddress) % 4 === 0) {
@@ -219,10 +223,12 @@ export default function LSPAssets({
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (graveVault) {
+    if (graveVault && !isNetworkMismatch) {
       fetchAssets();
+    } else if (isNetworkMismatch) {
+      setLoading(false);
     }
-  }, [graveVault]);
+  }, [graveVault, isNetworkMismatch]);
 
   const emptyAssets = () => {
     return (

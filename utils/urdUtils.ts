@@ -11,9 +11,8 @@ import {
 import { Network, getNetworkConfig } from '@/constants/supportedNetworks';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
-import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
+import { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
-import { getLuksoProvider } from '@/utils/provider';
 import {
   DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
@@ -21,6 +20,8 @@ import {
 } from '@/app/constants';
 import { getChecksumAddress } from './tokenUtils';
 import { LSP1GraveForwarder__factory } from '@/contracts';
+import { getErc725Read } from '@/utils/erc725Client';
+import { getWalletSigner } from '@/utils/walletClient';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -88,21 +89,22 @@ export const updateBECPermissions = async (
   account: string,
   mainUPController: string
 ) => {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   // check if we need to update permissions
   const missingPermissions = await doesControllerHaveMissingPermissions(
     mainUPController,
-    account
+    account,
+    provider
   );
   if (!missingPermissions.length) {
     return;
   }
   const UP = new Contract(account, universalProfileAbi, provider);
 
-  const erc725 = new ERC725(
+  const erc725 = getErc725Read(
     LSP6Schema as ERC725JSONSchema[],
     account,
-    getLuksoProvider()
+    { provider }
   );
 
   const newPermissions = erc725.encodePermissions({
@@ -117,11 +119,29 @@ export const updateBECPermissions = async (
     },
   ]);
 
-  const setDataBatchTx = await (UP.connect(signer) as any).setDataBatch(
-    permissionsData.keys,
-    permissionsData.values
-  );
-  return await setDataBatchTx.wait();
+  try {
+    const setDataBatchTx = await (UP.connect(signer) as any).setDataBatch(
+      permissionsData.keys,
+      permissionsData.values
+    );
+    return await setDataBatchTx.wait();
+  } catch (error: any) {
+    const nestedError =
+      error?.error || error?.info?.error || error?.reason || error;
+    const message = nestedError?.message || error?.message;
+    const code = nestedError?.code || error?.code;
+
+    const alreadySetMessage =
+      typeof message === 'string' &&
+      message.toLowerCase().includes('already set');
+
+    // Lukso extension returns code 4100 + message when the permissions match current state
+    if (alreadySetMessage || code === 4100) {
+      return { alreadySet: true };
+    }
+
+    throw error;
+  }
 };
 
 export const toggleForwarderAsLSPDelegate = async (
@@ -130,7 +150,7 @@ export const toggleForwarderAsLSPDelegate = async (
   forwarderAddress: string,
   isDelegate: boolean
 ) => {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   // 1. Prepare keys and values for setting the Forwarder as the delegate for LSP7 and LSP8
   const LSP7URDdataKey =
     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
@@ -145,10 +165,10 @@ export const toggleForwarderAsLSPDelegate = async (
 
   // 2. Prepare keys and values for granting the forwarder the necessary permissions on the UP
   const UP = new Contract(upAccount, universalProfileAbi, provider);
-  const upPermissions = new ERC725(
+  const upPermissions = getErc725Read(
     LSP6Schema as ERC725JSONSchema[],
     upAccount,
-    getLuksoProvider()
+    { provider }
   );
   const checkSumForwarderAddress = getChecksumAddress(
     forwarderAddress
@@ -195,19 +215,33 @@ export const toggleForwarderAsLSPDelegate = async (
 
 export const getAddressPermissionsOnTarget = async (
   address: string,
-  targetEntity: string
+  targetEntity: string,
+  provider?: JsonRpcProvider | BrowserProvider
 ) => {
-  const erc725 = new ERC725(
+  const erc725 = getErc725Read(
     LSP6Schema as ERC725JSONSchema[],
     targetEntity,
-    getLuksoProvider()
+    { provider }
   );
-  const addressPermission = await erc725.getData({
-    keyName: 'AddressPermissions:Permissions:<address>',
-    dynamicKeyParts: address,
-  });
+  const zeroPermissions = `0x${'0'.repeat(64)}` as `0x${string}`;
+  try {
+    const addressPermission = await erc725.getData({
+      keyName: 'AddressPermissions:Permissions:<address>',
+      dynamicKeyParts: address,
+    });
 
-  return erc725.decodePermissions(addressPermission.value as `0x${string}`);
+    const rawValue = addressPermission?.value as `0x${string}` | undefined;
+    const valueToDecode =
+      !rawValue || rawValue === '0x' ? zeroPermissions : rawValue;
+
+    return erc725.decodePermissions(valueToDecode);
+  } catch (error: any) {
+    // When permissions are unset, some providers return 0x which fails ABI decoding.
+    if (error?.message?.includes('Cannot decode zero data')) {
+      return erc725.decodePermissions(zeroPermissions);
+    }
+    throw error;
+  }
 };
 
 export const getMissingPermissions = (
@@ -226,12 +260,14 @@ export const getMissingPermissions = (
 
 export const doesControllerHaveMissingPermissions = async (
   address: string,
-  targetEntity: string
+  targetEntity: string,
+  provider?: JsonRpcProvider | BrowserProvider
 ) => {
   // check if we need to update permissions
   const currentPermissions = await getAddressPermissionsOnTarget(
     address,
-    targetEntity
+    targetEntity,
+    provider
   );
   const missingPermissions = getMissingPermissions(currentPermissions, {
     ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
@@ -266,7 +302,7 @@ export const setGraveInForwarder = async (
 ) => {
   // Set the vault address as the redirecting address for the LSP7 and LSP8 tokens
   // Note: remember to update ABIs if the delegate contracts change
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const graveForwarder = LSP1GraveForwarder__factory.connect(
     forwarderAddress,
     signer

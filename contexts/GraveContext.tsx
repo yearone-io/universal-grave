@@ -7,12 +7,12 @@ import React, {
   useState,
   useMemo,
 } from 'react';
-import { BrowserProvider } from 'ethers';
 import { useProfile } from './ProfileProvider';
 import { getUpAddressUrds, IUPForwarderData } from '@/utils/urdUtils';
 import { getGraveVaultFor } from '@/utils/universalProfile';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { detectGraveSetup } from '@/utils/uapUtils';
+import { getWalletProvider } from '@/utils/walletClient';
 
 interface GraveContextType {
   // Legacy GRAVE vault (from old forwarder)
@@ -38,7 +38,8 @@ interface GraveContextType {
 const GraveContext = createContext<GraveContextType | undefined>(undefined);
 
 export function GraveProvider({ children }: { children: React.ReactNode }) {
-  const { profileDetailsData, isConnected, chainId } = useProfile();
+  const { profileDetailsData, isConnected, chainId, isNetworkMismatch } =
+    useProfile();
 
   // Legacy GRAVE state
   const [graveVault, setGraveVault] = useState<string | undefined>(undefined);
@@ -69,6 +70,10 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshGraveData = async () => {
+    if (isNetworkMismatch) {
+      console.log('GraveContext: Skipping refresh, network mismatch');
+      return;
+    }
     if (!isConnected || !profileDetailsData?.upWallet || !chainId) {
       console.log('GraveContext: Skipping refreshGraveData, missing data');
       return;
@@ -86,7 +91,7 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       if (!window.lukso) {
         throw new Error('No wallet provider detected');
       }
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
 
       // Detect GRAVE setup type (legacy vs UAP)
       const setupInfo = await detectGraveSetup(
@@ -138,7 +143,7 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
 
   // Refresh GRAVE data when profile changes
   useEffect(() => {
-    if (isConnected && profileDetailsData?.upWallet) {
+    if (isConnected && profileDetailsData?.upWallet && !isNetworkMismatch) {
       refreshGraveData();
     } else {
       // Clear GRAVE data when disconnected
@@ -151,7 +156,7 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       setSetupType('none');
       setUapVaultAddress(null);
     }
-  }, [isConnected, profileDetailsData?.upWallet, chainId]);
+  }, [isConnected, profileDetailsData?.upWallet, chainId, isNetworkMismatch]);
 
   const contextValue = useMemo(
     () => ({

@@ -119,7 +119,7 @@ export default function InstallationCounter({
             lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
             fontFamily={'Montserrat'}
             fontWeight={700}
-            as={motion.text}
+            as={motion.span}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >

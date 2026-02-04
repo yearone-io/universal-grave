@@ -1,21 +1,46 @@
-# The Universal GRAVE - a Global Reserve for Abandoned Virtual Entities
+# Universal GRAVE
 
-## Conceptual Overview
+GRAVE is a spam cemetery for LUKSO Universal Profiles. It routes unwanted LSP7 and LSP8 assets into a vault so users can review and revive them later. The current implementation is built on the Universal Assistant Protocol (UAP) and includes a clean upgrade path for legacy GRAVE forwarders.
 
-Spam presents a significant challenge in the Web3 space, particularly on L2 networks. Due to the low cost of transactions on these networks, there is an overwhelming volume of content, making attention curation and information filtering essential for maintaining a healthy blockchain ecosystem. A common issue is the receipt of unwanted fungible and non-fungible tokens, with users having no ability to reject these transactions. This lack of opt-out options diminishes the signal-to-noise ratio in the ecosystem. Many examples of this can be seen on Ethereum accounts believed to belong to prominent figures, such as this [Ethereum account](https://etherscan.io/address/0x94845333028B1204Fbe14E1278Fd4Adde46B22ce#tokentxns). You can see the account getting inundated with numerous transfers from other accounts with everything from airdrops, meme coins, NFTs, and seemingly outright scams, without any ability to reject those assets.
+**Product Highlights**
+- UAP-based forwarding of LSP7 and LSP8 recipient notifications into a GRAVE vault.
+- Multi-step onboarding flow for permissions, vault selection, protocol install, and filter configuration.
+- Filters for assets and creators, including curated list support and any/all matching.
+- Vault management with selection, creation, and switching of active spamboxes.
+- Graveyard view with revive actions that update screeners so rescued assets stay in the UP.
+- Manual "Send to GRAVE" flow for LSP7 and LSP8 assets you already hold.
+- Network-aware routing for LUKSO mainnet and testnet with a built-in network switcher.
+- UX banners for new users, legacy upgrades, and incomplete configurations.
 
-Lukso, leveraging its innovative application of the LSP0 and LSP1 standards, offers the first viable blockchain solution to this issue. Our hackathon submission demonstrates a proof of concept that addresses the handling of LSP7 and LSP8 digital assets, with its potential applications extending to other areas.
+**Core Routes**
+- `/{networkName}` landing page and entry to settings.
+- `/{networkName}/grave/settings` setup wizard, allowlist, send-to-grave, and advanced info tabs.
+- `/{networkName}/grave/[account]` graveyard view for any UP, with a vault selector for your own account.
+- `/{networkName}/about`, `/{networkName}/terms`, `/{networkName}/feedback`.
+Network values are `lukso` and `lukso-testnet`.
 
-Our solution empowers Universal Profile (LSP0) accounts to implement a unique LSP7 and LSP8 asset forwarder (LSP1) on their account. By default, this forwarder redirects all LSP7 and LSP8 digital assets to a specialized Vault (LSP9), termed the Universal GRAVE (Global Reserve for Abandoned Virtual Entities). This Vault acts as a 'spambox' and is under the control of the Universal Profile. At the same time we recognize that one person's spam may be another's treasure, thus we include a feature allowing users to 'revive' desired assets from the GRAVE, back to their Universal Profile. This is achieved by whitelisting specific asset addresses on the forwarder.
+**Architecture Map**
+- `app/` Next.js App Router with network-aware routing.
+- `components/` UI and workflow components, including settings wizard and graveyard views.
+- `contexts/` `ProfileProvider` (SIWE + UP extension) and `GraveContext` (legacy + UAP detection).
+- `utils/` UAP configuration, assistant and screener helpers, vault creation, and asset utilities.
+- `constants/supportedNetworks.ts` network config and on-chain addresses.
+- `abis/` and `contracts/` ABI sources and generated TypeChain types.
 
-The GRAVE is designed with flexibility in mind, allowing users to easily toggle its functionality without losing access to their Vault or underlying assets. Moreover, when assets are retrieved from the GRAVE, they still undergo the standard accounting process enjoyed by UP profiles through the UniversalReceiverDelegateUP implementation. Future enhancements could include the integration of incentivized curators, either individuals or communities, who maintain their own whitelists, that other users could subscribe to. Additionally, there is the prospect of allowing users to auction assets from their GRAVE, with the option to retain the proceeds or donate a portion to charity or public goods funding.
+**Local Development**
+1. Install Node.js `>= 22.20.0`.
+2. `npm install`
+3. Copy `.env.local.example` to `.env.local` and set `NEXT_PUBLIC_DEFAULT_NETWORK=mainnet` or `testnet`.
+4. `npm run dev`
+5. Optional: `npm run typechain` to regenerate types from `abis/`.
 
-We hope that our hackathon submission inspires further exploration of practical solutions to the spam problem in Web3.
+**Scripts**
+- `npm run dev` start dev server.
+- `npm run build` / `npm run start` production build and serve.
+- `npm run lint` linting.
+- `npm run format` / `npm run format-check` formatting.
+- `npm test` / `npm run test:run` / `npm run test:ui` / `npm run test:coverage` testing.
 
-## Set up
-
-# Deploy a new LSP1GraveForwarder contract
-
-The LSP1GraveForwarder is a Universal Receiver Delegate, gets attached to a user's UP, and is activated as a forwarder whenever user gets incoming LSP7 & LSP8 assets.
-
-You can deploy a new forwarder using /solidity/scripts/deployGraveForwarder.ts
+**Notes**
+- Full functionality requires the LUKSO UP Browser Extension (uses `window.lukso`).
+- Read-only views fall back to configured RPC endpoints when no wallet is connected.

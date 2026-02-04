@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { Box, Button, Flex, Image } from '@chakra-ui/react';
 import { useProfile } from '@/contexts/ProfileProvider';
+import { supportedNetworks } from '@/constants/supportedNetworks';
 
 const SignInButton: React.FC = () => {
-  const { connectAndSign } = useProfile();
+  const { connectAndSign, switchNetwork, expectedChainId, isNetworkMismatch } =
+    useProfile();
+  const expectedNetwork = expectedChainId
+    ? supportedNetworks[expectedChainId.toString()]
+    : null;
   const [isLoading, setIsLoading] = useState(false);
 
   const handleConnect = async () => {
     setIsLoading(true);
     try {
-      await connectAndSign();
+      if (isNetworkMismatch && expectedChainId) {
+        await switchNetwork(expectedChainId);
+      } else {
+        await connectAndSign();
+      }
     } catch (error) {
       console.error('Failed to connect:', error);
     } finally {
@@ -33,7 +42,11 @@ const SignInButton: React.FC = () => {
           fontWeight="400"
           color={'dark.purple.500'}
         >
-          {isLoading ? '...' : 'Sign In'}
+          {isLoading
+            ? '...'
+            : isNetworkMismatch
+              ? `Switch to ${expectedNetwork?.displayName || 'Network'}`
+              : 'Sign In'}
         </Box>
       </Flex>
     </Button>

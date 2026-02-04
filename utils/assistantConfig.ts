@@ -8,9 +8,10 @@ import {
 } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
-import ERC725 from '@erc725/erc725.js';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 import uapSchema from '@/schemas/UAP.json';
+import { getErc725Read } from '@/utils/erc725Client';
+import { getWalletSigner } from '@/utils/walletClient';
 
 // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
 // This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
@@ -95,12 +96,12 @@ export async function updateForwarderVaultAddress(
     forwarderAssistantAddress: string;
   }
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
   const abiCoder = new AbiCoder();
 
@@ -171,10 +172,10 @@ export async function getForwarderAssistantConfig(
   }
 ): Promise<ForwarderAssistantConfig> {
   const upContract = new Contract(upAddress, universalProfileAbi, provider);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
   const abiCoder = new AbiCoder();
 
@@ -725,10 +726,10 @@ export async function getForwarderAssistantDiagnostics(
   }
 ): Promise<any> {
   const upContract = new Contract(upAddress, universalProfileAbi, provider);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
 
   const txTypes = [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE];
@@ -1006,12 +1007,12 @@ export async function saveForwarderAssistantConfig(
     forceListNameUpdate?: boolean;
   }
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
   const abiCoder = new AbiCoder();
 
@@ -1315,10 +1316,10 @@ export async function getAllWhitelistAddresses(
   lsp8Addresses: string[];
 }> {
   const upContract = new Contract(upAddress, universalProfileAbi, provider);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
 
   const result = {
@@ -1491,12 +1492,12 @@ export async function removeForwarderAssistant(
     creatorCurationScreenerAddress: string;
   }
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
-  const erc725UAP = new ERC725(
+  const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
     upAddress,
-    provider
+    { provider }
   );
 
   const allKeys: string[] = [];

@@ -6,8 +6,8 @@ import { Text } from '@chakra-ui/react';
 import { getUpAddressUrds } from '@/utils/urdUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
-import { BrowserProvider } from 'ethers';
 import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
+import { getWalletProvider } from '@/utils/walletClient';
 
 export default function GravePageAssets({
   graveOwner,
@@ -16,7 +16,7 @@ export default function GravePageAssets({
   graveOwner: string;
   vaultAddressOverride?: string | null;
 }) {
-  const { chainId } = useProfile();
+  const { chainId, isNetworkMismatch } = useProfile();
   const [graveVault, setGraveVault] = useState<string | null>(null);
   const [error, setError] = useState<string>();
 
@@ -34,9 +34,9 @@ export default function GravePageAssets({
       // Skip fetching if vault override is provided
       if (vaultAddressOverride) return;
 
-      if (!graveVault && networkConfig && window.lukso) {
+      if (!graveVault && networkConfig && window.lukso && !isNetworkMismatch) {
         try {
-          const provider = new BrowserProvider(window.lukso);
+          const provider = getWalletProvider();
 
           // First, try to get vault from UAP forwarder assistant configuration
           const forwarderConfig = await getForwarderAssistantConfig(
@@ -94,7 +94,13 @@ export default function GravePageAssets({
     };
 
     fetchGraveVault();
-  }, [graveOwner, graveVault, networkConfig, vaultAddressOverride]);
+  }, [
+    graveOwner,
+    graveVault,
+    networkConfig,
+    vaultAddressOverride,
+    isNetworkMismatch,
+  ]);
 
   if (error) {
     return <Text>{error}</Text>;

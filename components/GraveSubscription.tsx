@@ -41,7 +41,7 @@ import {
   FaCopy,
   FaQuestionCircle,
 } from 'react-icons/fa';
-import { BrowserProvider, isAddress, Contract } from 'ethers';
+import { isAddress, Contract } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -55,6 +55,13 @@ import {
   unsubscribeFromUAP,
   subscribeAndConfigureGrave,
 } from '@/utils/uapSubscription';
+import { getErc725Read } from '@/utils/erc725Client';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  getWalletSigner,
+} from '@/utils/walletClient';
+import uapSchema from '@/schemas/UAP.json';
 import {
   isVaultRegistered,
   registerVaultWithUP,
@@ -73,7 +80,8 @@ const GraveSubscription: React.FC = () => {
   const toast = useToast({ position: 'bottom-left' });
   const params = useParams();
   const networkName = params.networkName as string;
-  const { profileDetailsData, isConnected, chainId } = useProfile();
+  const { profileDetailsData, isConnected, chainId, isNetworkMismatch } =
+    useProfile();
   const {
     hasUAPSubscription,
     setupType,
@@ -174,11 +182,12 @@ const GraveSubscription: React.FC = () => {
   // Fetch available vaults when component mounts or address changes
   useEffect(() => {
     const fetchVaults = async () => {
-      if (!address || !window.lukso || !currentNetwork) return;
+      if (!address || !window.lukso || !currentNetwork || isNetworkMismatch)
+        return;
 
       setIsLoadingVaults(true);
       try {
-        const provider = new BrowserProvider(window.lukso);
+        const provider = getWalletProvider();
         const vaults = await getRegisteredVaults(provider, address);
 
         // Deduplicate vaults (case-insensitive) to avoid React key warnings
@@ -286,7 +295,7 @@ const GraveSubscription: React.FC = () => {
     };
 
     fetchVaults();
-  }, [address, currentNetwork, graveVault]);
+  }, [address, currentNetwork, graveVault, isNetworkMismatch]);
 
   // Fetch existing configuration and determine current step
   useEffect(() => {
@@ -295,10 +304,11 @@ const GraveSubscription: React.FC = () => {
         !isLoadingGraveData &&
         address &&
         currentNetwork &&
-        hasUAPSubscription
+        hasUAPSubscription &&
+        !isNetworkMismatch
       ) {
         try {
-          const provider = new BrowserProvider(window.lukso);
+          const provider = getWalletProvider();
           const existingConfig = await getForwarderAssistantConfig(
             provider,
             address,
@@ -434,6 +444,7 @@ const GraveSubscription: React.FC = () => {
     availableVaults,
     setupType,
     graveVault,
+    isNetworkMismatch,
   ]);
 
   // Check if permissions are already granted
@@ -446,9 +457,14 @@ const GraveSubscription: React.FC = () => {
         const { doesControllerHaveMissingPermissions } = await import(
           '@/utils/urdUtils'
         );
+        const provider =
+          typeof window !== 'undefined' && (window as any).lukso
+            ? getWalletProvider()
+            : undefined;
         const missingPermissions = await doesControllerHaveMissingPermissions(
           mainUPController,
-          address
+          address,
+          provider
         );
         setPermissionsGranted(missingPermissions.length === 0);
       } catch (error) {
@@ -462,7 +478,13 @@ const GraveSubscription: React.FC = () => {
   // Determine current step based on setup state (backwards compatibility)
   useEffect(() => {
     const determineStartingStep = async () => {
-      if (isLoadingGraveData || !address || !currentNetwork) return;
+      if (
+        isLoadingGraveData ||
+        !address ||
+        !currentNetwork ||
+        isNetworkMismatch
+      )
+        return;
 
       // STEP 0: Check permissions
       if (!permissionsGranted) {
@@ -478,7 +500,7 @@ const GraveSubscription: React.FC = () => {
 
       // STEP 2 or 3: Check if Forwarder config exists and is complete
       try {
-        const provider = new BrowserProvider(window.lukso);
+        const provider = getWalletProvider();
         const config = await getForwarderAssistantConfig(provider, address, {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
@@ -533,6 +555,7 @@ const GraveSubscription: React.FC = () => {
     address,
     currentNetwork,
     permissionsGranted,
+    isNetworkMismatch,
   ]);
 
   // Helper functions for managing whitelist addresses (Asset Filters)
@@ -680,7 +703,7 @@ const GraveSubscription: React.FC = () => {
 
   // Step 0: Set permissions
   const handleSetPermissions = useCallback(async () => {
-    if (!address || !mainUPController || !window.lukso) {
+    if (!address || !mainUPController || !window.lukso || !chainId) {
       toast({
         title: 'Error',
         description: 'Wallet not connected or controller not found',
@@ -694,7 +717,8 @@ const GraveSubscription: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
       await updateBECPermissions(provider, address, mainUPController);
 
       toast({
@@ -746,7 +770,8 @@ const GraveSubscription: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
 
       // STEP 1: Check if UAP subscription already exists
       const alreadySubscribed = hasUAPSubscription; // from context
@@ -919,7 +944,7 @@ const GraveSubscription: React.FC = () => {
 
   // Create new vault with metadata
   const handleCreateVault = useCallback(async () => {
-    if (!address || !currentNetwork || !window.lukso) {
+    if (!address || !currentNetwork || !window.lukso || !chainId) {
       toast({
         title: 'Error',
         description: 'Wallet not connected',
@@ -933,7 +958,8 @@ const GraveSubscription: React.FC = () => {
     setIsCreatingVault(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
 
       toast({
         title: 'Deploying GRAVE Spambox...',
@@ -998,7 +1024,8 @@ const GraveSubscription: React.FC = () => {
     setIsSwitchingVault(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
 
       toast({
         title: 'Deploying new GRAVE Spambox...',
@@ -1098,7 +1125,8 @@ const GraveSubscription: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
 
       // Use selected vault, or fall back to vaultToUse
       let finalVaultAddress = selectedVault || vaultToUse;
@@ -1216,7 +1244,7 @@ const GraveSubscription: React.FC = () => {
 
   // Deactivate GRAVE Forwarder Only - removes only Forwarder configuration
   const handleDeactivateGrave = useCallback(async () => {
-    if (!address || !currentNetwork || !window.lukso) {
+    if (!address || !currentNetwork || !window.lukso || !chainId) {
       toast({
         title: 'Error',
         description: 'Wallet not connected',
@@ -1230,7 +1258,8 @@ const GraveSubscription: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
 
       await removeForwarderAssistant(provider, address, {
         forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
@@ -1291,13 +1320,14 @@ const GraveSubscription: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
-      const signer = await provider.getSigner();
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
+      const signer = await getWalletSigner();
       const upContract = new Contract(address, universalProfileAbi, signer);
 
-      const { ERC725 } = await import('@erc725/erc725.js');
-      const uapSchema = (await import('@/schemas/UAP.json')).default;
-      const erc725UAP = new ERC725(uapSchema as any, address, window.lukso);
+      const erc725UAP = getErc725Read(uapSchema as any, address, {
+        provider,
+      });
 
       const keys: string[] = [];
       const values: string[] = [];
@@ -1481,7 +1511,8 @@ const GraveSubscription: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const provider = new BrowserProvider(window.lukso);
+      const provider = getWalletProvider();
+      await assertWalletNetwork(chainId);
 
       // Read addresses directly from both LSP7 and LSP8 lists on-chain
       const { getAllWhitelistAddresses, saveForwarderAssistantConfig } =

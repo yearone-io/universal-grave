@@ -10,6 +10,7 @@ import {
   universalProfileAbi,
   lsp9VaultAbi,
 } from '@lukso/lsp-smart-contracts/abi';
+import { getWalletSigner } from '@/utils/walletClient';
 
 /**
  * Register an existing vault with a Universal Profile
@@ -28,7 +29,7 @@ export async function registerVaultWithUP(
     console.log('UP Address:', upAddress);
     console.log('Vault Address:', vaultAddress);
 
-    const signer = await provider.getSigner();
+    const signer = await getWalletSigner();
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
 
     // Get current vaults array length
@@ -192,7 +193,7 @@ export async function deployVault(
       'Deploying GRAVE Spambox via factory:',
       networkConfig.graveVaultFactoryAddress
     );
-    const signer = await provider.getSigner();
+    const signer = await getWalletSigner();
     const factoryAbi = [
       'function createVault(address owner) external returns (address)',
       'event VaultCreated(address indexed owner, address indexed vault, address implementation)',
@@ -295,7 +296,7 @@ export async function setVaultURD(
   vaultAddress: string,
   networkConfig: { lsp1UrdVault?: string }
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const vaultContract = new Contract(vaultAddress, lsp9VaultAbi, signer);
 

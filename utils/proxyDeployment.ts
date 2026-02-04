@@ -9,6 +9,7 @@ import { luksoTypechain } from '@lukso/lsp-utils';
 import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { type Network } from '@/constants/supportedNetworks';
+import { getWalletSigner } from '@/utils/walletClient';
 
 /**
  * EIP-1167 Minimal Proxy bytecode
@@ -63,7 +64,7 @@ export async function deployMinimalProxy(
   implementationAddress: string,
   upAddress: string
 ): Promise<string> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
 
   // Construct the minimal proxy bytecode
   // Format: 0x3d602d80600a3d3981f3363d3d373d3d3d363d73 + implementation (20 bytes) + 0x5af43d82803e903d91602b57fd5bf3
@@ -138,7 +139,7 @@ async function initializeVaultProxy(
   proxyAddress: string,
   upAddress: string
 ): Promise<void> {
-  const signer = await provider.getSigner();
+  const signer = await getWalletSigner();
 
   // Create interface for the initialize call
   const vaultInterface = new Interface([
