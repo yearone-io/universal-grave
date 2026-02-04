@@ -17,17 +17,20 @@ import {
 import { ChevronDownIcon, ExternalLinkIcon, InfoIcon } from '@chakra-ui/icons';
 import { formatAddress } from '@/utils/utils';
 import { LSP3ProfileData, resolveIpfsUrl } from '@/utils/addressMetadata';
+import { getUniversalEverythingUrl } from '@/utils/universalEverything';
 
 interface LSP3ProfileCardProps {
   data: LSP3ProfileData;
   address: string;
   ipfsGateway: string;
+  chainId?: number;
 }
 
 const LSP3ProfileCard: React.FC<LSP3ProfileCardProps> = ({
   data,
   address,
   ipfsGateway,
+  chainId,
 }) => {
   const { name, description, links, profileImage, backgroundImage } = data;
   const displayName = name
@@ -40,6 +43,7 @@ const LSP3ProfileCard: React.FC<LSP3ProfileCardProps> = ({
   const profileImg = profileImage?.[0]?.url
     ? resolveIpfsUrl(profileImage[0].url, ipfsGateway)
     : '';
+  const externalUrl = getUniversalEverythingUrl(chainId, 'profile', address);
 
   return (
     <Box
@@ -114,32 +118,41 @@ const LSP3ProfileCard: React.FC<LSP3ProfileCardProps> = ({
             Profile
           </Badge>
         </Flex>
-        {!!links?.length && (
-          <Menu>
-            <MenuButton
-              as={Button}
-              rightIcon={<ChevronDownIcon />}
-              size="xs"
-              variant="ghost"
-              aria-label="Profile Links"
-              alignSelf="flex-start"
-            >
-              <ExternalLinkIcon />
-            </MenuButton>
-            <MenuList>
-              {links.map((link, index) => (
-                <MenuItem key={index}>
-                  <a href={link.url} target="_blank" rel="noreferrer">
-                    <HStack>
-                      <Text>{link.title}</Text>
-                      <ExternalLinkIcon />
-                    </HStack>
-                  </a>
-                </MenuItem>
-              ))}
-            </MenuList>
-          </Menu>
-        )}
+        <HStack spacing={3} align="center">
+          {!!links?.length && (
+            <Menu>
+              <MenuButton
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                size="xs"
+                variant="ghost"
+                aria-label="Profile Links"
+              >
+                <ExternalLinkIcon />
+              </MenuButton>
+              <MenuList>
+                {links.map((link, index) => (
+                  <MenuItem key={index}>
+                    <a href={link.url} target="_blank" rel="noreferrer">
+                      <HStack>
+                        <Text>{link.title}</Text>
+                        <ExternalLinkIcon />
+                      </HStack>
+                    </a>
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+          )}
+          <a href={externalUrl} target="_blank" rel="noreferrer">
+            <HStack spacing={1}>
+              <Text fontSize="xs" color="dark.purple.500">
+                View on Universal Everything
+              </Text>
+              <ExternalLinkIcon fontSize="xs" />
+            </HStack>
+          </a>
+        </HStack>
       </Flex>
     </Box>
   );

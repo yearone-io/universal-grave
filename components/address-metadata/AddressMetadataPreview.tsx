@@ -120,6 +120,7 @@ const AddressMetadataPreview: React.FC<AddressMetadataPreviewProps> = ({
             data={metadata.profile}
             address={metadata.address}
             ipfsGateway={ipfsGateway}
+            chainId={chainId}
           />
         )}
         {metadata.asset && (
@@ -127,6 +128,8 @@ const AddressMetadataPreview: React.FC<AddressMetadataPreviewProps> = ({
             data={metadata.asset}
             tokenName={metadata.tokenName}
             ipfsGateway={ipfsGateway}
+            chainId={chainId}
+            address={metadata.address}
           />
         )}
       </HStack>
