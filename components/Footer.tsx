@@ -70,8 +70,6 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
     <Box
       bg={'dark.purple.500'}
       color={'dark.white'}
-      borderTop={'1px solid var(--chakra-colors-dark-purple-100)'}
-      mt={5}
     >
       <Container
         as={Stack}
@@ -114,10 +112,10 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
           <SocialButton label={'Github'} href={'https://github.com/yearone-io'}>
             <FaGithub />
           </SocialButton>
-          <Link href={`/${networkName}/about`}>About</Link>
-          <Link href={`/${networkName}/terms`}>Terms</Link>
-          <Link href={`/${networkName}/terms#privacy`}>Privacy</Link>
-          <Link href={`/${networkName}/feedback`}>Feedback</Link>
+          <Link href="/about">About</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/terms#privacy">Privacy</Link>
+          <Link href="/feedback">Feedback</Link>
           <Box minWidth={'170'}>
             <Select
               value={networkName}

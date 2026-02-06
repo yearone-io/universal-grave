@@ -330,14 +330,20 @@ export async function subscribeAndConfigureGrave(
     const values: string[] = [];
 
     // =============================================================
-    // SECTION 1: UAP Protocol Subscription Keys
+    // SECTION 1: UAP Protocol Subscription Keys (only add if different)
     // =============================================================
 
-    // 1. Set LSP1UniversalReceiverDelegate to UAP protocol
-    keys.push(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-    values.push(protocolAddress);
+    // 1. Set LSP1UniversalReceiverDelegate to UAP protocol (if not already set)
+    const currentURD = await upContract.getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+    if (!currentURD || currentURD.toLowerCase() !== protocolAddress.toLowerCase()) {
+      keys.push(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+      values.push(protocolAddress);
+      console.log('[UAP Subscribe] Adding LSP1URD key (not yet set to protocol)');
+    } else {
+      console.log('[UAP Subscribe] LSP1URD already set to protocol, skipping');
+    }
 
-    // 2-3. Clear type-specific URDs (LSP7 and LSP8)
+    // 2-3. Clear type-specific URDs (LSP7 and LSP8) - only if not already cleared
     const LSP7URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP7_TRANSACTION_TYPE.slice(2, 42);
@@ -345,14 +351,29 @@ export async function subscribeAndConfigureGrave(
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP8_TRANSACTION_TYPE.slice(2, 42);
 
-    keys.push(LSP7URDdataKey);
-    values.push('0x');
-    keys.push(LSP8URDdataKey);
-    values.push('0x');
+    const currentLSP7URD = await upContract.getData(LSP7URDdataKey);
+    const currentLSP8URD = await upContract.getData(LSP8URDdataKey);
 
-    // 4. Set SupportedStandards:UAP using hardcoded key
-    keys.push(SUPPORTED_STANDARDS_UAP_KEY);
-    values.push(SUPPORTED_STANDARDS_UAP_VALUE);
+    if (currentLSP7URD && currentLSP7URD !== '0x') {
+      keys.push(LSP7URDdataKey);
+      values.push('0x');
+      console.log('[UAP Subscribe] Clearing LSP7 type-specific URD');
+    }
+    if (currentLSP8URD && currentLSP8URD !== '0x') {
+      keys.push(LSP8URDdataKey);
+      values.push('0x');
+      console.log('[UAP Subscribe] Clearing LSP8 type-specific URD');
+    }
+
+    // 4. Set SupportedStandards:UAP (only if not already set)
+    const currentSupportedStandards = await upContract.getData(SUPPORTED_STANDARDS_UAP_KEY);
+    if (!currentSupportedStandards || currentSupportedStandards.toLowerCase() !== SUPPORTED_STANDARDS_UAP_VALUE.toLowerCase()) {
+      keys.push(SUPPORTED_STANDARDS_UAP_KEY);
+      values.push(SUPPORTED_STANDARDS_UAP_VALUE);
+      console.log('[UAP Subscribe] Adding SupportedStandards:UAP');
+    } else {
+      console.log('[UAP Subscribe] SupportedStandards:UAP already set, skipping');
+    }
 
     // =============================================================
     // SECTION 2: AddressPermissions (efficient - only write new entry)
@@ -371,7 +392,7 @@ export async function subscribeAndConfigureGrave(
         controller.toLowerCase() === protocolAddress.toLowerCase()
     );
 
-    // Set UAP permissions (always update permissions even if already in array)
+    // Set UAP permissions - but only if they're not already correctly set
     const uapPermissions = erc725LSP6.encodePermissions({
       SUPER_CALL: true,
       SUPER_TRANSFERVALUE: true,
@@ -382,8 +403,19 @@ export async function subscribeAndConfigureGrave(
     const permissionsKey =
       ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] +
       protocolAddress.slice(2).toLowerCase();
-    keys.push(permissionsKey);
-    values.push(uapPermissions);
+
+    // Check current permissions to avoid duplicate transaction rejection
+    const currentPermissionsValue = await upContract.getData(permissionsKey);
+    const permissionsAlreadySet = currentPermissionsValue &&
+      currentPermissionsValue.toLowerCase() === uapPermissions.toLowerCase();
+
+    if (!permissionsAlreadySet) {
+      keys.push(permissionsKey);
+      values.push(uapPermissions);
+      console.log('[UAP Subscribe] Adding protocol permissions (not yet set or different)');
+    } else {
+      console.log('[UAP Subscribe] Protocol permissions already correctly set, skipping');
+    }
 
     // Only add to array if not already present
     if (!protocolAlreadyExists) {

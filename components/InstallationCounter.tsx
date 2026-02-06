@@ -96,42 +96,40 @@ export default function InstallationCounter({
   return (
     <Flex justifyContent={'center'}>
       <HStack
-        bgColor={'dark.purple.300'}
-        p={{ base: 6 }}
-        borderRadius={'lg'}
+        bg="rgba(255, 255, 255, 0.03)"
+        backdropFilter="blur(20px)"
+        border="1px solid rgba(255, 255, 255, 0.08)"
+        p={{ base: 5, md: 6 }}
+        px={{ base: 8, md: 10 }}
+        borderRadius={'2xl'}
         justifyContent={'center'}
-        width={'100%'}
-        maxWidth={{ base: '100%', md: '450px' }}
+        spacing={3}
       >
         <Text
-          color={customColor}
+          color="whiteAlpha.700"
           fontSize={{ base: 'md', lg: 'lg' }}
-          lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+          lineHeight={'1.4'}
           fontFamily={'Montserrat'}
-          fontWeight={400}
+          fontWeight={500}
         >
-          GRAVE spamboxes:
+          Profiles protected:
         </Text>
-        <Flex alignItems={'center'} justifyContent={'center'} gap={1}>
+        <Flex alignItems={'center'} justifyContent={'center'} gap={2}>
           <Text
-            color={customColor}
-            fontSize={{ base: 'lg', lg: 'xl' }}
-            lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
+            color="dark.teal.500"
+            fontSize={{ base: 'xl', lg: '2xl' }}
+            lineHeight={'1.2'}
             fontFamily={'Montserrat'}
             fontWeight={700}
             as={motion.span}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            {displayNumber == 0 ? '--' : displayNumber}
+            {displayNumber == 0 ? '--' : displayNumber.toLocaleString()}
           </Text>
           <Text
-            color={customColor}
             fontSize={{ base: 'lg', lg: 'xl' }}
-            lineHeight={{ base: '120%', sm: '120%', lg: '130%' }}
-            fontFamily={'Montserrat'}
-            fontWeight={400}
-            filter={'grayscale(1)'}
+            lineHeight={'1.2'}
           >
             👻
           </Text>

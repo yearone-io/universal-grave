@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
   useMemo,
+  useCallback,
 } from 'react';
 import { useProfile } from './ProfileProvider';
 import { getUpAddressUrds, IUPForwarderData } from '@/utils/urdUtils';
@@ -94,6 +95,12 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       const provider = getWalletProvider();
 
       // Detect GRAVE setup type (legacy vs UAP)
+      console.log('GraveContext: Calling detectGraveSetup with:', {
+        upWallet: profileDetailsData.upWallet,
+        protocolAddress: currentNetwork.protocolAddress,
+        forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+      });
+
       const setupInfo = await detectGraveSetup(
         provider,
         profileDetailsData.upWallet,
@@ -104,8 +111,12 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+          creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+          creatorCurationScreenerAddress: currentNetwork.creatorCurationScreenerAddress,
         }
       );
+
+      console.log('GraveContext: detectGraveSetup returned:', setupInfo);
 
       // Update state with detected setup
       setHasUAPSubscription(setupInfo.hasUAPSubscription);

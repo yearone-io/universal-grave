@@ -249,18 +249,31 @@ export async function getForwarderAssistantConfig(
 
     // Check both LSP7 and LSP8 configurations to get complete picture
     // We'll merge data from both, with LSP8 taking precedence if there's a conflict
+    console.log('[getForwarderAssistantConfig] Starting check for forwarder:', networkConfig.forwarderAssistantAddress);
+
     for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
       const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
         txType,
       ]);
+      console.log(`[getForwarderAssistantConfig] ${txType} - Reading key:`, typeConfigKey);
       const typeConfigData = await safeGetData(typeConfigKey);
+      console.log(`[getForwarderAssistantConfig] ${txType} - Raw data from safeGetData:`, typeConfigData);
+
+      console.log(`[getForwarderAssistantConfig] ${txType} typeConfigData:`, {
+        raw: typeConfigData,
+        length: typeConfigData?.length,
+        isEmptyHex: typeConfigData === '0x',
+      });
 
       if (typeConfigData && typeConfigData !== '0x') {
+        console.log(`[getForwarderAssistantConfig] ${txType} - Entering decode block`);
         try {
           const executives = erc725UAP.decodeValueType(
             'address[]',
             typeConfigData
           ) as string[];
+
+          console.log(`[getForwarderAssistantConfig] ${txType} executives:`, executives);
 
           // Find the Forwarder Assistant in the executive list
           const executionOrder = executives.findIndex(
@@ -269,10 +282,13 @@ export async function getForwarderAssistantConfig(
               networkConfig.forwarderAssistantAddress.toLowerCase()
           );
 
+          console.log(`[getForwarderAssistantConfig] ${txType} executionOrder:`, executionOrder);
+
           if (executionOrder !== -1) {
             // Assistant found in executive list - mark as configured
             // Following uap-frontend pattern: if assistant is in the list, it's configured
             config.isConfigured = true;
+            console.log(`[getForwarderAssistantConfig] Forwarder FOUND at index ${executionOrder}, isConfigured = true`);
 
             // Store execution order for this transaction type
             if (txType === LSP7_TRANSACTION_TYPE) {
@@ -735,9 +751,16 @@ export async function getForwarderAssistantConfig(
     config.creatorListNameMissing =
       !creatorListNameFound && creatorListNameMissing;
 
+    console.log('[getForwarderAssistantConfig] Returning config:', {
+      isConfigured: config.isConfigured,
+      vaultAddress: config.vaultAddress,
+      executionOrderLSP7: config.executionOrderLSP7,
+      executionOrderLSP8: config.executionOrderLSP8,
+    });
+
     return config;
   } catch (error) {
-    console.error('Error fetching forwarder assistant config:', error);
+    console.error('[getForwarderAssistantConfig] Error fetching config:', error);
     return config;
   }
 }

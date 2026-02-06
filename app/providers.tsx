@@ -1,6 +1,6 @@
 'use client';
 import theme from './theme';
-import { ChakraProvider } from '@chakra-ui/react';
+import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
 import { CacheProvider } from '@chakra-ui/next-js';
 import { ProfileProvider } from '@/contexts/ProfileProvider';
 import { GraveProvider } from '@/contexts/GraveContext';
@@ -8,6 +8,7 @@ import { GraveProvider } from '@/contexts/GraveContext';
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <CacheProvider>
+      <ColorModeScript initialColorMode="dark" type="cookie" nonce="chakra-ui" />
       <ChakraProvider theme={theme}>
         <ProfileProvider>
           <GraveProvider>{children}</GraveProvider>

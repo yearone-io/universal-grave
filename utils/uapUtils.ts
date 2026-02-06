@@ -154,9 +154,13 @@ export async function detectGraveSetup(
     );
 
     // Check for UAP vault from Forwarder Assistant configuration
+    // IMPORTANT: Only consider GRAVE active if the Forwarder Assistant is properly configured
+    // Having a vault in LSP10Vaults[] does NOT mean GRAVE is active - the forwarder must be configured
     let uapVaultAddress: string | null = null;
+    let isForwarderConfigured = false;
+
     if (hasUAPSubscription && networkConfig.forwarderAssistantAddress) {
-      // Get vault from Forwarder Assistant config instead of random vault from LSP10Vaults[]
+      // Get vault from Forwarder Assistant config - this is the authoritative source
       const { getForwarderAssistantConfig } = await import('./assistantConfig');
       try {
         const assistantConfig = await getForwarderAssistantConfig(
@@ -174,19 +178,26 @@ export async function detectGraveSetup(
               networkConfig.creatorCurationScreenerAddress || '',
           }
         );
+        // Track whether forwarder is configured (this is the key indicator of active protection)
+        isForwarderConfigured = assistantConfig.isConfigured;
         uapVaultAddress = assistantConfig.vaultAddress;
+
+        console.log('detectGraveSetup: Forwarder config result:', {
+          isConfigured: assistantConfig.isConfigured,
+          vaultAddress: assistantConfig.vaultAddress,
+        });
       } catch (error) {
-        console.error(
-          'Error getting vault from Forwarder Assistant config:',
-          error
+        // Forwarder assistant is not configured - GRAVE is NOT active
+        console.log(
+          'Forwarder Assistant not configured, GRAVE protection is inactive:',
+          error instanceof Error ? error.message : error
         );
-        // Fall back to old method if assistant config fails
-        uapVaultAddress = await getUAPVaultAddress(provider, upAddress);
+        isForwarderConfigured = false;
+        uapVaultAddress = null;
       }
-    } else if (hasUAPSubscription) {
-      // Fallback: use first vault from LSP10Vaults[]
-      uapVaultAddress = await getUAPVaultAddress(provider, upAddress);
     }
+    // Note: We intentionally don't fall back to getUAPVaultAddress() anymore
+    // Having a vault doesn't mean GRAVE is protecting the profile - the forwarder must be configured
 
     // Check for legacy GRAVE vault
     const { getGraveVaultFor } = await import('./universalProfile');
@@ -225,18 +236,28 @@ export async function detectGraveSetup(
     const hasLegacyGrave = !!legacyVaultAddress;
 
     // Determine setup type
+    // Use isForwarderConfigured as the key indicator - this means the forwarder is in the executives list
+    // uapVaultAddress might be null even when configured if there's a decoding issue
     let setupType: 'none' | 'legacy' | 'uap' | 'both' = 'none';
-    if (hasUAPSubscription && uapVaultAddress && hasLegacyGrave) {
+    if (hasUAPSubscription && isForwarderConfigured && hasLegacyGrave) {
       setupType = 'both';
-    } else if (hasUAPSubscription && uapVaultAddress) {
+    } else if (hasUAPSubscription && isForwarderConfigured) {
       setupType = 'uap';
-    } else if (hasUAPSubscription && !uapVaultAddress) {
+    } else if (hasUAPSubscription && !isForwarderConfigured) {
       // Has UAP subscription but no Forwarder config - needs configuration
       setupType = 'none';
     } else if (hasLegacyGrave) {
       // Only has legacy GRAVE, no UAP subscription
       setupType = 'legacy';
     }
+
+    console.log('detectGraveSetup: Final result:', {
+      hasUAPSubscription,
+      isForwarderConfigured,
+      hasLegacyGrave,
+      setupType,
+      uapVaultAddress,
+    });
 
     return {
       hasUAPSubscription,
