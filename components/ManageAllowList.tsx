@@ -17,6 +17,7 @@ import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 const messageState = {
@@ -70,7 +71,7 @@ export default function ManageAllowList() {
   }, [debouncedTokenAddress]);
 
   const fetchTokenAllowListStatus = async () => {
-    if (!tokenAddress || !window.lukso || !networkConfig) {
+    if (!tokenAddress || !hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);
@@ -104,7 +105,7 @@ export default function ManageAllowList() {
   };
 
   const addTokenToAllowList = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);
@@ -144,7 +145,7 @@ export default function ManageAllowList() {
   };
 
   const removeTokenFromAllowList = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);

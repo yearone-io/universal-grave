@@ -19,7 +19,7 @@ interface GraveSettingsProps {
 }
 
 export default function GraveSettings({ networkName }: GraveSettingsProps) {
-  const { profileDetailsData, isConnected } = useProfile();
+  const { profileDetailsData, isConnected, hasActiveSignature } = useProfile();
   const { hasUAPSubscription, setupType, uapVaultAddress, isLoadingGraveData } = useGrave();
 
   // Protection is truly active only if we have UAP subscription AND the forwarder is configured
@@ -46,7 +46,7 @@ export default function GraveSettings({ networkName }: GraveSettingsProps) {
     );
   }
 
-  if (!isConnected || !account) {
+  if (!isConnected || !hasActiveSignature || !account) {
     return (
       <Box minH="100vh" bg="#00001E">
         <Container maxW="2xl" py={{ base: 12, md: 20 }}>
@@ -184,47 +184,7 @@ export default function GraveSettings({ networkName }: GraveSettingsProps) {
           </Box>
         </Box>
 
-        {/* Footer links */}
-        <Flex
-          justify="center"
-          mt={10}
-          gap={6}
-          flexWrap="wrap"
-        >
-          <Link href={`/${networkName}/grave/settings/diagnostics`}>
-            <Text
-              fontSize="sm"
-              color="whiteAlpha.500"
-              _hover={{ color: 'whiteAlpha.800' }}
-              cursor="pointer"
-              transition="color 0.2s"
-            >
-              Diagnostics
-            </Text>
-          </Link>
-          <Link href="/about">
-            <Text
-              fontSize="sm"
-              color="whiteAlpha.500"
-              _hover={{ color: 'whiteAlpha.800' }}
-              cursor="pointer"
-              transition="color 0.2s"
-            >
-              About GRAVE
-            </Text>
-          </Link>
-          <Link href="/feedback">
-            <Text
-              fontSize="sm"
-              color="whiteAlpha.500"
-              _hover={{ color: 'whiteAlpha.800' }}
-              cursor="pointer"
-              transition="color 0.2s"
-            >
-              Give Feedback
-            </Text>
-          </Link>
-        </Flex>
+        {/* Footer links removed from settings */}
       </Container>
     </Box>
   );

@@ -38,6 +38,7 @@ import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 interface LSP7PanelProps {
@@ -108,7 +109,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   };
 
   const transferTokenToUP = async (tokenAddress: string) => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
     setInProcessingText('Unblocking');

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, HStack, Text, Image, Badge, Link } from '@chakra-ui/react';
+import { Box, HStack, Text, Image, Badge, Link, Flex } from '@chakra-ui/react';
 import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { isAddress } from 'ethers';
 import { supportedNetworks } from '@/constants/supportedNetworks';
@@ -146,8 +146,13 @@ const AddressMetadataPreview: React.FC<AddressMetadataPreviewProps> = ({
         borderRadius="lg"
         border="1px solid"
         borderColor="dark.purple.200"
+        overflow="hidden"
       >
-        <HStack spacing={3}>
+        <Flex
+          gap={3}
+          align={{ base: 'flex-start', sm: 'center' }}
+          direction={{ base: 'column', sm: 'row' }}
+        >
           {iconUrl ? (
             <Image
               src={iconUrl}
@@ -164,13 +169,14 @@ const AddressMetadataPreview: React.FC<AddressMetadataPreviewProps> = ({
               bg="dark.purple.100"
             />
           )}
-          <Box flex={1}>
+          <Box flex={1} minW={0}>
             <Text fontSize="sm" fontWeight="600" color="dark.purple.500" noOfLines={1}>
               {displayName}
             </Text>
             <Link
               href={hashlistsUrl}
               isExternal
+              display="inline-flex"
               fontSize="xs"
               color="dark.purple.400"
               _hover={{ color: 'dark.purple.500' }}
@@ -185,10 +191,11 @@ const AddressMetadataPreview: React.FC<AddressMetadataPreviewProps> = ({
             px={2}
             py={1}
             borderRadius="md"
+            alignSelf={{ base: 'flex-start', sm: 'center' }}
           >
             Curated List
           </Badge>
-        </HStack>
+        </Flex>
       </Box>
     );
   }

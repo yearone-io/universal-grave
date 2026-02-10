@@ -86,7 +86,7 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
             <Box fontSize="xs" color="dark.white">
               Powered by{' '}
               <chakra.a
-                href="https://github.com/yearone-io/universal-assistant-protocol"
+                href="https://upassistants.com"
                 target="_blank"
                 rel="noreferrer"
                 textDecoration="underline"
@@ -115,6 +115,9 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
           <Link href="/about">About</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/terms#privacy">Privacy</Link>
+          <Link href={`/${networkName}/grave/settings/diagnostics`}>
+            Diagnostics
+          </Link>
           <Link href="/feedback">Feedback</Link>
           <Box minWidth={'170'}>
             <Select

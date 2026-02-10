@@ -14,7 +14,7 @@ import { useGrave } from '@/contexts/GraveContext';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
-import { getWalletProvider } from '@/utils/walletClient';
+import { getReadProvider } from '@/utils/erc725Client';
 
 /**
  * IncompleteConfigBanner - Displays a banner prompting users who have UAP but haven't configured their spambox
@@ -60,7 +60,6 @@ export default function IncompleteConfigBanner() {
       }
 
       if (
-        !window.lukso ||
         !profileDetailsData?.upWallet ||
         !chainId ||
         isNetworkMismatch
@@ -72,7 +71,7 @@ export default function IncompleteConfigBanner() {
       if (!networkConfig) return;
 
       try {
-        const provider = getWalletProvider();
+        const provider = getReadProvider(chainId, networkConfig.rpcUrl);
 
         const { getForwarderAssistantConfig } = await import(
           '@/utils/assistantConfig'
@@ -142,7 +141,7 @@ export default function IncompleteConfigBanner() {
   };
 
   return (
-    <Box width="100%" mb={4}>
+    <Box width="100%">
       <Alert
         status="info"
         variant="solid"

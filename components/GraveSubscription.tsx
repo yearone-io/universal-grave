@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { keyframes } from '@emotion/react';
 import {
   Box,
@@ -47,7 +47,8 @@ import {
 import {
   assertWalletNetwork,
   getWalletProvider,
-  getWalletSigner,
+  getWalletSignerForUP,
+  sendUPMethodTx,
 } from '@/utils/walletClient';
 import {
   isVaultRegistered,
@@ -67,7 +68,7 @@ import AddressMetadataPreview from '@/components/address-metadata/AddressMetadat
 import AddressMetadataInline from '@/components/address-metadata/AddressMetadataInline';
 import { Contract } from 'ethers';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
-import { getErc725Read } from '@/utils/erc725Client';
+import { getErc725Read, getReadProvider } from '@/utils/erc725Client';
 import uapSchema from '@/schemas/UAP.json';
 
 // Animations
@@ -100,8 +101,14 @@ interface GraveSubscriptionProps {
 
 const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) => {
   const toast = useToast({ position: 'bottom-left' });
-  const { profileDetailsData, isConnected, chainId, isNetworkMismatch, switchNetwork } =
-    useProfile();
+  const {
+    profileDetailsData,
+    isConnected,
+    hasActiveSignature,
+    chainId,
+    isNetworkMismatch,
+    switchNetwork,
+  } = useProfile();
   const {
     hasUAPSubscription,
     setupType,
@@ -136,6 +143,11 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
   const [setupSteps, setSetupSteps] = useState<SetupStep[]>([]);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const isMobileDevice =
+    typeof navigator !== 'undefined' &&
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const showMobileWalletPrompt = isMobileDevice && isProcessing;
+  const mobileWalletToastId = 'mobile-wallet-confirm-tx';
 
   // Vault state
   const [availableVaults, setAvailableVaults] = useState<string[]>([]);
@@ -171,6 +183,9 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
   // Check if vault data is ready for legacy upgrades
   // For legacy users, we need graveVault to be loaded before allowing setup
   const isVaultDataReady = useMemo(() => {
+    // If still loading grave data from context, not ready
+    if (isLoadingGraveData) return false;
+
     // If still loading vaults, not ready
     if (isLoadingVaults) return false;
 
@@ -183,17 +198,35 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     }
 
     return true;
-  }, [isLoadingVaults, setupType, graveVault, selectedVault]);
+  }, [isLoadingGraveData, isLoadingVaults, setupType, graveVault, selectedVault]);
 
   // Fetch vaults on mount
   useEffect(() => {
     const fetchVaults = async () => {
-      if (!address || !window.lukso || !currentNetwork || isNetworkMismatch) return;
+      if (
+        !address ||
+        !currentNetwork ||
+        isNetworkMismatch
+      )
+        return;
 
+      // Create unique key for this request
+      const fetchKey = `${address}-${currentNetwork.chainId}`;
+
+      // Prevent concurrent fetches for same params
+      if (fetchVaultsInProgressRef.current && lastFetchParamsRef.current === fetchKey) {
+        return;
+      }
+
+      fetchVaultsInProgressRef.current = true;
+      lastFetchParamsRef.current = fetchKey;
       setIsLoadingVaults(true);
       try {
-        const provider = getWalletProvider();
-        const vaults = await getRegisteredVaults(provider, address);
+        const readProvider = getReadProvider(
+          currentNetwork.chainId,
+          currentNetwork.rpcUrl
+        );
+        const vaults = await getRegisteredVaults(readProvider, address);
 
         let uniqueVaults = vaults.filter(
           (vault, index, self) =>
@@ -210,7 +243,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
         // Get the currently configured vault from forwarder config (this is the actual active vault)
         let configuredVault: string | null = null;
         try {
-          const config = await getForwarderAssistantConfig(provider, address, {
+          const config = await getForwarderAssistantConfig(readProvider, address, {
             forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
             addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
             curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
@@ -252,6 +285,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
       } catch (error) {
         console.error('Error fetching vaults:', error);
       } finally {
+        fetchVaultsInProgressRef.current = false;
         setIsLoadingVaults(false);
       }
     };
@@ -264,9 +298,16 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     const loadConfig = async () => {
       if (!address || !currentNetwork || !isProtectionActive || isNetworkMismatch) return;
 
+      // Prevent concurrent config loads
+      if (loadConfigInProgressRef.current) return;
+      loadConfigInProgressRef.current = true;
+
       try {
-        const provider = getWalletProvider();
-        const config = await getForwarderAssistantConfig(provider, address, {
+        const readProvider = getReadProvider(
+          currentNetwork.chainId,
+          currentNetwork.rpcUrl
+        );
+        const config = await getForwarderAssistantConfig(readProvider, address, {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
@@ -305,6 +346,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
         }
       } catch (error) {
         console.error('Error loading config:', error);
+      } finally {
+        loadConfigInProgressRef.current = false;
       }
     };
 
@@ -449,8 +492,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     currentNetwork,
     chainId,
     mainUPController,
-    selectedVault,
-    availableVaults,
+    activeVault,
     isProtectionActive,
     refreshGraveData,
     toast,
@@ -596,7 +638,9 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     try {
       const provider = getWalletProvider();
       await assertWalletNetwork(chainId);
-      const signer = await getWalletSigner();
+      const signer = await getWalletSignerForUP(address, {
+        requirePermissions: true,
+      });
       const upContract = new Contract(address, universalProfileAbi, signer);
       const erc725UAP = getErc725Read(uapSchema as any, address, { provider });
 
@@ -648,7 +692,13 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
       await unsubscribeFromUAP(provider, address, currentNetwork.protocolAddress, currentNetwork.lsp1UrdUp);
 
       if (keys.length > 0) {
-        const tx = await upContract.setDataBatch(keys, values);
+        const tx = await sendUPMethodTx({
+          signer,
+          upAddress: address,
+          upContract,
+          method: 'setDataBatch',
+          args: [keys, values],
+        });
         await tx.wait();
       }
 
@@ -729,6 +779,31 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     setCreatorWhitelistAddresses(creatorWhitelistAddresses.filter((_, i) => i !== index));
   };
 
+  useEffect(() => {
+    if (showMobileWalletPrompt) {
+      if (!toast.isActive(mobileWalletToastId)) {
+        toast({
+          id: mobileWalletToastId,
+          title: 'Confirm in UP app',
+          description: 'Review and approve this transaction.',
+          status: 'warning',
+          duration: null,
+          isClosable: true,
+        });
+      }
+      return;
+    }
+
+    if (toast.isActive(mobileWalletToastId)) {
+      toast.close(mobileWalletToastId);
+    }
+  }, [showMobileWalletPrompt, toast]);
+
+  // Refs to prevent concurrent fetches and track request state
+  const fetchVaultsInProgressRef = useRef(false);
+  const loadConfigInProgressRef = useRef(false);
+  const lastFetchParamsRef = useRef<string | null>(null);
+
   // Prevent hydration mismatch by waiting for client mount
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -745,10 +820,12 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
   }
 
   // Loading state
-  if (!isConnected || !address) {
+  if (!isConnected || !hasActiveSignature || !address) {
     return (
       <Flex justify="center" align="center" minH="200px">
-        <Text color="whiteAlpha.600">Connect your wallet to continue.</Text>
+        <Text color="whiteAlpha.600">
+          Sign in with your Universal Profile to continue.
+        </Text>
       </Flex>
     );
   }
@@ -950,8 +1027,9 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
         {/* Main CTA */}
         <Button
           onClick={handleSetup}
-          isLoading={isProcessing || isLoadingVaults}
-          loadingText="Setting up..."
+          isLoading={isProcessing || !isVaultDataReady}
+          isDisabled={!isVaultDataReady}
+          loadingText={isLoadingGraveData ? "Loading..." : "Setting up..."}
           size="lg"
           bg="white"
           color="dark.purple.500"
@@ -1022,15 +1100,17 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
         variant="ghost"
         onClick={() => setShowFilters(!showFilters)}
         justifyContent="space-between"
+        alignItems="flex-start"
         px={4}
         py={6}
+        h="auto"
         bg="whiteAlpha.50"
         borderRadius="xl"
         _hover={{ bg: 'whiteAlpha.100' }}
       >
-        <HStack spacing={3}>
+        <HStack spacing={3} align="flex-start" flexWrap="wrap">
           <FaCog color="rgba(255, 255, 255, 0.6)" />
-          <Text color="white" fontSize="sm" fontWeight="500">
+          <Text color="white" fontSize="sm" fontWeight="500" whiteSpace="normal">
             Configure Filters
           </Text>
           {hasUnsavedChanges && (
@@ -1080,8 +1160,15 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
               borderColor={creatorCuratedListAddress && isAddress(creatorCuratedListAddress) ? 'dark.teal.500' : 'whiteAlpha.100'}
             >
               {/* Header with title, status, and actions */}
-              <Flex justify="space-between" align="flex-start" gap={4} mb={3} flexWrap="wrap">
-                <Box flex={1} minW="200px">
+              <Flex
+                justify="space-between"
+                align="flex-start"
+                gap={4}
+                mb={3}
+                flexWrap="wrap"
+                direction={{ base: 'column', sm: 'row' }}
+              >
+                <Box flex={1} minW={0} w="100%">
                   <HStack spacing={2} mb={1} flexWrap="wrap">
                     <Text color="white" fontSize="sm" fontWeight="500">
                       Curated Creator List
@@ -1121,7 +1208,12 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                   </Text>
                 </Box>
                 {/* Action buttons */}
-                <HStack spacing={2} flexWrap="wrap">
+                <HStack
+                  spacing={2}
+                  flexWrap="wrap"
+                  w={{ base: '100%', sm: 'auto' }}
+                  justify={{ base: 'flex-start', sm: 'flex-end' }}
+                >
                   {/* No list selected - show "Use Community List" */}
                   {isMainnet && (!creatorCuratedListAddress || !isAddress(creatorCuratedListAddress)) && (
                     <Button
@@ -1131,6 +1223,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                       fontFamily="Montserrat"
                       fontWeight="600"
                       borderRadius="lg"
+                      maxW="100%"
+                      whiteSpace="normal"
                       onClick={() => setCreatorCuratedListAddress(recommendedCuratedCreators.address)}
                       _hover={{ opacity: 0.8 }}
                     >
@@ -1150,6 +1244,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                           fontFamily="Montserrat"
                           fontWeight="600"
                           borderRadius="lg"
+                          maxW="100%"
+                          whiteSpace="normal"
                           onClick={() => setCreatorCuratedListAddress(recommendedCuratedCreators.address)}
                           _hover={{ opacity: 0.8 }}
                         >
@@ -1164,6 +1260,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                         fontFamily="Montserrat"
                         fontWeight="600"
                         borderRadius="lg"
+                        maxW="100%"
+                        whiteSpace="normal"
                         onClick={() => setCreatorCuratedListAddress('')}
                         _hover={{ opacity: 0.8, bg: 'rgba(255,0,0,0.1)' }}
                       >
@@ -1181,6 +1279,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                       fontFamily="Montserrat"
                       fontWeight="600"
                       borderRadius="lg"
+                      maxW="100%"
+                      whiteSpace="normal"
                       onClick={() => setCreatorCuratedListAddress('')}
                       _hover={{ opacity: 0.8, bg: 'rgba(255,0,0,0.1)' }}
                     >
@@ -1224,7 +1324,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
 
             {/* Manual addresses */}
             <Box>
-              <Flex justify="space-between" align="center" mb={2}>
+              <Flex justify="space-between" align="center" mb={2} gap={2} flexWrap="wrap">
                 <Text color="whiteAlpha.600" fontSize="xs">
                   Or add individual creator addresses:
                 </Text>
@@ -1242,7 +1342,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
               <VStack spacing={3} align="stretch">
                 {creatorWhitelistAddresses.map((addr, i) => (
                   <Box key={i}>
-                    <HStack>
+                    <HStack align="stretch">
                       <Input
                         placeholder="0x..."
                         value={addr}
@@ -1254,6 +1354,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                         fontFamily="mono"
                         fontSize="sm"
                         borderRadius="lg"
+                        flex={1}
+                        minW={0}
                         _placeholder={{ color: 'whiteAlpha.400' }}
                         _focus={{ borderColor: 'dark.teal.500', boxShadow: 'none' }}
                       />
@@ -1263,6 +1365,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                         size="sm"
                         variant="ghost"
                         color="whiteAlpha.500"
+                        flexShrink={0}
                         onClick={() => removeCreatorWhitelistAddress(i)}
                         _hover={{ color: 'red.400', bg: 'whiteAlpha.100' }}
                       />
@@ -1305,8 +1408,15 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
               borderColor={curatedListAddress && isAddress(curatedListAddress) ? 'dark.teal.500' : 'whiteAlpha.100'}
             >
               {/* Header with title, status, and actions */}
-              <Flex justify="space-between" align="flex-start" gap={4} mb={3} flexWrap="wrap">
-                <Box flex={1} minW="200px">
+              <Flex
+                justify="space-between"
+                align="flex-start"
+                gap={4}
+                mb={3}
+                flexWrap="wrap"
+                direction={{ base: 'column', sm: 'row' }}
+              >
+                <Box flex={1} minW={0} w="100%">
                   <HStack spacing={2} mb={1} flexWrap="wrap">
                     <Text color="white" fontSize="sm" fontWeight="500">
                       Curated Asset List
@@ -1346,7 +1456,12 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                   </Text>
                 </Box>
                 {/* Action buttons */}
-                <HStack spacing={2} flexWrap="wrap">
+                <HStack
+                  spacing={2}
+                  flexWrap="wrap"
+                  w={{ base: '100%', sm: 'auto' }}
+                  justify={{ base: 'flex-start', sm: 'flex-end' }}
+                >
                   {/* No list selected - show "Use Community List" */}
                   {isMainnet && (!curatedListAddress || !isAddress(curatedListAddress)) && (
                     <Button
@@ -1356,6 +1471,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                       fontFamily="Montserrat"
                       fontWeight="600"
                       borderRadius="lg"
+                      maxW="100%"
+                      whiteSpace="normal"
                       onClick={() => setCuratedListAddress(recommendedCuratedAssets.address)}
                       _hover={{ opacity: 0.8 }}
                     >
@@ -1375,6 +1492,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                           fontFamily="Montserrat"
                           fontWeight="600"
                           borderRadius="lg"
+                          maxW="100%"
+                          whiteSpace="normal"
                           onClick={() => setCuratedListAddress(recommendedCuratedAssets.address)}
                           _hover={{ opacity: 0.8 }}
                         >
@@ -1389,6 +1508,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                         fontFamily="Montserrat"
                         fontWeight="600"
                         borderRadius="lg"
+                        maxW="100%"
+                        whiteSpace="normal"
                         onClick={() => setCuratedListAddress('')}
                         _hover={{ opacity: 0.8, bg: 'rgba(255,0,0,0.1)' }}
                       >
@@ -1406,6 +1527,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                       fontFamily="Montserrat"
                       fontWeight="600"
                       borderRadius="lg"
+                      maxW="100%"
+                      whiteSpace="normal"
                       onClick={() => setCuratedListAddress('')}
                       _hover={{ opacity: 0.8, bg: 'rgba(255,0,0,0.1)' }}
                     >
@@ -1449,7 +1572,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
 
             {/* Manual addresses */}
             <Box>
-              <Flex justify="space-between" align="center" mb={2}>
+              <Flex justify="space-between" align="center" mb={2} gap={2} flexWrap="wrap">
                 <Text color="whiteAlpha.600" fontSize="xs">
                   Or add individual asset addresses:
                 </Text>
@@ -1467,7 +1590,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
               <VStack spacing={3} align="stretch">
                 {whitelistAddresses.map((addr, i) => (
                   <Box key={i}>
-                    <HStack>
+                    <HStack align="stretch">
                       <Input
                         placeholder="0x..."
                         value={addr}
@@ -1479,6 +1602,8 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                         fontFamily="mono"
                         fontSize="sm"
                         borderRadius="lg"
+                        flex={1}
+                        minW={0}
                         _placeholder={{ color: 'whiteAlpha.400' }}
                         _focus={{ borderColor: 'dark.teal.500', boxShadow: 'none' }}
                       />
@@ -1488,6 +1613,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                         size="sm"
                         variant="ghost"
                         color="whiteAlpha.500"
+                        flexShrink={0}
                         onClick={() => removeWhitelistAddress(i)}
                         _hover={{ color: 'red.400', bg: 'whiteAlpha.100' }}
                       />

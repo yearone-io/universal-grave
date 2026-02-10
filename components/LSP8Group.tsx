@@ -35,6 +35,7 @@ import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 interface LSP8SimplePanelProps {
@@ -81,7 +82,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
 
@@ -189,7 +190,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   };
 
   const reviveAll = async (tokenData: TokenData[]) => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
 

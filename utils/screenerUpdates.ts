@@ -5,7 +5,7 @@ import { getChecksumAddress } from './tokenUtils';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 import { getErc725Read } from '@/utils/erc725Client';
 import uapSchema from '@/schemas/UAP.json';
-import { getWalletSigner } from '@/utils/walletClient';
+import { getWalletSignerForUP, sendUPMethodTx } from '@/utils/walletClient';
 
 // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
 // This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
@@ -28,7 +28,9 @@ export async function removeAssetFromAddressListScreener(
     forwarderAssistantAddress: string;
   }
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
@@ -231,7 +233,13 @@ export async function removeAssetFromAddressListScreener(
   }
 
   // Execute batch update
-  const tx = await upContract.setDataBatch(keys, values);
+  const tx = await sendUPMethodTx({
+    signer,
+    upAddress,
+    upContract,
+    method: 'setDataBatch',
+    args: [keys, values],
+  });
   await tx.wait();
 }
 
@@ -247,7 +255,9 @@ export async function addAssetToCuratedListException(
   curatedListScreenerAddress: string,
   curatedListAddress: string
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const abiCoder = new AbiCoder();
   const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
@@ -313,7 +323,13 @@ export async function addAssetToCuratedListException(
 
   // Execute batch update if there are changes
   if (keys.length > 0) {
-    const tx = await upContract.setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     await tx.wait();
   }
 }
@@ -408,7 +424,9 @@ export async function addAssetToAddressListScreener(
   addressListScreenerAddress: string,
   forwarderAssistantAddress: string
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
@@ -735,7 +753,13 @@ export async function addAssetToAddressListScreener(
   );
 
   // Execute batch update
-  const tx = await upContract.setDataBatch(keys, values);
+  const tx = await sendUPMethodTx({
+    signer,
+    upAddress,
+    upContract,
+    method: 'setDataBatch',
+    args: [keys, values],
+  });
   await tx.wait();
 }
 

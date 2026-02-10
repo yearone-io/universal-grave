@@ -222,7 +222,13 @@ export default function Landing({ networkName }: LandingProps) {
             </Text>
 
             {/* CTA Buttons */}
-            <HStack spacing={4} pt={2}>
+            <Flex
+              gap={3}
+              pt={2}
+              w="100%"
+              direction={{ base: 'column', sm: 'row' }}
+              align={{ base: 'stretch', sm: 'center' }}
+            >
               <Link href={`/${networkName}/grave/settings`} passHref>
                 <Button
                   size="lg"
@@ -230,7 +236,8 @@ export default function Landing({ networkName }: LandingProps) {
                   color="#00001E"
                   fontWeight="700"
                   fontFamily="Montserrat"
-                  px={8}
+                  px={{ base: 6, sm: 8 }}
+                  w={{ base: '100%', sm: 'auto' }}
                   _hover={{
                     bg: 'dark.teal.400',
                     transform: 'translateY(-2px)',
@@ -250,7 +257,8 @@ export default function Landing({ networkName }: LandingProps) {
                     color="white"
                     fontWeight="600"
                     fontFamily="Montserrat"
-                    px={6}
+                    px={{ base: 6, sm: 6 }}
+                    w={{ base: '100%', sm: 'auto' }}
                     _hover={{
                       bg: 'whiteAlpha.100',
                       borderColor: 'whiteAlpha.400',
@@ -260,7 +268,7 @@ export default function Landing({ networkName }: LandingProps) {
                   </Button>
                 </Link>
               )}
-            </HStack>
+            </Flex>
           </VStack>
 
           {/* Hero Image */}

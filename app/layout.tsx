@@ -8,6 +8,7 @@ import './globals.css';
 import { Providers } from '@/app/providers';
 import { Metadata } from 'next';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import Script from 'next/script';
 
 const title = 'GRAVE';
 const description = 'A cemetery for unwanted digital assets';
@@ -45,6 +46,57 @@ export default function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
+        <Script id="ug-ethereum-guard" strategy="beforeInteractive">
+          {`
+            (function () {
+              if (typeof window === 'undefined') return;
+
+              var fallback = {
+                __ugStub: true,
+                isMetaMask: false,
+                selectedAddress: null,
+                chainId: null,
+                providers: [],
+                isConnected: function () { return false; },
+                request: async function () { throw new Error('No injected Ethereum provider available.'); },
+                on: function () {},
+                removeListener: function () {},
+              };
+
+              var current = window.ethereum && typeof window.ethereum === 'object'
+                ? window.ethereum
+                : fallback;
+
+              if (!('selectedAddress' in current)) {
+                try { current.selectedAddress = null; } catch (e) {}
+              }
+
+              try {
+                Object.defineProperty(window, 'ethereum', {
+                  configurable: true,
+                  enumerable: true,
+                  get: function () {
+                    return current;
+                  },
+                  set: function (nextProvider) {
+                    if (nextProvider && typeof nextProvider === 'object') {
+                      if (!('selectedAddress' in nextProvider)) {
+                        try { nextProvider.selectedAddress = null; } catch (e) {}
+                      }
+                      current = nextProvider;
+                      return;
+                    }
+                    current = fallback;
+                  },
+                });
+              } catch (e) {
+                if (!window.ethereum || typeof window.ethereum !== 'object') {
+                  window.ethereum = fallback;
+                }
+              }
+            })();
+          `}
+        </Script>
       </head>
       <body suppressHydrationWarning>
         <Providers>

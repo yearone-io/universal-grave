@@ -12,7 +12,11 @@ import {
 } from '@chakra-ui/react';
 import { hasVaultURDSet, setVaultURD } from '@/utils/vaultCreation';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { assertWalletNetwork, getWalletProvider } from '@/utils/walletClient';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  hasWalletProvider,
+} from '@/utils/walletClient';
 
 interface VaultURDCheckerProps {
   vaultAddress: string | null;
@@ -44,7 +48,7 @@ export default function VaultURDChecker({
       if (
         !vaultAddress ||
         !networkConfig?.lsp1UrdVault ||
-        !window.lukso ||
+        !hasWalletProvider() ||
         isNetworkMismatch
       ) {
         setHasURD(null);
@@ -81,7 +85,7 @@ export default function VaultURDChecker({
       !vaultAddress ||
       !networkConfig ||
       !profileDetailsData?.upWallet ||
-      !window.lukso
+      !hasWalletProvider()
     ) {
       return;
     }

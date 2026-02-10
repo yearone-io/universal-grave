@@ -7,17 +7,35 @@ import React, {
   useMemo,
   useState,
   useRef,
+  useCallback,
 } from 'react';
 import { SiweMessage } from 'siwe';
-import { BrowserProvider, verifyMessage } from 'ethers';
+import { BrowserProvider, hexlify, toUtf8Bytes, verifyMessage } from 'ethers';
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useSwitchChain,
+  useWalletClient,
+} from 'wagmi';
+import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit';
 import { getImageFromIPFS } from '@/utils/ipfs';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
-import { fetchDataSafe, getErc725Read } from '@/utils/erc725Client';
-import { getWalletProvider } from '@/utils/walletClient';
+import {
+  fetchDataSafe,
+  getErc725Read,
+  getReadProvider,
+} from '@/utils/erc725Client';
+import { setWalletClient } from '@/utils/walletClient';
 import { useParams } from 'next/navigation';
-import { getNetworkByName, getNetworkConfig } from '@/constants/supportedNetworks';
+import { getNetworkByName } from '@/constants/supportedNetworks';
+import {
+  canReadAsUniversalProfile,
+  resolveMainControllerForUP,
+  resolveUniversalProfileAddress,
+} from '@/utils/upAddress';
 
 interface Profile {
   name: string;
@@ -44,9 +62,29 @@ interface Image {
 
 interface IProfileDetailsData {
   mainUPController: string;
+  connectedWalletAddress?: string;
   upWallet: string;
   profile: Profile | null;
   issuedAssets: string[];
+}
+
+interface ProfileDebugState {
+  connectorId: string | null;
+  connectorName: string | null;
+  walletConnectConnectorId: string | null;
+  walletConnectConnectorName: string | null;
+  isWalletConnected: boolean;
+  address: string | null;
+  walletChainId: number | null;
+  walletClientPresent: boolean;
+  walletClientChainId: number | null;
+  pendingSignature: boolean;
+  signingMessage: boolean;
+  hasLuksoProvider: boolean;
+  isMobileDevice: boolean;
+  lastWalletConnectUri: string | null;
+  lastWalletConnectUriUpdatedAt: number | null;
+  lastUpAppWakeAt: number | null;
 }
 
 interface ProfileContextType {
@@ -58,428 +96,1064 @@ interface ProfileContextType {
   >;
   error: string | null;
   isConnected: boolean;
+  hasActiveSignature: boolean;
+  isSigningIn: boolean;
   chainId: number | null;
   expectedChainId: number | null;
   isNetworkMismatch: boolean;
   connectAndSign: () => Promise<boolean>;
   disconnect: (options?: { preserveChainId?: boolean }) => void;
   switchNetwork: (chainId: number) => Promise<void>;
+  debugState: ProfileDebugState;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
+const hasLuksoProvider = () =>
+  typeof window !== 'undefined' && !!(window as any).lukso;
+const isMobileDevice = () =>
+  typeof navigator !== 'undefined' &&
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const isLuksoConnector = (
+  connectorLike?: { id?: string; name?: string } | null
+) => {
+  if (!connectorLike) return false;
+  return (
+    connectorLike.id === 'lukso' ||
+    connectorLike.name?.toLowerCase().includes('universal profile') === true
+  );
+};
+
+const isWalletConnectConnector = (
+  connectorLike?: { id?: string; name?: string } | null
+) => {
+  if (!connectorLike?.id) return false;
+  return connectorLike.id.toLowerCase().includes('walletconnect');
+};
+
+const UNIVERSAL_PROFILES_NATIVE_BASE =
+  'io.universaleverything.universalprofiles://';
+const UP_WALLETCONNECT_URI_STORAGE_KEY = 'up:lastWalletConnectUri';
+
+const buildUniversalProfilesNativeLink = (wcUri?: string | null) => {
+  if (typeof wcUri === 'string' && wcUri.startsWith('wc:')) {
+    // LUKSO mobile deep links expect the WalletConnect URI in /wallet-connect/.
+    return wcUri.replace(
+      /^wc:/,
+      `${UNIVERSAL_PROFILES_NATIVE_BASE}wallet-connect/`
+    );
+  }
+  return `${UNIVERSAL_PROFILES_NATIVE_BASE}wallet-connect`;
+};
+
+const wait = (ms: number) =>
+  new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+
+const isTransientProviderLoadError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    message.includes('load failed') ||
+    message.includes('failed to fetch') ||
+    message.includes('network changed') ||
+    error?.code === 'NETWORK_ERROR'
+  );
+};
+
+const normalizeSignInErrorMessage = (error: any) => {
+  const message = error?.message || '';
+  if (!message) return 'Failed to connect';
+  const normalized = message.toLowerCase();
+  if (
+    normalized.includes('load failed') ||
+    normalized.includes('failed to fetch')
+  ) {
+    return 'Connection to Universal Profiles app failed. Open the app and complete sign-in, then try again.';
+  }
+  return message;
+};
+
+const isUserRejectedRequestError = (error: any) => {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.code === 4001 ||
+    message.includes('user rejected') ||
+    message.includes('user denied') ||
+    message.includes('request rejected')
+  );
+};
+
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const networkName = (params?.networkName as string | undefined) || null;
+
+  const {
+    address,
+    chainId: walletChainId,
+    isConnected: isWalletConnected,
+    connector,
+  } = useAccount();
+  const { data: walletClient } = useWalletClient();
+  const { connectAsync, connectors } = useConnect();
+  const { disconnect: wagmiDisconnect } = useDisconnect();
+  const { switchChainAsync } = useSwitchChain();
+  const { openConnectModal } = useConnectModal();
+  const { openChainModal } = useChainModal();
+
   const [issuedAssets, setIssuedAssets] = useState<string[]>([]);
   const [profileDetailsData, setProfileDetailsData] =
     useState<IProfileDetailsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [hasActiveSignature, setHasActiveSignature] = useState(false);
   const [chainId, setChainId] = useState<number | null>(null);
+  const [pendingSignature, setPendingSignature] = useState(false);
+  const [signingMessage, setSigningMessage] = useState(false);
+  const [lastWalletConnectUriUpdatedAt, setLastWalletConnectUriUpdatedAt] =
+    useState<number | null>(null);
+  const [lastUpAppWakeAt, setLastUpAppWakeAt] = useState<number | null>(null);
+
   const providerRef = useRef<BrowserProvider | null>(null);
-  const connectingRef = useRef(false);
-  const switchingNetworkRef = useRef(false);
-  const ignoreAccountsChangedRef = useRef(false);
+  const signingRef = useRef(false);
+  const preserveChainIdRef = useRef(false);
+  const prevChainIdRef = useRef<number | null>(null);
+  const sessionRestoreInProgressRef = useRef(false);
+  const lastSignedAddressRef = useRef<string | null>(null);
+  const lastUpAppWakeAtRef = useRef(0);
+  const lastWalletConnectUriRef = useRef<string | null>(null);
+  const luksoConnector = useMemo(
+    () => connectors.find(connectorItem => isLuksoConnector(connectorItem)),
+    [connectors]
+  );
+  const walletConnectConnector = useMemo(() => {
+    if (isWalletConnectConnector(connector)) {
+      return connector;
+    }
+    return connectors.find(connectorItem =>
+      isWalletConnectConnector(connectorItem)
+    );
+  }, [connector, connectors]);
 
   const expectedChainId = useMemo(() => {
     if (networkName) {
       const networkInfo = getNetworkByName(networkName);
       return networkInfo?.chainId ?? null;
     }
-    // No network route param: stay neutral
     return null;
   }, [networkName]);
 
   const isNetworkMismatch =
     !!expectedChainId && !!chainId && expectedChainId !== chainId;
 
-  const requestNetworkSwitch = async (newChainId: number) => {
-    if (!window.lukso) throw new Error('No wallet provider detected');
-    const provider = providerRef.current || getWalletProvider();
-    providerRef.current = provider;
+  useEffect(() => {
+    const result = setWalletClient(walletClient ?? null);
+    providerRef.current = result?.provider ?? null;
+  }, [walletClient]);
+
+  useEffect(() => {
+    const inferredChainId = walletChainId ?? walletClient?.chain?.id ?? null;
+    if (inferredChainId) {
+      setChainId(inferredChainId);
+    } else if (!isWalletConnected && !preserveChainIdRef.current) {
+      setChainId(null);
+    }
+    preserveChainIdRef.current = false;
+  }, [walletChainId, walletClient?.chain?.id, isWalletConnected]);
+
+  const safeWagmiDisconnect = useCallback(() => {
     try {
-      await provider.send('wallet_switchEthereumChain', [
-        { chainId: `0x${newChainId.toString(16)}` },
-      ]);
-    } catch (error: any) {
-      if (error.code === 4902 && supportedNetworks[newChainId]) {
-        await provider.send('wallet_addEthereumChain', [
-          {
-            chainId: `0x${newChainId.toString(16)}`,
-            chainName: supportedNetworks[newChainId].displayName,
-            rpcUrls: [supportedNetworks[newChainId].rpcUrl],
-            nativeCurrency: {
-              name: supportedNetworks[newChainId].token,
-              symbol: supportedNetworks[newChainId].token,
-              decimals: 18,
-            },
-            blockExplorerUrls: [supportedNetworks[newChainId].explorer],
-          },
-        ]);
-      } else {
-        throw error;
+      wagmiDisconnect();
+    } catch (disconnectError) {
+      console.warn(
+        'ProfileProvider: wagmi disconnect failed, continuing with local state reset',
+        disconnectError
+      );
+    }
+  }, [wagmiDisconnect]);
+
+  const clearProfileState = useCallback(
+    (options?: { preserveChainId?: boolean }) => {
+      setProfileDetailsData(null);
+      setIsConnected(false);
+      setHasActiveSignature(false);
+      if (!options?.preserveChainId) {
+        setChainId(null);
       }
-    }
-    const updatedChainId = Number(await provider.send('eth_chainId', []));
-    setChainId(updatedChainId);
-  };
-
-  const connectAndSign = async (): Promise<boolean> => {
-    if (connectingRef.current) {
-      console.log('ProfileProvider: Already connecting, skipping');
-      return false;
-    }
-
-    try {
-      connectingRef.current = true;
-      ignoreAccountsChangedRef.current = true;
+      setIssuedAssets([]);
+      setPendingSignature(false);
+      setSigningMessage(false);
       setError(null);
-      if (!window.lukso) {
-        throw new Error(
-          'No wallet provider detected. Please install the UP Browser Extension.'
+      localStorage.removeItem('profileDetailsData');
+      localStorage.removeItem('profileData');
+      localStorage.removeItem(UP_WALLETCONNECT_URI_STORAGE_KEY);
+      providerRef.current = null;
+      lastSignedAddressRef.current = null;
+      lastWalletConnectUriRef.current = null;
+      setLastWalletConnectUriUpdatedAt(null);
+      setLastUpAppWakeAt(null);
+    },
+    []
+  );
+
+  const persistWalletConnectUri = useCallback((uri: unknown) => {
+    if (typeof uri !== 'string' || !uri.startsWith('wc:')) return;
+    lastWalletConnectUriRef.current = uri;
+    setLastWalletConnectUriUpdatedAt(Date.now());
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(UP_WALLETCONNECT_URI_STORAGE_KEY, uri);
+    } catch {
+      // Ignore storage failures (e.g. private mode restrictions).
+    }
+  }, []);
+
+  const wakeUniversalProfilesAppForUri = useCallback((uri: unknown) => {
+    if (typeof uri !== 'string' || !uri.startsWith('wc:')) return;
+    lastWalletConnectUriRef.current = uri;
+    if (typeof window === 'undefined') return;
+    const now = Date.now();
+    if (now - lastUpAppWakeAtRef.current < 1200) return;
+    lastUpAppWakeAtRef.current = now;
+    setLastUpAppWakeAt(now);
+    window.location.href = buildUniversalProfilesNativeLink(uri);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem(UP_WALLETCONNECT_URI_STORAGE_KEY);
+      if (stored && stored.startsWith('wc:')) {
+        lastWalletConnectUriRef.current = stored;
+      }
+    } catch {
+      // Ignore storage access failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!walletConnectConnector) return;
+    const connectorLike = walletConnectConnector as typeof walletConnectConnector & {
+      getProvider?: () => Promise<any>;
+    };
+    if (typeof connectorLike?.getProvider !== 'function') return;
+
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+
+    const subscribeWalletConnectUri = async () => {
+      try {
+        const wcProvider: any = await connectorLike.getProvider?.();
+        if (cancelled || !wcProvider) return;
+
+        persistWalletConnectUri(wcProvider?.connector?.uri);
+
+        const handleDisplayUri = (uri: unknown) => {
+          persistWalletConnectUri(uri);
+          if (isMobileDevice()) {
+            wakeUniversalProfilesAppForUri(uri);
+          }
+        };
+
+        wcProvider.on?.('display_uri', handleDisplayUri);
+        cleanup = () => {
+          wcProvider.removeListener?.('display_uri', handleDisplayUri);
+        };
+      } catch (error) {
+        console.debug(
+          'ProfileProvider: Unable to subscribe to WalletConnect URI updates',
+          error
         );
       }
+    };
 
-      console.log('ProfileProvider: Attempting connection');
-      const provider = getWalletProvider();
-      providerRef.current = provider;
-      if (expectedChainId) {
-        const currentChainId = Number(await provider.send('eth_chainId', []));
-        if (currentChainId !== expectedChainId) {
-          await requestNetworkSwitch(expectedChainId);
+    subscribeWalletConnectUri();
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [persistWalletConnectUri, wakeUniversalProfilesAppForUri, walletConnectConnector]);
+
+  const wakeUniversalProfilesApp = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const now = Date.now();
+    if (now - lastUpAppWakeAtRef.current < 1200) return;
+    lastUpAppWakeAtRef.current = now;
+    setLastUpAppWakeAt(now);
+
+    const deepLink = buildUniversalProfilesNativeLink(
+      lastWalletConnectUriRef.current
+    );
+    // Explicitly foreground UP app for WalletConnect signing on mobile.
+    window.location.href = deepLink;
+  }, []);
+
+  const syncWalletConnectUriFromProvider = useCallback(async () => {
+    if (!walletConnectConnector) return;
+    const connectorLike = walletConnectConnector as typeof walletConnectConnector & {
+      getProvider?: () => Promise<any>;
+    };
+    if (typeof connectorLike?.getProvider !== 'function') return;
+    try {
+      const wcProvider: any = await connectorLike.getProvider?.();
+      persistWalletConnectUri(wcProvider?.connector?.uri);
+    } catch (error) {
+      console.debug(
+        'ProfileProvider: Unable to read WalletConnect URI from provider',
+        error
+      );
+    }
+  }, [persistWalletConnectUri, walletConnectConnector]);
+
+  const fetchProfileData = useCallback(
+    async (
+      upWallet?: string,
+      currentChainId?: number,
+      forceFetch: boolean = false
+    ) => {
+      const walletToFetch = upWallet || profileDetailsData?.upWallet;
+      if (
+        !walletToFetch ||
+        !currentChainId ||
+        !providerRef.current ||
+        (!isConnected && !forceFetch)
+      ) {
+        console.log('ProfileProvider: Skipping fetchProfileData, missing data', {
+          walletToFetch,
+          currentChainId,
+          isConnected,
+        });
+        return { profile: null, issuedAssets: [] };
+      }
+
+      const chainIdNum = Number(currentChainId);
+      const currentNetwork = supportedNetworks[chainIdNum];
+      if (!currentNetwork || currentNetwork.hasUPSupport === false) {
+        setError('Network not supported');
+        return { profile: null, issuedAssets: [] };
+      }
+
+      const erc725js = getErc725Read(
+        lsp3ProfileSchema as ERC725JSONSchema[],
+        walletToFetch,
+        {
+          chainId: chainIdNum,
+          erc725Options: { ipfsGateway: currentNetwork.ipfsGateway },
+        }
+      );
+
+      try {
+        setError(null);
+        console.log('ProfileProvider: Fetching profile for', {
+          walletToFetch,
+          currentChainId,
+        });
+        const profileMetaData = await fetchDataSafe(erc725js, 'LSP3Profile');
+        const lsp12IssuedAssets = await fetchDataSafe(
+          erc725js,
+          'LSP12IssuedAssets[]'
+        );
+        let newProfile: Profile | null = null;
+        let newIssuedAssets: string[] = [];
+
+        if (
+          profileMetaData?.value &&
+          typeof profileMetaData.value === 'object' &&
+          'LSP3Profile' in profileMetaData.value
+        ) {
+          const lsp3Profile = profileMetaData.value.LSP3Profile as Profile;
+          const profileImage = lsp3Profile.profileImage || [];
+          newProfile = {
+            name: lsp3Profile.name || '',
+            description: lsp3Profile.description || '',
+            tags: lsp3Profile.tags || [],
+            links: lsp3Profile.links || [],
+            profileImage: profileImage,
+            backgroundImage: lsp3Profile.backgroundImage || [],
+            mainImage: undefined,
+          };
+
+          if (profileImage.length > 0 && profileImage[0]?.url) {
+            try {
+              const mainImage = await getImageFromIPFS(
+                profileImage[0].url,
+                chainIdNum
+              );
+              newProfile.mainImage = mainImage;
+            } catch (ipfsError) {
+              console.error(
+                'ProfileProvider: Failed to fetch mainImage from IPFS:',
+                ipfsError
+              );
+              newProfile.mainImage = undefined;
+            }
+          } else {
+            console.log('ProfileProvider: No valid profile image URL found', {
+              profileImage,
+            });
+          }
+        } else {
+          console.log('ProfileProvider: No profile data found');
+        }
+
+        if (lsp12IssuedAssets?.value && Array.isArray(lsp12IssuedAssets.value)) {
+          newIssuedAssets = lsp12IssuedAssets.value as string[];
+        }
+
+        return { profile: newProfile, issuedAssets: newIssuedAssets };
+      } catch (fetchError) {
+        console.error('ProfileProvider: Cannot fetch profile data:', fetchError);
+        setError('Failed to fetch profile data');
+        return { profile: null, issuedAssets: [] };
+      }
+    },
+    [profileDetailsData?.upWallet, isConnected]
+  );
+
+  const signIn = useCallback(async () => {
+    if (signingRef.current) return false;
+    const activeChainId =
+      chainId ?? walletClient?.chain?.id ?? walletChainId ?? null;
+    if (!walletClient || !address || !activeChainId) {
+      throw new Error('Wallet not ready');
+    }
+    if (
+      hasLuksoProvider() &&
+      !isMobileDevice() &&
+      !isLuksoConnector(connector)
+    ) {
+      throw new Error(
+        'Universal Profile Extension connector is required on desktop.'
+      );
+    }
+    if (expectedChainId && expectedChainId !== activeChainId) {
+      throw new Error('Wrong network');
+    }
+    if (!providerRef.current) {
+      const result = setWalletClient(walletClient);
+      providerRef.current = result?.provider ?? null;
+    }
+    if (!providerRef.current) {
+      throw new Error('Wallet provider not ready');
+    }
+
+    try {
+      signingRef.current = true;
+      setSigningMessage(true);
+      setError(null);
+
+      let resolvedAddress = await resolveUniversalProfileAddress(
+        providerRef.current,
+        address
+      ).catch(() => ({
+        upAddress: address,
+        source: 'unknown' as const,
+      }));
+      if (resolvedAddress.source === 'unknown') {
+        const network = supportedNetworks[activeChainId];
+        if (network) {
+          resolvedAddress = await resolveUniversalProfileAddress(
+            getReadProvider(activeChainId, network.rpcUrl),
+            address
+          );
         }
       }
-      const accounts = await provider.send('eth_requestAccounts', []);
-      const upWallet = accounts[0];
-      const currentChainId = Number(await provider.send('eth_chainId', []));
+      if (resolvedAddress.source === 'unknown') {
+        throw new Error(
+          'Connected address is not a Universal Profile account. Connect with UP Extension (desktop) or Universal Profiles app (mobile).'
+        );
+      }
+      const resolvedUpAddress = resolvedAddress.upAddress;
 
       const siweMessage = new SiweMessage({
         domain: window.location.host,
         uri: window.location.origin,
-        address: upWallet,
+        address: resolvedUpAddress,
         statement:
-          'Signing this message will enable GRAVE to read your UP Browser Extension to protect your Universal Profile from spam.',
+          'Signing this message will enable GRAVE to read your UP wallet to protect your Universal Profile from spam.',
         version: '1',
-        chainId: currentChainId,
+        chainId: activeChainId,
         resources: [`${window.location.origin}/terms`],
       }).prepareMessage();
 
-      const signature = await provider.send('personal_sign', [
-        siweMessage,
-        upWallet,
-      ]);
-      const mainUPController = verifyMessage(siweMessage, signature);
-      const { profile, issuedAssets } = await fetchProfileData(
-        upWallet,
-        currentChainId,
-        true
-      );
+      const shouldWakeExternalWalletApp =
+        !hasLuksoProvider() || isWalletConnectConnector(connector);
+
+      const signViaPersonalSign = async () => {
+        if (!providerRef.current) {
+          throw new Error('Wallet provider not ready');
+        }
+        const signerAccount = walletClient.account.address;
+        const siweHex = hexlify(toUtf8Bytes(siweMessage));
+        const personalSignParamVariants: Array<[string, string]> = [
+          [siweHex, signerAccount],
+          [signerAccount, siweHex],
+          [siweMessage, signerAccount],
+          [signerAccount, siweMessage],
+        ];
+
+        let lastPersonalSignError: unknown = null;
+        for (const params of personalSignParamVariants) {
+          try {
+            return (await walletClient.request({
+              method: 'personal_sign',
+              params: params as any,
+            })) as string;
+          } catch (walletClientRequestError) {
+            lastPersonalSignError = walletClientRequestError;
+          }
+          try {
+            return (await providerRef.current.send(
+              'personal_sign',
+              params
+            )) as string;
+          } catch (providerSendError) {
+            lastPersonalSignError = providerSendError;
+          }
+        }
+        throw lastPersonalSignError || new Error('Failed to sign message');
+      };
+
+      const signViaWalletClient = () =>
+        walletClient.signMessage({
+          account: walletClient.account,
+          message: siweMessage,
+        });
+
+      const wakeExternalWalletApp = async () => {
+        if (!shouldWakeExternalWalletApp) return;
+        await syncWalletConnectUriFromProvider();
+        window.setTimeout(() => {
+          wakeUniversalProfilesApp();
+        }, 120);
+      };
+
+      let signature: string | null = null;
+      let lastSignError: unknown = null;
+
+      try {
+        const signMessagePromise = signViaWalletClient();
+        await wakeExternalWalletApp();
+        signature = await signMessagePromise;
+      } catch (signError) {
+        lastSignError = signError;
+        if (isUserRejectedRequestError(signError)) {
+          throw signError;
+        }
+
+        if (isTransientProviderLoadError(signError)) {
+          await wait(700);
+          try {
+            const retryPromise = signViaWalletClient();
+            await wakeExternalWalletApp();
+            signature = await retryPromise;
+            lastSignError = null;
+          } catch (retrySignError) {
+            lastSignError = retrySignError;
+            if (isUserRejectedRequestError(retrySignError)) {
+              throw retrySignError;
+            }
+          }
+        }
+      }
+
+      if (!signature) {
+        if (lastSignError && !isTransientProviderLoadError(lastSignError)) {
+          console.debug(
+            'ProfileProvider: signMessage failed, falling back to personal_sign',
+            lastSignError
+          );
+        }
+        signature = await signViaPersonalSign();
+      }
+
+      const recoveredController = verifyMessage(siweMessage, signature);
+      let mainUPController: string;
+      try {
+        mainUPController = await resolveMainControllerForUP(
+          providerRef.current,
+          resolvedUpAddress,
+          recoveredController,
+          address
+        );
+      } catch (controllerError) {
+        const network = supportedNetworks[activeChainId];
+        if (!network || !isTransientProviderLoadError(controllerError)) {
+          throw controllerError;
+        }
+        mainUPController = await resolveMainControllerForUP(
+          getReadProvider(activeChainId, network.rpcUrl),
+          resolvedUpAddress,
+          recoveredController,
+          address
+        );
+      }
+      const { profile, issuedAssets: fetchedIssuedAssets } =
+        await fetchProfileData(resolvedUpAddress, activeChainId, true);
+
       const newProfileData: IProfileDetailsData = {
         mainUPController,
-        upWallet,
+        connectedWalletAddress: address,
+        upWallet: resolvedUpAddress,
         profile,
-        issuedAssets,
+        issuedAssets: fetchedIssuedAssets,
       };
-      localStorage.setItem(
-        'profileDetailsData',
-        JSON.stringify(newProfileData)
-      );
-      setChainId(currentChainId);
+      localStorage.setItem('profileDetailsData', JSON.stringify(newProfileData));
+      lastSignedAddressRef.current = address.toLowerCase();
+      setChainId(activeChainId);
       setIsConnected(true);
+      setHasActiveSignature(true);
+      setIssuedAssets(fetchedIssuedAssets || []);
       setProfileDetailsData(newProfileData);
-      connectingRef.current = false;
-      ignoreAccountsChangedRef.current = false;
       return true;
-    } catch (error: any) {
-      console.error('ProfileProvider: Error', error);
+    } catch (signError: any) {
+      console.error('ProfileProvider: Error', signError);
+      const normalizedMessage = normalizeSignInErrorMessage(signError);
       setIsConnected(false);
       setProfileDetailsData(null);
       setIssuedAssets([]);
-      setError(error.message);
-      providerRef.current = null;
-      connectingRef.current = false;
-      ignoreAccountsChangedRef.current = false;
-      throw error;
-    }
-  };
-
-  const disconnect = (options?: { preserveChainId?: boolean }) => {
-    setProfileDetailsData(null);
-    setIsConnected(false);
-    if (!options?.preserveChainId) {
-      setChainId(null);
-    }
-    setIssuedAssets([]);
-    setError(null);
-    localStorage.removeItem('profileDetailsData');
-    localStorage.removeItem('profileData');
-    providerRef.current = null;
-    console.log('ProfileProvider: Disconnected');
-  };
-
-  const fetchProfileData = async (
-    upWallet?: string,
-    currentChainId?: number,
-    forceFetch: boolean = false
-  ) => {
-    const walletToFetch = upWallet || profileDetailsData?.upWallet;
-    if (
-      !walletToFetch ||
-      !currentChainId ||
-      !providerRef.current ||
-      (!isConnected && !forceFetch)
-    ) {
-      console.log('ProfileProvider: Skipping fetchProfileData, missing data', {
-        walletToFetch,
-        currentChainId,
-        isConnected,
-      });
-      return { profile: null, issuedAssets: [] };
-    }
-
-    const chainIdNum = Number(currentChainId);
-    const currentNetwork = supportedNetworks[chainIdNum];
-    if (!currentNetwork || currentNetwork.hasUPSupport === false) {
-      setError('Network not supported');
-      return { profile: null, issuedAssets: [] };
-    }
-
-    const erc725js = getErc725Read(
-      lsp3ProfileSchema as ERC725JSONSchema[],
-      walletToFetch,
-      {
-        chainId: chainIdNum,
-        erc725Options: { ipfsGateway: currentNetwork.ipfsGateway },
-      }
-    );
-
-    try {
-      setError(null);
-      console.log('ProfileProvider: Fetching profile for', {
-        walletToFetch,
-        currentChainId,
-      });
-      const profileMetaData = await fetchDataSafe(erc725js, 'LSP3Profile');
-      const lsp12IssuedAssets = await fetchDataSafe(
-        erc725js,
-        'LSP12IssuedAssets[]'
-      );
-      let newProfile: Profile | null = null;
-      let newIssuedAssets: string[] = [];
-
-      if (
-        profileMetaData?.value &&
-        typeof profileMetaData.value === 'object' &&
-        'LSP3Profile' in profileMetaData.value
-      ) {
-        const lsp3Profile = profileMetaData.value.LSP3Profile as Profile;
-        const profileImage = lsp3Profile.profileImage || [];
-        newProfile = {
-          name: lsp3Profile.name || '',
-          description: lsp3Profile.description || '',
-          tags: lsp3Profile.tags || [],
-          links: lsp3Profile.links || [],
-          profileImage: profileImage,
-          backgroundImage: lsp3Profile.backgroundImage || [],
-          mainImage: undefined,
-        };
-
-        if (profileImage.length > 0 && profileImage[0]?.url) {
-          try {
-            const mainImage = await getImageFromIPFS(
-              profileImage[0].url,
-              chainIdNum
-            );
-            newProfile.mainImage = mainImage;
-          } catch (ipfsError) {
-            console.error(
-              'ProfileProvider: Failed to fetch mainImage from IPFS:',
-              ipfsError
-            );
-            newProfile.mainImage = undefined;
-          }
-        } else {
-          console.log('ProfileProvider: No valid profile image URL found', {
-            profileImage,
-          });
-        }
-      } else {
-        console.log('ProfileProvider: No profile data found');
-      }
-
-      if (
-        lsp12IssuedAssets?.value &&
-        Array.isArray(lsp12IssuedAssets.value)
-      ) {
-        newIssuedAssets = lsp12IssuedAssets.value as string[];
-      }
-
-      return { profile: newProfile, issuedAssets: newIssuedAssets };
-    } catch (error) {
-      console.error('ProfileProvider: Cannot fetch profile data:', error);
-      setError('Failed to fetch profile data');
-      return { profile: null, issuedAssets: [] };
-    }
-  };
-
-  const switchNetwork = async (newChainId: number) => {
-    try {
-      switchingNetworkRef.current = true;
-      await requestNetworkSwitch(newChainId);
-      console.log('ProfileProvider: Switched network', { newChainId });
-      await connectAndSign();
-    } catch (error: any) {
-      console.error('ProfileProvider: Switch network error', error);
-      setError(error.message);
+      setHasActiveSignature(false);
+      setError(normalizedMessage);
+      throw new Error(normalizedMessage);
     } finally {
-      switchingNetworkRef.current = false;
+      signingRef.current = false;
+      setSigningMessage(false);
     }
-  };
+  }, [
+    address,
+    chainId,
+    connector,
+    expectedChainId,
+    fetchProfileData,
+    wakeUniversalProfilesApp,
+    syncWalletConnectUriFromProvider,
+    walletClient,
+    walletChainId,
+  ]);
+
+  const switchNetwork = useCallback(
+    async (newChainId: number) => {
+      try {
+        setError(null);
+        if (pendingSignature || signingRef.current || signingMessage) {
+          return;
+        }
+        const onMobile = isMobileDevice();
+        const desktopWithLukso = hasLuksoProvider() && !onMobile;
+        if (
+          !isWalletConnected ||
+          (desktopWithLukso && !isLuksoConnector(connector))
+        ) {
+          if (desktopWithLukso) {
+            if (!luksoConnector) {
+              throw new Error('Universal Profile connector unavailable.');
+            }
+            if (isWalletConnected) {
+              safeWagmiDisconnect();
+            }
+            await connectAsync({ connector: luksoConnector, chainId: newChainId });
+            setPendingSignature(true);
+            return;
+          }
+          if (onMobile) {
+            if (openConnectModal) {
+              setPendingSignature(true);
+              openConnectModal();
+              return;
+            }
+            if (walletConnectConnector) {
+              setPendingSignature(true);
+              await connectAsync({
+                connector: walletConnectConnector,
+                chainId: newChainId,
+              });
+              await syncWalletConnectUriFromProvider();
+              wakeUniversalProfilesApp();
+              return;
+            }
+          }
+          throw new Error(
+            'Universal Profile Extension (desktop) or Universal Profiles app (mobile) required.'
+          );
+        }
+        await switchChainAsync({ chainId: newChainId });
+        setPendingSignature(true);
+      } catch (switchError) {
+        setPendingSignature(false);
+        if (openChainModal) {
+          openChainModal();
+          return;
+        }
+        throw switchError;
+      }
+    },
+    [
+      connectAsync,
+      connector,
+      isWalletConnected,
+      luksoConnector,
+      walletConnectConnector,
+      openConnectModal,
+      openChainModal,
+      safeWagmiDisconnect,
+      pendingSignature,
+      signingMessage,
+      syncWalletConnectUriFromProvider,
+      switchChainAsync,
+      wakeUniversalProfilesApp,
+    ]
+  );
+
+  const connectAndSign = useCallback(async (): Promise<boolean> => {
+    setError(null);
+    if (pendingSignature || signingRef.current || signingMessage) {
+      return false;
+    }
+
+    const onMobile = isMobileDevice();
+    const desktopWithLukso = hasLuksoProvider() && !onMobile;
+    if (desktopWithLukso) {
+      if (!luksoConnector) {
+        throw new Error('Universal Profile connector unavailable.');
+      }
+      if (!isWalletConnected || !isLuksoConnector(connector)) {
+        if (isWalletConnected) {
+          safeWagmiDisconnect();
+        }
+        await connectAsync({ connector: luksoConnector });
+        setPendingSignature(true);
+        return false;
+      }
+    } else if (!isWalletConnected) {
+      if (onMobile) {
+        if (openConnectModal) {
+          setPendingSignature(true);
+          openConnectModal();
+          return false;
+        }
+        if (walletConnectConnector) {
+          setPendingSignature(true);
+          try {
+            await connectAsync({
+              connector: walletConnectConnector,
+              ...(expectedChainId ? { chainId: expectedChainId } : {}),
+            });
+            await syncWalletConnectUriFromProvider();
+            wakeUniversalProfilesApp();
+            return false;
+          } catch (connectError) {
+            setPendingSignature(false);
+            throw connectError;
+          }
+        }
+      }
+      throw new Error(
+        'Universal Profile Extension (desktop) or Universal Profiles app (mobile) required.'
+      );
+    }
+
+    if (expectedChainId && chainId && expectedChainId !== chainId) {
+      await switchNetwork(expectedChainId);
+      return false;
+    }
+
+    return await signIn();
+  }, [
+    connectAsync,
+    connector,
+    luksoConnector,
+    walletConnectConnector,
+    isWalletConnected,
+    openConnectModal,
+    expectedChainId,
+    chainId,
+    pendingSignature,
+    signIn,
+    signingMessage,
+    safeWagmiDisconnect,
+    syncWalletConnectUriFromProvider,
+    switchNetwork,
+    wakeUniversalProfilesApp,
+  ]);
+
+  const disconnect = useCallback(
+    (options?: { preserveChainId?: boolean }) => {
+      if (options?.preserveChainId) {
+        preserveChainIdRef.current = true;
+        clearProfileState(options);
+        return;
+      }
+      clearProfileState(options);
+      safeWagmiDisconnect();
+    },
+    [clearProfileState, safeWagmiDisconnect]
+  );
 
   useEffect(() => {
-    if (!window.lukso) return;
+    if (
+      isWalletConnected &&
+      hasLuksoProvider() &&
+      !isMobileDevice() &&
+      connector?.id &&
+      !isLuksoConnector(connector)
+    ) {
+      safeWagmiDisconnect();
+      setError(
+        'Disconnected non-UP wallet. Sign in again with Universal Profile Extension.'
+      );
+    }
+  }, [connector, isWalletConnected, safeWagmiDisconnect]);
 
+  useEffect(() => {
+    if (!pendingSignature) return;
+    if (isWalletConnected || signingRef.current || signingMessage) return;
+    if (typeof window === 'undefined') return;
+
+    // Avoid indefinite loading when connect modal is dismissed/cancelled on mobile.
+    const timeoutId = window.setTimeout(() => {
+      if (!signingRef.current) {
+        setPendingSignature(false);
+      }
+    }, 30_000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isWalletConnected, pendingSignature, signingMessage]);
+
+  useEffect(() => {
+    if (!pendingSignature) return;
+    if (!isWalletConnected) return;
+    if (signingRef.current || signingMessage) return;
+    if (typeof window === 'undefined') return;
+
+    const activeChainId =
+      chainId ?? walletClient?.chain?.id ?? walletChainId ?? null;
+    const missingWalletState = !walletClient || !address || !activeChainId;
+    if (!missingWalletState) return;
+
+    // Avoid hanging spinner when wallet reports connected but client/account
+    // payload never arrives (common on interrupted mobile app handoffs).
+    const timeoutId = window.setTimeout(() => {
+      if (!signingRef.current) {
+        setPendingSignature(false);
+        setError(
+          'Wallet session did not finish loading. Reopen Universal Profiles app and try Sign In again.'
+        );
+      }
+    }, 12_000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    address,
+    chainId,
+    isWalletConnected,
+    pendingSignature,
+    signingMessage,
+    walletClient,
+    walletChainId,
+  ]);
+
+  useEffect(() => {
+    if (!pendingSignature) return;
+    const activeChainId =
+      chainId ?? walletClient?.chain?.id ?? walletChainId ?? null;
+    if (!isWalletConnected || !walletClient || !address || !activeChainId) return;
+    if (signingRef.current) return;
+    if (expectedChainId && expectedChainId !== activeChainId) return;
+    if (
+      hasLuksoProvider() &&
+      !isMobileDevice() &&
+      !isLuksoConnector(connector)
+    ) {
+      return;
+    }
+
+    signIn()
+      .catch(() => {
+        // error handled in signIn
+      })
+      .finally(() => {
+        setPendingSignature(false);
+      });
+  }, [
+    pendingSignature,
+    isWalletConnected,
+    walletClient,
+    address,
+    chainId,
+    connector,
+    expectedChainId,
+    signIn,
+    walletChainId,
+  ]);
+
+  useEffect(() => {
+    if (!isWalletConnected || !address) {
+      if (isConnected) {
+        clearProfileState();
+      }
+      sessionRestoreInProgressRef.current = false;
+      return;
+    }
+
+    const storedProfileDetails = localStorage.getItem('profileDetailsData');
+    if (!storedProfileDetails || isConnected) return;
+    // Prevent concurrent session restore attempts
+    if (sessionRestoreInProgressRef.current || signingRef.current || pendingSignature) return;
+
+    let cancelled = false;
+    sessionRestoreInProgressRef.current = true;
     const restoreSession = async () => {
-      const storedProfileDetails = localStorage.getItem('profileDetailsData');
-      if (storedProfileDetails && !isConnected) {
+      try {
         const parsedProfileDetails: IProfileDetailsData =
           JSON.parse(storedProfileDetails);
-        try {
-          const provider = getWalletProvider();
-          providerRef.current = provider;
-          const accounts = await provider.send('eth_accounts', []);
-          const currentChainId = Number(
-            await provider.send('eth_chainId', [])
-          );
-          setChainId(currentChainId);
+        const currentAddress = address.toLowerCase();
+        const storedUPAddress =
+          parsedProfileDetails?.upWallet?.toLowerCase() || null;
+        const storedConnectedAddress =
+          parsedProfileDetails?.connectedWalletAddress?.toLowerCase() || null;
 
-          if (expectedChainId && currentChainId !== expectedChainId) {
-            console.log(
-              'ProfileProvider: Session not restored due to network mismatch'
+        let shouldRestore =
+          storedConnectedAddress === currentAddress ||
+          storedUPAddress === currentAddress;
+        let connectedWalletAddress =
+          parsedProfileDetails.connectedWalletAddress || null;
+        let restoredUPAddress = parsedProfileDetails.upWallet;
+
+        const resolveProvider =
+          providerRef.current ||
+          (chainId && supportedNetworks[chainId]
+            ? getReadProvider(chainId, supportedNetworks[chainId].rpcUrl)
+            : null);
+
+        if (resolveProvider) {
+          const storedLooksLikeUP = storedUPAddress
+            ? await canReadAsUniversalProfile(resolveProvider, storedUPAddress)
+            : false;
+
+          if (!storedLooksLikeUP) {
+            const resolved = await resolveUniversalProfileAddress(
+              resolveProvider,
+              address
             );
+            if (resolved.source !== 'unknown') {
+              restoredUPAddress = resolved.upAddress;
+              shouldRestore = true;
+              connectedWalletAddress = address;
+            } else {
+              shouldRestore = false;
+            }
+          } else if (!shouldRestore) {
+            const resolved = await resolveUniversalProfileAddress(
+              resolveProvider,
+              address
+            );
+            if (resolved.upAddress.toLowerCase() === storedUPAddress) {
+              shouldRestore = true;
+              connectedWalletAddress = address;
+            }
+          }
+        }
+
+        if (!shouldRestore) {
+          localStorage.removeItem('profileDetailsData');
+          return;
+        }
+
+        if (expectedChainId) {
+          if (!chainId) {
+            return;
+          }
+          if (chainId !== expectedChainId) {
             localStorage.removeItem('profileDetailsData');
             return;
           }
-          if (
-            accounts.length > 0 &&
-            accounts.includes(parsedProfileDetails.upWallet)
-          ) {
-            setProfileDetailsData(parsedProfileDetails);
-            setIsConnected(true);
-            const needsProfileRefresh =
-              !parsedProfileDetails.profile ||
-              !parsedProfileDetails.profile.name ||
-              !parsedProfileDetails.profile.profileImage ||
-              parsedProfileDetails.profile.profileImage.length === 0;
-            if (needsProfileRefresh) {
-              try {
-                const { profile, issuedAssets } = await fetchProfileData(
-                  parsedProfileDetails.upWallet,
-                  currentChainId,
-                  true
-                );
-                if (profile || (issuedAssets && issuedAssets.length > 0)) {
-                  const refreshedProfile: IProfileDetailsData = {
-                    ...parsedProfileDetails,
-                    profile: profile ?? parsedProfileDetails.profile,
-                    issuedAssets:
-                      issuedAssets && issuedAssets.length > 0
-                        ? issuedAssets
-                        : parsedProfileDetails.issuedAssets,
-                  };
-                  setProfileDetailsData(refreshedProfile);
-                  localStorage.setItem(
-                    'profileDetailsData',
-                    JSON.stringify(refreshedProfile)
-                  );
-                }
-              } catch (refreshError) {
-                console.warn(
-                  'ProfileProvider: Failed to refresh profile metadata',
-                  refreshError
-                );
-              }
-            }
-            console.log('ProfileProvider: Restored session', {
-              ...parsedProfileDetails,
-              chainId: currentChainId,
-            });
-          } else {
-            console.log(
-              'ProfileProvider: Session not restored, no active account'
-            );
-            localStorage.removeItem('profileDetailsData');
-          }
-        } catch (error) {
-          console.error('ProfileProvider: Session restore error', error);
-          localStorage.removeItem('profileDetailsData');
-          providerRef.current = null;
         }
+
+        if (cancelled) return;
+
+        const restoredProfileDetails: IProfileDetailsData = {
+          ...parsedProfileDetails,
+          upWallet: restoredUPAddress,
+          connectedWalletAddress: connectedWalletAddress || address,
+        };
+        if (
+          restoredProfileDetails.connectedWalletAddress !==
+          parsedProfileDetails.connectedWalletAddress
+        ) {
+          localStorage.setItem(
+            'profileDetailsData',
+            JSON.stringify(restoredProfileDetails)
+          );
+        }
+
+        lastSignedAddressRef.current = address.toLowerCase();
+        setProfileDetailsData(restoredProfileDetails);
+        setIsConnected(true);
+        setIssuedAssets(restoredProfileDetails.issuedAssets || []);
+        setHasActiveSignature(!!restoredProfileDetails.mainUPController);
+      } catch (restoreError) {
+        console.error('ProfileProvider: Session restore error', restoreError);
+        localStorage.removeItem('profileDetailsData');
+      } finally {
+        sessionRestoreInProgressRef.current = false;
       }
     };
 
     restoreSession();
 
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (ignoreAccountsChangedRef.current || connectingRef.current) {
-        return;
-      }
-      console.log('ProfileProvider: Accounts changed', {
-        accounts,
-        currentUpWallet: profileDetailsData?.upWallet,
-      });
-      if (accounts.length === 0) {
-        disconnect();
-      } else if (
-        !profileDetailsData ||
-        accounts[0] !== profileDetailsData.upWallet
-      ) {
-        setProfileDetailsData(null);
-        setIssuedAssets([]);
-        connectAndSign();
-      }
-    };
-
-    const handleChainChanged = (chainIdHex: string) => {
-      const newChainId = Number(chainIdHex);
-      setChainId(newChainId);
-      setIssuedAssets([]);
-      console.log('ProfileProvider: Chain changed', { newChainId });
-      if (expectedChainId && newChainId !== expectedChainId) {
-        disconnect({ preserveChainId: true });
-        return;
-      }
-      if (switchingNetworkRef.current) {
-        return;
-      }
-      if (isConnected) {
-        connectAndSign();
-      }
-    };
-
-    window.lukso.on('accountsChanged', handleAccountsChanged);
-    window.lukso.on('chainChanged', handleChainChanged);
-
     return () => {
-      window.lukso.removeListener('accountsChanged', handleAccountsChanged);
-      window.lukso.removeListener('chainChanged', handleChainChanged);
+      cancelled = true;
+      sessionRestoreInProgressRef.current = false;
     };
-  }, [isConnected, profileDetailsData?.upWallet, expectedChainId]);
+  }, [
+    address,
+    chainId,
+    clearProfileState,
+    expectedChainId,
+    isConnected,
+    isWalletConnected,
+    pendingSignature,
+  ]);
 
   useEffect(() => {
-    if (!window.lukso) return;
-    const provider = getWalletProvider();
-    provider
-      .send('eth_chainId', [])
-      .then((chainIdHex: string) => {
-        const currentChainId = Number(chainIdHex);
-        setChainId(currentChainId);
-      })
-      .catch(() => {
-        // ignore - wallet may be locked or not available yet
-      });
-  }, [expectedChainId]);
+    if (!isWalletConnected || !address) return;
+    // Don't trigger re-sign while a sign-in is already in progress
+    if (signingRef.current || pendingSignature) return;
+
+    const currentAddress = address.toLowerCase();
+
+    // If we just signed with this address, don't trigger another sign-in
+    // This prevents race conditions where profileDetailsData hasn't updated yet
+    if (lastSignedAddressRef.current === currentAddress) return;
+
+    const matchesConnectedWalletAddress =
+      profileDetailsData?.connectedWalletAddress?.toLowerCase() ===
+      currentAddress;
+    const matchesUPWallet =
+      profileDetailsData?.upWallet?.toLowerCase() === currentAddress;
+
+    if (
+      profileDetailsData?.upWallet &&
+      !matchesConnectedWalletAddress &&
+      !matchesUPWallet
+    ) {
+      clearProfileState({ preserveChainId: true });
+      setHasActiveSignature(false);
+      setPendingSignature(true);
+    }
+  }, [
+    address,
+    clearProfileState,
+    isWalletConnected,
+    pendingSignature,
+    profileDetailsData?.connectedWalletAddress,
+    profileDetailsData?.upWallet,
+  ]);
 
   useEffect(() => {
     if (!expectedChainId || !chainId) return;
@@ -488,10 +1162,67 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         disconnect({ preserveChainId: true });
       }
       setError(
-        `Wrong network. Please switch to ${supportedNetworks[expectedChainId]?.displayName || expectedChainId}.`
+        `Wrong network. Please switch to ${
+          supportedNetworks[expectedChainId]?.displayName || expectedChainId
+        }.`
       );
+      return;
     }
-  }, [expectedChainId, chainId, isConnected]);
+    setError(null);
+  }, [expectedChainId, chainId, isConnected, disconnect]);
+
+  useEffect(() => {
+    if (!chainId) return;
+    if (prevChainIdRef.current && chainId !== prevChainIdRef.current) {
+      // Don't trigger re-sign while one is already in progress
+      if (signingRef.current || pendingSignature) {
+        prevChainIdRef.current = chainId;
+        return;
+      }
+      if (isConnected && (!expectedChainId || expectedChainId === chainId)) {
+        // Clear last signed address since chain changed
+        lastSignedAddressRef.current = null;
+        setHasActiveSignature(false);
+        setPendingSignature(true);
+      }
+    }
+    prevChainIdRef.current = chainId;
+  }, [chainId, expectedChainId, isConnected, pendingSignature]);
+
+  const debugState = useMemo<ProfileDebugState>(
+    () => ({
+      connectorId: connector?.id || null,
+      connectorName: connector?.name || null,
+      walletConnectConnectorId: walletConnectConnector?.id || null,
+      walletConnectConnectorName: walletConnectConnector?.name || null,
+      isWalletConnected,
+      address: address || null,
+      walletChainId: walletChainId ?? null,
+      walletClientPresent: !!walletClient,
+      walletClientChainId: walletClient?.chain?.id ?? null,
+      pendingSignature,
+      signingMessage,
+      hasLuksoProvider: hasLuksoProvider(),
+      isMobileDevice: isMobileDevice(),
+      lastWalletConnectUri: lastWalletConnectUriRef.current,
+      lastWalletConnectUriUpdatedAt,
+      lastUpAppWakeAt,
+    }),
+    [
+      address,
+      connector?.id,
+      connector?.name,
+      isWalletConnected,
+      lastUpAppWakeAt,
+      lastWalletConnectUriUpdatedAt,
+      pendingSignature,
+      signingMessage,
+      walletChainId,
+      walletClient,
+      walletConnectConnector?.id,
+      walletConnectConnector?.name,
+    ]
+  );
 
   const contextValue = useMemo(
     () => ({
@@ -501,14 +1232,32 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setProfileDetailsData,
       error,
       isConnected,
+      hasActiveSignature,
+      isSigningIn: pendingSignature || signingMessage,
       chainId,
       expectedChainId,
       isNetworkMismatch,
       connectAndSign,
       disconnect,
       switchNetwork,
+      debugState,
     }),
-    [issuedAssets, profileDetailsData, error, isConnected, chainId, expectedChainId, isNetworkMismatch]
+    [
+      issuedAssets,
+      profileDetailsData,
+      error,
+      isConnected,
+      hasActiveSignature,
+      pendingSignature,
+      signingMessage,
+      chainId,
+      expectedChainId,
+      isNetworkMismatch,
+      connectAndSign,
+      disconnect,
+      switchNetwork,
+      debugState,
+    ]
   );
 
   return (

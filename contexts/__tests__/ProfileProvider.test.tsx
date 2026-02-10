@@ -1,16 +1,49 @@
 import React, { useEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor, screen } from '@testing-library/react';
 import { ProfileProvider, useProfile } from '@/contexts/ProfileProvider';
 
-const mockGetWalletProvider = vi.fn();
+const openConnectModalMock = vi.fn();
+const openChainModalMock = vi.fn();
+const switchChainAsyncMock = vi.fn();
+const disconnectMock = vi.fn();
+const connectAsyncMock = vi.fn();
+const resolveUniversalProfileAddressMock = vi.fn();
+const resolveMainControllerForUPMock = vi.fn();
+const canReadAsUniversalProfileMock = vi.fn();
+
+const walletClientMock = {
+  account: { address: '0x1111111111111111111111111111111111111111' },
+  chain: { id: 42, name: 'LUKSO' },
+  signMessage: vi.fn(async () => '0xsigned'),
+};
+
+const useAccountMock = vi.fn();
+const useWalletClientMock = vi.fn();
+
+vi.mock('wagmi', () => ({
+  useAccount: () => useAccountMock(),
+  useConnect: () => ({
+    connectAsync: connectAsyncMock,
+    connectors: [{ id: 'lukso', name: 'Universal Profile' }],
+  }),
+  useWalletClient: () => useWalletClientMock(),
+  useDisconnect: () => ({ disconnect: disconnectMock }),
+  useSwitchChain: () => ({ switchChainAsync: switchChainAsyncMock }),
+}));
+
+vi.mock('@rainbow-me/rainbowkit', () => ({
+  useConnectModal: () => ({ openConnectModal: openConnectModalMock }),
+  useChainModal: () => ({ openChainModal: openChainModalMock }),
+}));
 
 vi.mock('@/utils/walletClient', () => ({
-  getWalletProvider: () => mockGetWalletProvider(),
+  setWalletClient: vi.fn(() => ({ provider: {} })),
 }));
 
 vi.mock('@/utils/erc725Client', () => ({
   getErc725Read: vi.fn(() => ({})),
+  getReadProvider: vi.fn(() => ({})),
   fetchDataSafe: vi.fn(async (_erc725: any, key: string) => {
     if (key === 'LSP3Profile') {
       return {
@@ -29,6 +62,15 @@ vi.mock('@/utils/erc725Client', () => ({
   }),
 }));
 
+vi.mock('@/utils/upAddress', () => ({
+  canReadAsUniversalProfile: (...args: any[]) =>
+    canReadAsUniversalProfileMock(...args),
+  resolveMainControllerForUP: (...args: any[]) =>
+    resolveMainControllerForUPMock(...args),
+  resolveUniversalProfileAddress: (...args: any[]) =>
+    resolveUniversalProfileAddressMock(...args),
+}));
+
 vi.mock('next/navigation', () => ({
   useParams: () => ({}),
 }));
@@ -37,7 +79,7 @@ vi.mock('ethers', async () => {
   const actual = await vi.importActual<any>('ethers');
   return {
     ...actual,
-    verifyMessage: vi.fn(() => '0x1111111111111111111111111111111111111111'),
+    verifyMessage: vi.fn(() => '0x2222222222222222222222222222222222222222'),
   };
 });
 
@@ -52,40 +94,66 @@ const ConnectOnMount = () => {
   return null;
 };
 
+const ProfileStatus = () => {
+  const { isConnected, profileDetailsData } = useProfile();
+  return (
+    <div>
+      {isConnected ? profileDetailsData?.upWallet : 'disconnected'}
+    </div>
+  );
+};
+
 describe('ProfileProvider connect flow', () => {
+  const originalUserAgent =
+    typeof navigator === 'undefined' ? '' : navigator.userAgent;
+
   beforeEach(() => {
-    mockGetWalletProvider.mockReset();
+    openConnectModalMock.mockReset();
+    openChainModalMock.mockReset();
+    switchChainAsyncMock.mockReset();
+    disconnectMock.mockReset();
+    connectAsyncMock.mockReset();
+    walletClientMock.signMessage.mockClear();
+    useAccountMock.mockReset();
+    useWalletClientMock.mockReset();
+    resolveUniversalProfileAddressMock.mockReset();
+    resolveMainControllerForUPMock.mockReset();
+    canReadAsUniversalProfileMock.mockReset();
     localStorage.clear();
+    resolveUniversalProfileAddressMock.mockImplementation(
+      async (_provider: unknown, connectedAddress: string) => ({
+        upAddress: connectedAddress,
+        source: 'up',
+      })
+    );
+    resolveMainControllerForUPMock.mockImplementation(
+      async (
+        _provider: unknown,
+        _upAddress: string,
+        recoveredController: string
+      ) => recoveredController
+    );
+    canReadAsUniversalProfileMock.mockResolvedValue(true);
+    if (typeof navigator !== 'undefined') {
+      Object.defineProperty(window.navigator, 'userAgent', {
+        configurable: true,
+        value: originalUserAgent,
+      });
+    }
   });
 
-  it('does not double prompt when accountsChanged fires during connect', async () => {
-    const handlers: Record<string, (args: any) => void> = {};
-    (window as any).lukso = {
-      on: (event: string, cb: (args: any) => void) => {
-        handlers[event] = cb;
-      },
-      removeListener: vi.fn(),
-    };
-
-    const account = '0x1111111111111111111111111111111111111111';
-    const sendMock = vi.fn(async (method: string, params?: any[]) => {
-      if (method === 'eth_chainId') {
-        return '0x2a';
-      }
-      if (method === 'eth_requestAccounts') {
-        handlers.accountsChanged?.([account]);
-        return [account];
-      }
-      if (method === 'personal_sign') {
-        return '0xsigned';
-      }
-      if (method === 'eth_accounts') {
-        return [account];
-      }
-      return [];
+  it('opens connect modal when wallet is not connected', async () => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
     });
-
-    mockGetWalletProvider.mockReturnValue({ send: sendMock });
+    useAccountMock.mockReturnValue({
+      address: undefined,
+      chainId: undefined,
+      isConnected: false,
+      connector: undefined,
+    });
+    useWalletClientMock.mockReturnValue({ data: null });
 
     render(
       <ProfileProvider>
@@ -94,12 +162,32 @@ describe('ProfileProvider connect flow', () => {
     );
 
     await waitFor(() => {
-      expect(sendMock).toHaveBeenCalledWith('personal_sign', expect.anything());
+      expect(openConnectModalMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('signs and stores profile data when wallet is connected', async () => {
+    useAccountMock.mockReturnValue({
+      address: walletClientMock.account.address,
+      chainId: 42,
+      isConnected: true,
+      connector: { id: 'lukso' },
+    });
+    useWalletClientMock.mockReturnValue({ data: walletClientMock });
+
+    render(
+      <ProfileProvider>
+        <ConnectOnMount />
+        <ProfileStatus />
+      </ProfileProvider>
+    );
+
+    await waitFor(() => {
+      expect(walletClientMock.signMessage).toHaveBeenCalled();
     });
 
-    const requestCalls = sendMock.mock.calls.filter(
-      ([method]) => method === 'eth_requestAccounts'
-    );
-    expect(requestCalls).toHaveLength(1);
+    await waitFor(() => {
+      expect(screen.getByText(walletClientMock.account.address)).toBeInTheDocument();
+    });
   });
 });

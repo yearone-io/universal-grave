@@ -21,7 +21,11 @@ import {
 import { getChecksumAddress } from './tokenUtils';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { getErc725Read } from '@/utils/erc725Client';
-import { getWalletSigner } from '@/utils/walletClient';
+import {
+  getWalletSigner,
+  getWalletSignerForUP,
+  sendUPMethodTx,
+} from '@/utils/walletClient';
 
 export const hasOlderGraveDelegate = (
   URDLsp7: string | null,
@@ -104,7 +108,9 @@ export const updateBECPermissions = async (
   account: string,
   mainUPController: string
 ) => {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(account, {
+    requirePermissions: true,
+  });
   // check if we need to update permissions
   const missingPermissions = await doesControllerHaveMissingPermissions(
     mainUPController,
@@ -135,10 +141,13 @@ export const updateBECPermissions = async (
   ]);
 
   try {
-    const setDataBatchTx = await (UP.connect(signer) as any).setDataBatch(
-      permissionsData.keys,
-      permissionsData.values
-    );
+    const setDataBatchTx = await sendUPMethodTx({
+      signer,
+      upAddress: account,
+      upContract: UP,
+      method: 'setDataBatch',
+      args: [permissionsData.keys, permissionsData.values],
+    });
     return await setDataBatchTx.wait();
   } catch (error: any) {
     const nestedError =
@@ -165,7 +174,9 @@ export const toggleForwarderAsLSPDelegate = async (
   forwarderAddress: string,
   isDelegate: boolean
 ) => {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAccount, {
+    requirePermissions: true,
+  });
   // 1. Prepare keys and values for setting the Forwarder as the delegate for LSP7 and LSP8
   const LSP7URDdataKey =
     ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
@@ -221,10 +232,16 @@ export const toggleForwarderAsLSPDelegate = async (
   ]);
 
   // 3. Set the data on the UP
-  const setDataBatchTx = await (UP.connect(signer) as any).setDataBatch(
-    [...lspDelegateKeys, ...forwarderPermissionsData.keys],
-    [...lspDelegateValues, ...forwarderPermissionsData.values]
-  );
+  const setDataBatchTx = await sendUPMethodTx({
+    signer,
+    upAddress: upAccount,
+    upContract: UP,
+    method: 'setDataBatch',
+    args: [
+      [...lspDelegateKeys, ...forwarderPermissionsData.keys],
+      [...lspDelegateValues, ...forwarderPermissionsData.values],
+    ],
+  });
   return await setDataBatchTx.wait();
 };
 

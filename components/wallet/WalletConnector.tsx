@@ -3,13 +3,13 @@ import SignInButton from '@/components/SignInButton';
 declare global {
   interface Window {
     lukso: any;
-    ethereum: any;
   }
 }
 import React, { useEffect, useState } from 'react';
 import { useProfile } from '@/contexts/ProfileProvider';
 import {
   Avatar,
+  Box,
   Button,
   Flex,
   Menu,
@@ -33,12 +33,14 @@ interface WalletConnectorProps {
  * It utilizes the ProfileProvider for state management and to access the necessary actions.
  */
 const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
-  const { profileDetailsData, isConnected, disconnect, chainId } = useProfile();
+  const { profileDetailsData, isConnected, hasActiveSignature, disconnect, chainId } =
+    useProfile();
   const account = profileDetailsData?.upWallet || null;
   const profile = profileDetailsData?.profile;
   const [mainImage, setMainImage] = useState<string | undefined>(undefined);
 
-  const isSigned = isConnected && !!profileDetailsData && !!profile;
+  const isSigned =
+    isConnected && hasActiveSignature && !!profileDetailsData && !!profile;
 
   // Fetch profile image from IPFS
   useEffect(() => {
@@ -86,18 +88,43 @@ const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
       return <SignInButton />;
     } else {
       return (
-        <Menu>
-          <MenuButton as={Button} variant="solidWhite" fontFamily="Bungee">
-            <Flex gap={2} alignItems="center" justifyContent="center">
+        <Menu placement="bottom-end">
+          <MenuButton
+            as={Button}
+            variant="solidWhite"
+            fontFamily="Bungee"
+            maxW={{ base: '170px', sm: 'none' }}
+          >
+            <Flex gap={2} alignItems="center" justifyContent="center" minW={0}>
               {profileImage}
-              {buttonText || formatAddress(account)}
+              <Box minW={0} overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                {buttonText || formatAddress(account)}
+              </Box>
             </Flex>
           </MenuButton>
-          <MenuList>
+          <MenuList
+            minW="220px"
+            p="8px"
+            border="1px solid"
+            borderColor="dark.purple.300"
+            bg="dark.purple.500"
+            color="dark.white"
+            boxShadow="0 10px 24px rgba(0, 0, 0, 0.35)"
+            borderRadius="14px"
+            zIndex="popover"
+          >
             <MenuItem
               as={Link}
               href={`/${networkName}/grave/${account}`}
               icon={<TbGrave2 />}
+              borderRadius="10px"
+              px="12px"
+              py="10px"
+              fontSize="16px"
+              lineHeight="20px"
+              w="100%"
+              _hover={{ bg: 'whiteAlpha.200' }}
+              _focus={{ bg: 'whiteAlpha.200' }}
             >
               My Graveyard
             </MenuItem>
@@ -105,10 +132,29 @@ const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
               as={Link}
               href={`/${networkName}/grave/settings`}
               icon={<FaCog />}
+              borderRadius="10px"
+              px="12px"
+              py="10px"
+              fontSize="16px"
+              lineHeight="20px"
+              w="100%"
+              _hover={{ bg: 'whiteAlpha.200' }}
+              _focus={{ bg: 'whiteAlpha.200' }}
             >
               Settings
             </MenuItem>
-            <MenuItem onClick={() => disconnect()} icon={<VscDebugDisconnect />}>
+            <MenuItem
+              onClick={() => disconnect()}
+              icon={<VscDebugDisconnect />}
+              borderRadius="10px"
+              px="12px"
+              py="10px"
+              fontSize="16px"
+              lineHeight="20px"
+              w="100%"
+              _hover={{ bg: 'whiteAlpha.200' }}
+              _focus={{ bg: 'whiteAlpha.200' }}
+            >
               Disconnect
             </MenuItem>
           </MenuList>

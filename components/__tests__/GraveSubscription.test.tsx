@@ -54,6 +54,10 @@ vi.mock('@/constants/supportedNetworks', () => ({
       explorer: 'https://explorer.example',
     },
   },
+  getNetworkByName: (networkName: string) =>
+    networkName === 'lukso'
+      ? { chainId: 42, displayName: 'LUKSO Mainnet' }
+      : null,
 }));
 
 vi.mock('@/utils/assistantConfig', () => ({
@@ -84,6 +88,12 @@ vi.mock('@/utils/walletClient', () => ({
   assertWalletNetwork: vi.fn(),
   getWalletProvider: vi.fn(() => ({})),
   getWalletSigner: vi.fn().mockResolvedValue({}),
+  getWalletSignerForUP: vi.fn().mockResolvedValue({}),
+  sendUPMethodTx: vi.fn().mockResolvedValue({
+    hash: '0x123',
+    wait: vi.fn().mockResolvedValue(undefined),
+  }),
+  hasWalletProvider: vi.fn(() => true),
 }));
 
 vi.mock('@/utils/uapSubscription', () => ({
@@ -139,6 +149,7 @@ describe('GraveSubscription unique flows', () => {
         mainUPController: '0x9999999999999999999999999999999999999999',
       },
       isConnected: true,
+      hasActiveSignature: true,
       chainId: 42,
       isNetworkMismatch: false,
     });
@@ -170,7 +181,7 @@ describe('GraveSubscription unique flows', () => {
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
 
     await waitFor(() => {
       expect(screen.getByText('SAVE CHANGES')).toBeInTheDocument();
@@ -213,7 +224,7 @@ describe('GraveSubscription unique flows', () => {
       listNameLSP8: 'LegacyList',
     });
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
 
     const migrateButton = await waitFor(() =>
       screen.getByRole('button', { name: /migrate/i })
@@ -244,7 +255,7 @@ describe('GraveSubscription unique flows', () => {
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
 
     const saveButton = await waitFor(() =>
       screen.getByRole('button', { name: /save changes/i })
@@ -262,7 +273,7 @@ describe('GraveSubscription unique flows', () => {
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
 
     const installButton = await waitFor(() =>
       screen.getByRole('button', { name: /install protocol/i })
@@ -296,7 +307,7 @@ describe('GraveSubscription unique flows', () => {
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
 
     const saveButton = await waitFor(() =>
       screen.getByRole('button', { name: /save changes/i })

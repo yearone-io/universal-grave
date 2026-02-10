@@ -10,6 +10,18 @@ import {
   lsp9VaultAbi,
 } from '@lukso/lsp-smart-contracts/abi';
 
+const isRecoverableReadError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    error?.code === 'CALL_EXCEPTION' ||
+    error?.code === 'BAD_DATA' ||
+    message.includes('missing revert data') ||
+    message.includes('execution reverted') ||
+    message.includes('could not decode result data') ||
+    message.includes('load failed')
+  );
+};
+
 /**
  * Check if a Universal Profile is subscribed to the UAP protocol
  * @param provider - Ethers provider
@@ -35,7 +47,9 @@ export async function isSubscribedToUAP(
       urdValue.toLowerCase() === protocolAddress.toLowerCase()
     );
   } catch (error) {
-    console.error('Error checking UAP subscription:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error checking UAP subscription:', error);
+    }
     return false;
   }
 }
@@ -90,7 +104,9 @@ export async function getUAPVaultAddress(
     const addressHex = '0x' + vaultAddress.slice(-40);
     return addressHex;
   } catch (error) {
-    console.error('Error getting UAP vault address:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error getting UAP vault address:', error);
+    }
     return null;
   }
 }
@@ -113,7 +129,9 @@ export async function isValidVault(
 
     return owner.toLowerCase() === expectedOwner.toLowerCase();
   } catch (error) {
-    console.error('Error validating vault:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error validating vault:', error);
+    }
     return false;
   }
 }
@@ -181,17 +199,8 @@ export async function detectGraveSetup(
         // Track whether forwarder is configured (this is the key indicator of active protection)
         isForwarderConfigured = assistantConfig.isConfigured;
         uapVaultAddress = assistantConfig.vaultAddress;
-
-        console.log('detectGraveSetup: Forwarder config result:', {
-          isConfigured: assistantConfig.isConfigured,
-          vaultAddress: assistantConfig.vaultAddress,
-        });
       } catch (error) {
         // Forwarder assistant is not configured - GRAVE is NOT active
-        console.log(
-          'Forwarder Assistant not configured, GRAVE protection is inactive:',
-          error instanceof Error ? error.message : error
-        );
         isForwarderConfigured = false;
         uapVaultAddress = null;
       }
@@ -211,7 +220,7 @@ export async function detectGraveSetup(
         networkConfig.universalGraveForwarder
       );
     } catch (error) {
-      console.error('Error checking legacy vault:', error);
+      // Silently ignore legacy vault check errors
     }
 
     // If no vault found in current forwarder, check previous versions
@@ -228,7 +237,7 @@ export async function detectGraveSetup(
             break;
           }
         } catch (error) {
-          console.error(`Error checking old forwarder ${oldForwarder}:`, error);
+          // Silently ignore old forwarder check errors
         }
       }
     }
@@ -251,14 +260,6 @@ export async function detectGraveSetup(
       setupType = 'legacy';
     }
 
-    console.log('detectGraveSetup: Final result:', {
-      hasUAPSubscription,
-      isForwarderConfigured,
-      hasLegacyGrave,
-      setupType,
-      uapVaultAddress,
-    });
-
     return {
       hasUAPSubscription,
       hasLegacyGrave,
@@ -267,7 +268,6 @@ export async function detectGraveSetup(
       setupType,
     };
   } catch (error) {
-    console.error('Error detecting GRAVE setup:', error);
     return {
       hasUAPSubscription: false,
       hasLegacyGrave: false,

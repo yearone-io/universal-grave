@@ -22,7 +22,7 @@ Network values are `lukso` and `lukso-testnet`.
 **Architecture Map**
 - `app/` Next.js App Router with network-aware routing.
 - `components/` UI and workflow components, including settings wizard and graveyard views.
-- `contexts/` `ProfileProvider` (SIWE + UP extension) and `GraveContext` (legacy + UAP detection).
+- `contexts/` `ProfileProvider` (SIWE + UP wallets via RainbowKit/Wagmi) and `GraveContext` (legacy + UAP detection).
 - `utils/` UAP configuration, assistant and screener helpers, vault creation, and asset utilities.
 - `constants/supportedNetworks.ts` network config and on-chain addresses.
 - `abis/` and `contracts/` ABI sources and generated TypeChain types.
@@ -42,5 +42,5 @@ Network values are `lukso` and `lukso-testnet`.
 - `npm test` / `npm run test:run` / `npm run test:ui` / `npm run test:coverage` testing.
 
 **Notes**
-- Full functionality requires the LUKSO UP Browser Extension (uses `window.lukso`).
+- Full functionality requires a LUKSO UP wallet (browser extension or the UP Mobile App via WalletConnect).
 - Read-only views fall back to configured RPC endpoints when no wallet is connected.

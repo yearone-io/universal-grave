@@ -72,6 +72,7 @@ describe('GraveSettings', () => {
     mockUseProfile.mockReturnValue({
       profileDetailsData: null,
       isConnected: false,
+      hasActiveSignature: false,
       chainId: 42,
     });
     mockUseGrave.mockReturnValue({
@@ -94,6 +95,7 @@ describe('GraveSettings', () => {
         upWallet: '0x1234567890123456789012345678901234567890',
       },
       isConnected: true,
+      hasActiveSignature: true,
       chainId: 42,
     });
     mockUseGrave.mockReturnValue({
@@ -116,6 +118,7 @@ describe('GraveSettings', () => {
         upWallet: '0x1234567890123456789012345678901234567890',
       },
       isConnected: true,
+      hasActiveSignature: true,
       chainId: 42,
     });
     mockUseGrave.mockReturnValue({

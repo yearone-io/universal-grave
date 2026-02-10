@@ -29,6 +29,7 @@ import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 export default function SendToGravePanel() {
@@ -68,7 +69,7 @@ export default function SendToGravePanel() {
   };
 
   const getTokenData = async () => {
-    if (!window.lukso || !networkConfig) return;
+    if (!hasWalletProvider() || !networkConfig) return;
     let assetData;
     try {
       const provider = getWalletProvider();
@@ -134,7 +135,7 @@ export default function SendToGravePanel() {
   };
 
   const removeTokenFromAllowList = async () => {
-    if (!window.lukso || !networkConfig) return;
+    if (!hasWalletProvider() || !networkConfig) return;
     const provider = getWalletProvider();
     await assertWalletNetwork(networkConfig.chainId);
     const signer = await getWalletSigner();
@@ -161,7 +162,7 @@ export default function SendToGravePanel() {
   };
 
   const transferLSP7ToGrave = async () => {
-    if (!window.lukso || !networkConfig) return;
+    if (!hasWalletProvider() || !networkConfig) return;
     const provider = getWalletProvider();
     await assertWalletNetwork(networkConfig.chainId);
     const signer = await getWalletSigner();
@@ -184,7 +185,7 @@ export default function SendToGravePanel() {
     walletNftIds: string[],
     maxGasLimit: bigint
   ) => {
-    if (!window.lukso || !networkConfig) return 1;
+    if (!hasWalletProvider() || !networkConfig) return 1;
     let batchSize = walletNftIds.length;
     const provider = getWalletProvider();
     await assertWalletNetwork(networkConfig.chainId);
@@ -242,7 +243,7 @@ export default function SendToGravePanel() {
     walletNftIds: string[],
     batchSize: number
   ) => {
-    if (!window.lukso || !networkConfig) return;
+    if (!hasWalletProvider() || !networkConfig) return;
     const provider = getWalletProvider();
     await assertWalletNetwork(networkConfig.chainId);
     const signer = await getWalletSigner();
@@ -282,7 +283,7 @@ export default function SendToGravePanel() {
   };
 
   const transferLSP8ToGrave = async () => {
-    if (!window.lukso || !networkConfig) return;
+    if (!hasWalletProvider() || !networkConfig) return;
     const provider = getWalletProvider();
     await assertWalletNetwork(networkConfig.chainId);
     const signer = await getWalletSigner();
@@ -316,7 +317,7 @@ export default function SendToGravePanel() {
   };
 
   const transferTokenFromUP = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);

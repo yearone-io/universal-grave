@@ -17,7 +17,7 @@ import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import LSP8Group from '@/components/LSP8Group';
-import { getWalletProvider } from '@/utils/walletClient';
+import { getWalletProvider, hasWalletProvider } from '@/utils/walletClient';
 import { useProfile } from '@/contexts/ProfileProvider';
 
 export default function LSPAssets({
@@ -122,7 +122,7 @@ export default function LSPAssets({
    * This function is called when the page loads and when an asset is revived
    */
   const fetchAssets = async () => {
-    if (!graveVault || !window.lukso || isNetworkMismatch) {
+    if (!graveVault || !hasWalletProvider() || isNetworkMismatch) {
       setLoading(false);
       return;
     }

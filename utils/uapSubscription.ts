@@ -10,7 +10,7 @@ import {
   DEFAULT_UP_URD_PERMISSIONS,
 } from '@/app/constants';
 import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
-import { getWalletSigner } from '@/utils/walletClient';
+import { getWalletSignerForUP, sendUPMethodTx } from '@/utils/walletClient';
 
 // Hardcoded key from UAP.json schema - ERC725.js encodeKeyName may not work correctly
 const SUPPORTED_STANDARDS_UAP_KEY =
@@ -37,7 +37,9 @@ export async function subscribeToUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await getWalletSigner();
+    const signer = await getWalletSignerForUP(upAddress, {
+      requirePermissions: true,
+    });
 
     // Set up URD delegates following UP Assistants pattern
     const URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
@@ -119,9 +121,13 @@ export async function subscribeToUAP(
       ...permissionsData.values,
     ];
 
-    const tx = await (upContract as any)
-      .connect(signer)
-      .setDataBatch(allKeys, allValues);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [allKeys, allValues],
+    });
     await tx.wait();
 
     console.log('Successfully subscribed to UAP protocol');
@@ -146,10 +152,12 @@ export async function unsubscribeFromUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await getWalletSigner();
+    const signer = await getWalletSignerForUP(upAddress, {
+      requirePermissions: true,
+    });
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
 
-    // Create ERC725 instance with window.lukso for reading and encoding data
+    // Create ERC725 instance with the wallet provider for reading and encoding data
     // ERC725.js expects the raw provider, not a BrowserProvider wrapper
     const erc725 = getErc725Read(
       LSP6Schema as ERC725JSONSchema[],
@@ -200,7 +208,13 @@ export async function unsubscribeFromUAP(
     ];
 
     // Execute setDataBatch
-    const tx = await (upContract as any).setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     await tx.wait();
 
     console.log('Successfully unsubscribed from UAP protocol');
@@ -311,7 +325,9 @@ export async function subscribeAndConfigureGrave(
 ): Promise<void> {
   console.log("running: subscribeAndConfigureGrave")
   try {
-    const signer = await getWalletSigner();
+    const signer = await getWalletSignerForUP(upAddress, {
+      requirePermissions: true,
+    });
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
     const abiCoder = new AbiCoder();
 
@@ -665,7 +681,13 @@ export async function subscribeAndConfigureGrave(
     console.log(`[UAP Subscribe] Writing ${keys.length} keys in single tx`);
     console.log('[UAP Subscribe] Keys:', keys);
 
-    const tx = await upContract.setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     await tx.wait();
 
     console.log(

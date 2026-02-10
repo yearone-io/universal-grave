@@ -393,18 +393,48 @@ export const getTokenImageURL = (LSP4Metadata: any) => {
 };
 
 export const parseDataURI = (dataUri: string) => {
-  // Step 1: Remove the prefix to get the JSON string
-  // We split the string by the first comma and take the second part, which is the actual JSON
-  const jsonString = dataUri.replace(
-    'data:application/json;charset=UTF-8,',
-    ''
-  );
-  // Step 2: Parse the JSON string into an object
+  if (!dataUri || typeof dataUri !== 'string') {
+    return {};
+  }
+
   try {
+    // Step 1: Remove the data URI prefix
+    // Handle various formats: data:application/json;charset=UTF-8, data:application/json;base64, etc.
+    let jsonString = dataUri;
+
+    // Remove data URI prefix if present
+    const commaIndex = dataUri.indexOf(',');
+    if (commaIndex !== -1 && dataUri.startsWith('data:')) {
+      const prefix = dataUri.substring(0, commaIndex).toLowerCase();
+      jsonString = dataUri.substring(commaIndex + 1);
+
+      // Handle base64 encoding
+      if (prefix.includes('base64')) {
+        try {
+          jsonString = atob(jsonString);
+        } catch (base64Error) {
+          console.warn('Failed to decode base64 data URI');
+        }
+      }
+    }
+
+    // Try URL decoding if the string looks URL-encoded
+    if (jsonString.includes('%')) {
+      try {
+        jsonString = decodeURIComponent(jsonString);
+      } catch (decodeError) {
+        // If URL decoding fails, continue with original string
+      }
+    }
+
+    // Step 2: Parse the JSON string into an object
     const jsonObj = JSON.parse(jsonString);
     return jsonObj;
   } catch (e) {
-    console.error('Error parsing JSON', e);
+    // Only log if it's not a common/expected error
+    if (!(e instanceof SyntaxError)) {
+      console.error('Error parsing data URI:', e);
+    }
     return {};
   }
 };

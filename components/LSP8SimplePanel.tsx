@@ -34,6 +34,7 @@ import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 interface LSP8SimplePanelProps {
@@ -89,7 +90,11 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   };
 
   const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
-    if (inProcessingText !== undefined || !window.lukso || !networkConfig) {
+    if (
+      inProcessingText !== undefined ||
+      !hasWalletProvider() ||
+      !networkConfig
+    ) {
       return;
     }
 

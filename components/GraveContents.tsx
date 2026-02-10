@@ -22,7 +22,7 @@ import { isAddress } from 'ethers';
 import { getRegisteredVaults } from '@/utils/vaultCreation';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
-import { getWalletProvider } from '@/utils/walletClient';
+import { getReadProvider } from '@/utils/erc725Client';
 
 /**
  *  GraveContents: Renders the main content for a user's "graveyard" page.
@@ -57,11 +57,18 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
   // Fetch available vaults for the graveyard owner if viewing own graveyard
   useEffect(() => {
     const fetchVaults = async () => {
-      if (!isOwnGraveyard || !window.lukso || !networkConfig || isNetworkMismatch)
+      if (
+        !isOwnGraveyard ||
+        !networkConfig ||
+        isNetworkMismatch
+      )
         return;
 
       try {
-        const provider = getWalletProvider();
+        const provider = getReadProvider(
+          networkConfig.chainId,
+          networkConfig.rpcUrl
+        );
 
         // Get the default vault from forwarder assistant config
         const forwarderConfig = await getForwarderAssistantConfig(

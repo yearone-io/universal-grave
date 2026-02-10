@@ -52,7 +52,7 @@ export default function UpgradeBanner() {
   };
 
   return (
-    <Box width="100%" mb={4}>
+    <Box width="100%">
       <Alert
         status="info"
         variant="solid"
