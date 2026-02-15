@@ -1,5 +1,5 @@
 import { Avatar, Box, Flex, IconButton, Text } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { constants } from '@/app/constants';
 import { formatAddress } from '@/utils/tokenUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
@@ -97,7 +97,7 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
             {networkConfig && (
               <IconButton
                 aria-label="View on blockchain explorer"
-                icon={<FaExternalLinkAlt color={fontColor} />}
+                icon={<ExternalLinkIcon color={fontColor} />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"

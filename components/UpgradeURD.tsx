@@ -16,7 +16,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { formatAddress } from '@/utils/tokenUtils';
-import { FaCheckCircle } from 'react-icons/fa';
+import { CheckCircleIcon } from '@chakra-ui/icons';
 import {
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
@@ -264,7 +264,7 @@ export const UpgradeURD = ({
                     {formatAddress(step.completeText.address)}
                   </a>
                 )}
-                {step.complete ? <FaCheckCircle /> : <></>}
+                {step.complete ? <CheckCircleIcon /> : <></>}
               </Flex>
             </StepDescription>
           )}

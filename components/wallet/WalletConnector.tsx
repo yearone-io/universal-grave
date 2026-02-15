@@ -17,10 +17,8 @@ import {
   MenuItem,
   MenuList,
 } from '@chakra-ui/react';
+import { SettingsIcon, SmallCloseIcon, ViewIcon } from '@chakra-ui/icons';
 import { formatAddress } from '@/utils/tokenUtils';
-import { FaCog } from 'react-icons/fa';
-import { TbGrave2 } from 'react-icons/tb';
-import { VscDebugDisconnect } from 'react-icons/vsc';
 import Link from 'next/link';
 import { getImageFromIPFS } from '@/utils/ipfs';
 
@@ -116,7 +114,7 @@ const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
             <MenuItem
               as={Link}
               href={`/${networkName}/grave/${account}`}
-              icon={<TbGrave2 />}
+              icon={<ViewIcon />}
               borderRadius="10px"
               px="12px"
               py="10px"
@@ -131,7 +129,7 @@ const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
             <MenuItem
               as={Link}
               href={`/${networkName}/grave/settings`}
-              icon={<FaCog />}
+              icon={<SettingsIcon />}
               borderRadius="10px"
               px="12px"
               py="10px"
@@ -145,7 +143,7 @@ const WalletConnector: React.FC<WalletConnectorProps> = ({ networkName }) => {
             </MenuItem>
             <MenuItem
               onClick={() => disconnect()}
-              icon={<VscDebugDisconnect />}
+              icon={<SmallCloseIcon />}
               borderRadius="10px"
               px="12px"
               py="10px"

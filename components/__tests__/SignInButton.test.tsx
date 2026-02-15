@@ -20,6 +20,7 @@ vi.mock('@/constants/supportedNetworks', () => ({
 describe('SignInButton', () => {
   beforeEach(() => {
     mockUseProfile.mockReset();
+    (window as any).lukso = undefined;
     if (typeof navigator !== 'undefined') {
       Object.defineProperty(window.navigator, 'userAgent', {
         configurable: true,
@@ -103,7 +104,7 @@ describe('SignInButton', () => {
     render(<SignInButton />);
 
     expect(
-      await screen.findByText('Select profile, then sign.')
+      await screen.findByText(/Select profile, sign, then return here\./i)
     ).toBeInTheDocument();
   });
 });

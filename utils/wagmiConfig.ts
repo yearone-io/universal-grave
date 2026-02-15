@@ -3,7 +3,7 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { universalProfilesWallet } from '@rainbow-me/rainbowkit/wallets';
 import { createConfig, http } from 'wagmi';
-import { injected } from 'wagmi/connectors';
+import { injected } from '@wagmi/core';
 import { lukso, luksoTestnet } from 'wagmi/chains';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 
@@ -12,45 +12,6 @@ const walletConnectProjectId =
 const defaultAppUrl = 'https://universalgrave.com';
 
 export const wagmiChains = [lukso, luksoTestnet] as const;
-
-const ensureEthereumStub = () => {
-  if (typeof window === 'undefined') return;
-  const existingEthereum = (window as any).ethereum;
-  if (existingEthereum && typeof existingEthereum === 'object') {
-    if (!('selectedAddress' in existingEthereum)) {
-      try {
-        (existingEthereum as { selectedAddress?: string | null }).selectedAddress =
-          null;
-      } catch {
-        // no-op: some providers expose readonly fields
-      }
-    }
-    return;
-  }
-  const stubEthereum = {
-    __ugStub: true,
-    isMetaMask: false,
-    selectedAddress: null,
-    chainId: null,
-    isConnected: () => false,
-    request: async () => {
-      throw new Error('No injected Ethereum provider available.');
-    },
-    on: () => {},
-    removeListener: () => {},
-    providers: [],
-  };
-  try {
-    Object.defineProperty(window, 'ethereum', {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: stubEthereum,
-    });
-  } catch {
-    (window as any).ethereum = stubEthereum;
-  }
-};
 
 // Only check mobile on client side to avoid SSR/hydration mismatch
 const isMobileDevice = () => {
@@ -103,11 +64,6 @@ const createMobileConnectors = () =>
       },
     }
   );
-
-// Only run on client
-if (typeof window !== 'undefined') {
-  ensureEthereumStub();
-}
 
 // Use a unified config that works for both mobile and desktop
 // This avoids SSR hydration mismatch where server creates desktop config

@@ -152,60 +152,13 @@ export async function unsubscribeFromUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await getWalletSignerForUP(upAddress, {
-      requirePermissions: true,
-    });
-    const upContract = new Contract(upAddress, universalProfileAbi, signer);
-
-    // Create ERC725 instance with the wallet provider for reading and encoding data
-    // ERC725.js expects the raw provider, not a BrowserProvider wrapper
-    const erc725 = getErc725Read(
-      LSP6Schema as ERC725JSONSchema[],
-      upAddress,
-      { provider }
-    );
-
-    // Get current controllers
-    const controllersData = await getDataSafe(erc725, 'AddressPermissions[]');
-    const currentControllers = (controllersData?.value as string[]) || [];
-
-    // Remove UAP from controllers list
-    const newControllers = currentControllers.filter(
-      addr => addr.toLowerCase() !== protocolAddress.toLowerCase()
-    );
-
-    // Prepare keys and values
-    const keys: string[] = [
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, // Restore default URD
-      SUPPORTED_STANDARDS_UAP_KEY, // Clear UAP supported standard
-      ...erc725.encodeData([
-        {
-          keyName: 'AddressPermissions:Permissions:<address>',
-          dynamicKeyParts: protocolAddress,
-          value: '0x', // Remove permissions
-        },
-        {
-          keyName: 'AddressPermissions[]',
-          value: newControllers, // Remove from controllers list
-        },
-      ]).keys,
-    ];
-
-    const values: string[] = [
-      defaultURDAddress, // Restore default URD
-      '0x', // Clear SupportedStandards:UAP
-      ...erc725.encodeData([
-        {
-          keyName: 'AddressPermissions:Permissions:<address>',
-          dynamicKeyParts: protocolAddress,
-          value: '0x',
-        },
-        {
-          keyName: 'AddressPermissions[]',
-          value: newControllers,
-        },
-      ]).values,
-    ];
+    const { signer, upContract, keys, values } =
+      await buildUnsubscribeFromUAPBatch(
+        provider,
+        upAddress,
+        protocolAddress,
+        defaultURDAddress
+      );
 
     // Execute setDataBatch
     const tx = await sendUPMethodTx({
@@ -222,6 +175,67 @@ export async function unsubscribeFromUAP(
     console.error('Error unsubscribing from UAP:', error);
     throw error;
   }
+}
+
+export async function buildUnsubscribeFromUAPBatch(
+  provider: BrowserProvider,
+  upAddress: string,
+  protocolAddress: string,
+  defaultURDAddress: string
+): Promise<{
+  signer: Awaited<ReturnType<typeof getWalletSignerForUP>>;
+  upContract: Contract;
+  keys: string[];
+  values: string[];
+}> {
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
+  const upContract = new Contract(upAddress, universalProfileAbi, signer);
+
+  // Create ERC725 instance with the wallet provider for reading and encoding data
+  // ERC725.js expects the raw provider, not a BrowserProvider wrapper
+  const erc725 = getErc725Read(
+    LSP6Schema as ERC725JSONSchema[],
+    upAddress,
+    { provider }
+  );
+
+  // Get current controllers
+  const controllersData = await getDataSafe(erc725, 'AddressPermissions[]');
+  const currentControllers = (controllersData?.value as string[]) || [];
+
+  // Remove UAP from controllers list
+  const newControllers = currentControllers.filter(
+    addr => addr.toLowerCase() !== protocolAddress.toLowerCase()
+  );
+
+  const permissionsData = erc725.encodeData([
+    {
+      keyName: 'AddressPermissions:Permissions:<address>',
+      dynamicKeyParts: protocolAddress,
+      value: '0x', // Remove permissions
+    },
+    {
+      keyName: 'AddressPermissions[]',
+      value: newControllers, // Remove from controllers list
+    },
+  ]);
+
+  return {
+    signer,
+    upContract,
+    keys: [
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, // Restore default URD
+      SUPPORTED_STANDARDS_UAP_KEY, // Clear UAP supported standard
+      ...permissionsData.keys,
+    ],
+    values: [
+      defaultURDAddress, // Restore default URD
+      '0x', // Clear SupportedStandards:UAP
+      ...permissionsData.values,
+    ],
+  };
 }
 
 /**

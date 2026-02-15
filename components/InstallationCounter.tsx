@@ -67,29 +67,19 @@ export default function InstallationCounter({
       setDisplayNumber(0);
       return;
     }
-    // Calculate the increment step dynamically based on the distance to the target number
     const updateNumber = () => {
       setDisplayNumber(prev => {
+        if (prev >= installations) return installations;
         const difference = installations - prev;
-        const stepSize = Math.ceil(difference / 10); // Adjust step size dynamically
-        return difference !== 0 ? prev + stepSize : prev;
+        const stepSize = Math.max(1, Math.ceil(difference / 10));
+        return Math.min(installations, prev + stepSize);
       });
     };
 
-    // Start with a faster interval and slow down as you approach the target number
-    let intervalTime = 50; // Start fast
-    const interval = setInterval(updateNumber, intervalTime);
-
-    // Optionally adjust the interval time dynamically (optional)
-    const adjustInterval = setInterval(() => {
-      intervalTime = Math.max(50, intervalTime + 5); // Slow down over time
-      clearInterval(interval);
-      setInterval(updateNumber, intervalTime);
-    }, 1000); // Adjust every second
+    const interval = window.setInterval(updateNumber, 80);
 
     return () => {
-      clearInterval(interval);
-      clearInterval(adjustInterval);
+      window.clearInterval(interval);
     };
   }, [installations]);
 

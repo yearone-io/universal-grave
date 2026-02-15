@@ -26,6 +26,8 @@ let cachedProvider: BrowserProvider | null = null;
 let cachedSigner: JsonRpcSigner | null = null;
 let cachedAddress: string | null = null;
 let cachedChainId: number | null = null;
+let cachedTransportFingerprint: string | null = null;
+let cachedClientUid: string | null = null;
 
 const clientToProvider = (client: WalletClient) => {
   const network = {
@@ -33,6 +35,29 @@ const clientToProvider = (client: WalletClient) => {
     name: client.chain?.name || 'LUKSO',
   };
   return new BrowserProvider(client.transport, network);
+};
+
+const getClientUid = (client: WalletClient) => {
+  const uid = (client as any)?.uid;
+  return typeof uid === 'string' && uid.length > 0 ? uid : null;
+};
+
+const getTransportFingerprint = (transport: WalletClient['transport']) => {
+  const transportLike = transport as any;
+  const type =
+    typeof transportLike?.type === 'string' ? transportLike.type : '';
+  const key = typeof transportLike?.key === 'string' ? transportLike.key : '';
+  const name =
+    typeof transportLike?.name === 'string' ? transportLike.name : '';
+  const url =
+    typeof transportLike?.url === 'string'
+      ? transportLike.url
+      : typeof transportLike?.value?.url === 'string'
+        ? transportLike.value.url
+        : '';
+
+  const fingerprint = [type, key, name, url].filter(Boolean).join('|');
+  return fingerprint || '__unknown_transport__';
 };
 
 const uniqueAddresses = (addresses: Array<string | null | undefined>) => {
@@ -226,14 +251,42 @@ export const setWalletClient = (client: WalletClient | null) => {
     cachedSigner = null;
     cachedAddress = null;
     cachedChainId = null;
+    cachedTransportFingerprint = null;
+    cachedClientUid = null;
     return null;
   }
-  const provider = clientToProvider(client);
-  cachedProvider = provider;
-  cachedSigner = null;
-  cachedAddress = client.account.address;
-  cachedChainId = client.chain?.id ?? null;
-  return { provider };
+  const nextAddress = getAddress(client.account.address);
+  const nextChainId = client.chain?.id ?? null;
+  const nextClientUid = getClientUid(client);
+  const nextTransportFingerprint = getTransportFingerprint(client.transport);
+  const sameClientUid =
+    !!cachedClientUid &&
+    !!nextClientUid &&
+    cachedClientUid === nextClientUid;
+  const sameTransportFingerprint =
+    cachedTransportFingerprint === nextTransportFingerprint;
+  const shouldReuseProvider = sameClientUid || sameTransportFingerprint;
+
+  // Reuse BrowserProvider when the underlying transport is unchanged.
+  // Recreating this provider repeatedly can accumulate listeners internally.
+  if (!cachedProvider || !shouldReuseProvider) {
+    cachedProvider = clientToProvider(client);
+    cachedSigner = null;
+  } else {
+    const addressChanged =
+      !cachedAddress ||
+      cachedAddress.toLowerCase() !== nextAddress.toLowerCase();
+    const chainChanged = cachedChainId !== nextChainId;
+    if (addressChanged || chainChanged) {
+      cachedSigner = null;
+    }
+  }
+
+  cachedTransportFingerprint = nextTransportFingerprint;
+  cachedClientUid = nextClientUid;
+  cachedAddress = nextAddress;
+  cachedChainId = nextChainId;
+  return { provider: cachedProvider };
 };
 
 export const hasWalletProvider = () => {

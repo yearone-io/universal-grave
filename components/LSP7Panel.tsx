@@ -15,7 +15,7 @@ import {
   ModalCloseButton,
   useDisclosure,
 } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { Contract, formatUnits } from 'ethers';
 import {
   lsp9VaultAbi,
@@ -243,7 +243,7 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             {networkConfig && (
               <IconButton
                 aria-label="View on universal page"
-                icon={<FaExternalLinkAlt color={fontColor} />}
+                icon={<ExternalLinkIcon color={fontColor} />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"

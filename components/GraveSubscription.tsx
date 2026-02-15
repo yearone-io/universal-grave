@@ -25,15 +25,15 @@ import {
   ModalCloseButton,
 } from '@chakra-ui/react';
 import {
-  FaCheckCircle,
-  FaPlus,
-  FaTrash,
-  FaChevronDown,
-  FaChevronUp,
-  FaShieldAlt,
-  FaCog,
-  FaExclamationTriangle,
-} from 'react-icons/fa';
+  AddIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DeleteIcon,
+  LockIcon,
+  SettingsIcon,
+  WarningIcon,
+} from '@chakra-ui/icons';
 import { isAddress } from 'ethers';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
@@ -42,12 +42,11 @@ import { ZERO_ADDRESS } from '@/constants/addresses';
 import { formatAddress } from '@/utils/tokenUtils';
 import {
   subscribeAndConfigureGrave,
-  unsubscribeFromUAP,
+  buildUnsubscribeFromUAPBatch,
 } from '@/utils/uapSubscription';
 import {
   assertWalletNetwork,
   getWalletProvider,
-  getWalletSignerForUP,
   sendUPMethodTx,
 } from '@/utils/walletClient';
 import {
@@ -66,8 +65,6 @@ import {
 } from '@/utils/assistantConfig';
 import AddressMetadataPreview from '@/components/address-metadata/AddressMetadataPreview';
 import AddressMetadataInline from '@/components/address-metadata/AddressMetadataInline';
-import { Contract } from 'ethers';
-import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { getErc725Read, getReadProvider } from '@/utils/erc725Client';
 import uapSchema from '@/schemas/UAP.json';
 
@@ -179,6 +176,17 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
   const activeVault = useMemo(() => {
     return selectedVault || uapVaultAddress || graveVault || '';
   }, [selectedVault, uapVaultAddress, graveVault]);
+
+  const getVaultOptionLabel = useCallback(
+    (vault: string, idx: number) => {
+      const isLegacyVault =
+        !!graveVault && vault.toLowerCase() === graveVault.toLowerCase();
+      return `Vault ${idx + 1}: ${formatAddress(vault)}${
+        isLegacyVault ? ' (Legacy Vault)' : ''
+      }`;
+    },
+    [graveVault]
+  );
 
   // Check if vault data is ready for legacy upgrades
   // For legacy users, we need graveVault to be loaded before allowing setup
@@ -638,21 +646,25 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     try {
       const provider = getWalletProvider();
       await assertWalletNetwork(chainId);
-      const signer = await getWalletSignerForUP(address, {
-        requirePermissions: true,
-      });
-      const upContract = new Contract(address, universalProfileAbi, signer);
+      const {
+        signer,
+        upContract,
+        keys: unsubscribeKeys,
+        values: unsubscribeValues,
+      } = await buildUnsubscribeFromUAPBatch(
+        provider,
+        address,
+        currentNetwork.protocolAddress,
+        currentNetwork.lsp1UrdUp
+      );
       const erc725UAP = getErc725Read(uapSchema as any, address, { provider });
 
-      const keys: string[] = [];
-      const values: string[] = [];
+      const keys: string[] = [...unsubscribeKeys];
+      const values: string[] = [...unsubscribeValues];
 
       const LSP7_TRANSACTION_TYPE = '0xa124442e1820e52d1e5a85c5ea8cb3cd0ea171df8e3a62be0f4f5a16fa7fee79';
       const LSP8_TRANSACTION_TYPE = '0xc7a120a42b6057a0cbed111fcdea5093c2b7f5db2f9e3a9ec3a8f09c4dad5e13';
       const txTypes = [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE];
-
-      keys.push(erc725UAP.encodeKeyName('SupportedStandards:UAP', []));
-      values.push('0x');
 
       for (const txType of txTypes) {
         const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [txType]);
@@ -689,15 +701,24 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
       keys.push('0x8631ee7d1d9475e6b2c38694122192970d91cafd1c64176ecc23849e17441672');
       values.push('0x');
 
-      await unsubscribeFromUAP(provider, address, currentNetwork.protocolAddress, currentNetwork.lsp1UrdUp);
+      const mergedUpdates = new Map<string, string>();
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const value = values[i];
+        if (!key) continue;
+        mergedUpdates.set(key, value ?? '0x');
+      }
 
-      if (keys.length > 0) {
+      const mergedKeys = Array.from(mergedUpdates.keys());
+      const mergedValues = mergedKeys.map(key => mergedUpdates.get(key) || '0x');
+
+      if (mergedKeys.length > 0) {
         const tx = await sendUPMethodTx({
           signer,
           upAddress: address,
           upContract,
           method: 'setDataBatch',
-          args: [keys, values],
+          args: [mergedKeys, mergedValues],
         });
         await tx.wait();
       }
@@ -799,6 +820,15 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     }
   }, [showMobileWalletPrompt, toast]);
 
+  useEffect(
+    () => () => {
+      if (toast.isActive(mobileWalletToastId)) {
+        toast.close(mobileWalletToastId);
+      }
+    },
+    [toast]
+  );
+
   // Refs to prevent concurrent fetches and track request state
   const fetchVaultsInProgressRef = useRef(false);
   const loadConfigInProgressRef = useRef(false);
@@ -839,7 +869,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
           bg="rgba(255, 165, 0, 0.1)"
           borderRadius="full"
         >
-          <FaExclamationTriangle size={32} color="#FFA500" />
+          <WarningIcon boxSize={8} color="#FFA500" />
         </Box>
         <VStack spacing={2} textAlign="center">
           <Text color="white" fontSize="lg" fontWeight="600">
@@ -883,7 +913,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                     color="dark.teal.500"
                     animation={`${checkmark} 0.3s ease-out`}
                   >
-                    <FaCheckCircle size={24} />
+                    <CheckCircleIcon boxSize={6} />
                   </Box>
                 )}
                 {step.status === 'active' && (
@@ -899,7 +929,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                 )}
                 {step.status === 'error' && (
                   <Box color="red.400">
-                    <FaExclamationTriangle size={20} />
+                    <WarningIcon boxSize={5} />
                   </Box>
                 )}
               </Box>
@@ -956,7 +986,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
           borderRadius="full"
           boxShadow="0 0 60px rgba(133, 47, 187, 0.3)"
         >
-          <FaShieldAlt size={48} color="rgba(138, 251, 234, 0.9)" />
+          <LockIcon boxSize={12} color="rgba(138, 251, 234, 0.9)" />
         </Box>
 
         {/* Value proposition */}
@@ -1017,7 +1047,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
             >
               {availableVaults.map((vault, idx) => (
                 <option key={vault} value={vault} style={{ background: '#1a1a2e' }}>
-                  {`Vault ${idx + 1}: ${formatAddress(vault)}`}
+                  {getVaultOptionLabel(vault, idx)}
                 </option>
               ))}
             </Select>
@@ -1078,7 +1108,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
           bg="rgba(138, 251, 234, 0.1)"
           borderRadius="full"
         >
-          <FaCheckCircle size={32} color="rgba(138, 251, 234, 0.9)" />
+          <CheckCircleIcon boxSize={8} color="rgba(138, 251, 234, 0.9)" />
         </Box>
         <VStack spacing={1}>
           <Text color="white" fontSize="lg" fontWeight="600">
@@ -1109,7 +1139,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
         _hover={{ bg: 'whiteAlpha.100' }}
       >
         <HStack spacing={3} align="flex-start" flexWrap="wrap">
-          <FaCog color="rgba(255, 255, 255, 0.6)" />
+          <SettingsIcon color="rgba(255, 255, 255, 0.6)" />
           <Text color="white" fontSize="sm" fontWeight="500" whiteSpace="normal">
             Configure Filters
           </Text>
@@ -1127,9 +1157,9 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
           )}
         </HStack>
         {showFilters ? (
-          <FaChevronUp color="rgba(255, 255, 255, 0.4)" />
+          <ChevronUpIcon color="rgba(255, 255, 255, 0.4)" />
         ) : (
-          <FaChevronDown color="rgba(255, 255, 255, 0.4)" />
+          <ChevronDownIcon color="rgba(255, 255, 255, 0.4)" />
         )}
       </Button>
 
@@ -1332,7 +1362,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                   size="xs"
                   variant="ghost"
                   color="dark.teal.500"
-                  leftIcon={<FaPlus size={10} />}
+                  leftIcon={<AddIcon boxSize={2.5} />}
                   onClick={addCreatorWhitelistAddress}
                   _hover={{ bg: 'whiteAlpha.100' }}
                 >
@@ -1361,7 +1391,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                       />
                       <IconButton
                         aria-label="Remove"
-                        icon={<FaTrash size={12} />}
+                        icon={<DeleteIcon boxSize={3} />}
                         size="sm"
                         variant="ghost"
                         color="whiteAlpha.500"
@@ -1580,7 +1610,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                   size="xs"
                   variant="ghost"
                   color="dark.teal.500"
-                  leftIcon={<FaPlus size={10} />}
+                  leftIcon={<AddIcon boxSize={2.5} />}
                   onClick={addWhitelistAddress}
                   _hover={{ bg: 'whiteAlpha.100' }}
                 >
@@ -1609,7 +1639,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
                       />
                       <IconButton
                         aria-label="Remove"
-                        icon={<FaTrash size={12} />}
+                        icon={<DeleteIcon boxSize={3} />}
                         size="sm"
                         variant="ghost"
                         color="whiteAlpha.500"
@@ -1660,7 +1690,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
               >
                 {availableVaults.map((vault, idx) => (
                   <option key={vault} value={vault} style={{ background: '#1a1a2e' }}>
-                    {`Vault ${idx + 1}: ${formatAddress(vault)}`}
+                    {getVaultOptionLabel(vault, idx)}
                   </option>
                 ))}
               </Select>

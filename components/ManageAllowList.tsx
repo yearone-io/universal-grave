@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { LSP1GraveForwarder__factory } from '@/contracts';
-import { BiSolidCheckCircle } from 'react-icons/bi';
+import { CheckCircleIcon } from '@chakra-ui/icons';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import {
@@ -211,7 +211,7 @@ export default function ManageAllowList() {
               top: '1px',
             }}
           >
-            <BiSolidCheckCircle />
+            <CheckCircleIcon />
           </span>
         );
       }

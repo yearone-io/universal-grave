@@ -9,8 +9,8 @@ import {
   Flex,
   Image,
   Select,
+  Text,
 } from '@chakra-ui/react';
-import { FaTwitter, FaMoon, FaGithub } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -107,10 +107,14 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
             label={'Twitter'}
             href={'https://twitter.com/YearOneIO'}
           >
-            <FaTwitter />
+            <Text as="span" fontSize="xs" fontWeight="700">
+              X
+            </Text>
           </SocialButton>
           <SocialButton label={'Github'} href={'https://github.com/yearone-io'}>
-            <FaGithub />
+            <Text as="span" fontSize="xs" fontWeight="700">
+              GH
+            </Text>
           </SocialButton>
           <Link href="/about">About</Link>
           <Link href="/terms">Terms</Link>

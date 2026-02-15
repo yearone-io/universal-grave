@@ -16,12 +16,12 @@ import {
 } from '@chakra-ui/react';
 import Link from 'next/link';
 import {
-  BsShieldCheck,
-  BsArrowRepeat,
-  BsListCheck,
-  BsLightning,
-  BsArrowRight,
-} from 'react-icons/bs';
+  ArrowForwardIcon,
+  CheckCircleIcon,
+  LockIcon,
+  RepeatIcon,
+  StarIcon,
+} from '@chakra-ui/icons';
 import { ChangeEvent, useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
@@ -243,7 +243,7 @@ export default function Landing({ networkName }: LandingProps) {
                     transform: 'translateY(-2px)',
                   }}
                   transition="all 0.2s"
-                  rightIcon={<Icon as={BsArrowRight} />}
+                  rightIcon={<ArrowForwardIcon />}
                 >
                   {isConnected && isProtectionActive ? 'Manage Settings' : 'Get Protected'}
                 </Button>
@@ -328,22 +328,22 @@ export default function Landing({ networkName }: LandingProps) {
             w="100%"
           >
             <FeatureCard
-              icon={BsShieldCheck}
+              icon={LockIcon}
               title="Automatic Protection"
               description="Unknown tokens are instantly redirected to your spambox vault. No manual filtering needed - your profile stays clean."
             />
             <FeatureCard
-              icon={BsListCheck}
+              icon={CheckCircleIcon}
               title="Allowlists & Blocklists"
               description="Approve trusted creators, specific collections, or curated lists. You decide what gets through, always."
             />
             <FeatureCard
-              icon={BsArrowRepeat}
+              icon={RepeatIcon}
               title="Rescue Anything"
               description="Made a mistake? Recover any asset from your GRAVE with one click. Nothing is ever truly lost."
             />
             <FeatureCard
-              icon={BsLightning}
+              icon={StarIcon}
               title="LSP7 & LSP8 Support"
               description="Built for LUKSO's modern token standards. Full support for fungible and non-fungible tokens out of the box."
             />

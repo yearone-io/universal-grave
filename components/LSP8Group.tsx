@@ -16,7 +16,7 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { Contract } from 'ethers';
 import {
@@ -345,7 +345,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
             {networkConfig && (
               <IconButton
                 aria-label="View on universal page"
-                icon={<FaExternalLinkAlt color={fontColor} />}
+                icon={<ExternalLinkIcon color={fontColor} />}
                 color={fontColor}
                 size="sm"
                 height={'14px'}
@@ -434,7 +434,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
                         {networkConfig && (
                           <IconButton
                             aria-label="View on universal page"
-                            icon={<FaExternalLinkAlt color={fontColor} />}
+                            icon={<ExternalLinkIcon color={fontColor} />}
                             color={fontColor}
                             size="sm"
                             maxHeight={'14px'}

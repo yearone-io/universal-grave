@@ -10,7 +10,7 @@ import {
   Button,
   HStack,
 } from '@chakra-ui/react';
-import { FaCog } from 'react-icons/fa';
+import { SettingsIcon } from '@chakra-ui/icons';
 import GravePageAssets from '@/components/GravePageAssets';
 import ShareButton from '@/components/ShareButton';
 import { useProfile } from '@/contexts/ProfileProvider';
@@ -199,7 +199,7 @@ export default function GraveContents({ graveOwner }: { graveOwner: string }) {
         </Text>
         {graveOwner === connectedAccount && (
           <Link href={`/${networkName}/grave/settings`} passHref>
-            <Icon as={FaCog} color={'light.white'} h={5} w={6} />
+            <Icon as={SettingsIcon} color={'light.white'} h={5} w={6} />
           </Link>
         )}
         <ShareButton pageAccount={graveOwner} />

@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -25,12 +27,20 @@ const nextConfig = {
     resolveAlias: {
       fs: { browser: './empty-module.js' },
       net: { browser: './empty-module.js' },
+      '@react-native-async-storage/async-storage': './empty-module.js',
     },
   },
   // Webpack Configuration for WalletConnect and other dependencies (fallback)
   webpack: config => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
     config.resolve.fallback = { fs: false, net: false };
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@react-native-async-storage/async-storage': path.resolve(
+        __dirname,
+        'empty-module.js'
+      ),
+    };
     return config;
   },
 };

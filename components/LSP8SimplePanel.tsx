@@ -16,7 +16,7 @@ import {
   ModalCloseButton,
   useDisclosure,
 } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { Contract } from 'ethers';
 import {
   lsp9VaultAbi,
@@ -243,7 +243,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
             {networkConfig && (
               <IconButton
                 aria-label="View collection on explorer"
-                icon={<FaExternalLinkAlt />}
+                icon={<ExternalLinkIcon />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"
@@ -272,7 +272,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
             {networkConfig && tokenData.tokenId && (
               <IconButton
                 aria-label="View on marketplace"
-                icon={<FaExternalLinkAlt />}
+                icon={<ExternalLinkIcon />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"

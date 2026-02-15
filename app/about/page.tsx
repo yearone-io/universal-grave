@@ -12,13 +12,13 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react';
 import {
-  BsShieldCheck,
-  BsLightning,
-  BsPuzzle,
-  BsArrowRight,
-  BsGlobe,
-  BsStack,
-} from 'react-icons/bs';
+  ArrowForwardIcon,
+  CopyIcon,
+  LockIcon,
+  QuestionOutlineIcon,
+  StarIcon,
+  ViewIcon,
+} from '@chakra-ui/icons';
 import Link from 'next/link';
 
 interface FeatureBlockProps {
@@ -255,22 +255,22 @@ export default function AboutPage() {
 
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6} w="100%">
               <FeatureBlock
-                icon={BsGlobe}
+                icon={ViewIcon}
                 title="LSP0 - Universal Profile"
                 description="Smart contract accounts that can hold data, execute transactions, and delegate behaviors to other contracts."
               />
               <FeatureBlock
-                icon={BsLightning}
+                icon={StarIcon}
                 title="LSP1 - Universal Receiver"
                 description="The hook that intercepts incoming transactions, enabling real-time filtering and automated responses."
               />
               <FeatureBlock
-                icon={BsStack}
+                icon={CopyIcon}
                 title="LSP7 & LSP8 Tokens"
                 description="Modern token standards with built-in notifications, enabling assets to announce themselves on arrival."
               />
               <FeatureBlock
-                icon={BsShieldCheck}
+                icon={LockIcon}
                 title="LSP9 - Vault"
                 description="Secure sub-accounts owned by your profile, perfect for isolating filtered assets while keeping them recoverable."
               />
@@ -333,7 +333,7 @@ export default function AboutPage() {
           mb={{ base: 12, md: 16 }}
         >
           <VStack spacing={6} textAlign="center">
-            <Icon as={BsPuzzle} boxSize={10} color="dark.teal.500" />
+            <QuestionOutlineIcon boxSize={10} color="dark.teal.500" />
             <Text
               fontSize={{ base: 'xl', md: '2xl' }}
               fontFamily="Bungee"
@@ -364,7 +364,7 @@ export default function AboutPage() {
                 pt={2}
               >
                 <Text>Get protected now</Text>
-                <Icon as={BsArrowRight} />
+                <ArrowForwardIcon />
               </HStack>
             </Link>
           </VStack>
