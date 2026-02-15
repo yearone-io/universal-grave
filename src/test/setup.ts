@@ -37,3 +37,19 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
 
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn();
+
+// Mock matchMedia for Chakra UI breakpoint hooks
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    // Simulate desktop-ish viewport for breakpoint-dependent UI in tests.
+    matches: query.includes('min-width'),
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});

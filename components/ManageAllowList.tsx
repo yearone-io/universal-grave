@@ -10,13 +10,14 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { LSP1GraveForwarder__factory } from '@/contracts';
-import { BiSolidCheckCircle } from 'react-icons/bi';
+import { CheckCircleIcon } from '@chakra-ui/icons';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 const messageState = {
@@ -70,7 +71,7 @@ export default function ManageAllowList() {
   }, [debouncedTokenAddress]);
 
   const fetchTokenAllowListStatus = async () => {
-    if (!tokenAddress || !window.lukso || !networkConfig) {
+    if (!tokenAddress || !hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);
@@ -104,7 +105,7 @@ export default function ManageAllowList() {
   };
 
   const addTokenToAllowList = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);
@@ -144,7 +145,7 @@ export default function ManageAllowList() {
   };
 
   const removeTokenFromAllowList = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
     setIsSubmitting(true);
@@ -210,7 +211,7 @@ export default function ManageAllowList() {
               top: '1px',
             }}
           >
-            <BiSolidCheckCircle />
+            <CheckCircleIcon />
           </span>
         );
       }

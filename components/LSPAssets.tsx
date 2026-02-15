@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Flex, Image, Text, useToast } from '@chakra-ui/react';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
@@ -17,7 +17,7 @@ import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import LSP8Group from '@/components/LSP8Group';
-import { getWalletProvider } from '@/utils/walletClient';
+import { getWalletProvider, hasWalletProvider } from '@/utils/walletClient';
 import { useProfile } from '@/contexts/ProfileProvider';
 
 export default function LSPAssets({
@@ -39,6 +39,7 @@ export default function LSPAssets({
     TokenData[]
   >([]);
   const [showFrank, setShowFrank] = useState(false);
+  const frankTimeoutRef = useRef<number | null>(null);
   const renderFranks = () => {
     return Array.from({ length: 20 }).map((_, index) => (
       <div
@@ -56,8 +57,19 @@ export default function LSPAssets({
 
   const makeItEmojiRain = () => {
     setShowFrank(true);
-    setTimeout(() => setShowFrank(false), 6000);
+    if (frankTimeoutRef.current !== null) {
+      window.clearTimeout(frankTimeoutRef.current);
+    }
+    frankTimeoutRef.current = window.setTimeout(() => setShowFrank(false), 6000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (frankTimeoutRef.current !== null) {
+        window.clearTimeout(frankTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const toast = useToast();
 
@@ -122,7 +134,7 @@ export default function LSPAssets({
    * This function is called when the page loads and when an asset is revived
    */
   const fetchAssets = async () => {
-    if (!graveVault || !window.lukso || isNetworkMismatch) {
+    if (!graveVault || !hasWalletProvider() || isNetworkMismatch) {
       setLoading(false);
       return;
     }
@@ -141,14 +153,13 @@ export default function LSPAssets({
       let assets: string[] = [];
       const res = await getDataSafe(erc725js, 'LSP5ReceivedAssets[]');
       assets = (res?.value as string[]) || [];
-      console.log('[GRAVE DEBUG] LSP5ReceivedAssets[] found:', res?.value);
 
       const lsp7Results: TokenData[] = [];
       const lsp8Results: TokenData[][] = [];
       const unrecognisedLsp7Results: TokenData[] = [];
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
-      for (const assetAddress of assets) {
+      for (const [index, assetAddress] of assets.entries()) {
         // Skip empty/zero addresses that can appear in sparse arrays
         if (
           !assetAddress ||
@@ -157,9 +168,8 @@ export default function LSPAssets({
         ) {
           continue;
         }
-        console.log('[GRAVE DEBUG] Processing asset:', assetAddress);
         // every 4 assets, wait for 1 second
-        if (assets.indexOf(assetAddress) % 4 === 0) {
+        if (index % 4 === 0) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         const asset = await getLSPAssetBasicInfo(

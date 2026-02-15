@@ -8,6 +8,8 @@ import { Link } from './components/link';
 const config = {
   initialColorMode: 'dark',
   useSystemColorMode: false,
+  // Use cookies for color mode storage to support SSR and prevent hydration mismatch
+  cssVarPrefix: 'grave',
 };
 
 const overrides = extendTheme({

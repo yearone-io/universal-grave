@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor } from '@/src/test/testUtils';
 import GraveSubscription from '../GraveSubscription';
-import { ZERO_ADDRESS } from '@/constants/addresses';
 
 const mockUseProfile = vi.fn();
 const mockUseGrave = vi.fn();
@@ -13,7 +12,10 @@ const mockSaveForwarderAssistantConfig = vi.fn();
 const mockGetRegisteredVaults = vi.fn();
 const mockIsVaultRegistered = vi.fn();
 const mockRegisterVaultWithUP = vi.fn();
+const mockHasVaultURDSet = vi.fn();
+const mockSetVaultURD = vi.fn();
 const mockDoesControllerHaveMissingPermissions = vi.fn();
+const mockSubscribeAndConfigureGrave = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ networkName: 'lukso' }),
@@ -25,9 +27,12 @@ vi.mock('next/link', () => ({
 
 vi.mock('@chakra-ui/react', async () => {
   const actual = await vi.importActual<any>('@chakra-ui/react');
+  const toastMock: any = vi.fn();
+  toastMock.isActive = vi.fn(() => false);
+  toastMock.close = vi.fn();
   return {
     ...actual,
-    useToast: () => vi.fn(),
+    useToast: () => toastMock,
   };
 });
 
@@ -54,6 +59,10 @@ vi.mock('@/constants/supportedNetworks', () => ({
       explorer: 'https://explorer.example',
     },
   },
+  getNetworkByName: (networkName: string) =>
+    networkName === 'lukso'
+      ? { chainId: 42, displayName: 'LUKSO Mainnet' }
+      : null,
 }));
 
 vi.mock('@/utils/assistantConfig', () => ({
@@ -71,6 +80,8 @@ vi.mock('@/utils/vaultCreation', () => ({
   getRegisteredVaults: (...args: any[]) => mockGetRegisteredVaults(...args),
   isVaultRegistered: (...args: any[]) => mockIsVaultRegistered(...args),
   registerVaultWithUP: (...args: any[]) => mockRegisterVaultWithUP(...args),
+  hasVaultURDSet: (...args: any[]) => mockHasVaultURDSet(...args),
+  setVaultURD: (...args: any[]) => mockSetVaultURD(...args),
   deployVault: vi.fn(),
 }));
 
@@ -84,12 +95,19 @@ vi.mock('@/utils/walletClient', () => ({
   assertWalletNetwork: vi.fn(),
   getWalletProvider: vi.fn(() => ({})),
   getWalletSigner: vi.fn().mockResolvedValue({}),
+  getWalletSignerForUP: vi.fn().mockResolvedValue({}),
+  sendUPMethodTx: vi.fn().mockResolvedValue({
+    hash: '0x123',
+    wait: vi.fn().mockResolvedValue(undefined),
+  }),
+  hasWalletProvider: vi.fn(() => true),
 }));
 
 vi.mock('@/utils/uapSubscription', () => ({
   subscribeToUAP: vi.fn(),
   unsubscribeFromUAP: vi.fn(),
-  subscribeAndConfigureGrave: vi.fn(),
+  subscribeAndConfigureGrave: (...args: any[]) =>
+    mockSubscribeAndConfigureGrave(...args),
 }));
 
 vi.mock('@/components/VaultURDChecker', () => ({
@@ -131,7 +149,10 @@ describe('GraveSubscription unique flows', () => {
     mockGetRegisteredVaults.mockReset();
     mockIsVaultRegistered.mockReset();
     mockRegisterVaultWithUP.mockReset();
+    mockHasVaultURDSet.mockReset();
+    mockSetVaultURD.mockReset();
     mockDoesControllerHaveMissingPermissions.mockReset();
+    mockSubscribeAndConfigureGrave.mockReset();
 
     mockUseProfile.mockReturnValue({
       profileDetailsData: {
@@ -139,6 +160,7 @@ describe('GraveSubscription unique flows', () => {
         mainUPController: '0x9999999999999999999999999999999999999999',
       },
       isConnected: true,
+      hasActiveSignature: true,
       chainId: 42,
       isNetworkMismatch: false,
     });
@@ -155,130 +177,84 @@ describe('GraveSubscription unique flows', () => {
     mockDoesControllerHaveMissingPermissions.mockResolvedValue([]);
     mockGetRegisteredVaults.mockResolvedValue([VAULT_ADDRESS]);
     mockIsVaultRegistered.mockResolvedValue(true);
+    mockHasVaultURDSet.mockResolvedValue(true);
+    mockSetVaultURD.mockResolvedValue(undefined);
+    mockSubscribeAndConfigureGrave.mockResolvedValue(undefined);
   });
 
-  it('shows missing config warnings and migration CTA for non-standard list name', async () => {
+  it('labels legacy vault entries in the vault selector', async () => {
+    const legacyVault = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    mockUseGrave.mockReturnValue({
+      hasUAPSubscription: false,
+      setupType: 'none',
+      uapVaultAddress: null,
+      graveVault: legacyVault,
+      refreshGraveData: vi.fn(),
+      isLoadingGraveData: false,
+    });
     mockGetForwarderAssistantConfig.mockResolvedValue(
       makeConfig({
-        listName: 'LegacyList',
-        listLengthMissing: true,
-        addressListNameMissing: true,
-        addressScreenerConfigMissing: true,
-        creatorListLengthMissing: true,
-        creatorListNameMissing: true,
-        creatorScreenerConfigMissing: true,
+        isConfigured: false,
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
 
     await waitFor(() => {
-      expect(screen.getByText('SAVE CHANGES')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
-
-    expect(
-      screen.getByText(/Creator List Configuration Issue/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Asset List Configuration Issue/i)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Non-Standard List Name/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /migrate/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Legacy Vault/i })).toBeInTheDocument();
   });
 
-  it('migrates list name with merged addresses and forceListNameUpdate', async () => {
+  it('calls subscribeAndConfigureGrave when enabling protection', async () => {
+    mockUseGrave.mockReturnValue({
+      hasUAPSubscription: false,
+      setupType: 'none',
+      uapVaultAddress: null,
+      graveVault: null,
+      refreshGraveData: vi.fn(),
+      isLoadingGraveData: false,
+    });
     mockGetForwarderAssistantConfig.mockResolvedValue(
       makeConfig({
-        listName: 'LegacyList',
-        curatedListAddress: ZERO_ADDRESS,
-        creatorWhitelistAddresses: [
-          '0x1111111111111111111111111111111111111111',
-          'not-an-address',
-        ],
+        isConfigured: false,
       })
     );
 
-    mockGetAllWhitelistAddresses.mockResolvedValue({
-      addresses: [
-        '0x2222222222222222222222222222222222222222',
-        '0x3333333333333333333333333333333333333333',
-      ],
-      lsp7Addresses: [
-        '0x2222222222222222222222222222222222222222',
-      ],
-      lsp8Addresses: [
-        '0x3333333333333333333333333333333333333333',
-      ],
-      listNameLSP7: 'LegacyList',
-      listNameLSP8: 'LegacyList',
-    });
+    render(<GraveSubscription networkName="lukso" />);
 
-    render(<GraveSubscription />);
-
-    const migrateButton = await waitFor(() =>
-      screen.getByRole('button', { name: /migrate/i })
+    const enableButton = await waitFor(() =>
+      screen.getByRole('button', { name: /Enable Protection/i })
     );
-    await userEvent.click(migrateButton);
+    await userEvent.click(enableButton);
 
     await waitFor(() => {
-      expect(mockSaveForwarderAssistantConfig).toHaveBeenCalled();
+      expect(mockSubscribeAndConfigureGrave).toHaveBeenCalled();
     });
 
-    const args = mockSaveForwarderAssistantConfig.mock.calls[0];
-    expect(args[2]).toBe(VAULT_ADDRESS); // vaultAddress
-    expect(args[3]).toEqual([
-      '0x2222222222222222222222222222222222222222',
-      '0x3333333333333333333333333333333333333333',
-    ]);
-    expect(args[4]).toBe(false); // shouldUseCuratedList (ZERO_ADDRESS)
-    expect(args[6]).toEqual([
-      '0x1111111111111111111111111111111111111111',
-    ]); // filtered creator list
-    expect(args[13]).toEqual({ forceListNameUpdate: true });
+    const args = mockSubscribeAndConfigureGrave.mock.calls[0];
+    expect(args[1]).toBe('0x1234567890123456789012345678901234567890');
+    expect(args[3]).toBe(VAULT_ADDRESS);
   });
 
-  it('disables save when curated list address is zero', async () => {
+  it('keeps save disabled when no filter changes are made', async () => {
     mockGetForwarderAssistantConfig.mockResolvedValue(
       makeConfig({
-        curatedListAddress: ZERO_ADDRESS,
+        curatedListAddress: '0x5555555555555555555555555555555555555555',
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
+
+    const configureButton = await waitFor(() =>
+      screen.getByRole('button', { name: /Configure Filters/i })
+    );
+    await userEvent.click(configureButton);
 
     const saveButton = await waitFor(() =>
       screen.getByRole('button', { name: /save changes/i })
     );
     expect(saveButton).toBeDisabled();
-  });
-
-  it('uses default config payload when subscribed but config incomplete', async () => {
-    mockGetForwarderAssistantConfig.mockResolvedValue(
-      makeConfig({
-        isConfigured: false,
-        listName: null,
-        executionOrderLSP7: null,
-        executionOrderLSP8: null,
-      })
-    );
-
-    render(<GraveSubscription />);
-
-    const installButton = await waitFor(() =>
-      screen.getByRole('button', { name: /install protocol/i })
-    );
-    await userEvent.click(installButton);
-
-    await waitFor(() => {
-      expect(mockSaveForwarderAssistantConfig).toHaveBeenCalled();
-    });
-
-    const args = mockSaveForwarderAssistantConfig.mock.calls[0];
-    expect(args[3]).toEqual([]); // whitelist
-    expect(args[4]).toBe(false); // useCuratedList
-    expect(args[5]).toBe(''); // curated list address
-    expect(args[6]).toEqual([]); // creator whitelist
-    expect(args[7]).toBeNull(); // creator curated list
   });
 
   it('trims address lists before saving', async () => {
@@ -296,11 +272,24 @@ describe('GraveSubscription unique flows', () => {
       })
     );
 
-    render(<GraveSubscription />);
+    render(<GraveSubscription networkName="lukso" />);
+
+    const configureButton = await waitFor(() =>
+      screen.getByRole('button', { name: /Configure Filters/i })
+    );
+    await userEvent.click(configureButton);
+
+    const curatedInputs = await waitFor(() =>
+      screen.getAllByPlaceholderText(
+        /0x\.\.\. or paste a custom curated list address/i
+      )
+    );
+    await userEvent.clear(curatedInputs[1]);
 
     const saveButton = await waitFor(() =>
       screen.getByRole('button', { name: /save changes/i })
     );
+    expect(saveButton).toBeEnabled();
     await userEvent.click(saveButton);
 
     await waitFor(() => {
@@ -314,5 +303,6 @@ describe('GraveSubscription unique flows', () => {
     expect(args[6]).toEqual([
       '0x6666666666666666666666666666666666666666',
     ]);
+    expect(args[4]).toBe(false);
   });
 });

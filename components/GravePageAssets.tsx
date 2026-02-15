@@ -7,7 +7,8 @@ import { getUpAddressUrds } from '@/utils/urdUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { getForwarderAssistantConfig } from '@/utils/assistantConfig';
-import { getWalletProvider } from '@/utils/walletClient';
+import { hasWalletProvider } from '@/utils/walletClient';
+import { getReadProvider } from '@/utils/erc725Client';
 
 export default function GravePageAssets({
   graveOwner,
@@ -31,8 +32,7 @@ export default function GravePageAssets({
     ? supportedNetworks[expectedChainId.toString()]
     : null;
   const currentNetwork = chainId ? supportedNetworks[chainId.toString()] : null;
-  const hasWalletProvider =
-    typeof window !== 'undefined' && !!window.lukso;
+  const hasWalletProviderAvailable = hasWalletProvider();
 
   // Use override if provided
   useEffect(() => {
@@ -56,16 +56,19 @@ export default function GravePageAssets({
       if (
         !graveVault &&
         networkConfig &&
-        window.lukso &&
+        hasWalletProvider() &&
         !isNetworkMismatch &&
         isConnected
       ) {
         try {
-          const provider = getWalletProvider();
+          const readProvider = getReadProvider(
+            networkConfig.chainId,
+            networkConfig.rpcUrl
+          );
 
           // First, try to get vault from UAP forwarder assistant configuration
           const forwarderConfig = await getForwarderAssistantConfig(
-            provider,
+            readProvider,
             graveOwner,
             {
               forwarderAssistantAddress:
@@ -88,7 +91,7 @@ export default function GravePageAssets({
 
           // Fallback to legacy GRAVE forwarder for backwards compatibility
           const vault = await getGraveVaultFor(
-            provider,
+            readProvider,
             graveOwner,
             networkConfig.universalGraveForwarder
           );
@@ -98,10 +101,10 @@ export default function GravePageAssets({
           }
 
           // Attempt to retrieve grave vault for users with an old Urd version
-          const urdData = await getUpAddressUrds(provider, graveOwner);
+          const urdData = await getUpAddressUrds(readProvider, graveOwner);
           if (urdData.oldUrdVersion) {
             const oldGraveVault = await getGraveVaultFor(
-              provider,
+              readProvider,
               graveOwner,
               urdData.oldUrdVersion
             );
@@ -186,7 +189,7 @@ export default function GravePageAssets({
     );
   }
 
-  if (!hasWalletProvider || !isConnected) {
+  if (!hasWalletProviderAvailable || !isConnected) {
     return (
       <Box width="100%" mb={6}>
         <Alert

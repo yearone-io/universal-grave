@@ -11,7 +11,7 @@ import { LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 import uapSchema from '@/schemas/UAP.json';
 import { getErc725Read } from '@/utils/erc725Client';
-import { getWalletSigner } from '@/utils/walletClient';
+import { getWalletSignerForUP, sendUPMethodTx } from '@/utils/walletClient';
 
 // Using LSP7Tokens_RecipientNotification (not SenderNotification) to match UP Assistants
 // This is the correct type for Forwarder Assistant which receives tokens on behalf of the UP
@@ -93,12 +93,77 @@ const isBadDataError = (error: any) => {
   );
 };
 
+const isNetworkChangeError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    error?.code === 'NETWORK_ERROR' ||
+    message.includes('network changed')
+  );
+};
+
+const isRecoverableReadError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    isBadDataError(error) ||
+    isNetworkChangeError(error) ||
+    error?.code === 'CALL_EXCEPTION' ||
+    message.includes('missing revert data') ||
+    message.includes('execution reverted') ||
+    message.includes('load failed')
+  );
+};
+
+/**
+ * Safely decode address[] from UAPTypeConfig data
+ * Handles both proper ABI-encoded arrays and malformed/legacy data
+ */
+const safeDecodeAddressArray = (
+  erc725UAP: any,
+  data: string
+): string[] | null => {
+  if (!data || data === '0x') return null;
+
+  try {
+    // Try standard ABI decoding first
+    const decoded = erc725UAP.decodeValueType('address[]', data) as string[];
+    return decoded;
+  } catch (error) {
+    // If standard decoding fails, check if it's a single address with prefix
+    // Format: 0x + 2 bytes prefix + 20 bytes address = 44 hex chars (22 bytes)
+    const hexData = data.startsWith('0x') ? data.slice(2) : data;
+
+    if (hexData.length === 44) {
+      // Could be prefix (2 bytes) + address (20 bytes)
+      // Try to extract the address from the last 40 chars
+      const potentialAddress = '0x' + hexData.slice(-40);
+      try {
+        const checksummed = ethers.getAddress(potentialAddress);
+        console.log('[safeDecodeAddressArray] Extracted single address from non-standard format:', checksummed);
+        return [checksummed];
+      } catch {
+        // Not a valid address
+      }
+    } else if (hexData.length === 40) {
+      // Just a raw address (20 bytes)
+      try {
+        const checksummed = ethers.getAddress('0x' + hexData);
+        return [checksummed];
+      } catch {
+        // Not a valid address
+      }
+    }
+
+    console.warn('[safeDecodeAddressArray] Could not decode data as address[]:', data);
+    return null;
+  }
+};
+
 const createSafeGetters = (upContract: Contract) => {
   const safeGetData = async (key: string) => {
     try {
       return await upContract.getData(key);
     } catch (error: any) {
-      if (isBadDataError(error)) {
+      if (isRecoverableReadError(error)) {
         return '0x';
       }
       throw error;
@@ -108,7 +173,7 @@ const createSafeGetters = (upContract: Contract) => {
     try {
       return await upContract.getDataBatch(keys);
     } catch (error: any) {
-      if (isBadDataError(error)) {
+      if (isRecoverableReadError(error)) {
         return keys.map(() => '0x');
       }
       throw error;
@@ -129,7 +194,9 @@ export async function updateForwarderVaultAddress(
     forwarderAssistantAddress: string;
   }
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const { safeGetData } = createSafeGetters(upContract);
   const erc725UAP = getErc725Read(
@@ -186,7 +253,13 @@ export async function updateForwarderVaultAddress(
   }
 
   if (keys.length > 0) {
-    const tx = await upContract.setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     await tx.wait();
   }
 }
@@ -249,6 +322,7 @@ export async function getForwarderAssistantConfig(
 
     // Check both LSP7 and LSP8 configurations to get complete picture
     // We'll merge data from both, with LSP8 taking precedence if there's a conflict
+
     for (const txType of [LSP7_TRANSACTION_TYPE, LSP8_TRANSACTION_TYPE]) {
       const typeConfigKey = erc725UAP.encodeKeyName('UAPTypeConfig:<bytes32>', [
         txType,
@@ -257,10 +331,11 @@ export async function getForwarderAssistantConfig(
 
       if (typeConfigData && typeConfigData !== '0x') {
         try {
-          const executives = erc725UAP.decodeValueType(
-            'address[]',
-            typeConfigData
-          ) as string[];
+          const executives = safeDecodeAddressArray(erc725UAP, typeConfigData);
+
+          if (!executives || executives.length === 0) {
+            continue;
+          }
 
           // Find the Forwarder Assistant in the executive list
           const executionOrder = executives.findIndex(
@@ -288,27 +363,13 @@ export async function getForwarderAssistantConfig(
                 [txType, executionOrder.toString()]
               );
 
-              console.log('[GRAVE READ] Reading vault address for:', {
-                txType,
-                executionOrder,
-                assistantConfigKey,
-              });
-
               const assistantData = await safeGetData(assistantConfigKey);
-
-              console.log('[GRAVE READ] Raw assistantData:', assistantData);
 
               if (assistantData && assistantData !== '0x') {
                 try {
                   // Decode using decodeExecDataValue - same as UP Assistants
                   const [configAddress, configBytes] =
                     decodeExecDataValue(assistantData);
-
-                  console.log('[GRAVE READ] Decoded data:', {
-                    configAddress,
-                    configBytes,
-                    configBytesLength: configBytes.length,
-                  });
 
                   // Verify configBytes has data before attempting to decode
                   if (
@@ -324,46 +385,16 @@ export async function getForwarderAssistantConfig(
                       configBytes
                     );
 
-                    console.log(
-                      '[GRAVE READ] Decoded vault address:',
-                      vaultAddr
-                    );
-
                     if (
                       vaultAddr &&
                       vaultAddr !== '0x0000000000000000000000000000000000000000'
                     ) {
                       config.vaultAddress = vaultAddr;
-                      console.log(
-                        '[GRAVE READ] ✅ Successfully set vault address:',
-                        vaultAddr
-                      );
-                    } else {
-                      console.warn(
-                        '[GRAVE READ] ⚠️ Vault address is zero address'
-                      );
                     }
-                  } else {
-                    console.warn(
-                      '[GRAVE READ] ⚠️ configBytes is empty or too short:',
-                      configBytes
-                    );
                   }
                 } catch (error) {
-                  console.error(
-                    '[GRAVE READ] ❌ Error decoding assistant config:',
-                    error
-                  );
-                  console.error(
-                    '[GRAVE READ] Failed on assistantData:',
-                    assistantData
-                  );
+                  // Silently handle decode errors - config may not exist yet
                 }
-              } else {
-                console.warn(
-                  '[GRAVE READ] ⚠️ No assistant data found at key:',
-                  assistantConfigKey
-                );
               }
             }
 
@@ -376,10 +407,11 @@ export async function getForwarderAssistantConfig(
             const screenersData = await safeGetData(screenersKey);
             if (screenersData && screenersData !== '0x') {
               try {
-                const screeners = erc725UAP.decodeValueType(
-                  'address[]',
-                  screenersData
-                ) as string[];
+                const screeners = safeDecodeAddressArray(erc725UAP, screenersData);
+
+                if (!screeners || screeners.length === 0) {
+                  continue;
+                }
 
                 // Find Address List Screener and Curated List Screener
                 for (let i = 0; i < screeners.length; i++) {
@@ -737,7 +769,7 @@ export async function getForwarderAssistantConfig(
 
     return config;
   } catch (error) {
-    console.error('Error fetching forwarder assistant config:', error);
+    // Silently return default config on error
     return config;
   }
 }
@@ -1039,7 +1071,9 @@ export async function saveForwarderAssistantConfig(
     forceListNameUpdate?: boolean;
   }
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
@@ -1245,7 +1279,13 @@ export async function saveForwarderAssistantConfig(
 
   // Execute the batch transaction
   if (allKeys.length > 0) {
-    const tx = await upContract.setDataBatch(allKeys, allValues);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [allKeys, allValues],
+    });
     await tx.wait();
   } else {
     throw new Error('No configuration data generated');
@@ -1524,7 +1564,9 @@ export async function removeForwarderAssistant(
     creatorCurationScreenerAddress: string;
   }
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const erc725UAP = getErc725Read(
     uapSchema as ERC725JSONSchema[],
@@ -1831,7 +1873,13 @@ export async function removeForwarderAssistant(
     `[Grave Deactivate] Executing setDataBatch with ${allKeys.length} operations`
   );
 
-  const tx = await upContract.setDataBatch(allKeys, allValues);
+  const tx = await sendUPMethodTx({
+    signer,
+    upAddress,
+    upContract,
+    method: 'setDataBatch',
+    args: [allKeys, allValues],
+  });
   await tx.wait();
 
   console.log('[Grave Deactivate] Successfully removed Forwarder Assistant');

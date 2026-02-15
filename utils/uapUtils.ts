@@ -10,6 +10,18 @@ import {
   lsp9VaultAbi,
 } from '@lukso/lsp-smart-contracts/abi';
 
+const isRecoverableReadError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    error?.code === 'CALL_EXCEPTION' ||
+    error?.code === 'BAD_DATA' ||
+    message.includes('missing revert data') ||
+    message.includes('execution reverted') ||
+    message.includes('could not decode result data') ||
+    message.includes('load failed')
+  );
+};
+
 /**
  * Check if a Universal Profile is subscribed to the UAP protocol
  * @param provider - Ethers provider
@@ -35,7 +47,9 @@ export async function isSubscribedToUAP(
       urdValue.toLowerCase() === protocolAddress.toLowerCase()
     );
   } catch (error) {
-    console.error('Error checking UAP subscription:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error checking UAP subscription:', error);
+    }
     return false;
   }
 }
@@ -90,7 +104,9 @@ export async function getUAPVaultAddress(
     const addressHex = '0x' + vaultAddress.slice(-40);
     return addressHex;
   } catch (error) {
-    console.error('Error getting UAP vault address:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error getting UAP vault address:', error);
+    }
     return null;
   }
 }
@@ -113,7 +129,9 @@ export async function isValidVault(
 
     return owner.toLowerCase() === expectedOwner.toLowerCase();
   } catch (error) {
-    console.error('Error validating vault:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error validating vault:', error);
+    }
     return false;
   }
 }
@@ -154,9 +172,13 @@ export async function detectGraveSetup(
     );
 
     // Check for UAP vault from Forwarder Assistant configuration
+    // IMPORTANT: Only consider GRAVE active if the Forwarder Assistant is properly configured
+    // Having a vault in LSP10Vaults[] does NOT mean GRAVE is active - the forwarder must be configured
     let uapVaultAddress: string | null = null;
+    let isForwarderConfigured = false;
+
     if (hasUAPSubscription && networkConfig.forwarderAssistantAddress) {
-      // Get vault from Forwarder Assistant config instead of random vault from LSP10Vaults[]
+      // Get vault from Forwarder Assistant config - this is the authoritative source
       const { getForwarderAssistantConfig } = await import('./assistantConfig');
       try {
         const assistantConfig = await getForwarderAssistantConfig(
@@ -174,19 +196,17 @@ export async function detectGraveSetup(
               networkConfig.creatorCurationScreenerAddress || '',
           }
         );
+        // Track whether forwarder is configured (this is the key indicator of active protection)
+        isForwarderConfigured = assistantConfig.isConfigured;
         uapVaultAddress = assistantConfig.vaultAddress;
       } catch (error) {
-        console.error(
-          'Error getting vault from Forwarder Assistant config:',
-          error
-        );
-        // Fall back to old method if assistant config fails
-        uapVaultAddress = await getUAPVaultAddress(provider, upAddress);
+        // Forwarder assistant is not configured - GRAVE is NOT active
+        isForwarderConfigured = false;
+        uapVaultAddress = null;
       }
-    } else if (hasUAPSubscription) {
-      // Fallback: use first vault from LSP10Vaults[]
-      uapVaultAddress = await getUAPVaultAddress(provider, upAddress);
     }
+    // Note: We intentionally don't fall back to getUAPVaultAddress() anymore
+    // Having a vault doesn't mean GRAVE is protecting the profile - the forwarder must be configured
 
     // Check for legacy GRAVE vault
     const { getGraveVaultFor } = await import('./universalProfile');
@@ -200,7 +220,7 @@ export async function detectGraveSetup(
         networkConfig.universalGraveForwarder
       );
     } catch (error) {
-      console.error('Error checking legacy vault:', error);
+      // Silently ignore legacy vault check errors
     }
 
     // If no vault found in current forwarder, check previous versions
@@ -217,7 +237,7 @@ export async function detectGraveSetup(
             break;
           }
         } catch (error) {
-          console.error(`Error checking old forwarder ${oldForwarder}:`, error);
+          // Silently ignore old forwarder check errors
         }
       }
     }
@@ -225,12 +245,14 @@ export async function detectGraveSetup(
     const hasLegacyGrave = !!legacyVaultAddress;
 
     // Determine setup type
+    // Use isForwarderConfigured as the key indicator - this means the forwarder is in the executives list
+    // uapVaultAddress might be null even when configured if there's a decoding issue
     let setupType: 'none' | 'legacy' | 'uap' | 'both' = 'none';
-    if (hasUAPSubscription && uapVaultAddress && hasLegacyGrave) {
+    if (hasUAPSubscription && isForwarderConfigured && hasLegacyGrave) {
       setupType = 'both';
-    } else if (hasUAPSubscription && uapVaultAddress) {
+    } else if (hasUAPSubscription && isForwarderConfigured) {
       setupType = 'uap';
-    } else if (hasUAPSubscription && !uapVaultAddress) {
+    } else if (hasUAPSubscription && !isForwarderConfigured) {
       // Has UAP subscription but no Forwarder config - needs configuration
       setupType = 'none';
     } else if (hasLegacyGrave) {
@@ -246,7 +268,6 @@ export async function detectGraveSetup(
       setupType,
     };
   } catch (error) {
-    console.error('Error detecting GRAVE setup:', error);
     return {
       hasUAPSubscription: false,
       hasLegacyGrave: false,

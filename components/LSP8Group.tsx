@@ -16,7 +16,7 @@ import {
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { FaExternalLinkAlt } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { Contract } from 'ethers';
 import {
@@ -35,6 +35,7 @@ import {
   assertWalletNetwork,
   getWalletProvider,
   getWalletSigner,
+  hasWalletProvider,
 } from '@/utils/walletClient';
 
 interface LSP8SimplePanelProps {
@@ -81,7 +82,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   const toast = useToast();
 
   const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
 
@@ -189,7 +190,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
   };
 
   const reviveAll = async (tokenData: TokenData[]) => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
 
@@ -344,7 +345,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
             {networkConfig && (
               <IconButton
                 aria-label="View on universal page"
-                icon={<FaExternalLinkAlt color={fontColor} />}
+                icon={<ExternalLinkIcon color={fontColor} />}
                 color={fontColor}
                 size="sm"
                 height={'14px'}
@@ -433,7 +434,7 @@ const LSP8Group: React.FC<LSP8SimplePanelProps> = ({
                         {networkConfig && (
                           <IconButton
                             aria-label="View on universal page"
-                            icon={<FaExternalLinkAlt color={fontColor} />}
+                            icon={<ExternalLinkIcon color={fontColor} />}
                             color={fontColor}
                             size="sm"
                             maxHeight={'14px'}

@@ -10,7 +10,7 @@ import {
   DEFAULT_UP_URD_PERMISSIONS,
 } from '@/app/constants';
 import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
-import { getWalletSigner } from '@/utils/walletClient';
+import { getWalletSignerForUP, sendUPMethodTx } from '@/utils/walletClient';
 
 // Hardcoded key from UAP.json schema - ERC725.js encodeKeyName may not work correctly
 const SUPPORTED_STANDARDS_UAP_KEY =
@@ -37,7 +37,9 @@ export async function subscribeToUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await getWalletSigner();
+    const signer = await getWalletSignerForUP(upAddress, {
+      requirePermissions: true,
+    });
 
     // Set up URD delegates following UP Assistants pattern
     const URDdataKey = ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate;
@@ -119,9 +121,13 @@ export async function subscribeToUAP(
       ...permissionsData.values,
     ];
 
-    const tx = await (upContract as any)
-      .connect(signer)
-      .setDataBatch(allKeys, allValues);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [allKeys, allValues],
+    });
     await tx.wait();
 
     console.log('Successfully subscribed to UAP protocol');
@@ -146,61 +152,22 @@ export async function unsubscribeFromUAP(
   defaultURDAddress: string
 ): Promise<void> {
   try {
-    const signer = await getWalletSigner();
-    const upContract = new Contract(upAddress, universalProfileAbi, signer);
-
-    // Create ERC725 instance with window.lukso for reading and encoding data
-    // ERC725.js expects the raw provider, not a BrowserProvider wrapper
-    const erc725 = getErc725Read(
-      LSP6Schema as ERC725JSONSchema[],
-      upAddress,
-      { provider }
-    );
-
-    // Get current controllers
-    const controllersData = await getDataSafe(erc725, 'AddressPermissions[]');
-    const currentControllers = (controllersData?.value as string[]) || [];
-
-    // Remove UAP from controllers list
-    const newControllers = currentControllers.filter(
-      addr => addr.toLowerCase() !== protocolAddress.toLowerCase()
-    );
-
-    // Prepare keys and values
-    const keys: string[] = [
-      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, // Restore default URD
-      SUPPORTED_STANDARDS_UAP_KEY, // Clear UAP supported standard
-      ...erc725.encodeData([
-        {
-          keyName: 'AddressPermissions:Permissions:<address>',
-          dynamicKeyParts: protocolAddress,
-          value: '0x', // Remove permissions
-        },
-        {
-          keyName: 'AddressPermissions[]',
-          value: newControllers, // Remove from controllers list
-        },
-      ]).keys,
-    ];
-
-    const values: string[] = [
-      defaultURDAddress, // Restore default URD
-      '0x', // Clear SupportedStandards:UAP
-      ...erc725.encodeData([
-        {
-          keyName: 'AddressPermissions:Permissions:<address>',
-          dynamicKeyParts: protocolAddress,
-          value: '0x',
-        },
-        {
-          keyName: 'AddressPermissions[]',
-          value: newControllers,
-        },
-      ]).values,
-    ];
+    const { signer, upContract, keys, values } =
+      await buildUnsubscribeFromUAPBatch(
+        provider,
+        upAddress,
+        protocolAddress,
+        defaultURDAddress
+      );
 
     // Execute setDataBatch
-    const tx = await (upContract as any).setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     await tx.wait();
 
     console.log('Successfully unsubscribed from UAP protocol');
@@ -208,6 +175,67 @@ export async function unsubscribeFromUAP(
     console.error('Error unsubscribing from UAP:', error);
     throw error;
   }
+}
+
+export async function buildUnsubscribeFromUAPBatch(
+  provider: BrowserProvider,
+  upAddress: string,
+  protocolAddress: string,
+  defaultURDAddress: string
+): Promise<{
+  signer: Awaited<ReturnType<typeof getWalletSignerForUP>>;
+  upContract: Contract;
+  keys: string[];
+  values: string[];
+}> {
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
+  const upContract = new Contract(upAddress, universalProfileAbi, signer);
+
+  // Create ERC725 instance with the wallet provider for reading and encoding data
+  // ERC725.js expects the raw provider, not a BrowserProvider wrapper
+  const erc725 = getErc725Read(
+    LSP6Schema as ERC725JSONSchema[],
+    upAddress,
+    { provider }
+  );
+
+  // Get current controllers
+  const controllersData = await getDataSafe(erc725, 'AddressPermissions[]');
+  const currentControllers = (controllersData?.value as string[]) || [];
+
+  // Remove UAP from controllers list
+  const newControllers = currentControllers.filter(
+    addr => addr.toLowerCase() !== protocolAddress.toLowerCase()
+  );
+
+  const permissionsData = erc725.encodeData([
+    {
+      keyName: 'AddressPermissions:Permissions:<address>',
+      dynamicKeyParts: protocolAddress,
+      value: '0x', // Remove permissions
+    },
+    {
+      keyName: 'AddressPermissions[]',
+      value: newControllers, // Remove from controllers list
+    },
+  ]);
+
+  return {
+    signer,
+    upContract,
+    keys: [
+      ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate, // Restore default URD
+      SUPPORTED_STANDARDS_UAP_KEY, // Clear UAP supported standard
+      ...permissionsData.keys,
+    ],
+    values: [
+      defaultURDAddress, // Restore default URD
+      '0x', // Clear SupportedStandards:UAP
+      ...permissionsData.values,
+    ],
+  };
 }
 
 /**
@@ -311,7 +339,9 @@ export async function subscribeAndConfigureGrave(
 ): Promise<void> {
   console.log("running: subscribeAndConfigureGrave")
   try {
-    const signer = await getWalletSigner();
+    const signer = await getWalletSignerForUP(upAddress, {
+      requirePermissions: true,
+    });
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
     const abiCoder = new AbiCoder();
 
@@ -330,14 +360,20 @@ export async function subscribeAndConfigureGrave(
     const values: string[] = [];
 
     // =============================================================
-    // SECTION 1: UAP Protocol Subscription Keys
+    // SECTION 1: UAP Protocol Subscription Keys (only add if different)
     // =============================================================
 
-    // 1. Set LSP1UniversalReceiverDelegate to UAP protocol
-    keys.push(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
-    values.push(protocolAddress);
+    // 1. Set LSP1UniversalReceiverDelegate to UAP protocol (if not already set)
+    const currentURD = await upContract.getData(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+    if (!currentURD || currentURD.toLowerCase() !== protocolAddress.toLowerCase()) {
+      keys.push(ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegate);
+      values.push(protocolAddress);
+      console.log('[UAP Subscribe] Adding LSP1URD key (not yet set to protocol)');
+    } else {
+      console.log('[UAP Subscribe] LSP1URD already set to protocol, skipping');
+    }
 
-    // 2-3. Clear type-specific URDs (LSP7 and LSP8)
+    // 2-3. Clear type-specific URDs (LSP7 and LSP8) - only if not already cleared
     const LSP7URDdataKey =
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP7_TRANSACTION_TYPE.slice(2, 42);
@@ -345,14 +381,29 @@ export async function subscribeAndConfigureGrave(
       ERC725YDataKeys.LSP1.LSP1UniversalReceiverDelegatePrefix +
       LSP8_TRANSACTION_TYPE.slice(2, 42);
 
-    keys.push(LSP7URDdataKey);
-    values.push('0x');
-    keys.push(LSP8URDdataKey);
-    values.push('0x');
+    const currentLSP7URD = await upContract.getData(LSP7URDdataKey);
+    const currentLSP8URD = await upContract.getData(LSP8URDdataKey);
 
-    // 4. Set SupportedStandards:UAP using hardcoded key
-    keys.push(SUPPORTED_STANDARDS_UAP_KEY);
-    values.push(SUPPORTED_STANDARDS_UAP_VALUE);
+    if (currentLSP7URD && currentLSP7URD !== '0x') {
+      keys.push(LSP7URDdataKey);
+      values.push('0x');
+      console.log('[UAP Subscribe] Clearing LSP7 type-specific URD');
+    }
+    if (currentLSP8URD && currentLSP8URD !== '0x') {
+      keys.push(LSP8URDdataKey);
+      values.push('0x');
+      console.log('[UAP Subscribe] Clearing LSP8 type-specific URD');
+    }
+
+    // 4. Set SupportedStandards:UAP (only if not already set)
+    const currentSupportedStandards = await upContract.getData(SUPPORTED_STANDARDS_UAP_KEY);
+    if (!currentSupportedStandards || currentSupportedStandards.toLowerCase() !== SUPPORTED_STANDARDS_UAP_VALUE.toLowerCase()) {
+      keys.push(SUPPORTED_STANDARDS_UAP_KEY);
+      values.push(SUPPORTED_STANDARDS_UAP_VALUE);
+      console.log('[UAP Subscribe] Adding SupportedStandards:UAP');
+    } else {
+      console.log('[UAP Subscribe] SupportedStandards:UAP already set, skipping');
+    }
 
     // =============================================================
     // SECTION 2: AddressPermissions (efficient - only write new entry)
@@ -371,7 +422,7 @@ export async function subscribeAndConfigureGrave(
         controller.toLowerCase() === protocolAddress.toLowerCase()
     );
 
-    // Set UAP permissions (always update permissions even if already in array)
+    // Set UAP permissions - but only if they're not already correctly set
     const uapPermissions = erc725LSP6.encodePermissions({
       SUPER_CALL: true,
       SUPER_TRANSFERVALUE: true,
@@ -382,8 +433,19 @@ export async function subscribeAndConfigureGrave(
     const permissionsKey =
       ERC725YDataKeys.LSP6['AddressPermissions:Permissions'] +
       protocolAddress.slice(2).toLowerCase();
-    keys.push(permissionsKey);
-    values.push(uapPermissions);
+
+    // Check current permissions to avoid duplicate transaction rejection
+    const currentPermissionsValue = await upContract.getData(permissionsKey);
+    const permissionsAlreadySet = currentPermissionsValue &&
+      currentPermissionsValue.toLowerCase() === uapPermissions.toLowerCase();
+
+    if (!permissionsAlreadySet) {
+      keys.push(permissionsKey);
+      values.push(uapPermissions);
+      console.log('[UAP Subscribe] Adding protocol permissions (not yet set or different)');
+    } else {
+      console.log('[UAP Subscribe] Protocol permissions already correctly set, skipping');
+    }
 
     // Only add to array if not already present
     if (!protocolAlreadyExists) {
@@ -633,7 +695,13 @@ export async function subscribeAndConfigureGrave(
     console.log(`[UAP Subscribe] Writing ${keys.length} keys in single tx`);
     console.log('[UAP Subscribe] Keys:', keys);
 
-    const tx = await upContract.setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     await tx.wait();
 
     console.log(

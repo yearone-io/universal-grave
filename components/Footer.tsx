@@ -9,8 +9,8 @@ import {
   Flex,
   Image,
   Select,
+  Text,
 } from '@chakra-ui/react';
-import { FaTwitter, FaMoon, FaGithub } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -70,8 +70,6 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
     <Box
       bg={'dark.purple.500'}
       color={'dark.white'}
-      borderTop={'1px solid var(--chakra-colors-dark-purple-100)'}
-      mt={5}
     >
       <Container
         as={Stack}
@@ -88,7 +86,7 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
             <Box fontSize="xs" color="dark.white">
               Powered by{' '}
               <chakra.a
-                href="https://github.com/yearone-io/universal-assistant-protocol"
+                href="https://upassistants.com"
                 target="_blank"
                 rel="noreferrer"
                 textDecoration="underline"
@@ -109,15 +107,22 @@ export default function SmallWithLogoLeft({ networkName }: FooterProps) {
             label={'Twitter'}
             href={'https://twitter.com/YearOneIO'}
           >
-            <FaTwitter />
+            <Text as="span" fontSize="xs" fontWeight="700">
+              X
+            </Text>
           </SocialButton>
           <SocialButton label={'Github'} href={'https://github.com/yearone-io'}>
-            <FaGithub />
+            <Text as="span" fontSize="xs" fontWeight="700">
+              GH
+            </Text>
           </SocialButton>
-          <Link href={`/${networkName}/about`}>About</Link>
-          <Link href={`/${networkName}/terms`}>Terms</Link>
-          <Link href={`/${networkName}/terms#privacy`}>Privacy</Link>
-          <Link href={`/${networkName}/feedback`}>Feedback</Link>
+          <Link href="/about">About</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/terms#privacy">Privacy</Link>
+          <Link href={`/${networkName}/grave/settings/diagnostics`}>
+            Diagnostics
+          </Link>
+          <Link href="/feedback">Feedback</Link>
           <Box minWidth={'170'}>
             <Select
               value={networkName}

@@ -12,7 +12,11 @@ import { createUpVault, setVaultURD } from '@/utils/vaultUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
-import { assertWalletNetwork, getWalletProvider } from '@/utils/walletClient';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  hasWalletProvider,
+} from '@/utils/walletClient';
 
 /**
  * The JoinGraveBtn component is a React functional component designed for the LUKSO blockchain ecosystem.
@@ -66,7 +70,7 @@ export default function JoinGraveBtn({
   useEffect(() => {
     // Request account access on component mount
     if (
-      window.lukso &&
+      hasWalletProvider() &&
       account &&
       networkConfig &&
       networkConfig.universalGraveForwarder
@@ -106,7 +110,7 @@ export default function JoinGraveBtn({
 
   // ========================= JOINING FLOW =========================
   const initJoinProcess = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       toast({
         title: `UP wallet is not connected.`,
         status: 'error',
@@ -216,7 +220,7 @@ export default function JoinGraveBtn({
    * Function to reset the delegates for LSP7 and LSP8.
    */
   const leaveTheGrave = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       toast({
         title: `UP wallet is not connected.`,
         status: 'error',
@@ -300,7 +304,7 @@ export default function JoinGraveBtn({
    * This way no more assets are redirected but the UP still has access to the Grave vault.
    */
   const handleReset = async () => {
-    if (loading || !window.lukso || !networkConfig) return;
+    if (loading || !hasWalletProvider() || !networkConfig) return;
     setLoading(true);
     try {
       await leaveTheGrave();
@@ -314,7 +318,7 @@ export default function JoinGraveBtn({
    * transactions is triggered.
    */
   const handleJoin = async () => {
-    if (loading || !window.lukso || !networkConfig) return;
+    if (loading || !hasWalletProvider() || !networkConfig) return;
     setLoading(true);
     try {
       await initJoinProcess();

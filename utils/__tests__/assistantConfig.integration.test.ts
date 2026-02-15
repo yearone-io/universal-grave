@@ -16,7 +16,11 @@ vi.mock('@/utils/configureExecutiveAssistant', () => ({
 }));
 
 vi.mock('@/utils/walletClient', () => ({
-  getWalletSigner: vi.fn().mockResolvedValue({}),
+  getWalletSignerForUP: vi.fn().mockResolvedValue({}),
+  sendUPMethodTx: vi.fn(
+    async ({ upContract, args }: { upContract: any; args: any[] }) =>
+      upContract.setDataBatch(args[0], args[1])
+  ),
 }));
 
 vi.mock('ethers', async () => {

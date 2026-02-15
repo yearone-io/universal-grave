@@ -6,13 +6,14 @@ import React, {
   useEffect,
   useState,
   useMemo,
+  useCallback,
+  useRef,
 } from 'react';
 import { useProfile } from './ProfileProvider';
 import { getUpAddressUrds, IUPForwarderData } from '@/utils/urdUtils';
-import { getGraveVaultFor } from '@/utils/universalProfile';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { detectGraveSetup } from '@/utils/uapUtils';
-import { getWalletProvider } from '@/utils/walletClient';
+import { getReadProvider } from '@/utils/erc725Client';
 
 interface GraveContextType {
   // Legacy GRAVE vault (from old forwarder)
@@ -57,45 +58,56 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
 
   const [isLoadingGraveData, setIsLoadingGraveData] = useState(false);
 
-  const setURDLsp7 = (urd: string | null) => {
+  // Track the current refresh operation to prevent concurrent fetches
+  const refreshInProgressRef = useRef(false);
+  const lastRefreshParamsRef = useRef<string | null>(null);
+
+  const setURDLsp7 = useCallback((urd: string | null) => {
     setURDLsp7State(urd);
-  };
+  }, []);
 
-  const setURDLsp8 = (urd: string | null) => {
+  const setURDLsp8 = useCallback((urd: string | null) => {
     setURDLsp8State(urd);
-  };
+  }, []);
 
-  const addGraveVault = (vault: string) => {
+  const addGraveVault = useCallback((vault: string) => {
     setGraveVault(vault);
-  };
+  }, []);
 
-  const refreshGraveData = async () => {
+  const refreshGraveData = useCallback(async () => {
     if (isNetworkMismatch) {
-      console.log('GraveContext: Skipping refresh, network mismatch');
       return;
     }
     if (!isConnected || !profileDetailsData?.upWallet || !chainId) {
-      console.log('GraveContext: Skipping refreshGraveData, missing data');
       return;
     }
 
     const currentNetwork = supportedNetworks[chainId];
     if (!currentNetwork) {
-      console.log('GraveContext: Network not supported');
       return;
     }
 
+    // Create a unique key for this refresh request
+    const refreshKey = `${profileDetailsData.upWallet}-${chainId}`;
+
+    // Prevent concurrent refreshes for the same params
+    if (refreshInProgressRef.current && lastRefreshParamsRef.current === refreshKey) {
+      return;
+    }
+
+    refreshInProgressRef.current = true;
+    lastRefreshParamsRef.current = refreshKey;
     setIsLoadingGraveData(true);
+
     try {
-      // Get provider
-      if (!window.lukso) {
-        throw new Error('No wallet provider detected');
-      }
-      const provider = getWalletProvider();
+      const readProvider = getReadProvider(
+        currentNetwork.chainId,
+        currentNetwork.rpcUrl
+      );
 
       // Detect GRAVE setup type (legacy vs UAP)
       const setupInfo = await detectGraveSetup(
-        provider,
+        readProvider,
         profileDetailsData.upWallet,
         {
           protocolAddress: currentNetwork.protocolAddress,
@@ -104,8 +116,15 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
           forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
           addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
           curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+          creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+          creatorCurationScreenerAddress: currentNetwork.creatorCurationScreenerAddress,
         }
       );
+
+      // Check if params changed during the async operation
+      if (lastRefreshParamsRef.current !== refreshKey) {
+        return;
+      }
 
       // Update state with detected setup
       setHasUAPSubscription(setupInfo.hasUAPSubscription);
@@ -117,29 +136,28 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       // Also fetch legacy URD data for backward compatibility
       try {
         const urdData: IUPForwarderData = await getUpAddressUrds(
-          provider,
+          readProvider,
           profileDetailsData.upWallet
         );
-        setURDLsp7State(urdData.lsp7Urd);
-        setURDLsp8State(urdData.lsp8Urd);
-        setOldUrdVersion(urdData.oldUrdVersion);
+        // Check again before setting URD state
+        if (lastRefreshParamsRef.current === refreshKey) {
+          setURDLsp7State(urdData.lsp7Urd);
+          setURDLsp8State(urdData.lsp8Urd);
+          setOldUrdVersion(urdData.oldUrdVersion);
+        }
       } catch (urdError) {
-        console.warn('GraveContext: Could not fetch legacy URD data', urdError);
+        // Silently ignore URD fetch errors
       }
-
-      console.log('GraveContext: Refreshed GRAVE data', {
-        setupType: setupInfo.setupType,
-        hasUAPSubscription: setupInfo.hasUAPSubscription,
-        hasLegacyGrave: setupInfo.hasLegacyGrave,
-        uapVault: setupInfo.uapVaultAddress,
-        legacyVault: setupInfo.legacyVaultAddress,
-      });
     } catch (error) {
-      console.error('GraveContext: Error refreshing GRAVE data', error);
+      // Silently ignore refresh errors
     } finally {
-      setIsLoadingGraveData(false);
+      // Only clear the in-progress flag if this is still the current refresh
+      if (lastRefreshParamsRef.current === refreshKey) {
+        refreshInProgressRef.current = false;
+        setIsLoadingGraveData(false);
+      }
     }
-  };
+  }, [isConnected, profileDetailsData?.upWallet, chainId, isNetworkMismatch]);
 
   // Refresh GRAVE data when profile changes
   useEffect(() => {
@@ -147,6 +165,8 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       refreshGraveData();
     } else {
       // Clear GRAVE data when disconnected
+      refreshInProgressRef.current = false;
+      lastRefreshParamsRef.current = null;
       setGraveVault(undefined);
       setURDLsp7State(null);
       setURDLsp8State(null);
@@ -156,7 +176,7 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       setSetupType('none');
       setUapVaultAddress(null);
     }
-  }, [isConnected, profileDetailsData?.upWallet, chainId, isNetworkMismatch]);
+  }, [isConnected, profileDetailsData?.upWallet, chainId, isNetworkMismatch, refreshGraveData]);
 
   const contextValue = useMemo(
     () => ({
@@ -189,6 +209,10 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       setupType,
       uapVaultAddress,
       isLoadingGraveData,
+      setURDLsp7,
+      setURDLsp8,
+      addGraveVault,
+      refreshGraveData,
     ]
   );
 

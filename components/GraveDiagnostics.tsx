@@ -15,13 +15,20 @@ import {
 } from '@chakra-ui/react';
 import { AbiCoder, Contract } from 'ethers';
 import Link from 'next/link';
+import { useAccount } from 'wagmi';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { getForwarderAssistantDiagnostics } from '@/utils/assistantConfig';
 import { formatAddress } from '@/utils/tokenUtils';
-import { getErc725Read } from '@/utils/erc725Client';
+import { getErc725Read, getReadProvider } from '@/utils/erc725Client';
 import type ERC725 from '@erc725/erc725.js';
-import { getWalletProvider } from '@/utils/walletClient';
+import { getWalletProvider, hasWalletProvider } from '@/utils/walletClient';
+import {
+  canReadAsUniversalProfile,
+  getKeyManagerTarget,
+  hasControllerPermissionsOnUP,
+  resolveUniversalProfileAddress,
+} from '@/utils/upAddress';
 
 interface GraveDiagnosticsProps {
   networkName: string;
@@ -30,10 +37,20 @@ interface GraveDiagnosticsProps {
 export default function GraveDiagnostics({
   networkName,
 }: GraveDiagnosticsProps) {
-  const { profileDetailsData, isConnected, chainId, isNetworkMismatch } =
-    useProfile();
+  const { address: connectedAddress, connector } = useAccount();
+  const {
+    profileDetailsData,
+    isConnected,
+    isSigningIn,
+    chainId,
+    expectedChainId,
+    isNetworkMismatch,
+    error: profileError,
+    debugState,
+  } = useProfile();
   const address = profileDetailsData?.upWallet;
   const currentNetwork = chainId ? supportedNetworks[chainId.toString()] : null;
+  const walletConnectUriStorageKey = 'up:lastWalletConnectUri';
 
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,9 +63,60 @@ export default function GraveDiagnostics({
   const [assetLengthDecodeWarning, setAssetLengthDecodeWarning] =
     useState<string | null>(null);
   const [creatorVerification, setCreatorVerification] = useState<any>(null);
+  const [identityLoading, setIdentityLoading] = useState(false);
+  const [identityError, setIdentityError] = useState<string | null>(null);
+  const [identityDiagnostics, setIdentityDiagnostics] = useState<any>(null);
+  const [storedWalletConnectUri, setStoredWalletConnectUri] = useState<
+    string | null
+  >(null);
+  const [isOpeningUPApp, setIsOpeningUPApp] = useState(false);
+
+  const refreshStoredWalletConnectUri = useCallback(() => {
+    if (typeof window === 'undefined') {
+      setStoredWalletConnectUri(null);
+      return;
+    }
+    try {
+      const uri = localStorage.getItem(walletConnectUriStorageKey);
+      setStoredWalletConnectUri(uri && uri.startsWith('wc:') ? uri : null);
+    } catch {
+      setStoredWalletConnectUri(null);
+    }
+  }, [walletConnectUriStorageKey]);
+
+  const clearStoredWalletConnectUri = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem(walletConnectUriStorageKey);
+    } catch {
+      // Ignore storage access failures.
+    }
+    setStoredWalletConnectUri(null);
+  }, [walletConnectUriStorageKey]);
+
+  const openUniversalProfilesApp = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const uri = debugState.lastWalletConnectUri || storedWalletConnectUri;
+    const nativeBase = 'io.universaleverything.universalprofiles://';
+    const deepLink =
+      uri && uri.startsWith('wc:')
+        ? uri.replace(/^wc:/, `${nativeBase}wallet-connect/`)
+        : `${nativeBase}wallet-connect`;
+
+    setIsOpeningUPApp(true);
+    window.location.href = deepLink;
+    window.setTimeout(() => {
+      setIsOpeningUPApp(false);
+    }, 900);
+  }, [debugState.lastWalletConnectUri, storedWalletConnectUri]);
 
   const runDiagnostics = useCallback(async () => {
-    if (!address || !currentNetwork || !window.lukso || isNetworkMismatch) {
+    if (
+      !address ||
+      !currentNetwork ||
+      !hasWalletProvider() ||
+      isNetworkMismatch
+    ) {
       setError('Wallet not connected');
       return;
     }
@@ -79,6 +147,111 @@ export default function GraveDiagnostics({
     }
   }, [address, currentNetwork, isNetworkMismatch]);
 
+  const runIdentityDiagnostics = useCallback(async () => {
+    if (!currentNetwork) {
+      setIdentityError('Network not detected');
+      return;
+    }
+
+    if (!connectedAddress) {
+      setIdentityError('No connected wallet account');
+      return;
+    }
+
+    setIdentityLoading(true);
+    setIdentityError(null);
+    try {
+      const readProvider = getReadProvider(
+        currentNetwork.chainId,
+        currentNetwork.rpcUrl
+      );
+
+      const connectedIsUP = await canReadAsUniversalProfile(
+        readProvider,
+        connectedAddress
+      );
+      const keyManagerTarget = await getKeyManagerTarget(
+        readProvider,
+        connectedAddress
+      );
+      const resolved = await resolveUniversalProfileAddress(
+        readProvider,
+        connectedAddress
+      );
+
+      const storedUPAddress = profileDetailsData?.upWallet || null;
+      const storedConnectedAddress =
+        profileDetailsData?.connectedWalletAddress || null;
+      const storedController = profileDetailsData?.mainUPController || null;
+
+      const storedUPIsUP = storedUPAddress
+        ? await canReadAsUniversalProfile(readProvider, storedUPAddress)
+        : null;
+
+      const controllerHasPermissions =
+        storedController && resolved.source !== 'unknown'
+          ? await hasControllerPermissionsOnUP(
+              readProvider,
+              resolved.upAddress,
+              storedController
+            )
+          : null;
+
+      const connectedHasPermissions = await hasControllerPermissionsOnUP(
+        readProvider,
+        resolved.upAddress,
+        connectedAddress
+      );
+
+      const mismatches: string[] = [];
+      if (
+        storedUPAddress &&
+        resolved.source !== 'unknown' &&
+        storedUPAddress.toLowerCase() !== resolved.upAddress.toLowerCase()
+      ) {
+        mismatches.push(
+          'Stored UP address differs from currently resolved UP address'
+        );
+      }
+      if (storedUPAddress && storedUPIsUP === false) {
+        mismatches.push('Stored UP address does not behave like an ERC725Y UP');
+      }
+      if (storedController && controllerHasPermissions === false) {
+        mismatches.push(
+          'Stored main controller has no LSP6 permissions on resolved UP'
+        );
+      }
+
+      setIdentityDiagnostics({
+        chainId: currentNetwork.chainId,
+        connector: {
+          id: connector?.id || null,
+          name: connector?.name || null,
+        },
+        connectedAddress,
+        connectedAddressIsUP: connectedIsUP,
+        keyManagerTarget,
+        resolvedUP: resolved.upAddress,
+        resolvedSource: resolved.source,
+        storedUPAddress,
+        storedUPAddressIsUP: storedUPIsUP,
+        storedConnectedAddress,
+        storedMainController: storedController,
+        storedMainControllerHasPermissions: controllerHasPermissions,
+        connectedAddressHasPermissions: connectedHasPermissions,
+        mismatches,
+      });
+    } catch (err: any) {
+      setIdentityError(err.message || 'Failed to run identity diagnostics');
+    } finally {
+      setIdentityLoading(false);
+    }
+  }, [connectedAddress, connector?.id, connector?.name, currentNetwork, profileDetailsData]);
+
+  useEffect(() => {
+    refreshStoredWalletConnectUri();
+  }, [refreshStoredWalletConnectUri]);
+
   useEffect(() => {
     if (
       isConnected &&
@@ -100,8 +273,34 @@ export default function GraveDiagnostics({
     isNetworkMismatch,
   ]);
 
+  useEffect(() => {
+    if (
+      isConnected &&
+      connectedAddress &&
+      currentNetwork &&
+      !identityDiagnostics &&
+      !identityLoading &&
+      !isNetworkMismatch
+    ) {
+      runIdentityDiagnostics();
+    }
+  }, [
+    connectedAddress,
+    currentNetwork,
+    identityDiagnostics,
+    identityLoading,
+    isConnected,
+    isNetworkMismatch,
+    runIdentityDiagnostics,
+  ]);
+
   const runAssetDiagnostics = useCallback(async () => {
-    if (!assetAddress || !currentNetwork || !window.lukso || isNetworkMismatch) {
+    if (
+      !assetAddress ||
+      !currentNetwork ||
+      !hasWalletProvider() ||
+      isNetworkMismatch
+    ) {
       setAssetError('Enter a token contract address');
       return;
     }
@@ -776,6 +975,16 @@ export default function GraveDiagnostics({
               >
                 Run Diagnostics
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="blue"
+                onClick={runIdentityDiagnostics}
+                isLoading={identityLoading}
+                isDisabled={!isConnected}
+              >
+                Run Identity Check
+              </Button>
               {!isConnected && (
                 <Text fontSize="xs" color="orange.700">
                   Connect your wallet to run diagnostics.
@@ -788,6 +997,229 @@ export default function GraveDiagnostics({
             <Text fontSize="xs" color="red.700" mt={2}>
               {error}
             </Text>
+          )}
+          {identityError && (
+            <Text fontSize="xs" color="red.700" mt={2}>
+              Identity: {identityError}
+            </Text>
+          )}
+          {profileError && (
+            <Text fontSize="xs" color="orange.800" mt={2}>
+              Auth: {profileError}
+            </Text>
+          )}
+
+          <Box
+            mt={4}
+            p={4}
+            bg="white"
+            borderRadius="md"
+            border="1px solid"
+            borderColor="gray.300"
+          >
+            <Flex align="center" justify="space-between" flexWrap="wrap" gap={2}>
+              <Text fontSize="sm" color="gray.900" fontWeight="bold">
+                Connection Runtime
+              </Text>
+              <Badge
+                colorScheme={
+                  isSigningIn
+                    ? 'yellow'
+                    : isConnected && !isNetworkMismatch
+                      ? 'green'
+                      : 'orange'
+                }
+                variant="solid"
+              >
+                {isSigningIn
+                  ? 'Sign-in pending'
+                  : isConnected && !isNetworkMismatch
+                    ? 'Connected'
+                    : 'Needs attention'}
+              </Badge>
+            </Flex>
+
+            <VStack align="stretch" spacing={1} mt={2}>
+              <Text fontSize="xs" color="gray.900">
+                Connected account (wagmi): {connectedAddress || '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                UP in profile context: {address || '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Active chain / expected chain: {chainId || '—'} /{' '}
+                {expectedChainId || '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Connector (active): {debugState.connectorName || '—'} (
+                {debugState.connectorId || '—'})
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                WalletConnect connector: {debugState.walletConnectConnectorName || '—'} (
+                {debugState.walletConnectConnectorId || '—'})
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Wallet client ready: {debugState.walletClientPresent ? 'yes' : 'no'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Wallet chain (wagmi client): {debugState.walletClientChainId || '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Wallet connected flag: {debugState.isWalletConnected ? 'yes' : 'no'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Pending signature / signing message: {debugState.pendingSignature ? 'yes' : 'no'} /{' '}
+                {debugState.signingMessage ? 'yes' : 'no'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Mobile device: {debugState.isMobileDevice ? 'yes' : 'no'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                `window.lukso` present: {debugState.hasLuksoProvider ? 'yes' : 'no'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Runtime WC URI: {debugState.lastWalletConnectUri || '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Stored WC URI: {storedWalletConnectUri || '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Last WC URI update at:{' '}
+                {debugState.lastWalletConnectUriUpdatedAt
+                  ? new Date(debugState.lastWalletConnectUriUpdatedAt).toLocaleString()
+                  : '—'}
+              </Text>
+              <Text fontSize="xs" color="gray.900">
+                Last UP app wake at:{' '}
+                {debugState.lastUpAppWakeAt
+                  ? new Date(debugState.lastUpAppWakeAt).toLocaleString()
+                  : '—'}
+              </Text>
+            </VStack>
+
+            <HStack spacing={2} mt={3} flexWrap="wrap">
+              <Button
+                size="xs"
+                colorScheme="purple"
+                onClick={openUniversalProfilesApp}
+                isLoading={isOpeningUPApp}
+              >
+                Open UP App
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                colorScheme="blue"
+                onClick={refreshStoredWalletConnectUri}
+              >
+                Refresh URI
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                colorScheme="orange"
+                onClick={clearStoredWalletConnectUri}
+              >
+                Clear URI
+              </Button>
+            </HStack>
+          </Box>
+
+          {identityDiagnostics && (
+            <Box
+              mt={4}
+              p={4}
+              bg="white"
+              borderRadius="md"
+              border="1px solid"
+              borderColor="gray.300"
+            >
+              <Flex align="center" justify="space-between" flexWrap="wrap" gap={2}>
+                <Text fontSize="sm" color="gray.900" fontWeight="bold">
+                  Wallet Identity
+                </Text>
+                <Badge
+                  colorScheme={
+                    identityDiagnostics.mismatches?.length > 0
+                      ? 'orange'
+                      : 'green'
+                  }
+                  variant="solid"
+                >
+                  {identityDiagnostics.mismatches?.length > 0
+                    ? `${identityDiagnostics.mismatches.length} mismatch${
+                        identityDiagnostics.mismatches.length === 1 ? '' : 'es'
+                      }`
+                    : 'No identity mismatches detected'}
+                </Badge>
+              </Flex>
+
+              <VStack align="stretch" spacing={1} mt={2}>
+                <Text fontSize="xs" color="gray.900">
+                  Connector: {identityDiagnostics.connector?.name || '—'} (
+                  {identityDiagnostics.connector?.id || '—'})
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Connected address: {identityDiagnostics.connectedAddress}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Connected behaves as UP:{' '}
+                  {identityDiagnostics.connectedAddressIsUP ? 'yes' : 'no'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Key Manager target: {identityDiagnostics.keyManagerTarget || '—'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Resolved UP ({identityDiagnostics.resolvedSource}):{' '}
+                  {identityDiagnostics.resolvedUP}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Stored UP: {identityDiagnostics.storedUPAddress || '—'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Stored UP behaves as UP:{' '}
+                  {identityDiagnostics.storedUPAddressIsUP === null
+                    ? 'n/a'
+                    : identityDiagnostics.storedUPAddressIsUP
+                      ? 'yes'
+                      : 'no'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Stored connected address:{' '}
+                  {identityDiagnostics.storedConnectedAddress || '—'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Stored main controller:{' '}
+                  {identityDiagnostics.storedMainController || '—'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Stored controller has permissions on resolved UP:{' '}
+                  {identityDiagnostics.storedMainControllerHasPermissions === null
+                    ? 'n/a'
+                    : identityDiagnostics.storedMainControllerHasPermissions
+                      ? 'yes'
+                      : 'no'}
+                </Text>
+                <Text fontSize="xs" color="gray.900">
+                  Connected address has permissions on resolved UP:{' '}
+                  {identityDiagnostics.connectedAddressHasPermissions
+                    ? 'yes'
+                    : 'no'}
+                </Text>
+              </VStack>
+
+              {identityDiagnostics.mismatches?.length > 0 && (
+                <Box mt={2}>
+                  {identityDiagnostics.mismatches.map(
+                    (mismatch: string, index: number) => (
+                      <Text key={index} fontSize="xs" color="orange.900">
+                        • {mismatch}
+                      </Text>
+                    )
+                  )}
+                </Box>
+              )}
+            </Box>
           )}
 
           {data && (

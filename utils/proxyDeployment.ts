@@ -9,7 +9,7 @@ import { luksoTypechain } from '@lukso/lsp-utils';
 import { OPERATION_TYPES } from '@lukso/lsp-smart-contracts';
 import { universalProfileAbi } from '@lukso/lsp-smart-contracts/abi';
 import { type Network } from '@/constants/supportedNetworks';
-import { getWalletSigner } from '@/utils/walletClient';
+import { getWalletSignerForUP, sendUPMethodTx } from '@/utils/walletClient';
 
 /**
  * EIP-1167 Minimal Proxy bytecode
@@ -64,7 +64,9 @@ export async function deployMinimalProxy(
   implementationAddress: string,
   upAddress: string
 ): Promise<string> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
 
   // Construct the minimal proxy bytecode
   // Format: 0x3d602d80600a3d3981f3363d3d373d3d3d363d73 + implementation (20 bytes) + 0x5af43d82803e903d91602b57fd5bf3
@@ -91,12 +93,18 @@ export async function deployMinimalProxy(
   // This is the correct way to deploy contracts from a Universal Profile
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
 
-  const tx = await (upContract as any).execute(
-    OPERATION_TYPES.CREATE,
-    ZeroAddress, // target for CREATE is zero address
-    0, // no value
-    proxyBytecode // deployment bytecode
-  );
+  const tx = await sendUPMethodTx({
+    signer,
+    upAddress,
+    upContract,
+    method: 'execute',
+    args: [
+      OPERATION_TYPES.CREATE,
+      ZeroAddress, // target for CREATE is zero address
+      0, // no value
+      proxyBytecode, // deployment bytecode
+    ],
+  });
 
   console.log('Proxy deployment tx sent:', tx.hash);
   const receipt = await tx.wait();
@@ -139,7 +147,9 @@ async function initializeVaultProxy(
   proxyAddress: string,
   upAddress: string
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
 
   // Create interface for the initialize call
   const vaultInterface = new Interface([
@@ -155,12 +165,18 @@ async function initializeVaultProxy(
   // Call initialize via UP.execute() with OPERATION_TYPES.CALL
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
 
-  const tx = await (upContract as any).execute(
-    OPERATION_TYPES.CALL,
-    proxyAddress, // target is the proxy
-    0, // no value
-    initData // initialize(upAddress) call
-  );
+  const tx = await sendUPMethodTx({
+    signer,
+    upAddress,
+    upContract,
+    method: 'execute',
+    args: [
+      OPERATION_TYPES.CALL,
+      proxyAddress, // target is the proxy
+      0, // no value
+      initData, // initialize(upAddress) call
+    ],
+  });
 
   const receipt = await tx.wait();
 

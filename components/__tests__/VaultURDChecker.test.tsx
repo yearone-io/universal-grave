@@ -19,6 +19,7 @@ vi.mock('@/utils/vaultCreation', () => ({
 vi.mock('@/utils/walletClient', () => ({
   getWalletProvider: vi.fn(() => ({})),
   assertWalletNetwork: vi.fn().mockResolvedValue(undefined),
+  hasWalletProvider: vi.fn(() => true),
 }));
 
 describe('VaultURDChecker', () => {

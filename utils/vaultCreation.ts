@@ -10,7 +10,23 @@ import {
   universalProfileAbi,
   lsp9VaultAbi,
 } from '@lukso/lsp-smart-contracts/abi';
-import { getWalletSigner } from '@/utils/walletClient';
+import {
+  getWalletSigner,
+  getWalletSignerForUP,
+  sendUPMethodTx,
+} from '@/utils/walletClient';
+
+const isRecoverableReadError = (error: any) => {
+  const message = error?.message?.toLowerCase?.() || '';
+  return (
+    error?.code === 'CALL_EXCEPTION' ||
+    error?.code === 'BAD_DATA' ||
+    message.includes('missing revert data') ||
+    message.includes('execution reverted') ||
+    message.includes('could not decode result data') ||
+    message.includes('load failed')
+  );
+};
 
 /**
  * Register an existing vault with a Universal Profile
@@ -29,7 +45,9 @@ export async function registerVaultWithUP(
     console.log('UP Address:', upAddress);
     console.log('Vault Address:', vaultAddress);
 
-    const signer = await getWalletSigner();
+    const signer = await getWalletSignerForUP(upAddress, {
+      requirePermissions: true,
+    });
     const upContract = new Contract(upAddress, universalProfileAbi, signer);
 
     // Get current vaults array length
@@ -69,7 +87,13 @@ export async function registerVaultWithUP(
     console.log('Calling setDataBatch on UP contract...');
 
     // Set data on UP
-    const tx = await (upContract as any).setDataBatch(keys, values);
+    const tx = await sendUPMethodTx({
+      signer,
+      upAddress,
+      upContract,
+      method: 'setDataBatch',
+      args: [keys, values],
+    });
     console.log('Transaction sent! Hash:', tx.hash);
     console.log('Waiting for transaction confirmation...');
     await tx.wait();
@@ -103,7 +127,9 @@ export async function isVaultRegistered(
 
     return mapValue !== '0x' && mapValue !== ZeroAddress;
   } catch (error) {
-    console.error('Error checking if vault is registered:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error checking if vault is registered:', error);
+    }
     return false;
   }
 }
@@ -115,7 +141,7 @@ export async function isVaultRegistered(
  * @returns Array of vault addresses
  */
 export async function getRegisteredVaults(
-  provider: BrowserProvider,
+  provider: BrowserProvider | JsonRpcProvider,
   upAddress: string
 ): Promise<string[]> {
   try {
@@ -163,7 +189,9 @@ export async function getRegisteredVaults(
 
     return vaults;
   } catch (error) {
-    console.error('Error getting registered vaults:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error getting registered vaults:', error);
+    }
     return [];
   }
 }
@@ -296,7 +324,9 @@ export async function setVaultURD(
   vaultAddress: string,
   networkConfig: { lsp1UrdVault?: string }
 ): Promise<void> {
-  const signer = await getWalletSigner();
+  const signer = await getWalletSignerForUP(upAddress, {
+    requirePermissions: true,
+  });
   const upContract = new Contract(upAddress, universalProfileAbi, signer);
   const vaultContract = new Contract(vaultAddress, lsp9VaultAbi, signer);
 
@@ -313,12 +343,18 @@ export async function setVaultURD(
   );
 
   // Execute via UP
-  const tx = await upContract.execute(
-    0, // OPERATION_CALL
-    vaultAddress,
-    0, // value
-    setDataCalldata
-  );
+  const tx = await sendUPMethodTx({
+    signer,
+    upAddress,
+    upContract,
+    method: 'execute',
+    args: [
+      0, // OPERATION_CALL
+      vaultAddress,
+      0, // value
+      setDataCalldata,
+    ],
+  });
 
   await tx.wait();
   console.log('✅ LSP1 URD set on vault:', urdAddress);
@@ -345,7 +381,9 @@ export async function hasVaultURDSet(
       currentURD.toLowerCase() === expectedURD.toLowerCase()
     );
   } catch (error) {
-    console.error('Error checking vault URD:', error);
+    if (!isRecoverableReadError(error)) {
+      console.error('Error checking vault URD:', error);
+    }
     return false;
   }
 }

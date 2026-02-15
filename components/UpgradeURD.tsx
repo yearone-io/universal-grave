@@ -16,7 +16,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { formatAddress } from '@/utils/tokenUtils';
-import { FaCheckCircle } from 'react-icons/fa';
+import { CheckCircleIcon } from '@chakra-ui/icons';
 import {
   toggleForwarderAsLSPDelegate,
   updateBECPermissions,
@@ -25,7 +25,11 @@ import { migrateVaultToNewForwarder } from '@/utils/vaultUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { supportedNetworks } from '@/constants/supportedNetworks';
-import { assertWalletNetwork, getWalletProvider } from '@/utils/walletClient';
+import {
+  assertWalletNetwork,
+  getWalletProvider,
+  hasWalletProvider,
+} from '@/utils/walletClient';
 
 const initialLeavingSteps = [
   {
@@ -77,7 +81,7 @@ export const UpgradeURD = ({
   const toast = useToast();
 
   const handleUpgrade = async () => {
-    if (!window.lukso || !networkConfig) {
+    if (!hasWalletProvider() || !networkConfig) {
       return;
     }
 
@@ -260,7 +264,7 @@ export const UpgradeURD = ({
                     {formatAddress(step.completeText.address)}
                   </a>
                 )}
-                {step.complete ? <FaCheckCircle /> : <></>}
+                {step.complete ? <CheckCircleIcon /> : <></>}
               </Flex>
             </StepDescription>
           )}

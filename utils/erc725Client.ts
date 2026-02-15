@@ -29,7 +29,7 @@ const getRpcUrl = (chainId?: number, rpcUrl?: string): string => {
   return getDefaultRpcUrl();
 };
 
-const getReadProvider = (chainId?: number, rpcUrl?: string) => {
+export const getReadProvider = (chainId?: number, rpcUrl?: string) => {
   const url = getRpcUrl(chainId, rpcUrl);
   if (!providerCache.has(url)) {
     providerCache.set(url, new JsonRpcProvider(url));

@@ -8,7 +8,7 @@ import {
   MenuList,
   MenuItem,
 } from '@chakra-ui/react';
-import { FaShare } from 'react-icons/fa';
+import { LinkIcon } from '@chakra-ui/icons';
 
 const ClientShareButton = ({ pageAccount }: { pageAccount: string | null }) => {
   const [currentUrl, setCurrentUrl] = useState('');
@@ -40,7 +40,7 @@ const ClientShareButton = ({ pageAccount }: { pageAccount: string | null }) => {
 
   return (
     <Menu>
-      <MenuButton as={Button} size={'sm'} rightIcon={<FaShare />}>
+      <MenuButton as={Button} size={'sm'} rightIcon={<LinkIcon />}>
         Share
       </MenuButton>
       <MenuList>

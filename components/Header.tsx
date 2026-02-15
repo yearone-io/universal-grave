@@ -16,7 +16,7 @@ export default function Header({ networkName }: HeaderProps) {
 
   return (
     <Flex
-      zIndex="1"
+      zIndex="10"
       position={'relative'}
       bg={bgColor}
       color={color}

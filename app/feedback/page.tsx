@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Feedback',
 };
 
-export default function Feedback({ params }: { params: { account: string } }) {
+export default function Feedback() {
   return (
     <Container maxW={'6xl'} width={'100%'} py={5}>
       <iframe

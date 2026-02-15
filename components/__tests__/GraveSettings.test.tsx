@@ -72,6 +72,7 @@ describe('GraveSettings', () => {
     mockUseProfile.mockReturnValue({
       profileDetailsData: null,
       isConnected: false,
+      hasActiveSignature: false,
       chainId: 42,
     });
     mockUseGrave.mockReturnValue({
@@ -88,12 +89,13 @@ describe('GraveSettings', () => {
     expect(screen.getByText('SignInBox')).toBeInTheDocument();
   });
 
-  it('should include Manage Allowlist tab when URDs match latest forwarder', () => {
+  it('should render active settings state when protection is enabled', async () => {
     mockUseProfile.mockReturnValue({
       profileDetailsData: {
         upWallet: '0x1234567890123456789012345678901234567890',
       },
       isConnected: true,
+      hasActiveSignature: true,
       chainId: 42,
     });
     mockUseGrave.mockReturnValue({
@@ -107,33 +109,40 @@ describe('GraveSettings', () => {
     mockUrdsMatchLatestForwarder.mockReturnValue(true);
 
     render(<GraveSettings networkName="lukso" />);
-    expect(screen.getByText('Manage Allowlist')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Spambox Settings')).toBeInTheDocument();
+    });
+    expect(screen.getByText('GraveSubscription')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /View your Graveyard/i })).toBeInTheDocument();
   });
 
-  it('should render UpgradeURD when old forwarder is detected', async () => {
+  it('should render inactive settings state when protection is disabled', async () => {
     mockUseProfile.mockReturnValue({
       profileDetailsData: {
         upWallet: '0x1234567890123456789012345678901234567890',
       },
       isConnected: true,
+      hasActiveSignature: true,
       chainId: 42,
     });
     mockUseGrave.mockReturnValue({
       URDLsp7: '0xaaa',
       URDLsp8: '0xbbb',
       oldUrdVersion: null,
-      hasUAPSubscription: true,
-      setupType: 'uap',
+      hasUAPSubscription: false,
+      setupType: 'none',
+      uapVaultAddress: null,
+      isLoadingGraveData: false,
     });
-    mockHasOlderGraveDelegate.mockReturnValue(
-      '0xold0000000000000000000000000000000000000'
-    );
-    mockUrdsMatchLatestForwarder.mockReturnValue(true);
+    mockHasOlderGraveDelegate.mockReturnValue(null);
+    mockUrdsMatchLatestForwarder.mockReturnValue(false);
 
     render(<GraveSettings networkName="lukso" />);
 
     await waitFor(() => {
-      expect(screen.getByText(/UpgradeURD:/)).toBeInTheDocument();
+      expect(screen.getByText('Spam Protection')).toBeInTheDocument();
     });
+    expect(screen.queryByRole('button', { name: /View your Graveyard/i })).not.toBeInTheDocument();
+    expect(screen.getByText('GraveSubscription')).toBeInTheDocument();
   });
 });
