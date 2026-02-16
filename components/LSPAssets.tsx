@@ -13,11 +13,15 @@ import {
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { constants } from '@/app/constants';
-import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
+import {
+  getDataSafe,
+  getErc725Read,
+  getReadProvider,
+} from '@/utils/erc725Client';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import LSP8Group from '@/components/LSP8Group';
-import { getWalletProvider, hasWalletProvider } from '@/utils/walletClient';
+import { supportedNetworks } from '@/constants/supportedNetworks';
 import { useProfile } from '@/contexts/ProfileProvider';
 
 export default function LSPAssets({
@@ -27,7 +31,12 @@ export default function LSPAssets({
   graveVault: string | null;
   graveOwner: string;
 }) {
-  const { isNetworkMismatch } = useProfile();
+  const { isNetworkMismatch, chainId, expectedChainId } = useProfile();
+  const resolvedChainId = chainId ?? expectedChainId ?? null;
+  const resolvedNetwork =
+    resolvedChainId !== null
+      ? supportedNetworks[resolvedChainId.toString()]
+      : null;
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenData[][]>([]);
@@ -134,21 +143,27 @@ export default function LSPAssets({
    * This function is called when the page loads and when an asset is revived
    */
   const fetchAssets = async () => {
-    if (!graveVault || !hasWalletProvider() || isNetworkMismatch) {
+    if (!graveVault || isNetworkMismatch || !resolvedChainId || !resolvedNetwork) {
       setLoading(false);
       return;
     }
     setLoading(true);
+    const readProvider = getReadProvider(
+      resolvedNetwork.chainId,
+      resolvedNetwork.rpcUrl
+    );
     const erc725js = getErc725Read(
       LSP3ProfileSchema as ERC725JSONSchema[],
       graveVault,
       {
+        provider: readProvider,
+        chainId: resolvedChainId,
         erc725Options: { ipfsGateway: constants.IPFS },
       }
     );
 
     try {
-      const provider = getWalletProvider();
+      const provider = readProvider;
       // fetchData can throw AbiDecodingZeroDataError when the key is unset (returns 0x)
       let assets: string[] = [];
       const res = await getDataSafe(erc725js, 'LSP5ReceivedAssets[]');
@@ -233,12 +248,12 @@ export default function LSPAssets({
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (graveVault && !isNetworkMismatch) {
+    if (graveVault && !isNetworkMismatch && resolvedChainId && resolvedNetwork) {
       fetchAssets();
     } else if (isNetworkMismatch) {
       setLoading(false);
     }
-  }, [graveVault, isNetworkMismatch]);
+  }, [graveVault, isNetworkMismatch, resolvedChainId, resolvedNetwork]);
 
   const emptyAssets = () => {
     return (
