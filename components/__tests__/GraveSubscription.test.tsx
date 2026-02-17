@@ -19,6 +19,7 @@ const mockSubscribeAndConfigureGrave = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ networkName: 'lukso' }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('next/link', () => ({

@@ -79,7 +79,8 @@ export default function SendToGravePanel() {
       assetData = await getLSPAssetBasicInfo(
         provider,
         inputTokenAddress,
-        wallet
+        wallet,
+        chainId!
       );
       setTokenData(assetData);
       return assetData;

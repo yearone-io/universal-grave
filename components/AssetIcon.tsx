@@ -11,7 +11,7 @@ export interface IAssetIcon {
 export const AssetIcon = ({ lspType, name, LSP4Metadata }: IAssetIcon) => {
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
   const interestsBgColor = 'dark.white';
-  const fontColor = 'dark.purple.500';
+  const fontColor = 'whiteAlpha.900';
   const getTokenIcon = () => {
     const iconURL = getTokenIconURL(LSP4Metadata);
     return !iconURL ? (

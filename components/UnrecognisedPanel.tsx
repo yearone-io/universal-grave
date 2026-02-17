@@ -4,6 +4,7 @@ import { constants } from '@/app/constants';
 import { formatAddress } from '@/utils/tokenUtils';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
+import { getUniversalEverythingUrl } from '@/utils/universalEverything';
 
 interface LSPPanelProps {
   tokenName: string;
@@ -23,9 +24,8 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
   const networkConfig = chainId ? supportedNetworks[chainId.toString()] : null;
 
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
-  const panelBgColor = 'dark.purple.200';
   const interestsBgColor = 'dark.white';
-  const fontColor = 'dark.purple.500';
+  const fontColor = 'whiteAlpha.900';
 
   const tokenAddressDisplay = formatAddress(tokenAddress);
 
@@ -48,14 +48,16 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
 
   return (
     <Flex
-      bg={panelBgColor}
+      bg="rgba(255, 255, 255, 0.04)"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
       borderRadius="lg"
       px={4}
       py={4}
       align="center"
       justify="space-between"
-      boxShadow="md"
-      minWidth={'lg'}
+      boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+      w="100%"
       mb={2}
     >
       <Flex
@@ -96,14 +98,18 @@ const UnrecognisedPanel: React.FC<LSPPanelProps> = ({
             </Text>
             {networkConfig && (
               <IconButton
-                aria-label="View on blockchain explorer"
+                aria-label="View on universal.everything"
                 icon={<ExternalLinkIcon color={fontColor} />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"
                 onClick={() =>
                   window.open(
-                    `${networkConfig.explorer}/address/${tokenAddress}`,
+                    getUniversalEverythingUrl(
+                      chainId ?? undefined,
+                      'asset',
+                      tokenAddress
+                    ),
                     '_blank'
                   )
                 }

@@ -21,6 +21,10 @@ import {
   getErc725Read,
   supportsInterfaceSafe,
 } from '@/utils/erc725Client';
+import {
+  CreatorVerification,
+  getAssetCreatorVerification,
+} from '@/utils/creatorVerification';
 
 export type TokenData = {
   readonly interface: GRAVE_ASSET_TYPES;
@@ -31,6 +35,7 @@ export type TokenData = {
   readonly decimals?: string;
   readonly balance?: string | bigint;
   readonly tokenId?: string;
+  readonly creators?: CreatorVerification[];
   metadata?: Record<string, any>;
   image?: string;
 };
@@ -42,6 +47,50 @@ export enum GRAVE_ASSET_TYPES {
   UnrecognisedLSP8IdentifiableDigitalAsset,
   Unrecognised,
 }
+
+const KNOWN_LSP4_TOKEN_TYPES = new Set<number>([
+  LSP4_TOKEN_TYPES.TOKEN,
+  LSP4_TOKEN_TYPES.NFT,
+  LSP4_TOKEN_TYPES.COLLECTION,
+]);
+
+export const shouldPromoteNonStandardLSP7 = (params: {
+  tokenType: number;
+  decimals: unknown;
+  balance: unknown;
+}): boolean => {
+  return (
+    KNOWN_LSP4_TOKEN_TYPES.has(params.tokenType) &&
+    params.decimals !== undefined &&
+    params.balance !== undefined
+  );
+};
+
+export const shouldPromoteNonStandardLSP8 = (params: {
+  tokenType: number;
+  tokenIdsProbeSucceeded: boolean;
+}): boolean => {
+  return (
+    KNOWN_LSP4_TOKEN_TYPES.has(params.tokenType) &&
+    params.tokenIdsProbeSucceeded
+  );
+};
+
+const shouldLogDebug =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_GRAVE_DEBUG === '1';
+
+const debugLog = (...args: any[]) => {
+  if (shouldLogDebug) {
+    console.log(...args);
+  }
+};
+
+const debugError = (...args: any[]) => {
+  if (shouldLogDebug) {
+    console.error(...args);
+  }
+};
 
 function computeSelector(signature: string): string {
   return keccak256(toUtf8Bytes(signature)).slice(0, 10); // First 4 bytes (8 characters + '0x')
@@ -121,25 +170,25 @@ async function getTransparentProxyImplementationAddress(
 async function getImplementationBytecode(
   provider: JsonRpcProvider | BrowserProvider,
   assetAddress: string
-): Promise<string> {
+): Promise<{ bytecode: string; usesProxyImplementation: boolean }> {
   try {
     const proxyCode = await provider.getCode(assetAddress);
-    console.log('[GRAVE DEBUG] Proxy code length:', proxyCode.length);
+    debugLog('[GRAVE DEBUG] Proxy code length:', proxyCode.length);
 
     const minimalProxy = await getMinimalProxyImplementationAddress(proxyCode);
-    console.log('[GRAVE DEBUG] Minimal proxy implementation:', minimalProxy);
+    debugLog('[GRAVE DEBUG] Minimal proxy implementation:', minimalProxy);
 
     const beaconProxy = await getBeaconProxyImplementationAddress(
       provider,
       assetAddress
     );
-    console.log('[GRAVE DEBUG] Beacon proxy implementation:', beaconProxy);
+    debugLog('[GRAVE DEBUG] Beacon proxy implementation:', beaconProxy);
 
     const transparentProxy = await getTransparentProxyImplementationAddress(
       provider,
       assetAddress
     );
-    console.log(
+    debugLog(
       '[GRAVE DEBUG] Transparent proxy implementation:',
       transparentProxy
     );
@@ -147,20 +196,28 @@ async function getImplementationBytecode(
     let implementationAddress: string | null =
       minimalProxy || beaconProxy || transparentProxy;
 
-    console.log(
+    debugLog(
       '[GRAVE DEBUG] Final implementation address:',
       implementationAddress
     );
 
-    return implementationAddress
-      ? await provider.getCode(implementationAddress)
-      : proxyCode;
+    if (implementationAddress) {
+      return {
+        bytecode: await provider.getCode(implementationAddress),
+        usesProxyImplementation: true,
+      };
+    }
+
+    return {
+      bytecode: proxyCode,
+      usesProxyImplementation: false,
+    };
   } catch (error) {
-    console.error(
+    debugError(
       '[GRAVE DEBUG] Error getting implementation bytecode:',
       error
     );
-    return '';
+    return { bytecode: '', usesProxyImplementation: false };
   }
 }
 export const detectLSP = async (
@@ -168,7 +225,7 @@ export const detectLSP = async (
   assetAddress: string
 ): Promise<GRAVE_ASSET_TYPES> => {
   // fetch digital asset interface details
-  console.log('[GRAVE DEBUG] detectLSP called for:', assetAddress);
+  debugLog('[GRAVE DEBUG] detectLSP called for:', assetAddress);
   try {
     const lspAsset = getErc725Read(
       lsp4Schema as ERC725JSONSchema[],
@@ -180,7 +237,7 @@ export const detectLSP = async (
       lspAsset,
       INTERFACE_IDS.LSP7DigitalAsset
     );
-    console.log('[GRAVE DEBUG] supportsInterface LSP7:', supportsLSP7);
+    debugLog('[GRAVE DEBUG] supportsInterface LSP7:', supportsLSP7);
     if (supportsLSP7) {
       return GRAVE_ASSET_TYPES.LSP7DigitalAsset;
     }
@@ -189,48 +246,58 @@ export const detectLSP = async (
       lspAsset,
       INTERFACE_IDS.LSP8IdentifiableDigitalAsset
     );
-    console.log('[GRAVE DEBUG] supportsInterface LSP8:', supportsLSP8);
+    debugLog('[GRAVE DEBUG] supportsInterface LSP8:', supportsLSP8);
     if (supportsLSP8) {
       return GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset;
     }
 
-    console.log('[GRAVE DEBUG] Checking bytecode for proxy patterns...');
-    const bytecode = await getImplementationBytecode(provider, assetAddress);
-    console.log(
+    debugLog('[GRAVE DEBUG] Checking bytecode for proxy patterns...');
+    const { bytecode, usesProxyImplementation } =
+      await getImplementationBytecode(provider, assetAddress);
+    debugLog(
       '[GRAVE DEBUG] Implementation bytecode length:',
       bytecode.length
     );
 
     const hasLSP7Transfer = supportsFunction(bytecode, lsp7TransferSelector);
-    console.log(
+    debugLog(
       '[GRAVE DEBUG] Bytecode has LSP7 transfer selector:',
       hasLSP7Transfer
     );
     if (hasLSP7Transfer) {
-      return GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
+      // Proxy-backed assets can fail supportsInterface checks in some wallets/providers.
+      // If the implementation bytecode exposes the LSP7 transfer signature, treat as LSP7.
+      return usesProxyImplementation
+        ? GRAVE_ASSET_TYPES.LSP7DigitalAsset
+        : GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset;
     }
 
     const hasLSP8Transfer = supportsFunction(bytecode, lsp8TransferSelector);
-    console.log(
+    debugLog(
       '[GRAVE DEBUG] Bytecode has LSP8 transfer selector:',
       hasLSP8Transfer
     );
     if (hasLSP8Transfer) {
-      return GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset;
+      // Proxy-backed assets can fail supportsInterface checks in some wallets/providers.
+      // If the implementation bytecode exposes the LSP8 transfer signature, treat as LSP8.
+      return usesProxyImplementation
+        ? GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
+        : GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset;
     }
   } catch (error) {
-    console.error('[GRAVE DEBUG] Error detecting LSP asset interface:', error);
+    debugError('[GRAVE DEBUG] Error detecting LSP asset interface:', error);
   }
-  console.log('[GRAVE DEBUG] Asset unrecognised:', assetAddress);
+  debugLog('[GRAVE DEBUG] Asset unrecognised:', assetAddress);
   return GRAVE_ASSET_TYPES.Unrecognised;
 };
 
 export const getLSPAssetBasicInfo = async (
   provider: JsonRpcProvider | BrowserProvider,
   assetAddress: string,
-  ownerAddress: string
+  ownerAddress: string,
+  chainId: number
 ): Promise<TokenData> => {
-  console.log(
+  debugLog(
     '[GRAVE DEBUG] getLSPAssetBasicInfo called for:',
     assetAddress,
     'owner:',
@@ -243,14 +310,16 @@ export const getLSPAssetBasicInfo = async (
     interface: GRAVE_ASSET_TYPES.Unrecognised,
   };
   const lspInterface = await detectLSP(provider, assetAddress);
-  console.log('[GRAVE DEBUG] Detected interface type:', lspInterface);
+  debugLog('[GRAVE DEBUG] Detected interface type:', lspInterface);
   if (lspInterface === GRAVE_ASSET_TYPES.Unrecognised) {
-    console.log('[GRAVE DEBUG] Returning unrecognized asset');
+    debugLog('[GRAVE DEBUG] Returning unrecognized asset');
     return unrecognizedLsp;
   }
   let LSP4TokenType: number, name: string, symbol: string, metadata: any;
   let balance: string = '0',
     decimals;
+  let creators: CreatorVerification[] = [];
+  let finalInterface = lspInterface;
 
   // fetch metadata details
   try {
@@ -265,7 +334,7 @@ export const getLSPAssetBasicInfo = async (
         },
       }
     );
-    console.log('[GRAVE DEBUG] Fetching LSP4 metadata...');
+    debugLog('[GRAVE DEBUG] Fetching LSP4 metadata...');
     const assetFetchedData = await fetchDataSafe(lspAsset, [
       'LSP4TokenType',
       'LSP4TokenName',
@@ -279,15 +348,18 @@ export const getLSPAssetBasicInfo = async (
     name = String(assetFetchedData[1].value);
     symbol = String(assetFetchedData[2].value);
     metadata = assetFetchedData[3].value;
-    console.log('[GRAVE DEBUG] Metadata fetched:', {
+    debugLog('[GRAVE DEBUG] Metadata fetched:', {
       LSP4TokenType,
       name,
       symbol,
     });
   } catch (error) {
-    console.error('[GRAVE DEBUG] Error getting metadata:', error);
+    debugError('[GRAVE DEBUG] Error getting metadata:', error);
     return unrecognizedLsp;
   }
+  // fetch creators + issuer verification details
+  creators = await getAssetCreatorVerification(provider, assetAddress, chainId);
+
   // fetch balance details
   try {
     const contract = new Contract(
@@ -295,13 +367,13 @@ export const getLSPAssetBasicInfo = async (
       eip165ABI.concat(erc20ABI) as any,
       provider
     );
-    console.log('[GRAVE DEBUG] Fetching decimals and balance...');
+    debugLog('[GRAVE DEBUG] Fetching decimals and balance...');
     decimals =
       lspInterface === GRAVE_ASSET_TYPES.LSP7DigitalAsset ||
       lspInterface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
         ? await contract.decimals()
         : 0;
-    console.log('[GRAVE DEBUG] Decimals:', decimals);
+    debugLog('[GRAVE DEBUG] Decimals:', decimals);
 
     // Fetch balance for all LSP7 tokens (both divisible and non-divisible)
     if (
@@ -309,13 +381,54 @@ export const getLSPAssetBasicInfo = async (
       lspInterface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
     ) {
       balance = await contract.balanceOf(ownerAddress).catch((e: any) => {
-        console.error('[GRAVE DEBUG] Error getting balance:', e);
+        debugError('[GRAVE DEBUG] Error getting balance:', e);
         return undefined;
       });
-      console.log('[GRAVE DEBUG] Balance:', balance);
+      debugLog('[GRAVE DEBUG] Balance:', balance);
+    }
+
+    if (
+      lspInterface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset &&
+      shouldPromoteNonStandardLSP7({
+        tokenType: LSP4TokenType,
+        decimals,
+        balance,
+      })
+    ) {
+      finalInterface = GRAVE_ASSET_TYPES.LSP7DigitalAsset;
+      debugLog(
+        '[GRAVE DEBUG] Promoting nonstandard LSP7 to standard after behavior probe'
+      );
+    }
+
+    if (lspInterface === GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset) {
+      let tokenIdsProbeSucceeded = false;
+      try {
+        const lsp8ProbeContract = new Contract(
+          assetAddress,
+          lsp8IdentifiableDigitalAssetAbi,
+          provider
+        );
+        await lsp8ProbeContract.tokenIdsOf(ownerAddress);
+        tokenIdsProbeSucceeded = true;
+      } catch (probeError) {
+        debugLog('[GRAVE DEBUG] LSP8 tokenIdsOf probe failed:', probeError);
+      }
+
+      if (
+        shouldPromoteNonStandardLSP8({
+          tokenType: LSP4TokenType,
+          tokenIdsProbeSucceeded,
+        })
+      ) {
+        finalInterface = GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset;
+        debugLog(
+          '[GRAVE DEBUG] Promoting nonstandard LSP8 to standard after behavior probe'
+        );
+      }
     }
   } catch (err) {
-    console.error(
+    debugError(
       '[GRAVE DEBUG] Error in balance fetch section:',
       assetAddress,
       lspInterface,
@@ -323,8 +436,8 @@ export const getLSPAssetBasicInfo = async (
     );
     return unrecognizedLsp;
   }
-  console.log('[GRAVE DEBUG] Final token data:', {
-    interface: lspInterface,
+  debugLog('[GRAVE DEBUG] Final token data:', {
+    interface: finalInterface,
     tokenType: LSP4TokenType,
     name,
     symbol,
@@ -333,7 +446,7 @@ export const getLSPAssetBasicInfo = async (
     decimals,
   });
   return {
-    interface: lspInterface,
+    interface: finalInterface,
     tokenType: LSP4TokenType,
     name: name,
     symbol: symbol,
@@ -341,6 +454,7 @@ export const getLSPAssetBasicInfo = async (
     metadata,
     balance,
     decimals,
+    creators,
   };
 };
 

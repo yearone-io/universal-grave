@@ -13,11 +13,15 @@ import {
 import LSP7Panel from '@/components/LSP7Panel';
 import LSP8SimplePanel from '@/components/LSP8SimplePanel';
 import { constants } from '@/app/constants';
-import { getDataSafe, getErc725Read } from '@/utils/erc725Client';
+import {
+  getDataSafe,
+  getErc725Read,
+  getReadProvider,
+} from '@/utils/erc725Client';
 import { LSP4_TOKEN_TYPES } from '@lukso/lsp-smart-contracts';
 import UnrecognisedPanel from '@/components/UnrecognisedPanel';
 import LSP8Group from '@/components/LSP8Group';
-import { getWalletProvider, hasWalletProvider } from '@/utils/walletClient';
+import { supportedNetworks } from '@/constants/supportedNetworks';
 import { useProfile } from '@/contexts/ProfileProvider';
 
 export default function LSPAssets({
@@ -27,7 +31,12 @@ export default function LSPAssets({
   graveVault: string | null;
   graveOwner: string;
 }) {
-  const { isNetworkMismatch } = useProfile();
+  const { isNetworkMismatch, chainId, expectedChainId } = useProfile();
+  const resolvedChainId = chainId ?? expectedChainId ?? null;
+  const resolvedNetwork =
+    resolvedChainId !== null
+      ? supportedNetworks[resolvedChainId.toString()]
+      : null;
   const [loading, setLoading] = useState(true);
   const [lsp7Assets, setLsp7Assets] = useState<TokenData[]>([]);
   const [lsp8Assets, setLsp8Assets] = useState<TokenData[][]>([]);
@@ -134,21 +143,27 @@ export default function LSPAssets({
    * This function is called when the page loads and when an asset is revived
    */
   const fetchAssets = async () => {
-    if (!graveVault || !hasWalletProvider() || isNetworkMismatch) {
+    if (!graveVault || isNetworkMismatch || !resolvedChainId || !resolvedNetwork) {
       setLoading(false);
       return;
     }
     setLoading(true);
+    const readProvider = getReadProvider(
+      resolvedNetwork.chainId,
+      resolvedNetwork.rpcUrl
+    );
     const erc725js = getErc725Read(
       LSP3ProfileSchema as ERC725JSONSchema[],
       graveVault,
       {
+        provider: readProvider,
+        chainId: resolvedChainId,
         erc725Options: { ipfsGateway: constants.IPFS },
       }
     );
 
     try {
-      const provider = getWalletProvider();
+      const provider = readProvider;
       // fetchData can throw AbiDecodingZeroDataError when the key is unset (returns 0x)
       let assets: string[] = [];
       const res = await getDataSafe(erc725js, 'LSP5ReceivedAssets[]');
@@ -159,57 +174,62 @@ export default function LSPAssets({
       const unrecognisedLsp7Results: TokenData[] = [];
       const unrecognisedLsp8Results: TokenData[] = [];
       const unrecognisedAssetResults: TokenData[] = [];
-      for (const [index, assetAddress] of assets.entries()) {
-        // Skip empty/zero addresses that can appear in sparse arrays
-        if (
-          !assetAddress ||
-          assetAddress === '0x' ||
-          /^0x0+$/.test(assetAddress.toLowerCase())
-        ) {
-          continue;
-        }
-        // every 4 assets, wait for 1 second
-        if (index % 4 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        const asset = await getLSPAssetBasicInfo(
-          provider,
-          assetAddress,
-          graveVault
-        );
-        if (!asset) continue;
-        if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
-          asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
-        }
-        if (asset.interface === GRAVE_ASSET_TYPES.LSP7DigitalAsset) {
-          lsp7Results.push(asset);
-        } else if (
-          asset.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
-        ) {
-          unrecognisedLsp7Results.push(asset);
-        } else if (
-          asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
-        ) {
-          const lsp8Tokens = await processLSP8Asset(
+      const validAssetAddresses = assets.filter(
+        assetAddress =>
+          !!assetAddress &&
+          assetAddress !== '0x' &&
+          !/^0x0+$/.test(assetAddress.toLowerCase())
+      );
+
+      // Process assets in a bounded pool to avoid overloading RPC endpoints
+      // while keeping the UI responsive for larger vaults.
+      const concurrency = Math.min(4, validAssetAddresses.length || 1);
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < validAssetAddresses.length) {
+          const index = cursor++;
+          const assetAddress = validAssetAddresses[index];
+          const asset = await getLSPAssetBasicInfo(
             provider,
-            asset,
-            graveVault
+            assetAddress,
+            graveVault,
+            resolvedChainId
           );
-          lsp8Results.push(lsp8Tokens);
-        } else if (
-          asset.interface ===
-          GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
-        ) {
-          const lsp8Tokens = await processLSP8Asset(
-            provider,
-            asset,
-            graveVault
-          );
-          unrecognisedLsp8Results.push(...lsp8Tokens);
-        } else {
-          unrecognisedAssetResults.push(asset);
+          if (!asset) continue;
+          if (asset.tokenType === LSP4_TOKEN_TYPES.NFT) {
+            asset.image = getTokenImageURL(asset?.metadata?.LSP4Metadata);
+          }
+          if (asset.interface === GRAVE_ASSET_TYPES.LSP7DigitalAsset) {
+            lsp7Results.push(asset);
+          } else if (
+            asset.interface === GRAVE_ASSET_TYPES.UnrecognisedLSP7DigitalAsset
+          ) {
+            unrecognisedLsp7Results.push(asset);
+          } else if (
+            asset.interface === GRAVE_ASSET_TYPES.LSP8IdentifiableDigitalAsset
+          ) {
+            const lsp8Tokens = await processLSP8Asset(
+              provider,
+              asset,
+              graveVault
+            );
+            lsp8Results.push(lsp8Tokens);
+          } else if (
+            asset.interface ===
+            GRAVE_ASSET_TYPES.UnrecognisedLSP8IdentifiableDigitalAsset
+          ) {
+            const lsp8Tokens = await processLSP8Asset(
+              provider,
+              asset,
+              graveVault
+            );
+            unrecognisedLsp8Results.push(...lsp8Tokens);
+          } else {
+            unrecognisedAssetResults.push(asset);
+          }
         }
-      }
+      };
+      await Promise.all(Array.from({ length: concurrency }, () => worker()));
       setLsp7Assets(lsp7Results);
       setLsp8Assets(lsp8Results);
       setUnrecognisedAssets(unrecognisedAssetResults);
@@ -233,12 +253,12 @@ export default function LSPAssets({
    * Fetch assets on account change when the page loads, if the criteria is met
    */
   useEffect(() => {
-    if (graveVault && !isNetworkMismatch) {
+    if (graveVault && !isNetworkMismatch && resolvedChainId && resolvedNetwork) {
       fetchAssets();
     } else if (isNetworkMismatch) {
       setLoading(false);
     }
-  }, [graveVault, isNetworkMismatch]);
+  }, [graveVault, isNetworkMismatch, resolvedChainId, resolvedNetwork]);
 
   const emptyAssets = () => {
     return (
@@ -265,7 +285,18 @@ export default function LSPAssets({
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Box
+        p={8}
+        bg="rgba(255, 255, 255, 0.05)"
+        borderRadius="xl"
+        textAlign="center"
+      >
+        <Text fontSize="sm" color="whiteAlpha.600" fontWeight="500">
+          Loading assets...
+        </Text>
+      </Box>
+    );
   }
 
   if (!graveVault) {
@@ -274,14 +305,19 @@ export default function LSPAssets({
 
   return (
     <Box>
-      <Flex justifyContent="space-between" flexWrap={'wrap'}>
-        <Box minWidth={'500px'}>
+      <Flex
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap={4}
+        alignItems="flex-start"
+      >
+        <Box flex="1" minW={{ base: '100%', xl: '480px' }}>
           <Text
-            color="white"
+            color="whiteAlpha.900"
             fontWeight={400}
-            fontSize="16px"
+            fontSize="lg"
             fontFamily="Bungee"
-            mb="20px"
+            mb={6}
           >
             LSP7 Assets
           </Text>
@@ -298,13 +334,13 @@ export default function LSPAssets({
               ))
             : emptyAssets()}
         </Box>
-        <Box minWidth={'500px'}>
+        <Box flex="1" minW={{ base: '100%', xl: '480px' }}>
           <Text
-            color="white"
+            color="whiteAlpha.900"
             fontWeight={400}
-            fontSize="16px"
+            fontSize="lg"
             fontFamily="Bungee"
-            mb="20px"
+            mb={6}
           >
             LSP8 Assets
           </Text>
@@ -323,13 +359,13 @@ export default function LSPAssets({
             : emptyAssets()}
         </Box>
         {unrecognisedLsp7Assets.length > 0 && (
-          <Box minWidth={'500px'}>
+          <Box flex="1" minW={{ base: '100%', xl: '480px' }}>
             <Text
-              color="white"
+              color="whiteAlpha.900"
               fontWeight={400}
-              fontSize="16px"
+              fontSize="lg"
               fontFamily="Bungee"
-              mb="20px"
+              mb={6}
             >
               Nonstandard LSP7 Assets
             </Text>
@@ -346,13 +382,13 @@ export default function LSPAssets({
           </Box>
         )}
         {unrecognisedLsp8Assets.length > 0 && (
-          <Box minWidth={'500px'}>
+          <Box flex="1" minW={{ base: '100%', xl: '480px' }}>
             <Text
-              color="white"
+              color="whiteAlpha.900"
               fontWeight={400}
-              fontSize="16px"
+              fontSize="lg"
               fontFamily="Bungee"
-              mb="20px"
+              mb={6}
             >
               Nonstandard LSP8 Assets
             </Text>
@@ -370,13 +406,13 @@ export default function LSPAssets({
           </Box>
         )}
         {unrecognisedAssets.length > 0 && (
-          <Box minWidth={'500px'}>
+          <Box flex="1" minW={{ base: '100%', xl: '480px' }}>
             <Text
-              color="white"
+              color="whiteAlpha.900"
               fontWeight={400}
-              fontSize="16px"
+              fontSize="lg"
               fontFamily="Bungee"
-              mb="20px"
+              mb={6}
             >
               Unrecognized LSP Assets
             </Text>
