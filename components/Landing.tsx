@@ -204,7 +204,7 @@ export default function Landing({ networkName }: LandingProps) {
               color="white"
               lineHeight="1.1"
             >
-              Send the junk to{' '}
+              Send junk to{' '}
               <Box as="span" color="dark.teal.500">
                 the GRAVE
               </Box>
