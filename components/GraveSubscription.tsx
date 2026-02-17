@@ -35,6 +35,7 @@ import {
   WarningIcon,
 } from '@chakra-ui/icons';
 import { isAddress } from 'ethers';
+import { useSearchParams } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useGrave } from '@/contexts/GraveContext';
 import { getNetworkByName, supportedNetworks } from '@/constants/supportedNetworks';
@@ -113,7 +114,13 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     graveVault,
     refreshGraveData,
     isLoadingGraveData,
+    hasOutdatedScreeners,
+    outdatedScreenerInfo,
   } = useGrave();
+
+  // Migration mode detection - show migration UI whenever user has outdated screeners
+  const searchParams = useSearchParams();
+  const isMigrationMode = hasOutdatedScreeners && !!outdatedScreenerInfo;
 
   const address = profileDetailsData?.upWallet;
   const mainUPController = profileDetailsData?.mainUPController;
@@ -362,6 +369,35 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
     loadConfig();
   }, [address, currentNetwork, isProtectionActive, isNetworkMismatch]);
 
+  // Pre-populate form with migration data when in migration mode
+  useEffect(() => {
+    if (isMigrationMode && outdatedScreenerInfo) {
+      // Pre-populate with data from old screeners
+      if (outdatedScreenerInfo.existingWhitelistAddresses.length > 0) {
+        setWhitelistAddresses(outdatedScreenerInfo.existingWhitelistAddresses);
+      }
+      if (outdatedScreenerInfo.existingCreatorAddresses.length > 0) {
+        setCreatorWhitelistAddresses(outdatedScreenerInfo.existingCreatorAddresses);
+      }
+      if (outdatedScreenerInfo.existingConfig.curatedListAddress) {
+        setCuratedListAddress(outdatedScreenerInfo.existingConfig.curatedListAddress);
+      }
+      if (outdatedScreenerInfo.existingConfig.creatorCuratedListAddress) {
+        setCreatorCuratedListAddress(outdatedScreenerInfo.existingConfig.creatorCuratedListAddress);
+      }
+      setRequireAllCreatorsForList(outdatedScreenerInfo.existingConfig.requireAllCreatorsForList);
+      setRequireAllCreatorsForCuration(outdatedScreenerInfo.existingConfig.requireAllCreatorsForCuration);
+
+      // Set vault from migration info if available
+      if (outdatedScreenerInfo.existingVaultAddress && !selectedVault) {
+        setSelectedVault(outdatedScreenerInfo.existingVaultAddress);
+      }
+
+      // Auto-expand filters section in migration mode
+      setShowFilters(true);
+    }
+  }, [isMigrationMode, outdatedScreenerInfo, selectedVault]);
+
   // Update step status helper
   const updateStepStatus = useCallback((stepId: string, status: SetupStep['status']) => {
     setSetupSteps(prev => prev.map(step =>
@@ -561,8 +597,10 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
       setOriginalRequireAllCreatorsForCuration(requireAllCreatorsForCuration);
 
       toast({
-        title: 'Filters saved',
-        description: 'Your spam filter settings have been updated.',
+        title: isMigrationMode ? 'Migration complete!' : 'Filters saved',
+        description: isMigrationMode
+          ? 'Your settings have been migrated to the new screener contracts.'
+          : 'Your spam filter settings have been updated.',
         status: 'success',
         duration: 5000,
       });
@@ -1094,6 +1132,35 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
   // Protected - show active state with optional configuration
   return (
     <Flex direction="column" gap={6}>
+      {/* Migration banner - shown when user needs to migrate screeners */}
+      {isMigrationMode && outdatedScreenerInfo && (
+        <Box
+          p={4}
+          bg="rgba(255, 165, 0, 0.15)"
+          border="1px solid rgba(255, 165, 0, 0.3)"
+          borderRadius="xl"
+        >
+          <HStack spacing={3} mb={2}>
+            <WarningIcon color="orange.400" />
+            <Text color="orange.300" fontWeight="600" fontSize="sm">
+              Screener Migration Required
+            </Text>
+          </HStack>
+          <Text color="whiteAlpha.800" fontSize="sm" mb={3}>
+            Your spambox is using outdated screener contracts. Your existing settings will be
+            migrated to the new contracts when you save.
+          </Text>
+          <HStack spacing={4} flexWrap="wrap">
+            <Text color="whiteAlpha.600" fontSize="xs">
+              {outdatedScreenerInfo.existingWhitelistAddresses.length} trusted assets
+            </Text>
+            <Text color="whiteAlpha.600" fontSize="xs">
+              {outdatedScreenerInfo.existingCreatorAddresses.length} trusted creators
+            </Text>
+          </HStack>
+        </Box>
+      )}
+
       {/* Success state */}
       <Flex
         direction="column"
@@ -1712,7 +1779,7 @@ const GraveSubscription: React.FC<GraveSubscriptionProps> = ({ networkName }) =>
             _hover={{ bg: 'whiteAlpha.900' }}
             _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
           >
-            Save Changes
+            {isMigrationMode ? 'Migrate & Save' : 'Save Changes'}
           </Button>
         </VStack>
       </Collapse>

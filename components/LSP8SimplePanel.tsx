@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Button,
   Flex,
@@ -25,11 +25,17 @@ import {
 import { formatAddress, TokenData } from '@/utils/tokenUtils';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { supportedNetworks } from '@/constants/supportedNetworks';
+import {
+  networkNameToIdMapping,
+  supportedNetworks,
+} from '@/constants/supportedNetworks';
 import { useGrave } from '@/contexts/GraveContext';
 import { updateScreenersOnRevive } from '@/utils/screenerUpdates';
 import { AssetIcon } from '@/components/AssetIcon';
+import AssetCreatorBadges from '@/components/AssetCreatorBadges';
+import ReviveOptionsModal from '@/components/ReviveOptionsModal';
 import { useRouter, useParams } from 'next/navigation';
+import { getUniversalEverythingUrl } from '@/utils/universalEverything';
 import {
   assertWalletNetwork,
   getWalletProvider,
@@ -45,6 +51,8 @@ interface LSP8SimplePanelProps {
   isRevivingAll: boolean;
 }
 
+type ReviveMode = 'asset' | 'creator';
+
 const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   tokenData,
   vaultAddress,
@@ -59,21 +67,36 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
   const router = useRouter();
   const params = useParams();
   const networkName = params.networkName as string;
+  const routeChainId = networkNameToIdMapping[networkName];
+  const resolvedChainId = chainId ?? routeChainId;
 
   const [inProcessingText, setInProcessingText] = useState<string>();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const panelBgColor = 'dark.purple.200';
+  const {
+    isOpen: isReviveOptionsOpen,
+    onOpen: onReviveOptionsOpen,
+    onClose: onReviveOptionsClose,
+  } = useDisclosure();
+  const [selectedReviveMode, setSelectedReviveMode] =
+    useState<ReviveMode>('asset');
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
 
-  const createButtonBg = 'dark.white';
-  const createButtonColor = 'var(--chakra-colors-dark-purple-500)';
-  const createButtonBorder = '1px solid var(--chakra-colors-dark-purple-500)';
+  const createButtonBg = 'whiteAlpha.900';
+  const createButtonColor = 'gray.900';
+  const createButtonBorder = '1px solid';
 
-  const fontColor = 'dark.purple.500';
+  const fontColor = 'whiteAlpha.900';
 
   const tokenIdDisplay = formatAddress(tokenData.tokenId || '');
   const tokenAddressDisplay = formatAddress(tokenData.address || '');
   const toast = useToast();
+  const verifiedCreatorAddresses = useMemo(
+    () =>
+      (tokenData?.creators || [])
+        .filter(creator => creator.verified)
+        .map(creator => creator.address),
+    [tokenData?.creators]
+  );
 
   const handleReviveClick = () => {
     // Check if user needs to upgrade or configure first
@@ -81,15 +104,31 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
       onOpen(); // Show upgrade/config prompt modal
       return;
     }
+
+    if (verifiedCreatorAddresses.length > 0) {
+      setSelectedReviveMode('asset');
+      onReviveOptionsOpen();
+      return;
+    }
+
     // Otherwise proceed with revive
-    transferTokenToUP(tokenData.address, tokenData.tokenId!);
+    transferTokenToUP(tokenData.address, tokenData.tokenId!, 'asset');
+  };
+
+  const handleConfirmReviveOption = () => {
+    onReviveOptionsClose();
+    transferTokenToUP(tokenData.address, tokenData.tokenId!, selectedReviveMode);
   };
 
   const handleUpgradeClick = () => {
     router.push(`/${networkName}/grave/settings`);
   };
 
-  const transferTokenToUP = async (tokenAddress: string, tokenId: string) => {
+  const transferTokenToUP = async (
+    tokenAddress: string,
+    tokenId: string,
+    reviveMode: ReviveMode
+  ) => {
     if (
       inProcessingText !== undefined ||
       !hasWalletProvider() ||
@@ -131,7 +170,12 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
         await updateScreenersOnRevive(provider, upAddress, tokenAddress, {
           forwarderAssistantAddress: networkConfig.forwarderAssistantAddress,
           addressListScreenerAddress: networkConfig.addressListScreenerAddress,
+          creatorListScreenerAddress: networkConfig.creatorListScreenerAddress,
           curatedListScreenerAddress: networkConfig.curatedListScreenerAddress,
+        }, {
+          mode: reviveMode,
+          creatorAddresses:
+            reviveMode === 'creator' ? verifiedCreatorAddresses : [],
         });
       }
 
@@ -174,7 +218,10 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
 
       onReviveSuccess(tokenAddress, tokenId);
       toast({
-        title: `It's alive! 🧟‍♂️`,
+        title:
+          reviveMode === 'creator'
+            ? `It's alive! 🧟‍♂️ Creator trusted`
+            : `It's alive! 🧟‍♂️ Asset trusted`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
@@ -196,14 +243,16 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
 
   return (
     <Flex
-      bg={panelBgColor}
+      bg="rgba(255, 255, 255, 0.1)"
+      border="1px solid"
+      borderColor="whiteAlpha.400"
       borderRadius="lg"
       px={4}
       py={4}
       align="flex-start"
       justify="space-between"
-      boxShadow="md"
-      minWidth={'lg'}
+      boxShadow="0 12px 30px rgba(0, 0, 0, 0.5)"
+      w="100%"
       mb={2}
     >
       <AssetIcon
@@ -218,8 +267,7 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
               src={tokenData.image}
               alt={tokenData?.name || 'NFT'}
               border={'1px solid ' + containerBorderColor}
-              minW={'250px'}
-              maxW={'300px'}
+              maxW={{ base: '100%', md: '300px' }}
             />
           </Flex>
         )}
@@ -228,6 +276,11 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
             {tokenData?.name || 'Unnamed NFT'}
           </Text>
         </Flex>
+        <AssetCreatorBadges
+          creators={tokenData?.creators}
+          fontColor={fontColor}
+          chainId={resolvedChainId}
+        />
         <Flex
           flexDirection={'row'}
           justifyContent={'space-between'}
@@ -240,16 +293,20 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
             <Text fontSize="sm" fontFamily="mono" color={fontColor}>
               {tokenAddressDisplay}
             </Text>
-            {networkConfig && (
+            {resolvedChainId && (
               <IconButton
-                aria-label="View collection on explorer"
+                aria-label="View collection on universal.everything"
                 icon={<ExternalLinkIcon />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"
                 onClick={() =>
                   window.open(
-                    `${networkConfig.explorer}/address/${tokenData.address}`,
+                    getUniversalEverythingUrl(
+                      resolvedChainId,
+                      'asset',
+                      tokenData.address
+                    ),
                     '_blank'
                   )
                 }
@@ -269,16 +326,20 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
             <Text fontSize="sm" fontFamily="mono" color={fontColor}>
               {tokenIdDisplay}
             </Text>
-            {networkConfig && tokenData.tokenId && (
+            {resolvedChainId && tokenData.tokenId && (
               <IconButton
-                aria-label="View on marketplace"
+                aria-label="View on universal.everything"
                 icon={<ExternalLinkIcon />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"
                 onClick={() =>
                   window.open(
-                    `${networkConfig.marketplaceCollectionsURL}/${tokenData.address}/${tokenData.tokenId}`,
+                    getUniversalEverythingUrl(
+                      resolvedChainId,
+                      'asset',
+                      tokenData.address
+                    ),
                     '_blank'
                   )
                 }
@@ -292,12 +353,14 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
               px={3}
               color={createButtonColor}
               bg={createButtonBg}
-              _hover={{ bg: createButtonBg }}
+              _hover={{ bg: 'white' }}
+              borderColor="whiteAlpha.400"
               border={createButtonBorder}
               size={'sm'}
               loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined || isRevivingAll}
               onClick={handleReviveClick}
+              fontWeight="600"
             >
               Revive
             </Button>
@@ -345,6 +408,15 @@ const LSP8SimplePanel: React.FC<LSP8SimplePanelProps> = ({
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ReviveOptionsModal
+        isOpen={isReviveOptionsOpen}
+        onClose={onReviveOptionsClose}
+        selectedMode={selectedReviveMode}
+        onSelectMode={setSelectedReviveMode}
+        onConfirm={handleConfirmReviveOption}
+        verifiedCreatorCount={verifiedCreatorAddresses.length}
+      />
     </Flex>
   );
 };

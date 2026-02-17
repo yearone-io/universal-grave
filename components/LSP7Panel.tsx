@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Button,
   Flex,
@@ -29,11 +29,17 @@ import {
 } from '@/utils/tokenUtils';
 import { LSP1GraveForwarder__factory } from '@/contracts';
 import { AssetIcon } from './AssetIcon';
+import AssetCreatorBadges from './AssetCreatorBadges';
 import { useProfile } from '@/contexts/ProfileProvider';
-import { supportedNetworks } from '@/constants/supportedNetworks';
+import {
+  networkNameToIdMapping,
+  supportedNetworks,
+} from '@/constants/supportedNetworks';
 import { useGrave } from '@/contexts/GraveContext';
 import { updateScreenersOnRevive } from '@/utils/screenerUpdates';
 import { useRouter, useParams } from 'next/navigation';
+import { getUniversalEverythingUrl } from '@/utils/universalEverything';
+import ReviveOptionsModal from '@/components/ReviveOptionsModal';
 import {
   assertWalletNetwork,
   getWalletProvider,
@@ -47,6 +53,8 @@ interface LSP7PanelProps {
   readonly vaultOwner: string;
   onReviveSuccess: (assetAddress: string) => void;
 }
+
+type ReviveMode = 'asset' | 'creator';
 
 const LSP7Panel: React.FC<LSP7PanelProps> = ({
   tokenData,
@@ -79,20 +87,35 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
   const router = useRouter();
   const params = useParams();
   const networkName = params.networkName as string;
+  const routeChainId = networkNameToIdMapping[networkName];
+  const resolvedChainId = chainId ?? routeChainId;
 
   const [inProcessingText, setInProcessingText] = useState<string>();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isReviveOptionsOpen,
+    onOpen: onReviveOptionsOpen,
+    onClose: onReviveOptionsClose,
+  } = useDisclosure();
+  const [selectedReviveMode, setSelectedReviveMode] =
+    useState<ReviveMode>('asset');
   const containerBorderColor = 'var(--chakra-colors-dark-purple-500)';
-  const panelBgColor = 'dark.purple.200';
 
-  const createButtonBg = 'dark.white';
-  const createButtonColor = 'var(--chakra-colors-dark-purple-500)';
-  const createButtonBorder = '1px solid var(--chakra-colors-dark-purple-500)';
+  const createButtonBg = 'whiteAlpha.900';
+  const createButtonColor = 'gray.900';
+  const createButtonBorder = '1px solid';
 
-  const fontColor = 'dark.purple.500';
+  const fontColor = 'whiteAlpha.900';
 
   const tokenAddressDisplay = formatAddress(tokenData?.address);
   const toast = useToast();
+  const verifiedCreatorAddresses = useMemo(
+    () =>
+      (tokenData?.creators || [])
+        .filter(creator => creator.verified)
+        .map(creator => creator.address),
+    [tokenData?.creators]
+  );
 
   const handleReviveClick = () => {
     // Check if user needs to upgrade or configure first
@@ -100,15 +123,30 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
       onOpen(); // Show upgrade/config prompt modal
       return;
     }
+
+    if (verifiedCreatorAddresses.length > 0) {
+      setSelectedReviveMode('asset');
+      onReviveOptionsOpen();
+      return;
+    }
+
     // Otherwise proceed with revive
-    transferTokenToUP(tokenData?.address);
+    transferTokenToUP(tokenData?.address, 'asset');
+  };
+
+  const handleConfirmReviveOption = () => {
+    onReviveOptionsClose();
+    transferTokenToUP(tokenData?.address, selectedReviveMode);
   };
 
   const handleUpgradeClick = () => {
     router.push(`/${networkName}/grave/settings`);
   };
 
-  const transferTokenToUP = async (tokenAddress: string) => {
+  const transferTokenToUP = async (
+    tokenAddress: string,
+    reviveMode: ReviveMode
+  ) => {
     if (!hasWalletProvider() || !networkConfig) {
       return;
     }
@@ -144,7 +182,12 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
         await updateScreenersOnRevive(provider, upAddress, tokenAddress, {
           forwarderAssistantAddress: networkConfig.forwarderAssistantAddress,
           addressListScreenerAddress: networkConfig.addressListScreenerAddress,
+          creatorListScreenerAddress: networkConfig.creatorListScreenerAddress,
           curatedListScreenerAddress: networkConfig.curatedListScreenerAddress,
+        }, {
+          mode: reviveMode,
+          creatorAddresses:
+            reviveMode === 'creator' ? verifiedCreatorAddresses : [],
         });
       }
 
@@ -172,7 +215,10 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
       onReviveSuccess(tokenAddress);
       toast({
-        title: `It's alive! 🧟‍♂️`,
+        title:
+          reviveMode === 'creator'
+            ? `It's alive! 🧟‍♂️ Creator trusted`
+            : `It's alive! 🧟‍♂️ Asset trusted`,
         status: 'success',
         position: 'bottom-left',
         duration: 9000,
@@ -194,14 +240,16 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
 
   return (
     <Flex
-      bg={panelBgColor}
+      bg="rgba(255, 255, 255, 0.04)"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
       borderRadius="lg"
       px={4}
       py={4}
       align="flex-start"
       justify="space-between"
-      boxShadow="md"
-      minWidth={'lg'}
+      boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+      w="100%"
       mb={2}
     >
       <AssetIcon
@@ -223,11 +271,17 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             <Image
               src={tokenData?.image}
               alt={tokenData?.name}
-              width="400px"
+              width={{ base: '100%', md: '400px' }}
+              maxW="100%"
               border={'1px solid ' + containerBorderColor}
             />
           </Flex>
         )}
+        <AssetCreatorBadges
+          creators={tokenData?.creators}
+          fontColor={fontColor}
+          chainId={resolvedChainId}
+        />
         <Flex
           flexDirection={'row'}
           justifyContent={'space-between'}
@@ -240,16 +294,20 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
             <Text fontSize="sm" fontWeight="bold" pr={1} color={fontColor}>
               {tokenAddressDisplay}
             </Text>
-            {networkConfig && (
+            {resolvedChainId && (
               <IconButton
-                aria-label="View on universal page"
+                aria-label="View on universal.everything"
                 icon={<ExternalLinkIcon color={fontColor} />}
                 color={fontColor}
                 size="sm"
                 variant="ghost"
                 onClick={() =>
                   window.open(
-                    `${networkConfig.marketplaceCollectionsURL}/${tokenData?.address}`,
+                    getUniversalEverythingUrl(
+                      resolvedChainId,
+                      'asset',
+                      tokenData?.address
+                    ),
                     '_blank'
                   )
                 }
@@ -261,12 +319,14 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
               px={3}
               color={createButtonColor}
               bg={createButtonBg}
-              _hover={{ bg: createButtonBg }}
+              _hover={{ bg: 'white' }}
+              borderColor="whiteAlpha.400"
               border={createButtonBorder}
               size={'xs'}
               onClick={handleReviveClick}
               loadingText={inProcessingText}
               isLoading={inProcessingText !== undefined}
+              fontWeight="600"
             >
               Unblock & revive
             </Button>
@@ -314,6 +374,15 @@ const LSP7Panel: React.FC<LSP7PanelProps> = ({
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <ReviveOptionsModal
+        isOpen={isReviveOptionsOpen}
+        onClose={onReviveOptionsClose}
+        selectedMode={selectedReviveMode}
+        onSelectMode={setSelectedReviveMode}
+        onConfirm={handleConfirmReviveOption}
+        verifiedCreatorCount={verifiedCreatorAddresses.length}
+      />
     </Flex>
   );
 };

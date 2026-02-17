@@ -40,11 +40,25 @@ const ClientShareButton = ({ pageAccount }: { pageAccount: string | null }) => {
 
   return (
     <Menu>
-      <MenuButton as={Button} size={'sm'} rightIcon={<LinkIcon />}>
+      <MenuButton
+        as={Button}
+        variant="ghost"
+        color="whiteAlpha.800"
+        fontSize="sm"
+        fontWeight="500"
+        fontFamily="Montserrat"
+        rightIcon={<LinkIcon />}
+        _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+      >
         Share
       </MenuButton>
-      <MenuList>
-        <MenuItem onClick={handleCopyLink}>
+      <MenuList bg="rgba(26, 32, 44, 0.95)" backdropFilter="blur(10px)" borderColor="whiteAlpha.200">
+        <MenuItem
+          onClick={handleCopyLink}
+          bg="transparent"
+          color="whiteAlpha.900"
+          _hover={{ bg: 'whiteAlpha.100' }}
+        >
           {hasCopied ? 'Copied' : 'Copy Link'}
         </MenuItem>
       </MenuList>

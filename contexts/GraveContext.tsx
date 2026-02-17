@@ -14,6 +14,10 @@ import { getUpAddressUrds, IUPForwarderData } from '@/utils/urdUtils';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { detectGraveSetup } from '@/utils/uapUtils';
 import { getReadProvider } from '@/utils/erc725Client';
+import {
+  detectScreenerMigration,
+  OutdatedScreenerInfo,
+} from '@/utils/screenerMigration';
 
 interface GraveContextType {
   // Legacy GRAVE vault (from old forwarder)
@@ -27,6 +31,10 @@ interface GraveContextType {
   hasLegacyGrave: boolean;
   setupType: 'none' | 'legacy' | 'uap' | 'both';
   uapVaultAddress: string | null;
+
+  // Screener migration detection
+  hasOutdatedScreeners: boolean;
+  outdatedScreenerInfo: OutdatedScreenerInfo | null;
 
   // Methods
   setURDLsp7: (urd: string | null) => void;
@@ -55,6 +63,11 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
     'none' | 'legacy' | 'uap' | 'both'
   >('none');
   const [uapVaultAddress, setUapVaultAddress] = useState<string | null>(null);
+
+  // Screener migration state
+  const [hasOutdatedScreeners, setHasOutdatedScreeners] = useState(false);
+  const [outdatedScreenerInfo, setOutdatedScreenerInfo] =
+    useState<OutdatedScreenerInfo | null>(null);
 
   const [isLoadingGraveData, setIsLoadingGraveData] = useState(false);
 
@@ -133,6 +146,51 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       setUapVaultAddress(setupInfo.uapVaultAddress);
       setGraveVault(setupInfo.legacyVaultAddress || undefined);
 
+      // Check for outdated screeners if user has UAP subscription
+      // Run this even when setupType is 'none' because old screeners won't be recognized
+      // as a valid setup, but we still need to detect them for migration
+      if (setupInfo.hasUAPSubscription) {
+        try {
+          const migrationResult = await detectScreenerMigration(
+            readProvider,
+            profileDetailsData.upWallet,
+            {
+              forwarderAssistantAddress: currentNetwork.forwarderAssistantAddress,
+              addressListScreenerAddress: currentNetwork.addressListScreenerAddress,
+              curatedListScreenerAddress: currentNetwork.curatedListScreenerAddress,
+              creatorListScreenerAddress: currentNetwork.creatorListScreenerAddress,
+              creatorCurationScreenerAddress: currentNetwork.creatorCurationScreenerAddress,
+            }
+          );
+
+          // Check if params changed during the async operation
+          if (lastRefreshParamsRef.current === refreshKey) {
+            setHasOutdatedScreeners(migrationResult.needsMigration);
+            setOutdatedScreenerInfo(migrationResult.migrationInfo);
+
+            // If migration is needed but setupType was 'none', override it to 'uap'
+            // This ensures the settings page shows the migration flow instead of setup
+            if (migrationResult.needsMigration && setupInfo.setupType === 'none') {
+              setSetupType('uap');
+              // Also set the vault address from migration info if available
+              if (migrationResult.migrationInfo?.existingVaultAddress) {
+                setUapVaultAddress(migrationResult.migrationInfo.existingVaultAddress);
+              }
+            }
+          }
+        } catch (migrationError) {
+          // Silently ignore migration detection errors
+          if (lastRefreshParamsRef.current === refreshKey) {
+            setHasOutdatedScreeners(false);
+            setOutdatedScreenerInfo(null);
+          }
+        }
+      } else {
+        // No UAP subscription, no screeners to migrate
+        setHasOutdatedScreeners(false);
+        setOutdatedScreenerInfo(null);
+      }
+
       // Also fetch legacy URD data for backward compatibility
       try {
         const urdData: IUPForwarderData = await getUpAddressUrds(
@@ -175,6 +233,8 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       setHasLegacyGrave(false);
       setSetupType('none');
       setUapVaultAddress(null);
+      setHasOutdatedScreeners(false);
+      setOutdatedScreenerInfo(null);
     }
   }, [isConnected, profileDetailsData?.upWallet, chainId, isNetworkMismatch, refreshGraveData]);
 
@@ -192,6 +252,10 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       setupType,
       uapVaultAddress,
 
+      // Screener migration
+      hasOutdatedScreeners,
+      outdatedScreenerInfo,
+
       // Methods
       setURDLsp7,
       setURDLsp8,
@@ -208,6 +272,8 @@ export function GraveProvider({ children }: { children: React.ReactNode }) {
       hasLegacyGrave,
       setupType,
       uapVaultAddress,
+      hasOutdatedScreeners,
+      outdatedScreenerInfo,
       isLoadingGraveData,
       setURDLsp7,
       setURDLsp8,

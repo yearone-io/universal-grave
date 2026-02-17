@@ -46,11 +46,11 @@ export const supportedNetworks: { [key: string]: ChainInfo } = {
     token: 'LYX',
     protocolAddress: '0x74cdf5beb4a2323fd386b87a1522d9aa0f59aeb9',
     forwarderAssistantAddress: '0xc503d7f50c4d2c0649fa86e43c247eb4e2e62fec',
-    curatedListScreenerAddress: '0x56d3ef8a7bf8b04b51ff7c9f4b5d7e4e375b2664',
-    addressListScreenerAddress: '0x2e1fc250e758651bd0ab0edc355d7986ab138edc',
+    curatedListScreenerAddress: '0xfd1fafda3b462eebe55814ceb1e8df9388f099a8',
+    addressListScreenerAddress: '0x0b2e499f42f04b616f7b5ceb8bfc32902bbf91f8',
     creatorCurationScreenerAddress:
-      '0x844472b633c0911dd3fe4c335e8764e2510c180d',
-    creatorListScreenerAddress: '0x6031249b8f0427fa7ac4092706eb7a6d53141451',
+      '0x71c93169d2600cd98c3c9f49fc09405f49e5ef92',
+    creatorListScreenerAddress: '0xb2b5312111b252b4a26d987309845a533cd2e668',
     lsp1UrdVault: '0x9292dAf1cdc3d03a1A0BbD4B3319C49A3B91d703',
     lsp1UrdUp: '0x7870C5B8BC9572A8001C3f96f7ff59961B23500D',
     vaultImplementation: '0x137f75c7e05aecf4cbbae0141cf624edbbe6c54c', // Shared LSP9VaultInit implementation

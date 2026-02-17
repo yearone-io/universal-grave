@@ -424,6 +424,41 @@ export async function addAssetToAddressListScreener(
   addressListScreenerAddress: string,
   forwarderAssistantAddress: string
 ): Promise<void> {
+  await addAddressesToAddressListScreener(
+    provider,
+    upAddress,
+    [assetAddress],
+    addressListScreenerAddress,
+    forwarderAssistantAddress,
+    'GraveSafeAssets'
+  );
+}
+
+export async function addCreatorsToCreatorListScreener(
+  provider: BrowserProvider,
+  upAddress: string,
+  creatorAddresses: string[],
+  creatorListScreenerAddress: string,
+  forwarderAssistantAddress: string
+): Promise<void> {
+  await addAddressesToAddressListScreener(
+    provider,
+    upAddress,
+    creatorAddresses,
+    creatorListScreenerAddress,
+    forwarderAssistantAddress,
+    'GraveSafeCreators'
+  );
+}
+
+async function addAddressesToAddressListScreener(
+  provider: BrowserProvider,
+  upAddress: string,
+  addresses: string[],
+  listScreenerAddress: string,
+  forwarderAssistantAddress: string,
+  defaultListName: string
+): Promise<void> {
   const signer = await getWalletSignerForUP(upAddress, {
     requirePermissions: true,
   });
@@ -433,7 +468,18 @@ export async function addAssetToAddressListScreener(
     upAddress,
     { provider }
   );
-  const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
+  const checksumAddresses = Array.from(
+    new Set(
+      addresses
+        .map(addr => getChecksumAddress(addr))
+        .filter((addr): addr is string => !!addr)
+        .map(addr => addr.toLowerCase())
+    )
+  ).map(addr => getChecksumAddress(addr)!);
+
+  if (checksumAddresses.length === 0) {
+    return;
+  }
 
   const keys: string[] = [];
   const values: string[] = [];
@@ -506,12 +552,12 @@ export async function addAssetToAddressListScreener(
       ) as string[];
 
       const foundIndex = screeners.findIndex(
-        addr => addr.toLowerCase() === addressListScreenerAddress.toLowerCase()
+        addr => addr.toLowerCase() === listScreenerAddress.toLowerCase()
       );
 
       if (foundIndex === -1) {
         console.warn(
-          `[Auto-create] Address List Screener not found in screeners array for ${txType}, will create`
+          `[Auto-create] List Screener not found in screeners array for ${txType}, will create`
         );
         // Screener exists but Address List Screener not in it - will add to existing array
         screenerIndex = screeners.length; // Add at the end
@@ -519,7 +565,7 @@ export async function addAssetToAddressListScreener(
         needsListNameCreation = true;
 
         // Update screeners array to include Address List Screener
-        const updatedScreeners = [...screeners, addressListScreenerAddress];
+        const updatedScreeners = [...screeners, listScreenerAddress];
         const encodedScreeners = erc725UAP.encodeValueType(
           'address[]',
           updatedScreeners
@@ -544,7 +590,7 @@ export async function addAssetToAddressListScreener(
     if (needsScreenersCreation) {
       // Create UAPExecutiveScreeners array
       const encodedScreeners = erc725UAP.encodeValueType('address[]', [
-        addressListScreenerAddress,
+        listScreenerAddress,
       ]);
       keys.push(screenersKey);
       values.push(encodedScreeners);
@@ -579,7 +625,7 @@ export async function addAssetToAddressListScreener(
 
       // Manual byte packing: executive + screener + config
       const executiveBytes = forwarderAssistantAddress.toLowerCase().slice(2);
-      const screenerBytes = addressListScreenerAddress.toLowerCase().slice(2);
+      const screenerBytes = listScreenerAddress.toLowerCase().slice(2);
       const screenerConfigValue =
         '0x' + executiveBytes + screenerBytes + configBytes.slice(2);
 
@@ -648,9 +694,9 @@ export async function addAssetToAddressListScreener(
   // Auto-create address list name if not found
   if (!sharedListName) {
     console.log(
-      '[Auto-create] Address list name not found, creating with default: GraveSafeAssets'
+      `[Auto-create] Address list name not found, creating with default: ${defaultListName}`
     );
-    sharedListName = 'GraveSafeAssets';
+    sharedListName = defaultListName;
   }
 
   // Set the list name keys for all transaction types where it's missing
@@ -703,21 +749,21 @@ export async function addAssetToAddressListScreener(
     }
   }
 
-  // STEP 5: Check if asset already in list (case-insensitive)
-  const assetAlreadyInList = currentAddresses.some(
-    (addr: string) => getChecksumAddress(addr) === checksumAssetAddress
+  // STEP 5: Filter addresses that are not yet in list
+  const existingAddressSet = new Set(
+    currentAddresses.map(addr => addr.toLowerCase())
+  );
+  const addressesToAdd = checksumAddresses.filter(
+    addr => !existingAddressSet.has(addr.toLowerCase())
   );
 
-  if (assetAlreadyInList) {
-    console.log(
-      `[Optimization] Asset ${checksumAssetAddress} already in whitelist, skipping write`
-    );
-    return; // No-op, asset already exists
+  if (addressesToAdd.length === 0) {
+    console.log('[Optimization] All addresses already in whitelist, skipping write');
+    return;
   }
 
-  // STEP 6: Add the new address to the shared list (ONCE, not per transaction type)
-  const newIndex = currentLength;
-  const newLength = currentLength + 1;
+  // STEP 6: Add new addresses to the shared list (ONCE, not per transaction type)
+  const newLength = currentLength + addressesToAdd.length;
 
   // Update list length
   const newLengthEncoded = erc725UAP.encodeValueType(
@@ -727,29 +773,31 @@ export async function addAssetToAddressListScreener(
   keys.push(listLengthKey);
   values.push(newLengthEncoded);
 
-  // Add new array item
+  // Add new array items
   const baseArrayKey = erc725UAP.encodeKeyName(`${sharedListName}[]`);
   const keyPrefix = baseArrayKey.slice(0, 34);
-  const indexBytes16 = newIndex.toString(16).padStart(32, '0');
-  const itemKey = keyPrefix + indexBytes16;
-  const encodedAddress = erc725UAP.encodeValueType(
-    'address',
-    checksumAssetAddress
-  );
-  keys.push(itemKey);
-  values.push(encodedAddress);
+  for (let i = 0; i < addressesToAdd.length; i++) {
+    const newIndex = currentLength + i;
+    const addressToAdd = addressesToAdd[i];
 
-  // Add mapping for fast lookup
-  const mapKey = erc725UAP.encodeKeyName(`${sharedListName}Map:<address>`, [
-    checksumAssetAddress,
-  ]);
-  const positionHex = newIndex.toString(16).padStart(64, '0');
-  const mapValue = '0x00000000' + positionHex; // Generic item type + position
-  keys.push(mapKey);
-  values.push(mapValue);
+    const indexBytes16 = newIndex.toString(16).padStart(32, '0');
+    const itemKey = keyPrefix + indexBytes16;
+    const encodedAddress = erc725UAP.encodeValueType('address', addressToAdd);
+    keys.push(itemKey);
+    values.push(encodedAddress);
+
+    // Add mapping for fast lookup
+    const mapKey = erc725UAP.encodeKeyName(`${sharedListName}Map:<address>`, [
+      addressToAdd,
+    ]);
+    const positionHex = newIndex.toString(16).padStart(64, '0');
+    const mapValue = '0x00000000' + positionHex; // Generic item type + position
+    keys.push(mapKey);
+    values.push(mapValue);
+  }
 
   console.log(
-    `[Optimization] Adding asset to shared list. Writing 3 keys instead of 6`
+    `[Optimization] Adding ${addressesToAdd.length} address(es) to shared list.`
   );
 
   // Execute batch update
@@ -775,18 +823,44 @@ export async function updateScreenersOnRevive(
   networkConfig: {
     forwarderAssistantAddress: string;
     addressListScreenerAddress: string;
+    creatorListScreenerAddress?: string;
     curatedListScreenerAddress: string;
+  },
+  options?: {
+    mode?: 'asset' | 'creator' | 'both' | 'none';
+    creatorAddresses?: string[];
   }
 ): Promise<void> {
   const checksumAssetAddress = getChecksumAddress(assetAddress) as string;
+  const mode = options?.mode || 'asset';
+  const creatorAddresses = options?.creatorAddresses || [];
 
-  // Add asset to Address List Screener whitelist
-  // This is the "unblock" action - asset will no longer be sent to GRAVE
-  await addAssetToAddressListScreener(
-    provider,
-    upAddress,
-    checksumAssetAddress,
-    networkConfig.addressListScreenerAddress,
-    networkConfig.forwarderAssistantAddress
-  );
+  if (mode === 'none') {
+    return;
+  }
+
+  if (mode === 'asset' || mode === 'both') {
+    // Add asset to Address List Screener whitelist.
+    await addAssetToAddressListScreener(
+      provider,
+      upAddress,
+      checksumAssetAddress,
+      networkConfig.addressListScreenerAddress,
+      networkConfig.forwarderAssistantAddress
+    );
+  }
+
+  if (
+    (mode === 'creator' || mode === 'both') &&
+    networkConfig.creatorListScreenerAddress &&
+    creatorAddresses.length > 0
+  ) {
+    await addCreatorsToCreatorListScreener(
+      provider,
+      upAddress,
+      creatorAddresses,
+      networkConfig.creatorListScreenerAddress,
+      networkConfig.forwarderAssistantAddress
+    );
+  }
 }

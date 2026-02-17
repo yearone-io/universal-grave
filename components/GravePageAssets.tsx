@@ -132,82 +132,74 @@ export default function GravePageAssets({
   ]);
 
   if (error) {
-    return <Text>{error}</Text>;
+    return (
+      <Box
+        p={6}
+        bg="rgba(245, 101, 101, 0.1)"
+        border="1px solid rgba(245, 101, 101, 0.3)"
+        borderRadius="xl"
+      >
+        <Text color="red.300" fontSize="sm" fontWeight="500">
+          {error}
+        </Text>
+      </Box>
+    );
   }
 
   if (isNetworkMismatch) {
     return (
-      <Box width="100%" mb={6}>
-        <Alert
-          status="warning"
-          variant="solid"
-          bg="orange.500"
-          color="white"
-          py={4}
-          px={6}
-          borderRadius="lg"
-          border="2px solid"
-          borderColor="orange.600"
+      <Box
+        p={6}
+        bg="rgba(251, 211, 141, 0.1)"
+        border="1px solid rgba(251, 211, 141, 0.3)"
+        borderRadius="xl"
+      >
+        <Flex
+          flexDirection={{ base: 'column', md: 'row' }}
+          alignItems={{ base: 'flex-start', md: 'center' }}
+          justifyContent="space-between"
+          gap={4}
         >
-          <AlertIcon color="white" />
-          <Flex
-            flex="1"
-            flexDirection={{ base: 'column', md: 'row' }}
-            alignItems={{ base: 'flex-start', md: 'center' }}
-            justifyContent="space-between"
-            gap={3}
-          >
-            <Box>
-              <Text fontSize="md" fontWeight="bold" mb={1}>
-                Wrong network
-              </Text>
-              <Text fontSize="sm">
-                You're connected to{' '}
-                {currentNetwork?.displayName || 'another network'} but this
-                grave is on{' '}
-                {expectedNetwork?.displayName || 'a different network'}.
-                Switch networks to load the assets.
-              </Text>
-            </Box>
-            {expectedChainId && (
-              <Button
-                onClick={() => switchNetwork(expectedChainId)}
-                size="sm"
-                bg="white"
-                color="orange.600"
-                _hover={{ bg: 'gray.100' }}
-                fontFamily="Bungee"
-                fontSize="12px"
-                flexShrink={0}
-              >
-                Switch to {expectedNetwork?.displayName || 'network'}
-              </Button>
-            )}
-          </Flex>
-        </Alert>
+          <Box>
+            <Text fontSize="md" fontWeight="600" mb={2} color="orange.200">
+              Wrong network
+            </Text>
+            <Text fontSize="sm" color="orange.100">
+              You're connected to{' '}
+              {currentNetwork?.displayName || 'another network'} but this
+              grave is on{' '}
+              {expectedNetwork?.displayName || 'a different network'}.
+              Switch networks to load the assets.
+            </Text>
+          </Box>
+          {expectedChainId && (
+            <Button
+              onClick={() => switchNetwork(expectedChainId)}
+              size="sm"
+              colorScheme="orange"
+              fontFamily="Montserrat"
+              fontWeight="500"
+              flexShrink={0}
+            >
+              Switch to {expectedNetwork?.displayName || 'network'}
+            </Button>
+          )}
+        </Flex>
       </Box>
     );
   }
 
   if (!hasWalletProviderAvailable || !isConnected) {
     return (
-      <Box width="100%" mb={6}>
-        <Alert
-          status="info"
-          variant="solid"
-          bg="dark.teal.500"
-          color="dark.purple.500"
-          py={4}
-          px={6}
-          borderRadius="lg"
-          border="2px solid"
-          borderColor="dark.teal.700"
-        >
-          <AlertIcon color="dark.teal.700" />
-          <Text fontSize="sm" fontWeight="bold">
-            Connect your wallet to load this grave.
-          </Text>
-        </Alert>
+      <Box
+        p={6}
+        bg="rgba(138, 251, 234, 0.1)"
+        border="1px solid rgba(138, 251, 234, 0.3)"
+        borderRadius="xl"
+      >
+        <Text fontSize="sm" fontWeight="500" color="dark.teal.500">
+          Connect your wallet to load this grave.
+        </Text>
       </Box>
     );
   }
@@ -215,6 +207,15 @@ export default function GravePageAssets({
   return graveVault ? (
     <LSPAssets graveVault={graveVault} graveOwner={graveOwner} />
   ) : (
-    <>Loading...</>
+    <Box
+      p={6}
+      bg="rgba(255, 255, 255, 0.05)"
+      borderRadius="xl"
+      textAlign="center"
+    >
+      <Text fontSize="sm" color="whiteAlpha.600" fontWeight="500">
+        Loading...
+      </Text>
+    </Box>
   );
 }
