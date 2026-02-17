@@ -7,9 +7,12 @@ import { injected } from '@wagmi/core';
 import { lukso, luksoTestnet } from 'wagmi/chains';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 
-const walletConnectProjectId =
-  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '';
+const walletConnectProjectId = (
+  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
+).trim();
 const defaultAppUrl = 'https://universalgrave.com';
+const hasWalletConnectProjectId = walletConnectProjectId.length > 0;
+let hasWarnedMissingProjectId = false;
 
 export const wagmiChains = [lukso, luksoTestnet] as const;
 
@@ -25,6 +28,14 @@ const getAppUrl = () =>
 const getAppRedirectUrl = () =>
   typeof window === 'undefined' ? defaultAppUrl : window.location.href;
 
+const warnMissingWalletConnectProjectId = () => {
+  if (hasWarnedMissingProjectId) return;
+  hasWarnedMissingProjectId = true;
+  console.warn(
+    '[wagmiConfig] NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is missing. WalletConnect mobile sign-in is disabled until this environment variable is set.'
+  );
+};
+
 const createDesktopConnectors = () => [
   injected({
     shimDisconnect: false,
@@ -37,8 +48,13 @@ const createDesktopConnectors = () => [
   }),
 ];
 
-const createMobileConnectors = () =>
-  connectorsForWallets(
+const createMobileConnectors = () => {
+  if (!hasWalletConnectProjectId) {
+    warnMissingWalletConnectProjectId();
+    return createDesktopConnectors();
+  }
+
+  return connectorsForWallets(
     [
       {
         groupName: 'Login with Universal Profile',
@@ -64,6 +80,7 @@ const createMobileConnectors = () =>
       },
     }
   );
+};
 
 // Use a unified config that works for both mobile and desktop
 // This avoids SSR hydration mismatch where server creates desktop config
