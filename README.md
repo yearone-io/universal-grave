@@ -1,4 +1,4 @@
-# Universal GRAVE
+<!-- Test PR by nanobot --> # Universal GRAVE
 
 GRAVE is a spam cemetery for LUKSO Universal Profiles. It routes unwanted LSP7 and LSP8 assets into a vault so users can review and revive them later. The current implementation is built on the Universal Assistant Protocol (UAP) and includes a clean upgrade path for legacy GRAVE forwarders.
 
