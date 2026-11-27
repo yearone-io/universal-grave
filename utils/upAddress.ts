@@ -74,38 +74,50 @@ export const checkControllerPermissionsOnUP = async (
   }
 };
 
+const permissionReadFailed = () => {
+  const error = new Error('Failed to fetch controller permissions');
+  (error as Error & { code?: string }).code = 'NETWORK_ERROR';
+  return error;
+};
+
+const existingControllerOrNull = async (
+  provider: ReadProvider,
+  upAddress: string,
+  candidate?: string | null
+) => {
+  if (!candidate || !isAddress(candidate)) return null;
+  const permissions = await checkControllerPermissionsOnUP(
+    provider,
+    upAddress,
+    candidate
+  );
+  if (!permissions.checked) throw permissionReadFailed();
+  return permissions.hasPermissions ? getAddress(candidate) : null;
+};
+
 export const resolveMainControllerForUP = async (
   provider: ReadProvider,
   upAddress: string,
   recoveredController: string,
   connectedAddress?: string | null
 ) => {
-  if (
-    isAddress(recoveredController) &&
-    (await hasControllerPermissionsOnUP(provider, upAddress, recoveredController))
-  ) {
-    return getAddress(recoveredController);
-  }
-
-  if (
-    connectedAddress &&
-    isAddress(connectedAddress) &&
-    (await hasControllerPermissionsOnUP(provider, upAddress, connectedAddress))
-  ) {
-    return getAddress(connectedAddress);
-  }
-
-  const discoveredController = await resolveAnyControllerForUP(
+  const recovered = await existingControllerOrNull(
     provider,
-    upAddress
+    upAddress,
+    recoveredController
   );
-  if (discoveredController) {
-    return discoveredController;
-  }
+  if (recovered) return recovered;
 
-  return isAddress(recoveredController)
-    ? getAddress(recoveredController)
-    : recoveredController;
+  const connected = await existingControllerOrNull(
+    provider,
+    upAddress,
+    connectedAddress
+  );
+  if (connected) return connected;
+
+  throw new Error(
+    'The key that signed is not a controller of this Universal Profile. Sign in with the controller that manages this profile.'
+  );
 };
 
 export const resolveAnyControllerForUP = async (

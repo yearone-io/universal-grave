@@ -14,7 +14,6 @@ import { ERC725YDataKeys, LSP1_TYPE_IDS } from '@lukso/lsp-smart-contracts';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 import LSP6Schema from '@erc725/erc725.js/schemas/LSP6KeyManager.json';
 import {
-  DEFAULT_UP_CONTROLLER_PERMISSIONS,
   DEFAULT_UP_URD_PERMISSIONS,
   UAP_CONTROLLER_PERMISSIONS,
 } from '@/app/constants';
@@ -100,6 +99,22 @@ export const getUpAddressUrds = async (
   return urdData;
 };
 
+/** LSP6 bits for adding and changing the universal receiver delegate. */
+const UNIVERSAL_RECEIVER_DELEGATE_PERMISSION_BITS = 0x60n;
+
+/**
+ * Add the two universal-receiver bits to an existing controller bitmap.
+ * A zero bitmap is not a controller, and writing one would create one.
+ */
+export const mergeUniversalReceiverDelegatePermissions = (currentBits: bigint) => {
+  if (currentBits === 0n) {
+    throw new Error(
+      'The signing key is not a controller of this Universal Profile, so its permissions were left unchanged.'
+    );
+  }
+  return currentBits | UNIVERSAL_RECEIVER_DELEGATE_PERMISSION_BITS;
+};
+
 /**
  * Function to update the permissions of the Browser Extension controller.
  */
@@ -111,32 +126,29 @@ export const updateBECPermissions = async (
   const signer = await getWalletSignerForUP(account, {
     requirePermissions: true,
   });
-  // check if we need to update permissions
-  const missingPermissions = await doesControllerHaveMissingPermissions(
-    mainUPController,
-    account,
-    provider
-  );
-  if (!missingPermissions.length) {
-    return;
-  }
-  const UP = new Contract(account, universalProfileAbi, provider);
-
   const erc725 = getErc725Read(
     LSP6Schema as ERC725JSONSchema[],
     account,
     { provider }
   );
-
-  const newPermissions = erc725.encodePermissions({
-    ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
-    ...UAP_CONTROLLER_PERMISSIONS,
+  const addressPermission = await erc725.getData({
+    keyName: 'AddressPermissions:Permissions:<address>',
+    dynamicKeyParts: mainUPController,
   });
+  const rawValue = addressPermission?.value as string | undefined;
+  const currentBits =
+    !rawValue || rawValue === '0x' ? 0n : BigInt(rawValue);
+  const nextBits = mergeUniversalReceiverDelegatePermissions(currentBits);
+  if (nextBits === currentBits) {
+    return;
+  }
+  const UP = new Contract(account, universalProfileAbi, provider);
+
   const permissionsData = erc725.encodeData([
     {
       keyName: 'AddressPermissions:Permissions:<address>',
       dynamicKeyParts: mainUPController,
-      value: newPermissions,
+      value: zeroPadValue(toBeHex(nextBits), 32),
     },
   ]);
 
@@ -302,7 +314,6 @@ export const doesControllerHaveMissingPermissions = async (
     provider
   );
   const missingPermissions = getMissingPermissions(currentPermissions, {
-    ...DEFAULT_UP_CONTROLLER_PERMISSIONS,
     ...UAP_CONTROLLER_PERMISSIONS,
   });
   return missingPermissions;
