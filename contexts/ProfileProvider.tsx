@@ -12,14 +12,15 @@ import React, {
 import { SiweMessage } from 'siwe';
 import { BrowserProvider, hexlify, toUtf8Bytes, verifyMessage } from 'ethers';
 import {
-  useAccount,
   useConnect,
+  useConnection,
+  useConnectors,
   useDisconnect,
   useSwitchChain,
   useWalletClient,
 } from 'wagmi';
-import { useChainModal, useConnectModal } from '@rainbow-me/rainbowkit';
 import { getImageFromIPFS } from '@/utils/ipfs';
+import { onUpSignInModalClose, openUpSignInModal } from '@/utils/luksoModal';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import { ERC725JSONSchema } from '@erc725/erc725.js';
@@ -66,6 +67,8 @@ interface IProfileDetailsData {
   upWallet: string;
   profile: Profile | null;
   issuedAssets: string[];
+  /** Connector that produced mainUPController. Absent on sessions signed before UP Modal. */
+  connectorId?: string;
 }
 
 interface ProfileDebugState {
@@ -114,14 +117,21 @@ const hasLuksoProvider = () =>
 const isMobileDevice = () =>
   typeof navigator !== 'undefined' &&
   /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const isLuksoConnector = (
-  connectorLike?: { id?: string; name?: string } | null
-) => {
-  if (!connectorLike) return false;
-  return (
-    connectorLike.id === 'lukso' ||
-    connectorLike.name?.toLowerCase().includes('universal profile') === true
-  );
+
+/** Phones, tablets, and iPads that request a desktop site. Those go through the UP modal. */
+const isHandoffDevice = () => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
+  const maxTouchPoints =
+    (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints || 0;
+  return /Macintosh/i.test(ua) && maxTouchPoints > 1;
+};
+
+const isInUpAppBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  return (window as Window & { lukso?: { isInAppBrowser?: boolean } }).lukso
+    ?.isInAppBrowser === true;
 };
 
 const isWalletConnectConnector = (
@@ -131,21 +141,26 @@ const isWalletConnectConnector = (
   return connectorLike.id.toLowerCase().includes('walletconnect');
 };
 
-const UNIVERSAL_PROFILES_NATIVE_BASE =
-  'io.universaleverything.universalprofiles://';
-const UP_WALLETCONNECT_URI_STORAGE_KEY = 'up:lastWalletConnectUri';
-const UNIVERSAL_PROFILES_NATIVE_HOME_LINK = UNIVERSAL_PROFILES_NATIVE_BASE;
-
-const buildUniversalProfilesNativeLink = (wcUri?: string | null) => {
-  if (typeof wcUri === 'string' && wcUri.startsWith('wc:')) {
-    // LUKSO mobile deep links expect the WalletConnect URI in /wallet-connect/.
-    return wcUri.replace(
-      /^wc:/,
-      `${UNIVERSAL_PROFILES_NATIVE_BASE}wallet-connect/`
-    );
-  }
-  return UNIVERSAL_PROFILES_NATIVE_HOME_LINK;
+const isUpInjectedConnector = (
+  connectorLike?: { id?: string; name?: string } | null
+) => {
+  if (!connectorLike || isWalletConnectConnector(connectorLike)) return false;
+  const id = connectorLike.id?.toLowerCase() || '';
+  const name = connectorLike.name?.toLowerCase() || '';
+  return (
+    id === 'lukso' ||
+    id.includes('cloud.universalprofile') ||
+    name.includes('universal profile')
+  );
 };
+
+const isAllowedUpConnector = (
+  connectorLike?: { id?: string; name?: string } | null
+) => isUpInjectedConnector(connectorLike) || isWalletConnectConnector(connectorLike);
+
+const UP_WALLETCONNECT_URI_STORAGE_KEY = 'up:lastWalletConnectUri';
+const UNIVERSAL_PROFILES_NATIVE_HOME_LINK =
+  'io.universaleverything.universalprofiles://';
 
 const wait = (ms: number) =>
   new Promise(resolve => {
@@ -194,15 +209,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     chainId: walletChainId,
     isConnected: isWalletConnected,
     connector,
-  } = useAccount();
+  } = useConnection();
   const { data: walletClient } = useWalletClient();
   const walletClientChainId = walletClient?.chain?.id ?? null;
   const walletClientPresent = !!walletClient;
-  const { connectAsync, connectors } = useConnect();
+  const connectors = useConnectors();
+  const { connectAsync } = useConnect();
   const { disconnect: wagmiDisconnect } = useDisconnect();
   const { switchChainAsync } = useSwitchChain();
-  const { openConnectModal } = useConnectModal();
-  const { openChainModal } = useChainModal();
 
   const [issuedAssets, setIssuedAssets] = useState<string[]>([]);
   const [profileDetailsData, setProfileDetailsData] =
@@ -225,6 +239,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const prevChainIdRef = useRef<number | null>(null);
   const sessionRestoreInProgressRef = useRef(false);
   const lastSignedAddressRef = useRef<string | null>(null);
+  const connectorResignKeyRef = useRef<string | null>(null);
+  const isWalletConnectedRef = useRef(false);
   const lastUpAppWakeAtRef = useRef(0);
   const lastWalletConnectUriRef = useRef<string | null>(null);
   const wakeUpTimeoutRef = useRef<number | null>(null);
@@ -232,8 +248,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     provider: any;
     handler: (uri: unknown) => void;
   } | null>(null);
-  const luksoConnector = useMemo(
-    () => connectors.find(connectorItem => isLuksoConnector(connectorItem)),
+  const upInjectedConnector = useMemo(
+    () => connectors.find(connectorItem => isUpInjectedConnector(connectorItem)),
     [connectors]
   );
   const walletConnectConnector = useMemo(() => {
@@ -261,6 +277,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     const result = setWalletClient(walletClient ?? null);
     providerRef.current = result?.provider ?? null;
   }, [walletClient]);
+
+  useEffect(() => {
+    isWalletConnectedRef.current = isWalletConnected;
+  }, [isWalletConnected]);
+
+  useEffect(() => {
+    return onUpSignInModalClose(() => {
+      if (signingRef.current || isWalletConnectedRef.current) return;
+      setPendingSignature(false);
+    });
+  }, []);
 
   useEffect(() => {
     const inferredChainId = walletChainId ?? walletClientChainId ?? null;
@@ -336,17 +363,6 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const wakeUniversalProfilesAppForUri = useCallback((uri: unknown) => {
-    if (typeof uri !== 'string' || !uri.startsWith('wc:')) return;
-    lastWalletConnectUriRef.current = uri;
-    if (typeof window === 'undefined') return;
-    const now = Date.now();
-    if (now - lastUpAppWakeAtRef.current < 1200) return;
-    lastUpAppWakeAtRef.current = now;
-    setLastUpAppWakeAt(now);
-    window.location.href = buildUniversalProfilesNativeLink(uri);
-  }, []);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -382,10 +398,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         persistWalletConnectUri(wcProvider?.connector?.uri);
 
         const handleDisplayUri = (uri: unknown) => {
+          // Persist for diagnostics. The UP modal owns pairing navigation.
           persistWalletConnectUri(uri);
-          if (isMobileDevice()) {
-            wakeUniversalProfilesAppForUri(uri);
-          }
         };
 
         detachWalletConnectUriListener();
@@ -411,33 +425,18 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   }, [
     detachWalletConnectUriListener,
     persistWalletConnectUri,
-    wakeUniversalProfilesAppForUri,
     walletConnectConnector,
   ]);
 
-  const wakeUniversalProfilesApp = useCallback(
-    (options?: { useWalletConnectUri?: boolean }) => {
-      if (typeof window === 'undefined') return;
-      const now = Date.now();
-      if (now - lastUpAppWakeAtRef.current < 1200) return;
-      lastUpAppWakeAtRef.current = now;
-      setLastUpAppWakeAt(now);
-
-      const deepLink = options?.useWalletConnectUri
-        ? buildUniversalProfilesNativeLink(lastWalletConnectUriRef.current)
-        : UNIVERSAL_PROFILES_NATIVE_HOME_LINK;
-      // Explicitly foreground UP app for WalletConnect actions on mobile.
-      window.location.href = deepLink;
-    },
-    []
-  );
-
-  const wakeUniversalProfilesAppForWalletConnectUri = useCallback(() => {
+  const wakeUniversalProfilesApp = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const walletConnectUri = lastWalletConnectUriRef.current;
-    if (!walletConnectUri) return;
-    wakeUniversalProfilesApp({ useWalletConnectUri: true });
-  }, [wakeUniversalProfilesApp]);
+    const now = Date.now();
+    if (now - lastUpAppWakeAtRef.current < 1200) return;
+    lastUpAppWakeAtRef.current = now;
+    setLastUpAppWakeAt(now);
+    // Home scheme only. Replaying the pairing URI creates a second session.
+    window.location.href = UNIVERSAL_PROFILES_NATIVE_HOME_LINK;
+  }, []);
 
   const syncWalletConnectUriFromProvider = useCallback(async () => {
     if (!walletConnectConnector) return;
@@ -554,9 +553,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     if (!activeWalletClient || !address || !activeChainId) {
       throw new Error('Wallet not ready');
     }
-    if (!isMobileDevice() && !isLuksoConnector(connector)) {
+    if (!isAllowedUpConnector(connector)) {
       throw new Error(
-        'Universal Profile Extension connector is required on desktop.'
+        'Connect with the Universal Profile Extension or the Universal Profiles app.'
       );
     }
     if (expectedChainId && expectedChainId !== activeChainId) {
@@ -610,8 +609,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       }).prepareMessage();
 
       const shouldWakeExternalWalletApp =
-        isMobileDevice() &&
-        (!hasLuksoProvider() || isWalletConnectConnector(connector));
+        isWalletConnectConnector(connector) && !isInUpAppBrowser();
 
       const signViaPersonalSign = async () => {
         if (!providerRef.current) {
@@ -662,9 +660,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         }
         wakeUpTimeoutRef.current = window.setTimeout(() => {
           wakeUpTimeoutRef.current = null;
-          // For message signing, foreground the UP app without replaying the
-          // pairing URI route to avoid creating extra WalletConnect sessions.
-          wakeUniversalProfilesApp({ useWalletConnectUri: false });
+          wakeUniversalProfilesApp();
         }, 120);
       };
 
@@ -737,6 +733,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         upWallet: resolvedUpAddress,
         profile,
         issuedAssets: fetchedIssuedAssets,
+        connectorId: connector?.id,
       };
       localStorage.setItem('profileDetailsData', JSON.stringify(newProfileData));
       lastSignedAddressRef.current = address.toLowerCase();
@@ -770,39 +767,57 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     walletChainId,
   ]);
 
-  const connectWithMobileWallet = useCallback(
+  const canDirectConnectUp = useCallback(() => {
+    if (!upInjectedConnector) return false;
+    if (isInUpAppBrowser()) return true;
+    return hasLuksoProvider() && !isHandoffDevice();
+  }, [upInjectedConnector]);
+
+  const requestUpConnection = useCallback(
     async (targetChainId?: number) => {
-      if (walletConnectConnector) {
-        setPendingSignature(true);
-        if (openConnectModal && !targetChainId) {
-          // Prefer RainbowKit modal flow on mobile; this is more stable for
-          // account selection and avoids creating duplicate sessions.
-          openConnectModal();
-          return;
+      setPendingSignature(true);
+      if (canDirectConnectUp() && upInjectedConnector) {
+        if (isWalletConnected && !isAllowedUpConnector(connector)) {
+          safeWagmiDisconnect();
         }
-        await connectAsync({
-          connector: walletConnectConnector,
-          ...(targetChainId ? { chainId: targetChainId } : {}),
-        });
-        await syncWalletConnectUriFromProvider();
-        wakeUniversalProfilesAppForWalletConnectUri();
-        return;
+        try {
+          await connectAsync({
+            connector: upInjectedConnector,
+            ...(targetChainId ? { chainId: targetChainId } : {}),
+          });
+          return;
+        } catch (connectError: any) {
+          setPendingSignature(false);
+          const connectErrorMessage = String(
+            connectError?.message || ''
+          ).toLowerCase();
+          if (
+            !hasLuksoProvider() ||
+            connectErrorMessage.includes('provider') ||
+            connectErrorMessage.includes('connector')
+          ) {
+            throw new Error(
+              'Universal Profile Extension is not available. Unlock/enable it in your browser and try again.'
+            );
+          }
+          throw connectError;
+        }
       }
 
-      if (openConnectModal) {
-        setPendingSignature(true);
-        openConnectModal();
-        return;
+      try {
+        await openUpSignInModal(targetChainId);
+      } catch (modalError) {
+        setPendingSignature(false);
+        throw modalError;
       }
-
-      throw new Error('Universal Profiles mobile connector unavailable.');
     },
     [
+      canDirectConnectUp,
       connectAsync,
-      openConnectModal,
-      syncWalletConnectUriFromProvider,
-      walletConnectConnector,
-      wakeUniversalProfilesAppForWalletConnectUri,
+      connector,
+      isWalletConnected,
+      safeWagmiDisconnect,
+      upInjectedConnector,
     ]
   );
 
@@ -813,60 +828,24 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         if (pendingSignature || signingRef.current || signingMessage) {
           return;
         }
-        const onMobile = isMobileDevice();
-        const onDesktop = !onMobile;
-        if (onDesktop) {
-          if (!luksoConnector) {
-            throw new Error('Universal Profile connector unavailable.');
-          }
-          if (!isWalletConnected || !isLuksoConnector(connector)) {
-            if (isWalletConnected) {
-              safeWagmiDisconnect();
-            }
-            try {
-              await connectAsync({ connector: luksoConnector, chainId: newChainId });
-            } catch (connectError: any) {
-              const connectErrorMessage = String(
-                connectError?.message || ''
-              ).toLowerCase();
-              if (
-                !hasLuksoProvider() ||
-                connectErrorMessage.includes('provider') ||
-                connectErrorMessage.includes('connector')
-              ) {
-                throw new Error(
-                  'Universal Profile Extension is not available. Unlock/enable it in your browser and try again.'
-                );
-              }
-              throw connectError;
-            }
-            setPendingSignature(true);
-            return;
-          }
-        } else if (!isWalletConnected) {
-          await connectWithMobileWallet(newChainId);
+        const connectedWithUp =
+          isWalletConnected && isAllowedUpConnector(connector);
+        if (!connectedWithUp) {
+          await requestUpConnection(newChainId);
           return;
         }
         await switchChainAsync({ chainId: newChainId });
         setPendingSignature(true);
       } catch (switchError) {
         setPendingSignature(false);
-        if (openChainModal) {
-          openChainModal();
-          return;
-        }
         throw switchError;
       }
     },
     [
-      connectAsync,
       connector,
-      connectWithMobileWallet,
       isWalletConnected,
-      luksoConnector,
-      openChainModal,
-      safeWagmiDisconnect,
       pendingSignature,
+      requestUpConnection,
       signingMessage,
       switchChainAsync,
     ]
@@ -885,49 +864,11 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     connectFlowLockRef.current = true;
 
     try {
-      const onMobile = isMobileDevice();
-      const onDesktop = !onMobile;
-      if (onDesktop) {
-        if (!luksoConnector) {
-          throw new Error('Universal Profile connector unavailable.');
-        }
-        if (!isWalletConnected || !isLuksoConnector(connector)) {
-          if (isWalletConnected) {
-            safeWagmiDisconnect();
-          }
-          try {
-            await connectAsync({ connector: luksoConnector });
-          } catch (connectError: any) {
-            const connectErrorMessage = String(
-              connectError?.message || ''
-            ).toLowerCase();
-            if (
-              !hasLuksoProvider() ||
-              connectErrorMessage.includes('provider') ||
-              connectErrorMessage.includes('connector')
-            ) {
-              throw new Error(
-                'Universal Profile Extension is not available. Unlock/enable it in your browser and try again.'
-              );
-            }
-            throw connectError;
-          }
-          setPendingSignature(true);
-          return false;
-        }
-      } else if (!isWalletConnected) {
-        if (onMobile) {
-          try {
-            await connectWithMobileWallet(expectedChainId ?? undefined);
-            return false;
-          } catch (connectError) {
-            setPendingSignature(false);
-            throw connectError;
-          }
-        }
-        throw new Error(
-          'Universal Profile Extension (desktop) or Universal Profiles app (mobile) required.'
-        );
+      const connectedWithUp =
+        isWalletConnected && isAllowedUpConnector(connector);
+      if (!connectedWithUp) {
+        await requestUpConnection(expectedChainId ?? undefined);
+        return false;
       }
 
       const activeChainId =
@@ -944,8 +885,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   }, [
     connector,
-    connectWithMobileWallet,
-    luksoConnector,
+    requestUpConnection,
     isWalletConnected,
     expectedChainId,
     chainId,
@@ -953,7 +893,6 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     walletChainId,
     pendingSignature,
     signingMessage,
-    safeWagmiDisconnect,
     switchNetwork,
   ]);
 
@@ -973,13 +912,12 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (
       isWalletConnected &&
-      !isMobileDevice() &&
       connector?.id &&
-      !isLuksoConnector(connector)
+      !isAllowedUpConnector(connector)
     ) {
       safeWagmiDisconnect();
       setError(
-        'Disconnected non-UP wallet. Sign in again with Universal Profile Extension.'
+        'Disconnected non-UP wallet. Sign in with the Universal Profile Extension or the Universal Profiles app.'
       );
     }
   }, [connector, isWalletConnected, safeWagmiDisconnect]);
@@ -1044,9 +982,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     if (!isWalletConnected || !walletClientPresent || !address || !activeChainId) return;
     if (signingRef.current) return;
     if (expectedChainId && expectedChainId !== activeChainId) return;
-    if (!isMobileDevice() && !isLuksoConnector(connector)) {
-      return;
-    }
+    if (!isAllowedUpConnector(connector)) return;
 
     signIn()
       .catch(() => {
@@ -1151,6 +1087,23 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        const activeConnectorId = connector?.id || null;
+        if (
+          parsedProfileDetails.connectorId &&
+          activeConnectorId &&
+          parsedProfileDetails.connectorId !== activeConnectorId
+        ) {
+          // Same UP, different signer. Ask for one new SIWE so grave/UAP
+          // permissions target the controller that will send the transactions.
+          const resignKey = `${currentAddress}:${activeConnectorId}`;
+          if (connectorResignKeyRef.current !== resignKey && !cancelled) {
+            connectorResignKeyRef.current = resignKey;
+            setHasActiveSignature(false);
+            setPendingSignature(true);
+          }
+          return;
+        }
+
         if (cancelled) return;
 
         const restoredProfileDetails: IProfileDetailsData = {
@@ -1191,10 +1144,36 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     address,
     chainId,
     clearProfileState,
+    connector?.id,
     expectedChainId,
     isConnected,
     isWalletConnected,
     pendingSignature,
+  ]);
+
+  useEffect(() => {
+    if (!isWalletConnected || !address || !isConnected || !profileDetailsData) return;
+    if (signingRef.current || pendingSignature) return;
+    const storedConnectorId = profileDetailsData.connectorId;
+    const activeConnectorId = connector?.id;
+    if (!storedConnectorId || !activeConnectorId) return;
+    if (storedConnectorId === activeConnectorId) return;
+
+    const resignKey = `${address.toLowerCase()}:${activeConnectorId}`;
+    if (connectorResignKeyRef.current === resignKey) return;
+    connectorResignKeyRef.current = resignKey;
+    setProfileDetailsData(previous =>
+      previous ? { ...previous, mainUPController: '' } : previous
+    );
+    setHasActiveSignature(false);
+    setPendingSignature(true);
+  }, [
+    address,
+    connector?.id,
+    isConnected,
+    isWalletConnected,
+    pendingSignature,
+    profileDetailsData,
   ]);
 
   useEffect(() => {

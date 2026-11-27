@@ -15,7 +15,8 @@ import {
 } from '@chakra-ui/react';
 import { AbiCoder, Contract } from 'ethers';
 import Link from 'next/link';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
+import { buildUpWalletConnectDeepLink } from '@/utils/upDeepLink';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { supportedNetworks } from '@/constants/supportedNetworks';
 import { getForwarderAssistantDiagnostics } from '@/utils/assistantConfig';
@@ -37,7 +38,7 @@ interface GraveDiagnosticsProps {
 export default function GraveDiagnostics({
   networkName,
 }: GraveDiagnosticsProps) {
-  const { address: connectedAddress, connector } = useAccount();
+  const { address: connectedAddress, connector } = useConnection();
   const {
     profileDetailsData,
     isConnected,
@@ -97,11 +98,7 @@ export default function GraveDiagnostics({
   const openUniversalProfilesApp = useCallback(() => {
     if (typeof window === 'undefined') return;
     const uri = debugState.lastWalletConnectUri || storedWalletConnectUri;
-    const nativeBase = 'io.universaleverything.universalprofiles://';
-    const deepLink =
-      uri && uri.startsWith('wc:')
-        ? uri.replace(/^wc:/, `${nativeBase}wallet-connect/`)
-        : `${nativeBase}wallet-connect`;
+    const deepLink = buildUpWalletConnectDeepLink(uri);
 
     setIsOpeningUPApp(true);
     window.location.href = deepLink;

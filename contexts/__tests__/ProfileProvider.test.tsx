@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor, screen } from '@testing-library/react';
 import { ProfileProvider, useProfile } from '@/contexts/ProfileProvider';
 
-const openConnectModalMock = vi.fn();
-const openChainModalMock = vi.fn();
+const openUpSignInModalMock = vi.fn();
 const switchChainAsyncMock = vi.fn();
 const disconnectMock = vi.fn();
 const connectAsyncMock = vi.fn();
@@ -18,23 +17,24 @@ const walletClientMock = {
   signMessage: vi.fn(async () => '0xsigned'),
 };
 
-const useAccountMock = vi.fn();
+const useConnectionMock = vi.fn();
 const useWalletClientMock = vi.fn();
+const upConnectors = [{ id: 'lukso', name: 'Universal Profile' }];
 
 vi.mock('wagmi', () => ({
-  useAccount: () => useAccountMock(),
+  useConnection: () => useConnectionMock(),
+  useConnectors: () => upConnectors,
   useConnect: () => ({
     connectAsync: connectAsyncMock,
-    connectors: [{ id: 'lukso', name: 'Universal Profile' }],
   }),
   useWalletClient: () => useWalletClientMock(),
   useDisconnect: () => ({ disconnect: disconnectMock }),
   useSwitchChain: () => ({ switchChainAsync: switchChainAsyncMock }),
 }));
 
-vi.mock('@rainbow-me/rainbowkit', () => ({
-  useConnectModal: () => ({ openConnectModal: openConnectModalMock }),
-  useChainModal: () => ({ openChainModal: openChainModalMock }),
+vi.mock('@/utils/luksoModal', () => ({
+  openUpSignInModal: (...args: unknown[]) => openUpSignInModalMock(...args),
+  onUpSignInModalClose: () => () => undefined,
 }));
 
 vi.mock('@/utils/walletClient', () => ({
@@ -108,13 +108,12 @@ describe('ProfileProvider connect flow', () => {
     typeof navigator === 'undefined' ? '' : navigator.userAgent;
 
   beforeEach(() => {
-    openConnectModalMock.mockReset();
-    openChainModalMock.mockReset();
+    openUpSignInModalMock.mockReset();
     switchChainAsyncMock.mockReset();
     disconnectMock.mockReset();
     connectAsyncMock.mockReset();
     walletClientMock.signMessage.mockClear();
-    useAccountMock.mockReset();
+    useConnectionMock.mockReset();
     useWalletClientMock.mockReset();
     resolveUniversalProfileAddressMock.mockReset();
     resolveMainControllerForUPMock.mockReset();
@@ -147,7 +146,7 @@ describe('ProfileProvider connect flow', () => {
       configurable: true,
       value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
     });
-    useAccountMock.mockReturnValue({
+    useConnectionMock.mockReturnValue({
       address: undefined,
       chainId: undefined,
       isConnected: false,
@@ -162,12 +161,12 @@ describe('ProfileProvider connect flow', () => {
     );
 
     await waitFor(() => {
-      expect(openConnectModalMock).toHaveBeenCalledTimes(1);
+      expect(openUpSignInModalMock).toHaveBeenCalledTimes(1);
     });
   });
 
   it('signs and stores profile data when wallet is connected', async () => {
-    useAccountMock.mockReturnValue({
+    useConnectionMock.mockReturnValue({
       address: walletClientMock.account.address,
       chainId: 42,
       isConnected: true,

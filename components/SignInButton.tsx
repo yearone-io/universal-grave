@@ -26,9 +26,12 @@ const SignInButton: React.FC = () => {
   const toast = useToast({ position: 'bottom' });
   const hasDesktopUPExtension =
     typeof window !== 'undefined' && !!(window as any).lukso;
-  const shouldShowExternalWalletPrompt = !hasDesktopUPExtension;
+  const isMobileUserAgent =
+    typeof navigator !== 'undefined' &&
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   const effectiveIsLoading = isLoading || isSigningIn;
-  const showMobilePrompt = shouldShowExternalWalletPrompt && isSigningIn;
+  const showMobilePrompt =
+    isMobileUserAgent && !hasDesktopUPExtension && isSigningIn;
   const mobileSignInToastId = 'mobile-signin-prompt';
 
   useEffect(() => {
